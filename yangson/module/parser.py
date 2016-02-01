@@ -10,11 +10,6 @@ ParseTable = List[
     ]
 ]
 
-def _anything(c: str) -> State:
-    if c is None:
-        raise ValueError("unexpected end of input")
-    return 0
-
 class Parser(object):
 
     """Parser of YANG modules.
@@ -40,6 +35,13 @@ class Parser(object):
         self.flag = False # type: bool
 
     @staticmethod
+    def from_file(filename: str) -> Statement:
+        """Parse a module or submodule read from `filename`."""
+        with open(filename, encoding='utf-8') as infile:
+            p = Parser(infile.read())
+        return p.parse_module()
+
+    @staticmethod
     def unescape(text: str) -> str:
         """Replace escaped characters in `text` with native characters.
         """
@@ -54,7 +56,7 @@ class Parser(object):
         try:
             return self.input[self.offset]
         except IndexError:
-            raise ValueError("end of input")
+            raise EndOfInput(self)
 
     def _scan(self, ptab: ParseTable) -> None:
         """Simple stateful scanner."""
@@ -66,6 +68,14 @@ class Parser(object):
             if state < 0:
                 break
             self.offset += 1
+
+    def line_column(self):
+        """Return (line,column) corresponding to `self.offset`.
+        """
+        l = self.input.count("\n", 0, self.offset)
+        c = (self.offset if l == 0 else
+             self.offset - self.input.rfind("\n", 0, self.offset) - 1)
+        return (l + 1, c)
         
     def opt_separator(self) -> None:
         """Parse optional separator.
@@ -86,14 +96,15 @@ class Parser(object):
                         "*": lambda: 4 }),
              (lambda c: -1 if c is None else 3, { "\n": lambda: 0 }),
              (lambda c: 4, { "*": lambda: 5 }),
-             (lambda c: 4, { "/": lambda: 0 })])
+             (lambda c: 4, { "/": lambda: 0,
+                             "*": lambda: 5 })])
 
     def separator(self) -> None:
         """Parse mandatory separator.
         """
         start = self.offset
         self.opt_separator()
-        if start == self.offset: raise ValueError("expected separator")
+        if start == self.offset: raise UnexpectedInput(self, "separator")
 
     def keyword(self) -> List[str]:
         """Parse keyword.
@@ -102,7 +113,7 @@ class Parser(object):
         fst = lambda c: "a" <= c <= "z" or "A" <= c <= "Z" or c == "_"
         def car(c):
             if fst(c): return 1
-            raise ValueError("expected ASCII letter or underline, got " + c)
+            raise UnexpectedInput(self, "ASCII letter or underline")
         def cdr(c):
             if fst(c) or c == "-" or "0" < c < "9" or c == ".":
                 return 1
@@ -110,7 +121,7 @@ class Parser(object):
                 return -1
         def colon():
             if self.flag:
-                raise ValueError("unexpected character: ':'")
+                raise UnexpectedInput(self)
             self.flag = True
             return 0
         start = self.offset
@@ -141,26 +152,29 @@ class Parser(object):
             self.offset += 1
             subst = self.substatements()
             return Statement(kw, arg, subst, pref)
-        raise ValueError("rubbish: " + next)
+        raise UnexpectedInput(self, "';' or '{'")
 
-    def parse_module(self):
+    def parse_module(self) -> Statement:
         """Parse a complete YANG module or submodule.
         """
         self.opt_separator()
+        start = self.offset
         res = self.statement()
         if res.keyword not in ["module", "submodule"]:
-            raise ValueError("missing 'module' or 'submodule'")
-        self.opt_separator()
-        if self.offset < len(self.input):
-            raise ValueError("trailing garbage")
-        return res 
+            self.offset = start
+            raise UnexpectedInput(self, "'module' or 'submodule'")
+        try:
+            self.opt_separator()
+        except EndOfInput:
+            return res
+        raise UnexpectedInput(self, "end of input")
 
     def sq_argument(self) -> str:
         """Parse single-quoted argument.
         """
         self.offset += 1
         start = self.offset
-        self._scan([(_anything, { "'": lambda: -1 })])
+        self._scan([(lambda c: 0, { "'": lambda: -1 })])
         res = self.input[start:self.offset]
         self.offset += 1
         return res
@@ -174,9 +188,9 @@ class Parser(object):
         self.flag = False                 # any escaped chars?
         self.offset += 1
         start = self.offset
-        self._scan([(_anything, { '"': lambda: -1,
-                                  '\\': escape }),
-                    (_anything, {})])
+        self._scan([(lambda c: 0, { '"': lambda: -1,
+                                    '\\': escape }),
+                    (lambda c: 0, {})])
         res = (self.unescape(self.input[start:self.offset]) if self.flag
                else self.input[start:self.offset])
         self.offset += 1
@@ -189,15 +203,15 @@ class Parser(object):
             self.offset -= 1
             return -1
         start = self.offset
-        self._scan([(_anything, { ";": lambda: -1,
+        self._scan([(lambda c: 0, { ";": lambda: -1,
                                   " ": lambda: -1,
                                   "\t": lambda: -1,
                                   "\r": lambda: -1,
                                   "\n": lambda: -1,
                                   "{": lambda: -1,
                                   '/': lambda: 1 }),
-                    (_anything, { "/": comm_start,
-                                  "*": comm_start })])
+                    (lambda c: 0, { "/": comm_start,
+                                    "*": comm_start })])
         return self.input[start:self.offset]
 
     def substatements(self) -> List[Statement]:
@@ -210,3 +224,30 @@ class Parser(object):
             self.opt_separator()
         self.offset += 1
         return res
+
+class ParserException(Exception):
+    """Base exception class for the parser of YANG modules."""
+
+    def __init__(self, p: Parser) -> None:
+        self.parser = p
+
+    def __str__(self) -> str:
+        """Print line and column number.
+        """
+        return "line {0}, column {1}".format(*self.parser.line_column())
+
+class EndOfInput(ParserException):
+    """End of input."""
+    pass
+
+class UnexpectedInput(ParserException):
+    """Unexpected input."""
+
+    def __init__(self, p: Parser, expected: str = None) -> None:
+        super(UnexpectedInput, self).__init__(p)
+        self.expected = expected
+
+    def __str__(self) -> str:
+        """Add info about expected input if available."""
+        ex = "" if self.expected is None else ": expected " + self.expected
+        return super(UnexpectedInput, self).__str__() + ex
