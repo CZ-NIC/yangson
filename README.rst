@@ -1,8 +1,10 @@
+.. |date| date::
+
 =======
 Yangson
 =======
 :Author: Ladislav Lhotka <lhotka@nic.cz>
-:Date: 2016-02-01
+:Date: |date|
 
 Python library for working with YANG_ data models and JSON-encoded
 data.
