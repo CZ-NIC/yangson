@@ -1,5 +1,6 @@
 *.pyc
 bin
+docs/_build
 include
 lib
 pip-selfcheck.json
