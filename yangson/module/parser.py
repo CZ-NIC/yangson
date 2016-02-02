@@ -1,6 +1,7 @@
 from typing import Callable, List, Mapping, Optional, Tuple
 from .statement import Statement
 
+# Type aliases
 Offset = int
 State = int
 ParseTable = List[
@@ -25,25 +26,32 @@ class Parser(object):
 
     unescape_map = { "n" : "\n", "t": "\t", '"': '"',
                      "\\": "\\" } # type: Mapping[str,str]
-    """Map for translating escaped characters to their native form."""
+    """Map for translating escape sequences to characters."""
     
     def __init__(self, inp: str) -> None:
-        """Initialize the parser with input string `inp`.
+        """Initialize the instance.
+
+        :param inp: input string
         """
         self.input = inp # type: str
         self.offset = 0 # type: Offset
         self.flag = False # type: bool
 
     @staticmethod
-    def from_file(filename: str) -> Statement:
-        """Parse a module or submodule read from `filename`."""
-        with open(filename, encoding='utf-8') as infile:
+    def from_file(fp: str) -> Statement:
+        """Parse a module or submodule read from a file.
+
+        :param fp: file path
+        """
+        with open(fp, encoding='utf-8') as infile:
             p = Parser(infile.read())
         return p.parse_module()
 
     @staticmethod
     def unescape(text: str) -> str:
-        """Replace escaped characters in `text` with native characters.
+        """Replace escape sequence with corresponding characters.
+
+        :param text: text to unescape
         """
         chop = text.split("\\", 1)
         return (chop[0] if len(chop) == 1
@@ -52,6 +60,8 @@ class Parser(object):
 
     def _peek(self) -> Optional[str]:
         """Peek at the next character.
+
+        :raises EndOfInput: if past the end of `self.input`
         """
         try:
             return self.input[self.offset]
@@ -59,7 +69,11 @@ class Parser(object):
             raise EndOfInput(self)
 
     def _scan(self, ptab: ParseTable) -> None:
-        """Simple stateful scanner."""
+        """Simple stateful scanner.
+
+        :param ptab: transition table (DFA with possible side-effects).
+        :raises EndOfInput: if past the end of `self.input`
+        """
         state = 0 # type: State
         while True:
             (owise, disp) = ptab[state]
@@ -69,8 +83,8 @@ class Parser(object):
                 break
             self.offset += 1
 
-    def line_column(self):
-        """Return (line,column) corresponding to `self.offset`.
+    def line_column(self) -> Tuple[int, int]:
+        """Return line and column coordinates corresponding to `self.offset`.
         """
         l = self.input.count("\n", 0, self.offset)
         c = (self.offset if l == 0 else
@@ -78,9 +92,9 @@ class Parser(object):
         return (l + 1, c)
         
     def opt_separator(self) -> None:
-        """Parse optional separator.
+        """Parse an optional separator.
 
-        Return total length of the separator string.
+        :raises EndOfInput: if past the end of `self.input`
         """
         def back_break(c):
             self.offset -= 1
@@ -100,14 +114,20 @@ class Parser(object):
                              "*": lambda: 5 })])
 
     def separator(self) -> None:
-        """Parse mandatory separator.
+        """Parse a mandatory separator.
+
+        :raises EndOfInput: if past the end of `self.input`
+        :raises UnexpectedInput: if no separator is found
         """
         start = self.offset
         self.opt_separator()
         if start == self.offset: raise UnexpectedInput(self, "separator")
 
-    def keyword(self) -> List[str]:
-        """Parse keyword.
+    def keyword(self) -> Tuple[Optional[str], str]:
+        """Parse a YANG statement keyword.
+
+        :raises EndOfInput: if past the end of `self.input`
+        :raises UnexpectedInput: if no syntactically correct keyword is found
         """
         self.flag = False                 # extension?
         fst = lambda c: "a" <= c <= "z" or "A" <= c <= "Z" or c == "_"
@@ -131,6 +151,9 @@ class Parser(object):
 
     def statement(self) -> Statement:
         """Parse YANG statement.
+
+        :raises EndOfInput: if past the end of `self.input`
+        :raises UnexpectedInput: if no syntactically correct statement is found
         """
         pref,kw = self.keyword()
         self.opt_separator()
@@ -156,6 +179,9 @@ class Parser(object):
 
     def parse_module(self) -> Statement:
         """Parse a complete YANG module or submodule.
+
+        :raises EndOfInput: if past the end of `self.input`
+        :raises UnexpectedInput: if top-level statement isn't ``(sub)module``
         """
         self.opt_separator()
         start = self.offset
@@ -171,6 +197,8 @@ class Parser(object):
 
     def sq_argument(self) -> str:
         """Parse single-quoted argument.
+
+        :raises EndOfInput: if past the end of `self.input`
         """
         self.offset += 1
         start = self.offset
@@ -181,6 +209,8 @@ class Parser(object):
 
     def dq_argument(self) -> str:
         """Parse double-quoted argument.
+
+        :raises EndOfInput: if past the end of `self.input`
         """
         def escape():
             self.flag = True
@@ -198,6 +228,8 @@ class Parser(object):
 
     def unq_argument(self) -> str:
         """Parse unquoted argument.
+
+        :raises EndOfInput: if past the end of `self.input`
         """
         def comm_start():
             self.offset -= 1
@@ -216,6 +248,8 @@ class Parser(object):
 
     def substatements(self) -> List[Statement]:
         """Parse substatements.
+
+        :raises EndOfInput: if past the end of `self.input`
         """
         res = []
         self.opt_separator()

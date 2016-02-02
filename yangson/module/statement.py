@@ -10,7 +10,6 @@ class Statement(object):
     * namespace: `None` or namespace URI (for extensions),
     * prefix: statement argument,
     * substatements: list of substatements.
-    
     """
 
     escape_table = str.maketrans({ '"': '\\"', '\\': '\\\\'})
@@ -22,6 +21,11 @@ class Statement(object):
                  sub: List["Statement"] = [],
                  pref: Optional[str] = None) -> None:
         """Initialize the instance.
+
+        :param kw: keyword
+        :param arg: argument
+        :param sub: list of substatements
+        :param pref: keyword prefix (`None` for built-in statements)
         """
         self.prefix = pref
         self.keyword = kw
@@ -40,6 +44,9 @@ class Statement(object):
 
     def find1(self, kw: str, arg: str = None) -> Optional["Statement"]:
         """Find the first substatement with the given keyword (and argument).
+
+        :param kw: keyword
+        :param arg: argument (all arguments will match if `None`)
         """
         for sub in self.substatements:
             if sub.keyword == kw and (arg is None or sub.argument == arg):
@@ -47,5 +54,7 @@ class Statement(object):
 
     def find_all(self, kw: str) -> List["Statement"]:
         """Find all substatements with the given keyword.
+
+        :param kw: keyword
         """
         return [c for c in self.substatements if c.keyword == kw]
