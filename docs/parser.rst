@@ -1,4 +1,6 @@
 YANG Module Parser
 ==================
 
-hi!
+.. automodule:: yangson.module.parser
+   :members:
+   :show-inheritance:
