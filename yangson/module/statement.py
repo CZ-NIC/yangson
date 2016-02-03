@@ -1,4 +1,5 @@
 from typing import List, Optional
+from yangson.types import YangIdentifier
 
 class Statement(object):
 
@@ -16,10 +17,10 @@ class Statement(object):
     """Table for translating characters to their escaped form."""
 
     def __init__(self,
-                 kw: str,
+                 kw: YangIdentifier,
                  arg: Optional[str],
                  sub: List["Statement"] = [],
-                 pref: Optional[str] = None) -> None:
+                 pref: Optional[YangIdentifier] = None) -> None:
         """Initialize the instance.
 
         :param kw: keyword
@@ -42,19 +43,28 @@ class Statement(object):
         rest = " { ... }" if self.substatements else ";"
         return kw + arg + rest
 
-    def find1(self, kw: str, arg: str = None) -> Optional["Statement"]:
-        """Find the first substatement with the given keyword (and argument).
+    def find1(self,
+              kw: YangIdentifier,
+              arg: Optional[str] = None,
+              pref: Optional[YangIdentifier] = None) -> Optional["Statement"]:
+        """Find the first substatement with the given parameters.
 
         :param kw: keyword
         :param arg: argument (all arguments will match if `None`)
+        :param pref: keyword prefix (for extensions)
         """
         for sub in self.substatements:
-            if sub.keyword == kw and (arg is None or sub.argument == arg):
+            if (sub.keyword == kw and sub.prefix == pref and
+                (arg is None or sub.argument == arg)):
                 return sub
 
-    def find_all(self, kw: str) -> List["Statement"]:
-        """Find all substatements with the given keyword.
+    def find_all(self,
+                 kw: YangIdentifier,
+                 pref: Optional[YangIdentifier] = None) -> List["Statement"]:
+        """Find all substatements with the given keyword (and prefix).
 
         :param kw: keyword
+        :param pref: keyword prefix (for extensions)
         """
-        return [c for c in self.substatements if c.keyword == kw]
+        return [c for c in self.substatements
+                if c.keyword == kw and c.prefix == pref]
