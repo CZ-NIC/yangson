@@ -7,3 +7,4 @@ lib
 pip-selfcheck.json
 pyvenv.cfg
 TAGS
+yangson.egg-info
