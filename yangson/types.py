@@ -1,9 +1,9 @@
-from typing import Optional
+from typing import Optional, Tuple
 
 # Type aliases
 
 RevisionDate = str
 Uri = str
 YangIdentifier = str
-ModuleId = (YangIdentifier, Optional[RevisionDate])
-QName = (YangIdentifier, Optional[YangIdentifier]) # (local name, module)
+ModuleId = Tuple[YangIdentifier, Optional[RevisionDate]]
+QName = Tuple[YangIdentifier, Optional[YangIdentifier]] # (local name, module)
