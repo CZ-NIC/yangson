@@ -22,9 +22,9 @@ class ModuleData(object):
     """Local filesystem directory from which YANG modules can be retrieved."""
 
     def __init__(self,
-                 name,
-                 rev = None,
-                 sch = None) -> None:
+                 name: YangIdentifier,
+                 rev: Optional[RevisionDate] = None,
+                 sch: Optional[Uri] = None) -> None:
         """Initialize the instance.
 
         :param name: YANG module name
@@ -56,17 +56,23 @@ class ModuleData(object):
             fn += "@" + self.revision
         self.content = from_file(self.file_name())
 
+class SubmoduleData(ModuleData):
+    """Submodule data.
+    """
+
+    pass
+
 class MainModuleData(ModuleData):
     """Main module data."""
 
     def __init__(self,
-                 name,
-                 rev = None,
-                 ct = ConformanceType.implemented,
-                 fs = [],
-                 sub = [],
-                 dev = [],
-                 sch = None) -> None:
+                 name: YangIdentifier,
+                 rev: Optional[RevisionDate] = None,
+                 ct: ConformanceType = ConformanceType.implemented,
+                 fs: List[YangIdentifier] = [],
+                 sub: List[SubmoduleData] = [],
+                 dev: List[ModuleId] = [],
+                 sch: Optional[Uri] = None) -> None:
         """Initialize the instance.
 
         :param name: YANG module name
@@ -102,12 +108,6 @@ class MainModuleData(ModuleData):
         """Load the module content and read other data form it."""
         super(MainModuleData, self).load()
         self.namespace = self.content.find1("namespace").argument
-
-class SubmoduleData(ModuleData):
-    """Submodule data.
-    """
-
-    pass
 
 class YangLibrary(list):
     """YANG Library data.
