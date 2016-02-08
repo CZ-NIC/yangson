@@ -5,6 +5,7 @@ from enum import Enum
 from json import dumps, loads
 from typing import List, Dict, Optional
 from yangson.types import ModuleId, RevisionDate, Uri, YangIdentifier
+from yangson.module import from_file, Statement, StatementNotFound
 
 class ConformanceType(Enum):
     implemented = 0
@@ -14,76 +15,69 @@ class ConformanceType(Enum):
         """Return string representation of the receiver."""
         return "import" if self.value else "implement"
 
-class DeviationMetadata(object):
-    """Deviation module metadata.
-    """
+class ModuleData(object):
+    """Abstract class for data common to both modules and submodules."""
+
+    module_dir = "/usr/local/share/yang"
+    """Local filesystem directory from which YANG modules can be retrieved."""
+
     def __init__(self,
-                 name: YangIdentifier,
-                 rev: RevisionDate) -> None:
+                 name,
+                 rev = None,
+                 sch = None) -> None:
         """Initialize the instance.
 
         :param name: YANG module name
         :param rev: revision date
+        :param sch: URL from which the module can be retrieved
         """
         self.name = name
         self.revision = rev
-
-    def jsonify(self) -> Dict[str, str]:
-        """Convert the receiver to a dictionary.
-        """
-        return { "name": self.name,
-                 "revision": self.revision }
-
-class SubmoduleMetadata(DeviationMetadata):
-    """Submodule metadata.
-    """
-
-    def __init__(self,
-                 name: YangIdentifier,
-                 rev: RevisionDate,
-                 sch: Optional[Uri] = None) -> None:
-        """Initialize the instance.
-
-        :param name: YANG module name
-        :param rev: revision date
-        :param sch: URL from which the module is available
-        """
-        super(SubmoduleMetadata, self).__init__(name, rev)
         self.schema = sch
+        self.content = None
 
     def jsonify(self) -> Dict[str, str]:
-        """Convert the receiver to a dictionary.
-        """
-        res = super(SubmoduleMetadata, self).jsonify()
-        res["schema"] = self.schema if self.schema else ""
+        """Convert receiver's metadata to a dictionary."""
+        res = { "name": self.name }
+        res["revision"] =  self.revision if self.revision else ""
+        if self.schema:
+            res["schema"] = self.schema
         return res
 
-class ModuleMetadata(SubmoduleMetadata):
-    """Main module metadata.
-    """
+    def file_name(self) -> str:
+        """Return the name of module file."""
+        return "{}/{}{}.yang".format(self.module_dir, self.name,
+                              ("@" + self.revision) if self.revision else "")
+
+    def load(self) -> None:
+        """Load the module content."""
+        fn = self.module_dir + "/" + self.name
+        if self.revision:
+            fn += "@" + self.revision
+        self.content = from_file(self.file_name())
+
+class MainModuleData(ModuleData):
+    """Main module data."""
 
     def __init__(self,
-                 name: YangIdentifier,
-                 rev: RevisionDate,
-                 ns: Uri,
-                 ct: ConformanceType,
-                 fs: List[YangIdentifier] = [],
-                 sub: List[SubmoduleMetadata] = [],
-                 dev: List[DeviationMetadata] = []
-                 sch: Optional[Uri] = None) -> None:
+                 name,
+                 rev = None,
+                 ct = ConformanceType.implemented,
+                 fs = [],
+                 sub = [],
+                 dev = [],
+                 sch = None) -> None:
         """Initialize the instance.
 
         :param name: YANG module name
         :param rev: revision date
-        :param ns: module namespace URI
         :param ct: conformance type
         :param fs: supported features
         :param sub: metadata for submodules
-        :param dev: deviation modules
+        :param dev: names and revisions of deviation modules
         :param sch: URL from which the module is available
         """
-        super(ModuleMetadata, self).__init__(name, rev, sch)
-        self.namespace = ns
+        super(MainModuleData, self).__init__(name, rev, sch)
         self.conformance_type = ct
         self.feature = fs
         self.submodule = sub
@@ -92,7 +86,8 @@ class ModuleMetadata(SubmoduleMetadata):
     def jsonify(self) -> Dict[str, str]:
         """Convert the receiver to a dictionary.
         """
-        res = super(ModuleMetadata, self).jsonify()
+        if self.content is None: self.load()
+        res = super(MainModuleData, self).jsonify()
         res.update({ "namespace": self.namespace,
                      "conformance-type": str(self.conformance_type) })
         if self.feature:
@@ -102,6 +97,17 @@ class ModuleMetadata(SubmoduleMetadata):
         if self.deviation:
             res["deviation"] = self.deviation
         return res
+
+    def load(self) -> None:
+        """Load the module content and read other data form it."""
+        super(MainModuleData, self).load()
+        self.namespace = self.content.find1("namespace").argument
+
+class SubmoduleData(ModuleData):
+    """Submodule data.
+    """
+
+    pass
 
 class YangLibrary(list):
     """YANG Library data.
