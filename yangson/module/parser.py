@@ -1,4 +1,5 @@
 from typing import Callable, List, Mapping, Optional, Tuple
+from yangson.exception import YangsonException
 from .statement import Statement
 
 # Type aliases
@@ -36,16 +37,6 @@ class Parser(object):
         self.input = inp # type: str
         self.offset = 0 # type: Offset
         self.flag = False # type: bool
-
-    @staticmethod
-    def from_file(fp: str) -> Statement:
-        """Parse a module or submodule read from a file.
-
-        :param fp: file path
-        """
-        with open(fp, encoding='utf-8') as infile:
-            p = Parser(infile.read())
-        return p.parse_module()
 
     @staticmethod
     def unescape(text: str) -> str:
@@ -259,7 +250,7 @@ class Parser(object):
         self.offset += 1
         return res
 
-class ParserException(Exception):
+class ParserException(YangsonException):
     """Base exception class for the parser of YANG modules."""
 
     def __init__(self, p: Parser) -> None:
@@ -285,3 +276,12 @@ class UnexpectedInput(ParserException):
         """Add info about expected input if available."""
         ex = "" if self.expected is None else ": expected " + self.expected
         return super(UnexpectedInput, self).__str__() + ex
+
+def from_file(fp: str) -> Statement:
+    """Parse a module or submodule read from a file.
+
+    :param fp: file path
+    """
+    with open(fp, encoding='utf-8') as infile:
+        p = Parser(infile.read())
+    return p.parse_module()
