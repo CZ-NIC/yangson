@@ -1,4 +1,5 @@
 from typing import List, Optional
+from yangson.exception import YangsonException
 from yangson.types import YangIdentifier
 
 class Statement(object):
@@ -52,11 +53,18 @@ class Statement(object):
         :param kw: keyword
         :param arg: argument (all arguments will match if `None`)
         :param pref: keyword prefix (for extensions)
+        :raises StatementNotFound: if the statement is not found
         """
+        res = None
         for sub in self.substatements:
             if (sub.keyword == kw and sub.prefix == pref and
                 (arg is None or sub.argument == arg)):
-                return sub
+                res = sub
+                break
+        if res:
+            return res
+        else:
+            raise StatementNotFound(kw)
 
     def find_all(self,
                  kw: YangIdentifier,
@@ -68,3 +76,13 @@ class Statement(object):
         """
         return [c for c in self.substatements
                 if c.keyword == kw and c.prefix == pref]
+
+class StatementNotFound(YangsonException):
+    """Exception to raise when a statement should exist but doesn't."""
+
+    def __init__(self, kw: YangIdentifier) -> None:
+        self.keyword = kw
+
+    def __str__(self) -> str:
+        """Print the statement's keyword."""
+        return self.keyword
