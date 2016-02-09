@@ -3,7 +3,9 @@
 
 from enum import Enum
 from json import dumps, loads
+from json.decoder import JSONDecodeError
 from typing import List, Dict, Optional
+from yangson.exception import YangsonException
 from yangson.types import ModuleId, RevisionDate, Uri, YangIdentifier
 from yangson.module import from_file, Statement, StatementNotFound
 
@@ -15,106 +17,179 @@ class ConformanceType(Enum):
         """Return string representation of the receiver."""
         return "import" if self.value else "implement"
 
-class ModuleData(object):
+class Module(object):
     """Abstract class for data common to both modules and submodules."""
 
     module_dir = "/usr/local/share/yang"
     """Local filesystem directory from which YANG modules can be retrieved."""
 
-    def __init__(self,
-                 name: YangIdentifier,
-                 rev: Optional[RevisionDate] = None,
-                 sch: Optional[Uri] = None) -> None:
+    @staticmethod
+    def revision(rev: str) -> RevisionDate:
+        """Decode revision.
+
+        :param rev: revision date or ``""`` (= revision not specified)
+        """
+        return rev if rev else None
+
+    def __init__(self, sch: Optional[Uri]) -> None:
         """Initialize the instance.
 
-        :param name: YANG module name
-        :param rev: revision date
         :param sch: URL from which the module can be retrieved
         """
-        self.name = name
-        self.revision = rev
         self.schema = sch
         self.content = None
 
-    def jsonify(self) -> Dict[str, str]:
-        """Convert receiver's metadata to a dictionary."""
-        res = { "name": self.name }
-        res["revision"] =  self.revision if self.revision else ""
+    def _to_dict(self, name: YangIdentifier,
+                 rev: RevisionDate) -> Dict[str, str]:
+        """Convert receiver's data to a dictionary.
+
+        :param name: module name
+        :param rev: revision date
+        """
+        res = { "name": name }
+        res["revision"] =  rev if rev else ""
         if self.schema:
             res["schema"] = self.schema
         return res
 
-    def file_name(self) -> str:
-        """Return the name of module file."""
-        return "{}/{}{}.yang".format(self.module_dir, self.name,
-                              ("@" + self.revision) if self.revision else "")
+    def _load(self, name: YangIdentifier, rev: RevisionDate) -> None:
+        """Load the module content.
 
-    def load(self) -> None:
-        """Load the module content."""
-        fn = self.module_dir + "/" + self.name
-        if self.revision:
-            fn += "@" + self.revision
-        self.content = from_file(self.file_name())
+        :param name: module name
+        :param rev: revision date
+        """
+        fn = "{}/{}{}.yang".format(self.module_dir, name,
+                                   ("@" + rev) if rev else "")
+        self.content = from_file(fn)
 
-class SubmoduleData(ModuleData):
+class Submodule(Module):
     """Submodule data.
     """
 
-    pass
+    def __init__(self,
+                 name: YangIdentifier,
+                 revision: str,
+                 schema: Optional[Uri] = None) -> None:
+        """Initialize the instance.
 
-class MainModuleData(ModuleData):
+        :param name: module name
+        :param revision: revision date or ``""`` (= revision not specified)
+        """
+        super(Submodule, self).__init__(schema)
+        self.name = name
+        self.revision = self.revision(revision)
+        self.schema = schema
+
+    def _to_dict(self):
+        """Convert receiver's data to a dictionary."""
+        return super(Submodule, self)._to_dict(self.name, self.revision)
+
+class MainModule(Module):
     """Main module data."""
 
     def __init__(self,
-                 name: YangIdentifier,
-                 rev: Optional[RevisionDate] = None,
-                 ct: ConformanceType = ConformanceType.implemented,
-                 fs: List[YangIdentifier] = [],
-                 sub: List[SubmoduleData] = [],
-                 dev: List[ModuleId] = [],
-                 sch: Optional[Uri] = None) -> None:
+                 ct: str,
+                 namespace: Uri,
+                 feature: List[YangIdentifier] = [],
+                 submodules: Dict[str, List[Submodule]] = {"submodule": []},
+                 deviation: List[ModuleId] = [],
+                 schema: Optional[Uri] = None) -> None:
         """Initialize the instance.
 
-        :param name: YANG module name
-        :param rev: revision date
-        :param ct: conformance type
-        :param fs: supported features
-        :param sub: metadata for submodules
-        :param dev: names and revisions of deviation modules
-        :param sch: URL from which the module is available
+        :param ct: conformance type string ("implement" or "import")
+        :param namespace: module namespace URI
+        :param feature: supported features
+        :param submodules: object containing a list of submodules
+        :param deviation: list of deviation modules
+        :param schema: URL from which the module is available
         """
-        super(MainModuleData, self).__init__(name, rev, sch)
-        self.conformance_type = ct
-        self.feature = fs
-        self.submodule = sub
-        self.deviation = dev
+        super(MainModule, self).__init__(schema)
+        self.namespace = namespace
+        self.feature = feature
+        self.deviation = [ (d["name"], self.revision(d["revision"]))
+                           for d in deviation ]
+        if ct == "implement":
+            self.conformance_type = ConformanceType.implemented
+        elif ct == "import":
+            self.conformance_type = ConformanceType.imported
+        else:
+            raise BadYangLibraryData("unknown conformance type")
+        try:
+            sub = submodules["submodule"]
+        except:
+            raise BadYangLibraryData("bad specification of submodules")
+        self.submodule = [ Submodule(**s) for s in sub ]
 
-    def jsonify(self) -> Dict[str, str]:
+    def _to_dict(self, name: YangIdentifier,
+                 rev: RevisionDate) -> Dict[str, str]:
         """Convert the receiver to a dictionary.
+
+        :param name: module name
+        :param rev: revision date
         """
-        if self.content is None: self.load()
-        res = super(MainModuleData, self).jsonify()
+        res = super(MainModule, self)._to_dict(name, rev)
         res.update({ "namespace": self.namespace,
                      "conformance-type": str(self.conformance_type) })
         if self.feature:
             res["feature"] = self.feature
         if self.submodule:
-            res["submodule"] = self.submodule
+            res["submodules"] = { "submodule":
+                                  [ s._to_dict() for s in self.submodule ] }
         if self.deviation:
             res["deviation"] = self.deviation
         return res
 
-    def load(self) -> None:
-        """Load the module content and read other data form it."""
-        super(MainModuleData, self).load()
-        self.namespace = self.content.find1("namespace").argument
+    def _load(self, name: YangIdentifier, rev: RevisionDate) -> None:
+        """Load the content of the module and all its submodules.
 
-class YangLibrary(list):
+        :param name: module name
+        :param rev: revision date
+        """
+        super(MainModule, self)._load(name, rev)
+        for s in self.submodule:
+            s._load(s.name, s.rev)
+
+class YangLibrary(dict):
     """YANG Library data.
     """
+
+    @classmethod
+    def from_json(cls, txt: str) -> "YangLibrary":
+        """Return an instance initialized from JSON text.
+
+        :param txt: YANG Library information as JSON text
+        :raises BadYangLibraryData: if `txt` is broken
+        """
+        res = cls()
+        try:
+            json = loads(txt)["ietf-yang-library:modules-state"]["module"]
+            for item in json:
+                name = item.pop("name")
+                revstr = item.pop("revision")
+                rev = Module.revision(revstr)
+                ctstr = item.pop("conformance-type")
+                m = MainModule(ctstr, **item)
+                res[(name, rev)] = m
+        except (JSONDecodeError, KeyError, AttributeError):
+            raise BadYangLibraryData()
+        return res
 
     def to_json(self) -> str:
         """Serialize YANG Library information in JSON format.
         """
-        val = [ m.jsonify() for m in self ]
+        val = [ self[k]._to_dict(*k) for k in self ]
         return dumps(val)
+
+    def load(self) -> None:
+        """Load contents of all YANG modules."""
+        for k in self:
+            self[k]._load(*k)
+
+class BadYangLibraryData(YangsonException):
+    "Exception to be raised for broken YANG Library data."""
+
+    def __init__(self, reason: str = "broken yang-library data") -> None:
+        self.reason = reason
+
+    def __str__(self) -> str:
+        return self.reason
