@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 
 # Type aliases
 
-RevisionDate = str
+RevisionDate = Optional[str]
 Uri = str
 YangIdentifier = str
 ModuleId = Tuple[YangIdentifier, Optional[RevisionDate]]
