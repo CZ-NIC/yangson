@@ -21,8 +21,6 @@ class Parser(object):
     * text: input string
 
     * offset: current position in the input string
-
-    * flag: extra boolean flag passed from parsers
     """
 
     unescape_map = { "n" : "\n", "t": "\t", '"': '"',
@@ -36,7 +34,6 @@ class Parser(object):
         """
         self.input = inp # type: str
         self.offset = 0 # type: Offset
-        self.flag = False # type: bool
 
     @staticmethod
     def unescape(text: str) -> str:
@@ -49,9 +46,10 @@ class Parser(object):
                 else chop[0] + Parser.unescape_map[chop[1][0]] +
                 Parser.unescape(chop[1][1:]))
 
-    def _peek(self) -> Optional[str]:
+    def _peek(self) -> str:
         """Peek at the next character.
 
+        :param move: indicates whether `self.offset` is to be advanced
         :raises EndOfInput: if past the end of `self.input`
         """
         try:
@@ -120,7 +118,7 @@ class Parser(object):
         :raises EndOfInput: if past the end of `self.input`
         :raises UnexpectedInput: if no syntactically correct keyword is found
         """
-        self.flag = False                 # extension?
+        self._extension = False
         fst = lambda c: "a" <= c <= "z" or "A" <= c <= "Z" or c == "_"
         def car(c):
             if fst(c): return 1
@@ -131,14 +129,14 @@ class Parser(object):
             else:
                 return -1
         def colon():
-            if self.flag:
+            if self._extension:
                 raise UnexpectedInput(self)
-            self.flag = True
+            self._extension = True
             return 0
         start = self.offset
         self._scan([(car, {}), (cdr, { ":" : colon })])
         kw = self.input[start:self.offset]
-        return kw.split(":") if self.flag else [None, kw]
+        return kw.split(":") if self._extension else [None, kw]
 
     def statement(self) -> Statement:
         """Parse YANG statement.
@@ -149,42 +147,52 @@ class Parser(object):
         pref,kw = self.keyword()
         self.opt_separator()
         next = self._peek()
-        if next == ";" or next == "{":
-            arg = None # type: Optional[str]
-        elif next == "'":
-            arg = self.sq_argument()
-        elif next == '"':
-            arg = self.dq_argument()
+        if next == ";":
+            arg = None
+            sub = False # type: bool
+        elif next == "{":
+            arg = None
+            sub = True
         else:
-            arg = self.unq_argument()
+            self._arg = ""
+            sub = self.argument()
+            arg = self._arg
+        self.offset += 1
+        if sub:
+            subst = self.substatements()
+            return Statement(kw, arg, subst, pref)
+        return Statement(kw, arg, pref=pref)
+
+    def argument(self) -> bool:
+        """Parse statement argument.
+
+        Return ``True`` if the argument is followed by block of substatements.
+        """
+        next = self._peek()
+        if next == "'":
+            quoted = True
+            self.sq_argument()
+        elif next == '"':
+            quoted = True
+            self.dq_argument()
+        elif self._arg == "":
+            quoted = False
+            self.unq_argument()
+        else:
+            raise UnexpectedInput(self, "single or double quote")
         self.opt_separator()
         next = self._peek()
         if next == ";":
-            self.offset += 1
-            return Statement(kw, arg, pref=pref)
+            return False
         if next == "{":
+            return True
+        elif quoted and next == "+":
             self.offset += 1
-            subst = self.substatements()
-            return Statement(kw, arg, subst, pref)
-        raise UnexpectedInput(self, "';' or '{'")
-
-    def parse_module(self) -> Statement:
-        """Parse a complete YANG module or submodule.
-
-        :raises EndOfInput: if past the end of `self.input`
-        :raises UnexpectedInput: if top-level statement isn't ``(sub)module``
-        """
-        self.opt_separator()
-        start = self.offset
-        res = self.statement()
-        if res.keyword not in ["module", "submodule"]:
-            self.offset = start
-            raise UnexpectedInput(self, "'module' or 'submodule'")
-        try:
-            self.opt_separator()
-        except EndOfInput:
-            return res
-        raise UnexpectedInput(self, "end of input")
+            self.opt_separator();
+            return self.argument()
+        else:
+            raise UnexpectedInput(self, "';', '{'" +
+                                  (" or '+'" if quoted else ""))
 
     def sq_argument(self) -> str:
         """Parse single-quoted argument.
@@ -194,9 +202,8 @@ class Parser(object):
         self.offset += 1
         start = self.offset
         self._scan([(lambda c: 0, { "'": lambda: -1 })])
-        res = self.input[start:self.offset]
+        self._arg += self.input[start:self.offset]
         self.offset += 1
-        return res
 
     def dq_argument(self) -> str:
         """Parse double-quoted argument.
@@ -204,18 +211,17 @@ class Parser(object):
         :raises EndOfInput: if past the end of `self.input`
         """
         def escape():
-            self.flag = True
+            self._escape = True
             return 1
-        self.flag = False                 # any escaped chars?
+        self._escape = False                 # any escaped chars?
         self.offset += 1
         start = self.offset
         self._scan([(lambda c: 0, { '"': lambda: -1,
                                     '\\': escape }),
                     (lambda c: 0, {})])
-        res = (self.unescape(self.input[start:self.offset]) if self.flag
-               else self.input[start:self.offset])
+        self._arg += (self.unescape(self.input[start:self.offset])
+                      if self._escape else self.input[start:self.offset])
         self.offset += 1
-        return res
 
     def unq_argument(self) -> str:
         """Parse unquoted argument.
@@ -235,7 +241,7 @@ class Parser(object):
                                   '/': lambda: 1 }),
                     (lambda c: 0, { "/": comm_start,
                                     "*": comm_start })])
-        return self.input[start:self.offset]
+        self._arg = self.input[start:self.offset]
 
     def substatements(self) -> List[Statement]:
         """Parse substatements.
@@ -249,6 +255,24 @@ class Parser(object):
             self.opt_separator()
         self.offset += 1
         return res
+
+    def parse_module(self) -> Statement:
+        """Parse a complete YANG module or submodule.
+
+        :raises EndOfInput: if past the end of `self.input`
+        :raises UnexpectedInput: if top-level statement isn't ``(sub)module``
+        """
+        self.opt_separator()
+        start = self.offset
+        res = self.statement()
+        if res.keyword not in ["module", "submodule"]:
+            self.offset = start
+            raise UnexpectedInput(self, "'module' or 'submodule'")
+        try:
+            self.opt_separator()
+        except EndOfInput:
+            return res
+        raise UnexpectedInput(self, "end of input")
 
 class ParserException(YangsonException):
     """Base exception class for the parser of YANG modules."""
