@@ -7,7 +7,7 @@ from json.decoder import JSONDecodeError
 from typing import List, Dict, Optional
 from yangson.exception import YangsonException
 from yangson.types import ModuleId, RevisionDate, Uri, YangIdentifier
-from yangson.module import from_file, Statement, StatementNotFound
+from yangson.module import from_file, Statement
 
 class ConformanceType(Enum):
     implemented = 0
@@ -24,6 +24,18 @@ class Module(object):
     """Local filesystem directory from which YANG modules can be retrieved."""
 
     @staticmethod
+    def basename(name: YangIdentifier, rev: RevisionDate = None) -> str:
+        """Base name of a module file.
+
+        :param name: module name
+        :param rev: optional revision date
+        """
+        if rev is None:
+            return name
+        else:
+            return "{}@{}".format(name, rev)
+
+    @staticmethod
     def revision(rev: str) -> RevisionDate:
         """Decode revision.
 
@@ -37,7 +49,8 @@ class Module(object):
         :param sch: URL from which the module can be retrieved
         """
         self.schema = sch
-        self.content = None
+        self.content = None # type: S
+        self.prefix_map = {} # type: Dict[YangIdentifier, ModuleId]
 
     def _to_dict(self, name: YangIdentifier,
                  rev: RevisionDate) -> Dict[str, str]:
@@ -58,9 +71,25 @@ class Module(object):
         :param name: module name
         :param rev: revision date
         """
-        fn = "{}/{}{}.yang".format(self.module_dir, name,
-                                   ("@" + rev) if rev else "")
+        fn = "{}/{}.yang".format(self.module_dir, self.basename(name, rev))
         self.content = from_file(fn)
+
+    def _resolve_imports(self, yl: "YangLibrary") -> None:
+        """Assign `ModuleId` to each prefix used in the receiver.
+
+        :param yl: YANG Library containing all avaliable modules.
+        :raises UnresolvableImport: if the receiver doesn't contain the module
+        """
+        for imp in self.content.find_all("import"):
+            name = imp.argument
+            prefix = imp.find1("prefix", required=True).argument
+            revst = imp.find1("revision-date")
+            rev = revst.argument if revst else None
+            modid = yl.find(name, rev)
+            if modid:
+                self.prefix_map[prefix] = modid
+            else:
+                raise UnresolvableImport(name, rev)
 
 class Submodule(Module):
     """Submodule data.
@@ -149,6 +178,16 @@ class MainModule(Module):
         for s in self.submodule:
             s._load(s.name, s.rev)
 
+    def _resolve_imports(self, yl: "YangLibrary") -> None:
+        """Assign `ModuleId` to each prefix used in the receiver and submodules.
+
+        :param yl: YANG Library containing all avaliable modules.
+        :raises UnresolvableImport: if the receiver doesn't contain the module
+        """
+        super(MainModule, self)._resolve_imports(yl)
+        for s in self.submodule:
+            s._resolve_imports(yl)
+
 class YangLibrary(dict):
     """YANG Library data.
     """
@@ -180,16 +219,48 @@ class YangLibrary(dict):
         val = [ self[k]._to_dict(*k) for k in self ]
         return dumps(val)
 
+    def find(self, name: YangIdentifier,
+             rev: RevisionDate = None) -> Optional[ModuleId]:
+        """Return a key in the receiver or ``None``.
+
+        :param name: module name
+        :param rev: revision date
+        """
+        if (name, rev) in self: return (name, rev)
+        if rev is None:
+            for k in self:
+                if k[0] == name: return k
+
+    def complete(self) -> None:
+        """Find and fill in all missing data."""
+        self.load()
+        self.resolve_imports()
+
     def load(self) -> None:
         """Load contents of all YANG modules."""
         for k in self:
             self[k]._load(*k)
 
+    def resolve_imports(self):
+        """Assign modules & revisions to prefixes."""
+        for k in self:
+            self[k]._resolve_imports(self)
+
 class BadYangLibraryData(YangsonException):
-    "Exception to be raised for broken YANG Library data."""
+    """Exception to be raised for broken YANG Library data."""
 
     def __init__(self, reason: str = "broken yang-library data") -> None:
         self.reason = reason
 
     def __str__(self) -> str:
         return self.reason
+
+class UnresolvableImport(YangsonException):
+    """Exception to be raised if an imported module isn't found."""
+
+    def __init__(self, name: YangIdentifier, rev: RevisionDate) -> None:
+        self.name = name
+        self.revision = rev
+
+    def __str__(self) -> str:
+        return Module.basename(self.name, self.revision)
