@@ -1,6 +1,6 @@
 from typing import List, Optional
-from yangson.exception import YangsonException
-from yangson.types import YangIdentifier
+from .exception import YangsonException
+from .typealiases import YangIdentifier
 
 class Statement(object):
 

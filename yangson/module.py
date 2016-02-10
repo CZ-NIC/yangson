@@ -1,13 +1,8 @@
-"""This module contains classes for working with YANG Library data.
-"""
-
 from enum import Enum
-from json import dumps, loads
-from json.decoder import JSONDecodeError
 from typing import List, Dict, Optional
-from yangson.exception import YangsonException
-from yangson.types import ModuleId, RevisionDate, Uri, YangIdentifier
-from yangson.module import from_file, Statement
+from .exception import YangsonException
+from .typealiases import ModuleId, RevisionDate, Uri, YangIdentifier
+from .modparser import from_file
 
 class ConformanceType(Enum):
     implemented = 0
@@ -43,12 +38,12 @@ class Module(object):
         """
         return rev if rev else None
 
-    def __init__(self, sch: Optional[Uri]) -> None:
+    def __init__(self, url: Optional[Uri]) -> None:
         """Initialize the instance.
 
-        :param sch: URL from which the module can be retrieved
+        :param url: URL from which the module can be retrieved
         """
-        self.schema = sch
+        self.url = url
         self.content = None # type: S
         self.prefix_map = {} # type: Dict[YangIdentifier, ModuleId]
 
@@ -61,8 +56,8 @@ class Module(object):
         """
         res = { "name": name }
         res["revision"] =  rev if rev else ""
-        if self.schema:
-            res["schema"] = self.schema
+        if self.url:
+            res["schema"] = self.url
         return res
 
     def _load(self, name: YangIdentifier, rev: RevisionDate) -> None:
@@ -74,10 +69,10 @@ class Module(object):
         fn = "{}/{}.yang".format(self.module_dir, self.basename(name, rev))
         self.content = from_file(fn)
 
-    def _resolve_imports(self, yl: "YangLibrary") -> None:
+    def _resolve_imports(self, schema: "Schema") -> None:
         """Assign `ModuleId` to each prefix used in the receiver.
 
-        :param yl: YANG Library containing all avaliable modules.
+        :param schema: data model schema
         :raises UnresolvableImport: if the receiver doesn't contain the module
         """
         for imp in self.content.find_all("import"):
@@ -85,7 +80,7 @@ class Module(object):
             prefix = imp.find1("prefix", required=True).argument
             revst = imp.find1("revision-date")
             rev = revst.argument if revst else None
-            modid = yl.find(name, rev)
+            modid = schema.find_module_id(name, rev)
             if modid:
                 self.prefix_map[prefix] = modid
             else:
@@ -98,16 +93,15 @@ class Submodule(Module):
     def __init__(self,
                  name: YangIdentifier,
                  revision: str,
-                 schema: Optional[Uri] = None) -> None:
+                 url: Optional[Uri] = None) -> None:
         """Initialize the instance.
 
         :param name: module name
         :param revision: revision date or ``""`` (= revision not specified)
         """
-        super().__init__(schema)
+        super().__init__(url)
         self.name = name
         self.revision = self.revision(revision)
-        self.schema = schema
 
     def _to_dict(self):
         """Convert receiver's data to a dictionary."""
@@ -122,7 +116,7 @@ class MainModule(Module):
                  feature: List[YangIdentifier] = [],
                  submodules: Dict[str, List[Submodule]] = {"submodule": []},
                  deviation: List[ModuleId] = [],
-                 schema: Optional[Uri] = None) -> None:
+                 url: Optional[Uri] = None) -> None:
         """Initialize the instance.
 
         :param ct: conformance type string ("implement" or "import")
@@ -130,9 +124,9 @@ class MainModule(Module):
         :param feature: supported features
         :param submodules: object containing a list of submodules
         :param deviation: list of deviation modules
-        :param schema: URL from which the module is available
+        :param url: URL from which the module is available
         """
-        super().__init__(schema)
+        super().__init__(url)
         self.namespace = namespace
         self.feature = feature
         self.deviation = [ (d["name"], self.revision(d["revision"]))
@@ -178,82 +172,15 @@ class MainModule(Module):
         for s in self.submodule:
             s._load(s.name, s.rev)
 
-    def _resolve_imports(self, yl: "YangLibrary") -> None:
+    def _resolve_imports(self, schema: "YangLibrary") -> None:
         """Assign `ModuleId` to each prefix used in the receiver and submodules.
 
-        :param yl: YANG Library containing all avaliable modules.
+        :param schema: YANG Library containing all avaliable modules.
         :raises UnresolvableImport: if the receiver doesn't contain the module
         """
-        super()._resolve_imports(yl)
+        super()._resolve_imports(schema)
         for s in self.submodule:
-            s._resolve_imports(yl)
-
-class YangLibrary(dict):
-    """YANG Library data.
-    """
-
-    @classmethod
-    def from_json(cls, txt: str) -> "YangLibrary":
-        """Return an instance initialized from JSON text.
-
-        :param txt: YANG Library information as JSON text
-        :raises BadYangLibraryData: if `txt` is broken
-        """
-        res = cls()
-        try:
-            json = loads(txt)["ietf-yang-library:modules-state"]["module"]
-            for item in json:
-                name = item.pop("name")
-                revstr = item.pop("revision")
-                rev = Module.revision(revstr)
-                ctstr = item.pop("conformance-type")
-                m = MainModule(ctstr, **item)
-                res[(name, rev)] = m
-        except (JSONDecodeError, KeyError, AttributeError):
-            raise BadYangLibraryData()
-        return res
-
-    def to_json(self) -> str:
-        """Serialize YANG Library information in JSON format.
-        """
-        val = [ self[k]._to_dict(*k) for k in self ]
-        return dumps(val)
-
-    def find(self, name: YangIdentifier,
-             rev: RevisionDate = None) -> Optional[ModuleId]:
-        """Return a key in the receiver or ``None``.
-
-        :param name: module name
-        :param rev: revision date
-        """
-        if (name, rev) in self: return (name, rev)
-        if rev is None:
-            for k in self:
-                if k[0] == name: return k
-
-    def complete(self) -> None:
-        """Find and fill in all missing data."""
-        self.load()
-        self.resolve_imports()
-
-    def load(self) -> None:
-        """Load contents of all YANG modules."""
-        for k in self:
-            self[k]._load(*k)
-
-    def resolve_imports(self):
-        """Assign modules & revisions to prefixes."""
-        for k in self:
-            self[k]._resolve_imports(self)
-
-class BadYangLibraryData(YangsonException):
-    """Exception to be raised for broken YANG Library data."""
-
-    def __init__(self, reason: str = "broken yang-library data") -> None:
-        self.reason = reason
-
-    def __str__(self) -> str:
-        return self.reason
+            s._resolve_imports(schema)
 
 class UnresolvableImport(YangsonException):
     """Exception to be raised if an imported module isn't found."""
