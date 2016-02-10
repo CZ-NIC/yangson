@@ -47,24 +47,21 @@ class Statement(object):
     def find1(self,
               kw: YangIdentifier,
               arg: Optional[str] = None,
-              pref: Optional[YangIdentifier] = None) -> Optional["Statement"]:
-        """Find the first substatement with the given parameters.
+              pref: Optional[YangIdentifier] = None,
+              required: bool = False) -> Optional["Statement"]:
+        """Return first substatement with the given parameters.
 
         :param kw: keyword
         :param arg: argument (all arguments will match if `None`)
         :param pref: keyword prefix (for extensions)
-        :raises StatementNotFound: if the statement is not found
+        :param required: controls whether exception is raised
+        :raises StatementNotFound: if `required` and statement not found
         """
-        res = None
         for sub in self.substatements:
             if (sub.keyword == kw and sub.prefix == pref and
                 (arg is None or sub.argument == arg)):
-                res = sub
-                break
-        if res:
-            return res
-        else:
-            raise StatementNotFound(kw)
+                return sub
+        if required: raise StatementNotFound(kw)
 
     def find_all(self,
                  kw: YangIdentifier,
