@@ -104,14 +104,14 @@ class Submodule(Module):
         :param name: module name
         :param revision: revision date or ``""`` (= revision not specified)
         """
-        super(Submodule, self).__init__(schema)
+        super().__init__(schema)
         self.name = name
         self.revision = self.revision(revision)
         self.schema = schema
 
     def _to_dict(self):
         """Convert receiver's data to a dictionary."""
-        return super(Submodule, self)._to_dict(self.name, self.revision)
+        return super()._to_dict(self.name, self.revision)
 
 class MainModule(Module):
     """Main module data."""
@@ -132,7 +132,7 @@ class MainModule(Module):
         :param deviation: list of deviation modules
         :param schema: URL from which the module is available
         """
-        super(MainModule, self).__init__(schema)
+        super().__init__(schema)
         self.namespace = namespace
         self.feature = feature
         self.deviation = [ (d["name"], self.revision(d["revision"]))
@@ -156,7 +156,7 @@ class MainModule(Module):
         :param name: module name
         :param rev: revision date
         """
-        res = super(MainModule, self)._to_dict(name, rev)
+        res = super()._to_dict(name, rev)
         res.update({ "namespace": self.namespace,
                      "conformance-type": str(self.conformance_type) })
         if self.feature:
@@ -174,7 +174,7 @@ class MainModule(Module):
         :param name: module name
         :param rev: revision date
         """
-        super(MainModule, self)._load(name, rev)
+        super()._load(name, rev)
         for s in self.submodule:
             s._load(s.name, s.rev)
 
@@ -184,7 +184,7 @@ class MainModule(Module):
         :param yl: YANG Library containing all avaliable modules.
         :raises UnresolvableImport: if the receiver doesn't contain the module
         """
-        super(MainModule, self)._resolve_imports(yl)
+        super()._resolve_imports(yl)
         for s in self.submodule:
             s._resolve_imports(yl)
 

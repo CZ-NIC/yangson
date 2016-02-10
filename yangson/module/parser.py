@@ -293,13 +293,13 @@ class UnexpectedInput(ParserException):
     """Unexpected input."""
 
     def __init__(self, p: Parser, expected: str = None) -> None:
-        super(UnexpectedInput, self).__init__(p)
+        super().__init__(p)
         self.expected = expected
 
     def __str__(self) -> str:
         """Add info about expected input if available."""
         ex = "" if self.expected is None else ": expected " + self.expected
-        return super(UnexpectedInput, self).__str__() + ex
+        return super().__str__() + ex
 
 def from_file(fp: str) -> Statement:
     """Parse a module or submodule read from a file.
