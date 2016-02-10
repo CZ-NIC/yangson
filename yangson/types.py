@@ -1,4 +1,4 @@
-from typing import Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 # Type aliases
 
@@ -7,3 +7,4 @@ Uri = str
 YangIdentifier = str
 ModuleId = Tuple[YangIdentifier, Optional[RevisionDate]]
 QName = Tuple[YangIdentifier, Optional[YangIdentifier]] # (local name, module)
+Range = List[Tuple[Any, Any]]
