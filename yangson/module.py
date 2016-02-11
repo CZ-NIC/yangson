@@ -38,12 +38,12 @@ class Module(object):
         """
         return rev if rev else None
 
-    def __init__(self, url: Optional[Uri]) -> None:
+    def __init__(self, schema: Optional[Uri]) -> None:
         """Initialize the instance.
 
-        :param url: URL from which the module can be retrieved
+        :param schema: URL from which the module can be retrieved
         """
-        self.url = url
+        self.url = schema
         self.content = None # type: S
         self.prefix_map = {} # type: Dict[YangIdentifier, ModuleId]
 
@@ -93,13 +93,13 @@ class Submodule(Module):
     def __init__(self,
                  name: YangIdentifier,
                  revision: str,
-                 url: Optional[Uri] = None) -> None:
+                 schema: Optional[Uri] = None) -> None:
         """Initialize the instance.
 
         :param name: module name
         :param revision: revision date or ``""`` (= revision not specified)
         """
-        super().__init__(url)
+        super().__init__(schema)
         self.name = name
         self.revision = self.revision(revision)
 
@@ -116,7 +116,7 @@ class MainModule(Module):
                  feature: List[YangIdentifier] = [],
                  submodules: Dict[str, List[Submodule]] = {"submodule": []},
                  deviation: List[ModuleId] = [],
-                 url: Optional[Uri] = None) -> None:
+                 schema: Optional[Uri] = None) -> None:
         """Initialize the instance.
 
         :param ct: conformance type string ("implement" or "import")
@@ -124,9 +124,9 @@ class MainModule(Module):
         :param feature: supported features
         :param submodules: object containing a list of submodules
         :param deviation: list of deviation modules
-        :param url: URL from which the module is available
+        :param schema: URL from which the module is available
         """
-        super().__init__(url)
+        super().__init__(schema)
         self.namespace = namespace
         self.feature = feature
         self.deviation = [ (d["name"], self.revision(d["revision"]))
