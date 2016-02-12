@@ -1,8 +1,72 @@
 from enum import Enum
 from typing import List, Dict, Optional
 from .exception import YangsonException
-from .typealiases import ModuleId, RevisionDate, Uri, YangIdentifier
+from .typealiases import *
 from .modparser import from_file
+
+# Type aliases
+ModuleDict = Dict[YangIdentifier, List["MainModule"]]
+
+class SchemaNode(object):
+    """Abstract superclass for schema nodes."""
+
+    def __init__(self) -> None:
+        """Initialize the instance:"""
+
+        self.parent = None
+
+class Internal(SchemaNode):
+    """Abstract superclass for schema nodes that have children."""
+
+    def __init__(self) -> None:
+        """Initialize the instance."""
+        super().__init__()
+        self.children = {}
+
+    def add_child(self, name: NodeName,
+                  node: "SchemaNode") -> None:
+        """Add `sn` as a child of the receiver.
+
+        :param name: name of the child
+        :param node: schema node
+        """
+        self.children[name] = node
+        node.parent = self
+
+class SchemaRoot(Internal):
+    """Class for the global schema root."""
+
+    def __init__(self, modules: ModuleDict) -> None:
+        """Initialize the instance.
+
+        :param modules: dictionary of modules comprising the schema
+        """
+        self.modules = modules
+
+    def get_module_revision(
+            self, name: YangIdentifier,
+            rev: Optional[RevisionDate] = None) -> "MainModule":
+        """Return module with the given parameters.
+
+        :param name: module name
+        :param rev: optional revision
+        """
+        rlist = self.modules[name]
+        for m in rlist:
+            if rev == m.revision: return m
+        if rev is None: return rlist[0]
+        
+class Terminal(SchemaNode):
+    """Abstract superclass for leaves in the schema tree."""
+    pass
+
+class Container(Internal):
+    """Container node."""
+    pass
+
+class Leaf(Terminal):
+    """Leaf node."""
+    pass
 
 class ConformanceType(Enum):
     implemented = 0
@@ -13,66 +77,51 @@ class ConformanceType(Enum):
         return "import" if self.value else "implement"
 
 class Module(object):
-    """Abstract class for data common to both modules and submodules."""
+    """Class for data common to both modules and submodules."""
 
     module_dir = "/usr/local/share/yang"
     """Local filesystem directory from which YANG modules can be retrieved."""
 
-    @staticmethod
-    def basename(name: YangIdentifier, rev: RevisionDate = None) -> str:
-        """Base name of a module file.
-
-        :param name: module name
-        :param rev: optional revision date
-        """
-        if rev is None:
-            return name
-        else:
-            return "{}@{}".format(name, rev)
-
-    @staticmethod
-    def revision(rev: str) -> RevisionDate:
-        """Decode revision.
-
-        :param rev: revision date or ``""`` (= revision not specified)
-        """
-        return rev if rev else None
-
-    def __init__(self, schema: Optional[Uri]) -> None:
+    def __init__(self,
+                 name: YangIdentifier,
+                 revision: str,
+                 schema: Optional[Uri]) -> None:
         """Initialize the instance.
 
+        :param name: module name
+        :param revision: revision date or ``""`` (= revision not specified)
         :param schema: URL from which the module can be retrieved
         """
+        self.name = name
+        self.revision = revision if revision else None
         self.url = schema
-        self.content = None # type: S
+        self.content = None # type: Optional[Statement]
         self.prefix_map = {} # type: Dict[YangIdentifier, ModuleId]
 
-    def _to_dict(self, name: YangIdentifier,
-                 rev: RevisionDate) -> Dict[str, str]:
-        """Convert receiver's data to a dictionary.
+    def basename(self) -> str:
+        """Canonical base name of the module file."""
+        if self.revision:
+            return self.name + "@" + self.revision
+        else:
+            return self.name
 
-        :param name: module name
-        :param rev: revision date
-        """
-        res = { "name": name }
-        res["revision"] =  rev if rev else ""
+    def _to_dict(self) -> Dict[str, str]:
+        """Convert receiver's data to a dictionary."""
+        res = { "name": name,
+                "revision": self.revision if self.revision else "" }
         if self.url:
             res["schema"] = self.url
         return res
 
-    def _load(self, name: YangIdentifier, rev: RevisionDate) -> None:
-        """Load the module content.
-
-        :param name: module name
-        :param rev: revision date
-        """
-        fn = "{}/{}.yang".format(self.module_dir, self.basename(name, rev))
+    def _load(self) -> None:
+        """Load the module content."""
+        fn = "{}/{}.yang".format(self.module_dir, self.basename())
         self.content = from_file(fn)
 
-    def _resolve_imports(self, schema: "Schema") -> None:
+    def _resolve_imports(self, root: SchemaRoot) -> None:
         """Assign `ModuleId` to each prefix used in the receiver.
 
-        :param schema: data model schema
+        :param root: schema root (with module dictionary)
         :raises UnresolvableImport: if the receiver doesn't contain the module
         """
         for imp in self.content.find_all("import"):
@@ -80,45 +129,28 @@ class Module(object):
             prefix = imp.find1("prefix", required=True).argument
             revst = imp.find1("revision-date")
             rev = revst.argument if revst else None
-            modid = schema.find_module_id(name, rev)
+            modid = root.get_module_revision(name, rev)
             if modid:
                 self.prefix_map[prefix] = modid
             else:
                 raise UnresolvableImport(name, rev)
 
-class Submodule(Module):
-    """Submodule data.
-    """
+class MainModule(Module):
+    """Main module data."""
 
     def __init__(self,
                  name: YangIdentifier,
                  revision: str,
+                 ct: str,
+                 namespace: Uri,
+                 feature: List[YangIdentifier] = [],
+                 submodules: Dict[str, List[Module]] = {"submodule": []},
+                 deviation: List[ModuleId] = [],
                  schema: Optional[Uri] = None) -> None:
         """Initialize the instance.
 
         :param name: module name
         :param revision: revision date or ``""`` (= revision not specified)
-        """
-        super().__init__(schema)
-        self.name = name
-        self.revision = self.revision(revision)
-
-    def _to_dict(self):
-        """Convert receiver's data to a dictionary."""
-        return super()._to_dict(self.name, self.revision)
-
-class MainModule(Module):
-    """Main module data."""
-
-    def __init__(self,
-                 ct: str,
-                 namespace: Uri,
-                 feature: List[YangIdentifier] = [],
-                 submodules: Dict[str, List[Submodule]] = {"submodule": []},
-                 deviation: List[ModuleId] = [],
-                 schema: Optional[Uri] = None) -> None:
-        """Initialize the instance.
-
         :param ct: conformance type string ("implement" or "import")
         :param namespace: module namespace URI
         :param feature: supported features
@@ -126,10 +158,10 @@ class MainModule(Module):
         :param deviation: list of deviation modules
         :param schema: URL from which the module is available
         """
-        super().__init__(schema)
+        super().__init__(name, revision, schema)
         self.namespace = namespace
         self.feature = feature
-        self.deviation = [ (d["name"], self.revision(d["revision"]))
+        self.deviation = [ (d["name"], d["revision"] if d["revision"] else None)
                            for d in deviation ]
         if ct == "implement":
             self.conformance_type = ConformanceType.implemented
@@ -143,6 +175,24 @@ class MainModule(Module):
             raise BadYangLibraryData("bad specification of submodules")
         self.submodule = [ Submodule(**s) for s in sub ]
 
+    def normalize_path(self, sni: str) -> SchemaNodeId:
+        """Normalize the schema node identifier to JSON format.
+
+        :param sni: schema node identifier in YANG format (with prefixes)
+        """
+        mod = None
+        res = []
+        for n in sni.split("/"):
+            (p, s, loc) = n.partition(":")
+            if s:
+                nmod = self.prefix_map[p].name
+            else:
+                nmod = self.name
+                loc = n
+            res.append(loc if nmod == mod else nmod + ":" + loc)
+            mod = nmod
+        return "/".join(res)
+
     def _to_dict(self, name: YangIdentifier,
                  rev: RevisionDate) -> Dict[str, str]:
         """Convert the receiver to a dictionary.
@@ -150,7 +200,7 @@ class MainModule(Module):
         :param name: module name
         :param rev: revision date
         """
-        res = super()._to_dict(name, rev)
+        res = super()._to_dict()
         res.update({ "namespace": self.namespace,
                      "conformance-type": str(self.conformance_type) })
         if self.feature:
@@ -162,13 +212,9 @@ class MainModule(Module):
             res["deviation"] = self.deviation
         return res
 
-    def _load(self, name: YangIdentifier, rev: RevisionDate) -> None:
-        """Load the content of the module and all its submodules.
-
-        :param name: module name
-        :param rev: revision date
-        """
-        super()._load(name, rev)
+    def _load(self) -> None:
+        """Load the content of the module and all its submodules."""
+        super()._load()
         for s in self.submodule:
             s._load(s.name, s.rev)
 

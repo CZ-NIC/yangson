@@ -1,71 +1,103 @@
 import json
 from json.decoder import JSONDecodeError
-from typing import Optional
-from .module import MainModule
+from typing import Dict, List, Optional
 from yangson.exception import YangsonException
-from yangson.typealiases import ModuleId, RevisionDate, YangIdentifier
+from .typealiases import *
+from .statement import Statement
+import yangson.components as yc
 
 class Schema(object):
-    """YANG data model schema."""
+    """YANG schema."""
 
     @classmethod
-    def read_yang_library(cls, txt: str) -> "YangLibrary":
+    def from_yang_library(cls, txt: str) -> "YangLibrary":
         """Return an instance initialized from JSON text.
 
         :param txt: YANG Library information as JSON text
         :raises BadYangLibraryData: if `txt` is broken
         """
-        res = cls()
+        modules = {}
         try:
             yl = json.loads(txt)
             for item in yl["ietf-yang-library:modules-state"]["module"]:
-                name = item.pop("name")
-                revstr = item.pop("revision")
-                rev = revstr if revstr else None
                 ctstr = item.pop("conformance-type")
-                m = MainModule(ctstr, **item)
-                res.modules[(name, rev)] = m
+                m = yc.MainModule(ct=ctstr, **item)
+                modules.setdefault(m.name, []).append(m)
         except (JSONDecodeError, KeyError, AttributeError):
             raise BadYangLibraryData()
-        return res
+        return cls(modules)
 
-    def __init__(self) -> None:
-        """Initialize the instance."""
-        self.modules = {}
-        self.patches = {}
+    def __init__(self, modules: yc.ModuleDict) -> None:
+        """Initialize the instance.
+
+        :param modules: dictionary of modules comprising the schema
+        """
+        self.root = yc.SchemaRoot(modules)
 
     def write_yang_library(self) -> str:
         """Serialize YANG Library information in JSON format.
         """
-        val = [ self.modules[k]._to_dict(*k) for k in self.modules ]
+        modules = self.root.modules
+        val = [ modules[k]._to_dict() for k in modules ]
         return json.dumps(val)
 
-    def find_module_id(self, name: YangIdentifier,
-             rev: RevisionDate = None) -> Optional[ModuleId]:
-        """Return a key in the receiver or ``None``.
-
-        :param name: module name
-        :param rev: revision date
-        """
-        if (name, rev) in self.modules: return (name, rev)
-        if rev is None:
-            for k in self.modules:
-                if k[0] == name: return k
-
-    def complete(self) -> None:
+    def build(self) -> None:
         """Find and fill in all missing data."""
         self.load_modules()
         self.resolve_imports()
 
     def load_modules(self) -> None:
         """Load contents of all YANG modules."""
-        for k in self.modules:
-            self.modules[k]._load(*k)
+        mods = self.root.modules
+        for m in mods:
+            for modrev in mods[m]:
+                modrev._load()
 
     def resolve_imports(self):
         """Assign modules & revisions to prefixes."""
-        for k in self.modules:
-            self.modules[k]._resolve_imports(self)
+        mods = self.root.modules
+        for m in mods:
+            for modrev in mods[m]:
+                modrev._resolve_imports(self.root)
+
+    def handle_substatements(self, stmt: Statement,
+                             parent: yc.SchemaNode,
+                             ns: YangIdentifier,
+                             path: SchemaNodeId) -> None:
+        """Dispatch actions for all substatements of `stmt`.
+
+        :param stmt: parsed YANG statement 
+        """
+        for s in stmt.substatements:
+            key = (s.prefix, s.keyword) if s.prefix else s.keyword
+            mname = self.handler.get(key, key)
+            method = getattr(self, mname, self.noop)
+            method(s, parent, ns, path)
+
+    def noop(self, stmt: Statement, parent: yc.SchemaNode,
+             ns: YangIdentifier, path: SchemaNodeId) -> None:
+        """Do nothing."""
+        pass
+
+    def container(self, stmt: Statement, parent: yc.SchemaNode,
+                  ns: YangIdentifier, path: SchemaNodeId) -> None:
+        """Handle container statement."""
+        name = stmt.argument
+        cont = yc.Container()
+        parent.add_child(name, cont)
+        self.handle_substatements(stmt, cont, ns, path + "/" + name)
+
+    def leaf(self, stmt: Statement, parent: yc.SchemaNode,
+             ns: YangIdentifier, path: SchemaNodeId) -> None:
+        """Handle leaf statement."""
+        name = stmt.argument
+        leaf = yc.Leaf()
+        parent.add_child(stmt.argument, leaf)
+        self.handle_substatements(stmt, leaf, ns, path + "/" + name)
+
+    handler = {
+        }
+    """Map of statement keywords to corresponding handler methods."""    
 
 class BadYangLibraryData(YangsonException):
     """Exception to be raised for broken YANG Library data."""
