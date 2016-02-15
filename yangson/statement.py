@@ -9,8 +9,8 @@ class Statement(object):
     Instance variables:
 
     * keyword: statement keyword,
-    * namespace: `None` or namespace URI (for extensions),
-    * prefix: statement argument,
+    * prefix: optional keyword prefix (for extensions),
+    * argument: statement argument,
     * substatements: list of substatements.
     """
 

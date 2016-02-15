@@ -1,12 +1,12 @@
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 # Type aliases
 
+NodeName = str
 RevisionDate = Optional[str]
 Uri = str
-SchemaNodeId = str
 YangIdentifier = str
 ModuleId = Tuple[YangIdentifier, Optional[RevisionDate]]
 Range = List[Tuple[Any, Any]]
 QName = Tuple[YangIdentifier, YangIdentifier]
-NodeName = Union[YangIdentifier, QName]
+PrefixMap = Dict[YangIdentifier, ModuleId]
