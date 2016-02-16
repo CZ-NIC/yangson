@@ -158,10 +158,12 @@ class Parser(object):
             sub = self.argument()
             arg = self._arg
         self.offset += 1
+        res = Statement(kw, arg, pref=pref)
         if sub:
-            subst = self.substatements()
-            return Statement(kw, arg, subst, pref)
-        return Statement(kw, arg, pref=pref)
+            res.substatements = self.substatements()
+            for sub in res.substatements:
+                sub.superstmt = res
+        return res
 
     def argument(self) -> bool:
         """Parse statement argument.

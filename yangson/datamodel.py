@@ -55,9 +55,6 @@ class DataModel(object):
     _modules = {} # type: ModuleDict
     """Dictionary of parsed modules comprising the data model."""
 
-    _groupings = {} # type: Dict[ModuleId, Dict[YangIdentifier, Statement]]
-    """Dictionary of all global groupings."""
-    
     _prefix_map = {} # type: Dict[ModuleId, Dict[YangIdentifier, ModuleId]]
     """Dictionary mapping of prefix assignments in all modules.""" 
     
@@ -102,8 +99,8 @@ class DataModel(object):
         cls._modules[(name, rev)] = from_file(fn + ".yang")
 
     @classmethod
-    def translate_qname(cls, mid: ModuleId, qname: QName) -> QName:
-        """Translate prefix-based QName to (namespace, locname) tuple.
+    def translate_qname(cls, mid: ModuleId, qname: QName) -> NodeName:
+        """Translate prefix-based QName to absolute node name.
 
         :param mid: identifier of the context module
         :param qname: qualified name in prefix form
@@ -112,32 +109,36 @@ class DataModel(object):
         return ((cls._prefix_map[mid][p][0], loc) if s else (mid[0], p))
 
     @classmethod
-    def schema_path(cls, mid: ModuleId, sid: str) -> List[QName]:
-        """Construct schema path from schema node identifier.
+    def sid2address(cls, mid: ModuleId, sid: str) -> SchemaAddress:
+        """Construct schema address from a schema node identifier.
 
         :param mid: identifier of the context module
         :param sid: schema node identifier (absolute or relative)
         """
         nlist = sid.split("/")
-        oldpref = None
-        res = []
-        for qn in (nlist[1:] if sid[0] == "/" else nlist):
-            pref, loc = cls.translate_qname(mid, qn)
-            res.append(loc if pref == oldpref else pref + ":" + loc)
-            oldpref = pref
-        return res
+        return [ cls.translate_qname(mid, qn)
+                 for qn in (nlist[1:] if sid[0] == "/" else nlist) ]
 
     @classmethod
-    def register_groupings(cls, mid: ModuleId, stmt: Statement) -> None:
-        """Register recuresively all groupings defined under `stmt`.
+    def path2address(cls, path: str) -> SchemaAddress:
+        """Translate path to schema address.
 
-        :param mid: module context
-        :param stmt: parsed YANG statement
+        :param path: schema or data path
         """
-        for g in stmt.find_all("grouping"):
-            cls._groupings.setdefault(mid, {})[g.argument] = g
-        for s in stmt.substatements:
-            cls.register_groupings(mid, s)
+        nlist = path.split("/")
+        prevns = None
+        res = []
+        for n in (nlist[1:] if path[0] == "/" else nlist):
+            p, s, loc = n.partition(":")
+            if s:
+                if p == prevns: raise BadPath(path)
+                res.append((p, loc))
+                prevns = p
+            elif prevns:
+                res.append((prevns, p))
+            else:
+                raise BadPath(path)
+        return res
 
     def __init__(self,
                  revisions: Dict[YangIdentifier, List[RevisionDate]],
@@ -150,6 +151,7 @@ class DataModel(object):
         self.revisions = revisions
         self.implement = implement
         self.schema = Internal() # type: Internal
+        self.schema._nsswitch = True
 
     def _build_schema(self) -> None:
         """Build the schema."""
@@ -163,7 +165,6 @@ class DataModel(object):
         mods = DataModel._modules
         for mid in mods:
             mod = mods[mid]
-            DataModel.register_groupings(mid, mod)
             locpref = mod.find1("prefix", required=True).argument
             DataModel._prefix_map[mid] = pmap = { locpref: mid }
             try:
@@ -193,49 +194,51 @@ class DataModel(object):
                         break
                     i += 1
 
-    def get_schema_node(self, asid: str) -> Optional["SchemaNode"]:
-        """Return schema node addressed by `asid`.
+    def get_schema_node(self, path: str) -> Optional["SchemaNode"]:
+        """Return a schema node.
 
-        :param asid: absolute schema node identifier
+        :param path: schema node path
         """
-        return self.schema.get_descendant(asid.split("/")[1:])
+        return self.schema.get_schema_descendant(self.path2address(path))
+
+    def get_data_node(self, path: str) -> Optional["DataNode"]:
+        """Return a data node.
+
+        :param path: data node path
+        """
+        addr = self.path2address(path)
+        node = self.schema
+        for ns, name in addr:
+            node = node.get_data_child(name, ns)
+            if node is None: return None
+        return node
 
     def apply_augments(self) -> None:
         """Apply top-level augments from all implemented modules."""
         for mid in self.implement:
             mod = DataModel._modules[mid]
             for aug in mod.find_all("augment"):
-                path = DataModel.schema_path(mid, aug.argument)
-                target = self.schema.get_descendant(path)
+                path = DataModel.sid2address(mid, aug.argument)
+                target = self.schema.get_schema_descendant(path)
+                target._nsswitch = True
                 target.handle_substatements(aug, mid, None)
 
 class SchemaNode(object):
     """Abstract superclass for schema nodes."""
 
-    def __init__(self) -> None:
-        """Initialize the instance:"""
+    def __init__(self, name: Optional[YangIdentifier],
+                 ns: Optional[YangIdentifier]) -> None:
+        """Initialize the instance."""
 
-        self.parent = None # type: "Internal"
-        self._namespace = None # type: YangIdentifier
-        self.default_deny = DefaultDeny.none
+        self.name = name
+        self.ns = ns
+        self.parent = None # type: Optional["Internal"]
+        self.default_deny = DefaultDeny.none # type: "DefaultDeny"
         
     def noop(self, stmt: Statement, mid: ModuleId,
              changes: OptChangeSet) -> None:
         """Do nothing."""
         pass
-
-    def get_descendant(self, path: List[NodeName]) -> Optional["SchemaNode"]:
-        """Return descendant schema node.
-        
-        :param path: relative path to the descendant node
-        """
-        node = self
-        try:
-            for n in path:
-                node = node.children[n]
-        except KeyError:
-            return None
-        return node
 
     def handle_substatements(self, stmt: Statement,
                              mid: ModuleId,
@@ -243,7 +246,7 @@ class SchemaNode(object):
         """Dispatch actions for all substatements of `stmt`.
 
         :param stmt: parsed YANG statement
-        :param mid: module context
+        :param mid: YANG module context
         :param changes: change set
         """
         for s in stmt.substatements:
@@ -275,19 +278,63 @@ class SchemaNode(object):
 class Internal(SchemaNode):
     """Abstract superclass for schema nodes that have children."""
 
-    def __init__(self) -> None:
+    def __init__(self, name: Optional[YangIdentifier] = None,
+                 ns: Optional[YangIdentifier] = None) -> None:
         """Initialize the instance."""
-        super().__init__()
-        self.children = {} # type: Dict[YangIdentifier, SchemaNode]
+        super().__init__(name, ns)
+        self.children = [] # type: List[SchemaNode]
+        self._nsswitch = False # type: bool
 
-    def add_child(self, node: SchemaNode, name: NodeName) -> None:
+    def add_child(self, node: SchemaNode) -> None:
         """Add child node to the receiver.
 
         :param node: child node
-        :param name: node name (local or qualified)
         """
         node.parent = self
-        self.children[name] = node
+        self.children.append(node)
+
+    def get_child(self, name: YangIdentifier,
+                  ns: Optional[YangIdentifier] = None):
+        """Return receiver's child.
+        :param name: child's name
+        :param ns: child's namespace (= `self.ns` if absent)
+        """
+        ns = ns if ns else self.ns
+        for c in self.children:
+            if c.name == name and c.ns == ns: return c
+
+    def get_schema_descendant(self,
+                              path: SchemaAddress) -> Optional["SchemaNode"]:
+        """Return descendant schema node or ``None``.
+
+        :param path: schema address of the descendant node
+        """
+        node = self
+        for ns, name in path:
+            node = node.get_child(name, ns)
+            if node is None: return None
+        return node
+
+    def get_data_child(self, name: YangIdentifier,
+                      ns: Optional[YangIdentifier] = None) -> Optional["DataNode"]:
+        """Return data node directly under receiver.
+
+        :param name: data node name
+        :param ns: data node namespace (= `self.ns` if absent)
+        """
+        ns = ns if ns else self.ns
+        cands = []
+        for c in self.children:
+            if c.name ==name and c.ns == ns:
+                if isinstance(c, DataNode):
+                    return c
+                cands.insert(0,c)
+            elif isinstance(c, (Choice, Case)):
+                cands.append(c)
+        if cands:
+            for c in cands:
+                res = c.get_data_child(name, ns)
+                if res: return res
 
     def handle_child(self, node: SchemaNode, stmt: Statement,
                      mid: ModuleId, changes: OptChangeSet) -> None:
@@ -298,12 +345,9 @@ class Internal(SchemaNode):
         :param mid: module context
         :param changes: change set
         """
-        node._namespace = mid[0]
-        if self._namespace == node._namespace:
-            name = stmt.argument
-        else:
-            name = node._namespace + ":" + stmt.argument
-        self.add_child(node, name)
+        node.name = stmt.argument
+        node.ns = mid[0] if self._nsswitch else self.ns
+        self.add_child(node)
         node.handle_substatements(stmt, mid,
                                   changes.get_subset(name) if changes else None)
 
@@ -316,15 +360,15 @@ class Internal(SchemaNode):
         p, s, loc = stmt.argument.partition(":")
         if s:
             gid = DataModel._prefix_map[mid][p]
-            gname = loc
+            if gid == mid:
+                grp = stmt.get_grouping(loc)
+            else:
+                grp = DataModel._modules[gid].find1("grouping", loc,
+                                                    required=True)
         else:
             gid = mid
-            gname = p
-        try:
-            grp = DataModel._groupings[gid][gname]
-        except KeyError:
-            raise GroupingNotFound(gid, gname)
-        self.handle_substatements(grp, mid, changes)
+            grp = stmt.get_grouping(p)
+        self.handle_substatements(grp, gid, changes)
 
     def container(self, stmt: Statement,
                   mid: ModuleId, changes: OptChangeSet) -> None:
@@ -366,15 +410,23 @@ class Internal(SchemaNode):
         """Handle anyxml statement."""
         self.handle_child(Leaf(), stmt, mid, changes)
 
-class Terminal(SchemaNode):
-    """Abstract superclass for leaves in the schema tree."""
+class DataNode(object):
+    """Abstract superclass for data nodes."""
     pass
 
-class Container(Internal):
+class Terminal(SchemaNode, DataNode):
+    """Abstract superclass for leaves in the schema tree."""
+
+    def __init__(self, name: Optional[YangIdentifier] = None,
+                 ns: Optional[YangIdentifier] = None) -> None:
+        """Initialize the instance."""
+        SchemaNode.__init__(self, name, ns)
+
+class Container(Internal, DataNode):
     """Container node."""
     pass
 
-class List(Internal):
+class List(Internal, DataNode):
     """List node."""
     pass
 
@@ -393,13 +445,8 @@ class Choice(Internal):
         if isinstance(node, Case):
             super().handle_child(node, stmt, mid, changes)
         else:
-            cn = Case()
-            cn._namespace = mid[0]
-            if self._namespace == cn._namespace:
-                name = stmt.argument
-            else:
-                name = cn._namespace + ":" + stmt.argument
-            self.add_child(cn, name)
+            cn = Case(stmt.argument, mid[0])
+            self.add_child(cn)
             cn.handle_child(node, stmt, mid,
                             changes.get_subset(name) if changes else None)
 
@@ -442,12 +489,11 @@ class BadYangLibraryData(YangsonException):
     def __str__(self) -> str:
         return self.reason
 
-class GroupingNotFound(YangsonException):
-    """Exception to be raised when a used grouping doesn't exist."""
+class BadPath(YangsonException):
+    """Exception to be raised for invalid schema or data path."""
 
-    def __init__(self, mid: ModuleId, gname: YangIdentifier) -> None:
-        self.gname = gname
-        self.mid = mid
+    def __init__(self, path: str) -> None:
+        self.path = path
 
     def __str__(self) -> str:
-        return "grouping {} not found in {}".format(self.gname, self.mid[0])
+        return self.path

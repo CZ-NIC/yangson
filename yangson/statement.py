@@ -11,6 +11,7 @@ class Statement(object):
     * keyword: statement keyword,
     * prefix: optional keyword prefix (for extensions),
     * argument: statement argument,
+    * superstmt: parent statement
     * substatements: list of substatements.
     """
 
@@ -20,18 +21,21 @@ class Statement(object):
     def __init__(self,
                  kw: YangIdentifier,
                  arg: Optional[str],
+                 sup: Optional["Statement"] = None,
                  sub: List["Statement"] = [],
                  pref: Optional[YangIdentifier] = None) -> None:
         """Initialize the instance.
 
         :param kw: keyword
         :param arg: argument
+        :param sup: parent statement
         :param sub: list of substatements
         :param pref: keyword prefix (`None` for built-in statements)
         """
         self.prefix = pref
         self.keyword = kw
         self.argument = arg
+        self.superstmt = sup
         self.substatements = sub
 
     def __str__(self) -> str:
@@ -74,6 +78,17 @@ class Statement(object):
         return [c for c in self.substatements
                 if c.keyword == kw and c.prefix == pref]
 
+    def get_grouping(self, gname: YangIdentifier) -> "Statement":
+        """Search ancestor statements for a grouping.
+        :param gname: name of the grouping
+        """
+        stmt = self.superstmt
+        while stmt:
+            res = stmt.find1("grouping", gname)
+            if res: return res
+            stmt = stmt.superstmt
+        raise GroupingNotFound(gname)
+
 class StatementNotFound(YangsonException):
     """Exception to raise when a statement should exist but doesn't."""
 
@@ -83,3 +98,12 @@ class StatementNotFound(YangsonException):
     def __str__(self) -> str:
         """Print the statement's keyword."""
         return self.keyword
+
+class GroupingNotFound(YangsonException):
+    """Exception to be raised when a used grouping doesn't exist."""
+
+    def __init__(self, gname: YangIdentifier) -> None:
+        self.gname = gname
+
+    def __str__(self) -> str:
+        return "grouping " + self.gname + " not found"
