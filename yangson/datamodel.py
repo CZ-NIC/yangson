@@ -251,7 +251,7 @@ class SchemaNode(object):
         """
         for s in stmt.substatements:
             if s.prefix:
-                key = DataModel._prefix_map[mid][s.prefix][0] + s.keyword
+                key = DataModel._prefix_map[mid][s.prefix][0] + ":" + s.keyword
             else:
                 key = s.keyword
             mname = SchemaNode.handler.get(key, key)
