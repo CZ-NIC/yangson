@@ -1,6 +1,6 @@
-from typing import Any, Dict, List, Optional, Tuple, Union
+"""Type aliases (for type hints)."""
 
-# Type aliases
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 RevisionDate = Optional[str]
 Uri = str

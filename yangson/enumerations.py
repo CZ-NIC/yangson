@@ -1,3 +1,5 @@
+"""Enumeration classes."""
+
 from enum import Enum
 
 class DefaultDeny(Enum):

@@ -1,3 +1,5 @@
+"""YANG statements."""
+
 from typing import List, Optional
 from .exception import YangsonException
 from .typealiases import YangIdentifier
@@ -11,7 +13,7 @@ class Statement(object):
     * keyword: statement keyword,
     * prefix: optional keyword prefix (for extensions),
     * argument: statement argument,
-    * superstmt: parent statement
+    * superstmt: parent statement,
     * substatements: list of substatements.
     """
 
@@ -30,7 +32,7 @@ class Statement(object):
         :param arg: argument
         :param sup: parent statement
         :param sub: list of substatements
-        :param pref: keyword prefix (`None` for built-in statements)
+        :param pref: keyword prefix (``None`` for built-in statements)
         """
         self.prefix = pref
         self.keyword = kw
@@ -39,7 +41,7 @@ class Statement(object):
         self.substatements = sub
 
     def __str__(self) -> str:
-        """Return a string representation of the receiver.
+        """Return string representation of the receiver.
         """
         kw = (self.keyword if self.prefix is None
               else self.prefix + ":" + self.keyword)
@@ -79,7 +81,8 @@ class Statement(object):
                 if c.keyword == kw and c.prefix == pref]
 
     def get_grouping(self, gname: YangIdentifier) -> "Statement":
-        """Search ancestor statements for a grouping.
+        """Recursively search ancestor statements for a grouping.
+
         :param gname: name of the grouping
         """
         stmt = self.superstmt
@@ -100,7 +103,7 @@ class StatementNotFound(YangsonException):
         return self.keyword
 
 class GroupingNotFound(YangsonException):
-    """Exception to be raised when a used grouping doesn't exist."""
+    """Exception to be raised when a requested grouping doesn't exist."""
 
     def __init__(self, gname: YangIdentifier) -> None:
         self.gname = gname

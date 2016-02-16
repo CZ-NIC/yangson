@@ -1,3 +1,5 @@
+"""Parser of YANG modules."""
+
 from typing import Callable, List, Mapping, Optional, Tuple
 from yangson.exception import YangsonException
 from .statement import Statement
@@ -18,14 +20,13 @@ class Parser(object):
 
     Instance variables:
 
-    * text: input string
-
+    * input: input string
     * offset: current position in the input string
     """
 
     unescape_map = { "n" : "\n", "t": "\t", '"': '"',
                      "\\": "\\" } # type: Mapping[str,str]
-    """Map for translating escape sequences to characters."""
+    """Dictionary for mapping escape sequences to characters."""
     
     def __init__(self, inp: str) -> None:
         """Initialize the instance.
@@ -49,7 +50,6 @@ class Parser(object):
     def _peek(self) -> str:
         """Peek at the next character.
 
-        :param move: indicates whether `self.offset` is to be advanced
         :raises EndOfInput: if past the end of `self.input`
         """
         try:
@@ -73,8 +73,7 @@ class Parser(object):
             self.offset += 1
 
     def line_column(self) -> Tuple[int, int]:
-        """Return line and column coordinates corresponding to `self.offset`.
-        """
+        """Return line and column coordinates corresponding to `self.offset`."""
         l = self.input.count("\n", 0, self.offset)
         c = (self.offset if l == 0 else
              self.offset - self.input.rfind("\n", 0, self.offset) - 1)
