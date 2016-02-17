@@ -58,11 +58,13 @@ class SchemaNode(object):
         self.ns = ns
         self.parent = None # type: Optional["Internal"]
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
-        
-    def noop(self, stmt: Statement, mid: ModuleId,
-             changes: OptChangeSet) -> None:
-        """Do nothing."""
-        pass
+
+    def is_config(self) -> bool:
+        """Is the receiver configuration?"""
+        try:
+            return getattr(self, "_config")
+        except AttributeError:
+            return self.parent.is_config()
 
     def handle_substatements(self, stmt: Statement,
                              mid: ModuleId,
@@ -81,6 +83,16 @@ class SchemaNode(object):
             mname = SchemaNode.handler.get(key, key)
             method = getattr(self, mname, self.noop)
             method(s, mid, changes)
+
+    def noop(self, stmt: Statement, mid: ModuleId,
+             changes: OptChangeSet) -> None:
+        """Do nothing."""
+        pass
+
+    def config(self, stmt: Statement,
+               mid: ModuleId,
+               changes: Optional[ChangeSet]) -> None:
+        if stmt.argument == "false": self._config = False
 
     def nacm_default_deny(self, stmt: Statement,
                           mid: ModuleId,

@@ -66,7 +66,7 @@ class DataModel(object):
         self.revisions = revisions
         self.implement = implement
         self.schema = Internal() # type: Internal
-        self.schema._nsswitch = True
+        self.schema._nsswitch = self.schema._config = True
 
     def _build_schema(self) -> None:
         """Build the schema."""
