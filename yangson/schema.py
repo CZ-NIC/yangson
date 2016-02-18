@@ -2,6 +2,7 @@
 
 from typing import Dict, List, Optional
 from .context import Context
+from .datatype import *
 from .enumerations import DefaultDeny
 from .exception import YangsonException
 from .statement import Statement
@@ -68,7 +69,7 @@ class SchemaNode(object):
     def handle_substatements(self, stmt: Statement,
                              mid: ModuleId,
                              changes: Optional[ChangeSet]) -> None:
-        """Dispatch actions for all substatements of `stmt`.
+        """Dispatch actions for substatements of `stmt`.
 
         :param stmt: parsed YANG statement
         :param mid: YANG module context
@@ -109,6 +110,7 @@ class SchemaNode(object):
         "choice": "choice_stmt",
         "config": "config_stmt",
         "container": "container_stmt",
+        "default": "default_stmt",
         "ietf-netconf-acm:default-deny-all": "nacm_default_deny_stmt",
         "ietf-netconf-acm:default-deny-write": "nacm_default_deny_stmt",
         "leaf": "leaf_stmt",
@@ -237,12 +239,16 @@ class Internal(SchemaNode):
     def leaf_stmt(self, stmt: Statement,
                   mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle leaf statement."""
-        self.handle_child(Leaf(), stmt, mid, changes)
+        node = Leaf()
+        node.data_type(stmt)
+        self.handle_child(node, stmt, mid, changes)
 
     def leaf_list_stmt(self, stmt: Statement,
                        mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle leaf-list statement."""
-        self.handle_child(LeafList(), stmt, mid, changes)
+        node = LeafList()
+        node.data_type(stmt)
+        self.handle_child(node, stmt, mid, changes)
 
     def anydata_stmt(self, stmt: Statement,
                      mid: ModuleId, changes: OptChangeSet) -> None:
@@ -261,10 +267,36 @@ class DataNode(object):
 class Terminal(SchemaNode, DataNode):
     """Abstract superclass for leaves in the schema tree."""
 
+    dtypes = { "boolean": Boolean,
+               "decimal64": Decimal64,
+               "empty": Empty,
+               "int8": Int8,
+               "int16": Int16,
+               "int32": Int32,
+               "int64": Int64,
+               "uint8": Uint8,
+               "uint16": Uint16,
+               "uint32": Uint32,
+               "uint64": Uint64,
+               "string": String,
+               }
+    """Dictionary mapping type names to classes."""
+
     def __init__(self) -> None:
         """Initialize the instance."""
         super().__init__()
-        self.type = None
+        self.default = None
+        self.type = None # type: DataType
+
+    def data_type(self, stmt):
+        """Return data type defined by `stmt`.
+
+        :param stmt: YANG ``type`` statement
+        """
+        tstmt = stmt.find1("type", required=True)
+        typ = tstmt.argument
+        self.type = self.dtypes[typ]()
+        self.type.handle_substatements(tstmt)
 
 class Container(Internal, DataNode):
     """Container node."""
@@ -310,11 +342,19 @@ class Case(Internal):
 
 class Leaf(Terminal):
     """Leaf node."""
-    pass
+
+    def default_stmt(self, stmt: Statement, mid: ModuleId,
+                     changes: OptChangeSet) -> None:
+        self.default = self.type.parse_value(stmt.argument)
 
 class LeafList(Terminal):
     """Leaf-list node."""
-    pass
+
+    def default_stmt(self, stmt: Statement, mid: ModuleId,
+                     changes: OptChangeSet) -> None:
+        if self.default is None:
+            self.default = []
+        self.default.append(self.type.parse_value(stmt.argument))
 
 class Anydata(Terminal):
     """Leaf-list node."""
