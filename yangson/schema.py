@@ -50,21 +50,20 @@ class ChangeSet(object):
 class SchemaNode(object):
     """Abstract superclass for schema nodes."""
 
-    def __init__(self, name: Optional[YangIdentifier],
-                 ns: Optional[YangIdentifier]) -> None:
+    def __init__(self) -> None:
         """Initialize the instance."""
-
-        self.name = name
-        self.ns = ns
+        self.name = None # type: Optional[YangIdentifier]
+        self.ns = None # type: Optional[YangIdentifier]
         self.parent = None # type: Optional["Internal"]
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
-    def is_config(self) -> bool:
+    @property
+    def config(self) -> bool:
         """Is the receiver configuration?"""
         try:
             return getattr(self, "_config")
         except AttributeError:
-            return self.parent.is_config()
+            return self.parent.config
 
     def handle_substatements(self, stmt: Statement,
                              mid: ModuleId,
@@ -80,8 +79,8 @@ class SchemaNode(object):
                 key = Context.prefix_map[mid][s.prefix][0] + ":" + s.keyword
             else:
                 key = s.keyword
-            mname = SchemaNode.handler.get(key, key)
-            method = getattr(self, mname, self.noop)
+            mname = SchemaNode.handler.get(key, "noop")
+            method = getattr(self, mname)
             method(s, mid, changes)
 
     def noop(self, stmt: Statement, mid: ModuleId,
@@ -89,14 +88,14 @@ class SchemaNode(object):
         """Do nothing."""
         pass
 
-    def config(self, stmt: Statement,
-               mid: ModuleId,
-               changes: Optional[ChangeSet]) -> None:
+    def config_stmt(self, stmt: Statement,
+                    mid: ModuleId,
+                    changes: Optional[ChangeSet]) -> None:
         if stmt.argument == "false": self._config = False
 
-    def nacm_default_deny(self, stmt: Statement,
-                          mid: ModuleId,
-                          changes: Optional[ChangeSet]) -> None:
+    def nacm_default_deny_stmt(self, stmt: Statement,
+                               mid: ModuleId,
+                               changes: Optional[ChangeSet]) -> None:
         """Set NACM default access."""
         if stmt.keyword == "default-deny-all":
             self.default_deny = DefaultDeny.all
@@ -104,20 +103,29 @@ class SchemaNode(object):
             self.default_deny = DefaultDeny.write
 
     handler = {
-        "ietf-netconf-acm:default-deny-all": "nacm_default_deny",
-        "ietf-netconf-acm:default-deny-write": "nacm_default_deny",
-        "leaf-list": "leaf_list",
+        "anydata": "anydata_stmt",
+        "anyxml": "anyxml_stmt",
+        "case": "case_stmt",
+        "choice": "choice_stmt",
+        "config": "config_stmt",
+        "container": "container_stmt",
+        "ietf-netconf-acm:default-deny-all": "nacm_default_deny_stmt",
+        "ietf-netconf-acm:default-deny-write": "nacm_default_deny_stmt",
+        "leaf": "leaf_stmt",
+        "leaf-list": "leaf_list_stmt",
+        "list": "list_stmt",
+        "presence": "presence_stmt",
+        "uses": "uses_stmt",
         }
-    """Map of statement keywords to names of handler methods."""    
+    """Map of statement keywords to names of handler methods."""
 
 
 class Internal(SchemaNode):
     """Abstract superclass for schema nodes that have children."""
 
-    def __init__(self, name: Optional[YangIdentifier] = None,
-                 ns: Optional[YangIdentifier] = None) -> None:
+    def __init__(self) -> None:
         """Initialize the instance."""
-        super().__init__(name, ns)
+        super().__init__()
         self.children = [] # type: List[SchemaNode]
         self._nsswitch = False # type: bool
 
@@ -187,8 +195,8 @@ class Internal(SchemaNode):
         node.handle_substatements(stmt, mid,
                                   changes.get_subset(name) if changes else None)
 
-    def uses(self, stmt: Statement,
-             mid: ModuleId, changes: OptChangeSet) -> None:
+    def uses_stmt(self, stmt: Statement,
+                  mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle uses statement.
 
         :raises GroupingNotFound: if the corresponding grouping doesn't exist
@@ -206,45 +214,45 @@ class Internal(SchemaNode):
             grp = stmt.get_grouping(p)
         self.handle_substatements(grp, gid, changes)
 
-    def container(self, stmt: Statement,
+    def container_stmt(self, stmt: Statement,
                   mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle container statement."""
         self.handle_child(Container(), stmt, mid, changes)
 
-    def list(self, stmt: Statement,
-             mid: ModuleId, changes: OptChangeSet) -> None:
-        """Handle container statement."""
+    def list_stmt(self, stmt: Statement,
+                  mid: ModuleId, changes: OptChangeSet) -> None:
+        """Handle list statement."""
         self.handle_child(List(), stmt, mid, changes)
 
-    def choice(self, stmt: Statement,
-               mid: ModuleId, changes: OptChangeSet) -> None:
+    def choice_stmt(self, stmt: Statement,
+                    mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle choice statement."""
         self.handle_child(Choice(), stmt, mid, changes)
 
-    def case(self, stmt: Statement,
-             mid: ModuleId, changes: OptChangeSet) -> None:
+    def case_stmt(self, stmt: Statement,
+                  mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle case statement."""
         self.handle_child(Case(), stmt, mid, changes)
 
-    def leaf(self, stmt: Statement,
-             mid: ModuleId, changes: OptChangeSet) -> None:
+    def leaf_stmt(self, stmt: Statement,
+                  mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle leaf statement."""
         self.handle_child(Leaf(), stmt, mid, changes)
 
-    def leaf_list(self, stmt: Statement,
-                  mid: ModuleId, changes: OptChangeSet) -> None:
+    def leaf_list_stmt(self, stmt: Statement,
+                       mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle leaf-list statement."""
         self.handle_child(LeafList(), stmt, mid, changes)
 
-    def anydata(self, stmt: Statement,
-             mid: ModuleId, changes: OptChangeSet) -> None:
+    def anydata_stmt(self, stmt: Statement,
+                     mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle anydata statement."""
-        self.handle_child(Leaf(), stmt, mid, changes)
+        self.handle_child(Anydata(), stmt, mid, changes)
 
-    def anyxml(self, stmt: Statement,
-             mid: ModuleId, changes: OptChangeSet) -> None:
+    def anyxml_stmt(self, stmt: Statement,
+                    mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle anyxml statement."""
-        self.handle_child(Leaf(), stmt, mid, changes)
+        self.handle_child(Anyxml(), stmt, mid, changes)
 
 class DataNode(object):
     """Abstract superclass for data nodes."""
@@ -253,14 +261,22 @@ class DataNode(object):
 class Terminal(SchemaNode, DataNode):
     """Abstract superclass for leaves in the schema tree."""
 
-    def __init__(self, name: Optional[YangIdentifier] = None,
-                 ns: Optional[YangIdentifier] = None) -> None:
+    def __init__(self) -> None:
         """Initialize the instance."""
-        SchemaNode.__init__(self, name, ns)
+        super().__init__()
+        self.type = None
 
 class Container(Internal, DataNode):
     """Container node."""
-    pass
+
+    def __init__(self) -> None:
+        """Initialize the instance."""
+        super().__init__()
+        self.presence = False # type: bool
+
+    def presence_stmt(self, stmt: Statement, mid: ModuleId,
+                      changes: OptChangeSet) -> None:
+        self.presence = True
 
 class List(Internal, DataNode):
     """List node."""
@@ -281,7 +297,9 @@ class Choice(Internal):
         if isinstance(node, Case):
             super().handle_child(node, stmt, mid, changes)
         else:
-            cn = Case(stmt.argument, mid[0])
+            cn = Case()
+            cn.name = stmt.argument
+            cn.ns = mid[0]
             self.add_child(cn)
             cn.handle_child(node, stmt, mid,
                             changes.get_subset(name) if changes else None)
