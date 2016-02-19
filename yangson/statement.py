@@ -80,17 +80,19 @@ class Statement(object):
         return [c for c in self.substatements
                 if c.keyword == kw and c.prefix == pref]
 
-    def get_grouping(self, gname: YangIdentifier) -> "Statement":
-        """Recursively search ancestor statements for a grouping.
+    def get_definition(self, gname: YangIdentifier,
+                       kw: YangIdentifier) -> "Statement":
+        """Recursively search ancestor statements for a definition.
 
-        :param gname: name of the grouping
+        :param gname: name of the grouping or datatype
+        :param kw: "grouping" or "typedef"
         """
         stmt = self.superstmt
         while stmt:
-            res = stmt.find1("grouping", gname)
+            res = stmt.find1(kw, gname)
             if res: return res
             stmt = stmt.superstmt
-        raise GroupingNotFound(gname)
+        raise DefinitionNotFound(kw, gname)
 
 class StatementNotFound(YangsonException):
     """Exception to raise when a statement should exist but doesn't."""
@@ -102,11 +104,12 @@ class StatementNotFound(YangsonException):
         """Print the statement's keyword."""
         return self.keyword
 
-class GroupingNotFound(YangsonException):
-    """Exception to be raised when a requested grouping doesn't exist."""
+class DefinitionNotFound(YangsonException):
+    """Exception to be raised when a requested definition doesn't exist."""
 
-    def __init__(self, gname: YangIdentifier) -> None:
-        self.gname = gname
+    def __init__(self, kw: YangIdentifier, name: YangIdentifier) -> None:
+        self.keyword = kw
+        self.name = name
 
     def __str__(self) -> str:
-        return "grouping " + self.gname + " not found"
+        return "{} {} not found".format(self.keyword, self.name)
