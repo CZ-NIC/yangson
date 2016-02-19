@@ -21,17 +21,28 @@ class Context(object):
     """Per-module prefix assignments."""
 
     @classmethod
-    def translate_qname(cls, mid: ModuleId, qname: QName) -> NodeName:
-        """Translate prefix-based QName to absolute node name.
+    def resolve_qname(cls, mid: ModuleId,
+                      qname: QName) -> Tuple[ModuleId, YangIdentifier]:
+        """Resolve prefix-based QName.
 
         :param mid: identifier of the context module
         :param qname: qualified name in prefix form
         """
-        (p, s, loc) = qname.partition(":")
+        p, s, loc = qname.partition(":")
         try:
-            return (cls.prefix_map[mid][p][0], loc) if s else (mid[0], p)
+            return (cls.prefix_map[mid][p], loc) if s else (mid, p)
         except KeyError:
             raise BadQName(qname)
+
+    @classmethod
+    def translate_qname(cls, mid: ModuleId, qname: QName) -> NodeName:
+        """Translate prefix-based QName to an absolute name.
+
+        :param mid: identifier of the context module
+        :param qname: qualified name in prefix form
+        """
+        nid, loc = cls.resolve_qname(mid, qname)
+        return (nid[0], loc)
 
     @classmethod
     def sid2address(cls, mid: ModuleId, sid: str) -> SchemaAddress:
