@@ -1,6 +1,6 @@
 import decimal
 import re
-from typing import  Any, List, Optional, Tuple
+from typing import  Any, List, Optional, Tuple, Union
 from .exception import YangsonException
 from .statement import Statement
 from .typealiases import *
@@ -19,12 +19,13 @@ class DataType(object):
         """
         return input
 
-    def handle_substatements(self, stmt: Statement) -> None:
+    def handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
-        :param stmt: YANG ``type`` statement
+        :param stmt: YANG ``type decimal64`` statement
+        :param mid: id of the context module
         """
-        dstmt = stmt.find1
+        pass
 
 class Empty(DataType):
     """Class representing YANG "empty" type."""
@@ -47,7 +48,7 @@ class Boolean(DataType):
         """
         if input == "true": return True
         if input == "false": return False
-        raise YangTypeError(self, input)
+        raise YangTypeError(input)
 
 class String(DataType):
     """Class representing YANG "string" type."""
@@ -65,6 +66,46 @@ class NumericType(DataType):
         super().__init__()
         self.range = None
 
+    def handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle type substatements.
+
+        :param stmt: YANG ``type`` statement
+        :param mid: id of the context module
+        """
+        rstmt = stmt.find1("range")
+        if rstmt: self.apply_range(rstmt.argument)
+
+    def apply_range(self, rex: str) -> None:
+        """Parse range specified in `rex` and apply it to the receiver.
+
+        :param rex: range expression
+        """
+        to_num = lambda xs: [ self.parse_value(x) for x in xs ]
+        lo = self.ranges[0][0]
+        hi = self.ranges[-1][-1]
+        parts = [ p.strip() for p in rex.split("|") ]
+        ran = [ [ i.strip() for i in p.split("..") ] for p in parts ]
+        if ran[0][0] != "min":
+            lo = self.parse_value(ran[0][0])
+        if ran[-1][-1] != "max":
+            hi = self.parse_value(ran[-1][-1])
+        self.ranges = (
+            [[lo, hi]] if len(ran) == 1 else
+            [[lo, self.parse_value(ran[0][-1])]] +
+            [ to_num(r) for r in ran[1:-1] ] +
+            [[self.parse_value(ran[-1][0]), hi]])
+
+    def in_range(self, num: Union[int, decimal.Decimal]) -> bool:
+        """Decide whether `num` fits the receiver's ranges.
+
+        :param num: a number
+        """
+        for r in self.ranges:
+            if len(r) == 1:
+                if r[0] == num: return True
+            elif r[0] <= num <= r[1]: return True
+        return False
+
 class Decimal64(NumericType):
     """Class representing YANG "decimal64" type."""
 
@@ -74,14 +115,15 @@ class Decimal64(NumericType):
         self.epsilon = decimal.Decimal(0) # type: decimal.Decimal
         self.context = None # type: Optional[decimal.Context]
 
-    def handle_substatements(self, stmt: Statement) -> None:
+    def handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
         :param stmt: YANG ``type decimal64`` statement
+        :param mid: id of the context module
         """
         fd = stmt.find1("fraction-digits", required=True).argument
         self.epsilon = decimal.Decimal(10) ** -int(fd)
-        super().handle_substatements(stmt)
+        super().handle_substatements(stmt, mid)
 
     def parse_value(self, input: str) -> decimal.Decimal:
         """Parse decimal value.
@@ -112,8 +154,8 @@ class SignedInteger(IntegralType):
         :param input: string representation of the value
         """
         res = super().parse_value(input)
-        if -self.bound <= res < self.bound: return res
-        raise YangTypeError(self, res)
+        if self.in_range(res): return res
+        raise YangTypeError(res)
 
 class UnsignedInteger(IntegralType):
     """Abstract class for unsigned integer types."""
@@ -124,56 +166,54 @@ class UnsignedInteger(IntegralType):
         :param input: string representation of the value
         """
         res = super().parse_value(input)
-        if 0 <= res < self.bound: return res
-        raise YangTypeError(self, res)
+        if self.in_range(res): return res
+        raise YangTypeError(res)
 
 class Int8(SignedInteger):
     """Class representing YANG "int8" type."""
 
-    bound = 128
+    ranges = [[-128,127]]
 
 class Int16(SignedInteger):
     """Class representing YANG "int16" type."""
 
-    bound = 32768
+    ranges = [[-32768, 32767]]
 
 class Int32(SignedInteger):
     """Class representing YANG "int32" type."""
 
-    bound = 2147483648
+    ranges = [[-2147483648, 2147483647]]
 
 class Int64(SignedInteger):
     """Class representing YANG "int64" type."""
 
-    bound = 9223372036854775808
+    ranges = [[-9223372036854775808, 9223372036854775807]]
 
 class Uint8(UnsignedInteger):
     """Class representing YANG "uint8" type."""
 
-    bound = 256
+    ranges = [[0, 255]]
 
 class Uint16(UnsignedInteger):
     """Class representing YANG "uint8" type."""
 
-    bound = 65536
+    ranges = [[0, 65535]]
 
 class Uint32(UnsignedInteger):
     """Class representing YANG "uint8" type."""
 
-    bound = 4294967296
+    ranges = [[0, 4294967295]]
 
 class Uint64(UnsignedInteger):
     """Class representing YANG "uint8" type."""
 
-    bound = 18446744073709551616
+    ranges = [[0, 18446744073709551615]]
 
 class YangTypeError(YangsonException):
     """Exception to be raised if a value doesn't match its type."""
 
-    def __init__(self, type: DataType, value) -> None:
-        self.type = type
+    def __init__(self, value) -> None:
         self.value = value
 
     def __str__(self) -> str:
-        return "value '{}' is not of type {}".format(str(self.value),
-                                                     str(self.type))
+        return "incorrect type error for value " + str(self.value)

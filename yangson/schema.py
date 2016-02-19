@@ -66,6 +66,19 @@ class SchemaNode(object):
         except AttributeError:
             return self.parent.config
 
+    def get_definition(self, stmt: Statement, mid: ModuleId) -> Statement:
+        """Return the statement defining a grouping or derived type.
+
+        :param stmt: parsed YANG statement
+        :param mid: YANG module context
+        :param name: name of the grouping or type
+        """
+        kw = "grouping" if stmt.keyword == "uses" else "typedef"
+        did, loc = Context.resolve_qname(mid, stmt.argument)
+        dstmt = (stmt.get_definition(loc, kw) if did == mid else
+                 Context.modules[did].find1(kw, loc, required=True))
+        return (dstmt, did)
+
     def handle_substatements(self, stmt: Statement,
                              mid: ModuleId,
                              changes: Optional[ChangeSet]) -> None:
@@ -199,21 +212,8 @@ class Internal(SchemaNode):
 
     def uses_stmt(self, stmt: Statement,
                   mid: ModuleId, changes: OptChangeSet) -> None:
-        """Handle uses statement.
-
-        :raises GroupingNotFound: if the corresponding grouping doesn't exist
-        """
-        p, s, loc = stmt.argument.partition(":")
-        if s:
-            gid = Context.prefix_map[mid][p]
-            if gid == mid:
-                grp = stmt.get_grouping(loc)
-            else:
-                grp = Context.modules[gid].find1("grouping", loc,
-                                                    required=True)
-        else:
-            gid = mid
-            grp = stmt.get_grouping(p)
+        """Handle uses statement."""
+        grp, gid = self.get_definition(stmt, mid)
         self.handle_substatements(grp, gid, changes)
 
     def container_stmt(self, stmt: Statement,
@@ -240,14 +240,14 @@ class Internal(SchemaNode):
                   mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle leaf statement."""
         node = Leaf()
-        node.data_type(stmt)
+        node.data_type(stmt, mid)
         self.handle_child(node, stmt, mid, changes)
 
     def leaf_list_stmt(self, stmt: Statement,
                        mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle leaf-list statement."""
         node = LeafList()
-        node.data_type(stmt)
+        node.data_type(stmt, mid)
         self.handle_child(node, stmt, mid, changes)
 
     def anydata_stmt(self, stmt: Statement,
@@ -288,15 +288,37 @@ class Terminal(SchemaNode, DataNode):
         self.default = None
         self.type = None # type: DataType
 
-    def data_type(self, stmt):
-        """Return data type defined by `stmt`.
+    def data_type(self, stmt: Statement, mid: ModuleId) -> DataType:
+        """Return data type for the terminal node defined by `stmt`.
 
-        :param stmt: YANG ``type`` statement
+        :param stmt: YANG ``leaf`` or ``leaf-list`` statement
+        :param mid: id of the context module
         """
         tstmt = stmt.find1("type", required=True)
         typ = tstmt.argument
-        self.type = self.dtypes[typ]()
-        self.type.handle_substatements(tstmt)
+        if typ in self.dtypes:
+            self.type = self.dtypes[typ]()
+            self.type.handle_substatements(tstmt, mid)
+        else:
+            self.type = self.derived_type(tstmt, mid)
+
+    def derived_type(self, stmt: Statement, mid: ModuleId) -> DataType:
+        """Completely resolve a derived type.
+
+        :param stmt: derived type statement
+        :param mid: id of the context module
+        """
+        tchain = []
+        qst = (stmt, mid)
+        while qst[0].argument not in self.dtypes:
+            tchain.append(qst)
+            tdef, tid = self.get_definition(*qst)
+            qst = (tdef.find1("type", required=True), tid)
+        res = self.dtypes[qst[0].argument]()
+        res.handle_substatements(*qst)
+        while tchain:
+            res.handle_substatements(*tchain.pop())
+        return res
 
 class Container(Internal, DataNode):
     """Container node."""
