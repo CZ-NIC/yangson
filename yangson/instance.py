@@ -1,6 +1,6 @@
 """Classes related to JSON-encoded instance data."""
 
-from typing import Any, List, Tuple
+from typing import Any, Callable, List, Tuple
 from .exception import YangsonException
 from .typealiases import *
 
@@ -233,6 +233,20 @@ class Instance(object):
                 EntryCrumb(cr.before + [self.value], cr.after)))
         except (AttributeError, IndexError):
             raise InstanceTypeError(self, "insert after non-entry") from None
+
+class PathTrans(object):
+    """Compiled instance path transformations."""
+
+    def __init__(self, fun: Callable[[Instance], Instance]) -> None:
+        self.function = fun
+
+    def apply(self, inst: Instance) -> Instance:
+        return self.function(inst)
+
+    def compose(self, outer: Callable[[Instance], Instance]) -> "PathTrans":
+        return self.__class__(lambda x: outer(self.function(x)))
+
+# Exceptions
 
 class InstanceError(YangsonException):
     """Exceptions related to operations on the instance structure."""
