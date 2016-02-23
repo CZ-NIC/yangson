@@ -73,6 +73,14 @@ class Instance(object):
         self.value = value
         self.trace = trace
 
+    @property
+    def namespace(self):
+        """Return the receiver's namespace identifier."""
+        for cr in reversed(self.trace):
+            if isinstance(cr, MemberCrumb):
+                p, s, loc = cr.name.partition(":")
+                if s: return p
+
     def crumb(self) -> Crumb:
         """Return the most recent crumb in receiver's trace."""
         return self.trace[-1]
