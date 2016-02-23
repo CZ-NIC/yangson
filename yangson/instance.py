@@ -173,6 +173,25 @@ class Instance(object):
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
+    def look_up(self, keys: Dict[QName, Value]) -> "Instance":
+        """Return the entry with matching keys."""
+        if not isinstance(self.value, list):
+            raise InstanceTypeError(self, "lookup on non-list")
+        try:
+            for i in range(len(self.value)):
+                en = self.value[i]
+                flag = True
+                for k in keys:
+                    if en[k] != keys[k]:
+                        flag = False
+                        break
+                if flag: return self.entry(i)
+            raise NonexistentInstance(self, "entry lookup failed")
+        except KeyError:
+            raise NonexistentInstance(self, "entry lookup failed") from None
+        except TypeError:
+            raise InstanceTypeError(self, "lookup on non-list") from None
+
     @property
     def next(self) -> "Instance":
         try:
