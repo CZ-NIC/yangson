@@ -154,7 +154,7 @@ class NonexistentInstance(InstanceError):
         self.text = text
 
     def __str__(self):
-        return "{} {}".format(super().__str__(), text)
+        return "{} {}".format(super().__str__(), self.text)
 
 class InstanceTypeError(InstanceError):
     """Exception to raise when calling a method for a wrong instance type."""
@@ -164,4 +164,4 @@ class InstanceTypeError(InstanceError):
         self.text = text
 
     def __str__(self):
-        return "{} {}".format(super().__str__(), text)
+        return "{} {}".format(super().__str__(), self.text)
