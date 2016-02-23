@@ -77,9 +77,9 @@ class Instance(object):
         """Return the most recent crumb in receiver's trace."""
         return self.trace[-1]
 
-    def prev_trace(self) -> Trace:
-        """Return the receiver's trace without the last item."""
-        return self.trace[:-1]
+    def _replace_crumb(self, crumb: Crumb) -> Trace:
+        """Return receiver's trace with a new last crumb."""
+        return self.trace[:-1] + [crumb]
 
     def pointer(self) -> str:
         """Return JSON pointer of the receiver."""
@@ -97,7 +97,7 @@ class Instance(object):
         """Ascend to the parent instance."""
         try:
             return self.__class__(self.crumb().zip(self.value),
-                                  self.prev_trace())
+                                  self.trace[:-1])
         except IndexError:
             raise NonexistentInstance(self, "up of top") from None
 
@@ -118,24 +118,94 @@ class Instance(object):
         except KeyError:
             raise NonexistentInstance(self, "member " + name)
 
-    def entry(self, index: int) -> "Instance":
+    def new_member(self, name: QName, value: Value) -> "Instance":
+        if name in self.value:
+            raise DuplicateMember(self, name) from None
+        return self.__class__(value, self.trace + [MemberCrumb(name, self.value)])
+
+    def sibling(self, name: QName) -> "Instance":
         try:
-            return self.__class__(
-                self.value[index], self.trace +
-                [EntryCrumb(self.value[:index], self.value[index+1:])])
-        except (KeyError, TypeError):
+            cr = self.crumb()
+            obj = cr.object.copy()
+            newval = obj.pop(name)
+            obj[cr.name] = self.value
+            return self.__class__(newval, self._replace_crumb(MemberCrumb(name, obj)))
+        except KeyError:
+            raise NonexistentInstance(self, "member " + name)
+        except IndexError:
+            raise InstanceTypeError(self, "sibling of non-member")
+
+    def entry(self, index: int) -> "Instance":
+        val = self.value
+        if not isinstance(val, list):
             raise InstanceTypeError(self, "entry of non-array") from None
+        try:
+            return self.__class__(val[index], self.trace +
+                                  [EntryCrumb(val[:index], val[index+1:])])
         except IndexError:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
     @property
+    def first_entry(self):
+        val = self.value
+        if not isinstance(val, list):
+            raise InstanceTypeError(self, "first entry of non-array") from None
+        try:
+            return self.__class__(val[0], self.trace + [EntryCrumb([], val)])
+        except IndexError:
+            raise NonexistentInstance(self, "first of empty") from None
+
+    @property
+    def last_entry(self):
+        val = self.value
+        if not isinstance(val, list):
+            raise InstanceTypeError(self, "last entry of non-array") from None
+        try:
+            return self.__class__(val[-1], self.trace + [EntryCrumb(val, [])])
+        except IndexError:
+            raise NonexistentInstance(self, "last of empty") from None
+
+    @property
     def next(self) -> "Instance":
         try:
-            return Instance(self.crumb.after[0], self.prev_trace() +
-                            [EntryCrumb(self.crumb.before + [self.value],
-                                        self.crumb.after[1:])])
-        except IndexError: 
+            cr = self.crumb()
+            return self.__class__(
+                cr.after[0],
+                self._replace_crumb(
+                    EntryCrumb(cr.before + [self.value], cr.after[1:])))
+        except IndexError:
             raise NonexistentInstance(self, "next of last") from None
+        except AttributeError:
+            raise InstanceTypeError(self, "next of non-entry") from None
+
+    @property
+    def previous(self) -> "Instance":
+        try:
+            cr = self.crumb()
+            return self.__class__(
+                cr.before[-1],
+                self._replace_crumb(
+                    EntryCrumb(cr.before[:-1], [self.value] + cr.after)))
+        except IndexError:
+            raise NonexistentInstance(self, "previous of first") from None
+        except AttributeError:
+            raise InstanceTypeError(self, "previous of non-entry") from None
+
+    def insert_before(self, value: Value):
+        try:
+            cr = self.crumb()
+            return self.__class__(value, self._replace_crumb(
+                EntryCrumb(cr.before, [self.value] + cr.after)))
+        except (AttributeError, IndexError):
+            raise InstanceTypeError(self, "insert before non-entry") from None
+
+    def insert_after(self, value: Value):
+        try:
+            cr = self.crumb()
+            return self.__class__(value, self._replace_crumb(
+                EntryCrumb(cr.before + [self.value], cr.after)))
+        except (AttributeError, IndexError):
+            raise InstanceTypeError(self, "insert after non-entry") from None
 
 class InstanceError(YangsonException):
     """Exceptions related to operations on the instance structure."""
@@ -165,3 +235,13 @@ class InstanceTypeError(InstanceError):
 
     def __str__(self):
         return "{} {}".format(super().__str__(), self.text)
+
+class DuplicateMember(InstanceError):
+    """Exception to raise on attempt to create a member that already exists."""
+
+    def __init__(self, inst: Instance, name: QName) -> None:
+        super().__init__(inst)
+        self.name = name
+
+    def __str__(self):
+        return "{} member {}".format(super().__str__(), self.name)
