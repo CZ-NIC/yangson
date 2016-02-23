@@ -5,9 +5,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 RevisionDate = Optional[str]
 Uri = str
 YangIdentifier = str
+QName = str # [YangIdentifier:]YangIdentifier
 NodeName = Tuple[YangIdentifier, YangIdentifier] # (namespace, name)
 SchemaAddress = List[NodeName]
 ModuleId = Tuple[YangIdentifier, Optional[RevisionDate]]
 Range = List[List[Any]]
-QName = Tuple[YangIdentifier, YangIdentifier]
 PrefixMap = Dict[YangIdentifier, ModuleId]
