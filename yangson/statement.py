@@ -26,7 +26,7 @@ class Statement(object):
                  sup: Optional["Statement"] = None,
                  sub: List["Statement"] = [],
                  pref: Optional[YangIdentifier] = None) -> None:
-        """Initialize the instance.
+        """Initialize the class instance.
 
         :param kw: keyword
         :param arg: argument

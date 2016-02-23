@@ -58,7 +58,7 @@ class DataModel(object):
     def __init__(self,
                  revisions: Dict[YangIdentifier, List[RevisionDate]],
                  implement: List[ModuleId]) -> None:
-        """Initialize the instance.
+        """Initialize the class instance.
 
         :param revisions: dictionary mapping module name to all its revisions
         :param implement: list of implemented modules

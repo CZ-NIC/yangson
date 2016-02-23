@@ -52,7 +52,7 @@ class SchemaNode(object):
     """Abstract superclass for schema nodes."""
 
     def __init__(self) -> None:
-        """Initialize the instance."""
+        """Initialize the class instance."""
         self.name = None # type: Optional[YangIdentifier]
         self.ns = None # type: Optional[YangIdentifier]
         self.parent = None # type: Optional["Internal"]
@@ -139,7 +139,7 @@ class Internal(SchemaNode):
     """Abstract superclass for schema nodes that have children."""
 
     def __init__(self) -> None:
-        """Initialize the instance."""
+        """Initialize the class instance."""
         super().__init__()
         self.children = [] # type: List[SchemaNode]
         self._nsswitch = False # type: bool
@@ -283,7 +283,7 @@ class Terminal(SchemaNode, DataNode):
     """Dictionary mapping type names to classes."""
 
     def __init__(self) -> None:
-        """Initialize the instance."""
+        """Initialize the class instance."""
         super().__init__()
         self.default = None
         self.type = None # type: DataType
@@ -324,7 +324,7 @@ class Container(Internal, DataNode):
     """Container node."""
 
     def __init__(self) -> None:
-        """Initialize the instance."""
+        """Initialize the class instance."""
         super().__init__()
         self.presence = False # type: bool
 

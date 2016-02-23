@@ -92,7 +92,7 @@ class String(DataType):
     _length = [[0, 4294967295]] # type: Range
 
     def __init__(self) -> None:
-        """Initialize the instance."""
+        """Initialize the class instance."""
         super().__init__()
         self.regexps = []
 
@@ -126,7 +126,7 @@ class NumericType(DataType):
     """Abstract class for numeric data types."""
 
     def __init__(self) -> None:
-        """Initialize the instance."""
+        """Initialize the class instance."""
         super().__init__()
 
     def contains(self, val: Union[int, decimal.Decimal]) -> bool:
@@ -160,7 +160,7 @@ class Decimal64(NumericType):
     """Class representing YANG "decimal64" type."""
 
     def __init__(self) -> None:
-        """Initialize the instance."""
+        """Initialize the class instance."""
         super().__init__()
         self.epsilon = decimal.Decimal(0) # type: decimal.Decimal
         self.context = None # type: Optional[decimal.Context]

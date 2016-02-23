@@ -29,7 +29,7 @@ class Parser(object):
     """Dictionary for mapping escape sequences to characters."""
     
     def __init__(self, inp: str) -> None:
-        """Initialize the instance.
+        """Initialize the class instance.
 
         :param inp: input string
         """
