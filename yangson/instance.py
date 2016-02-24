@@ -159,7 +159,7 @@ class Instance(object):
         if not isinstance(val, list):
             raise InstanceTypeError(self, "first entry of non-array") from None
         try:
-            return self.__class__(val[0], self.trace + [EntryCrumb([], val)])
+            return self.__class__(val[0], self.trace + [EntryCrumb([], val[1:])])
         except IndexError:
             raise NonexistentInstance(self, "first of empty") from None
 
@@ -169,7 +169,7 @@ class Instance(object):
         if not isinstance(val, list):
             raise InstanceTypeError(self, "last entry of non-array") from None
         try:
-            return self.__class__(val[-1], self.trace + [EntryCrumb(val, [])])
+            return self.__class__(val[-1], self.trace + [EntryCrumb(val[:-1], [])])
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
