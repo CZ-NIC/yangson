@@ -234,17 +234,73 @@ class Instance(object):
         except (AttributeError, IndexError):
             raise InstanceTypeError(self, "insert after non-entry") from None
 
-class PathTrans(object):
-    """Compiled instance path transformations."""
+class InstanceIdentifier(list):
+    """Instance identifiers."""
 
-    def __init__(self, fun: Callable[[Instance], Instance]) -> None:
-        self.function = fun
+    def __str__(self):
+        """Return a string representation of the receiver."""
+        return "".join([ str(i) for i in self ])
 
-    def apply(self, inst: Instance) -> Instance:
-        return self.function(inst)
+class InstanceSelector(object):
+    """Components of instance identifers."""
+    pass
 
-    def compose(self, outer: Callable[[Instance], Instance]) -> "PathTrans":
-        return self.__class__(lambda x: outer(self.function(x)))
+class MemberName(InstanceSelector):
+    """Selectors of object members."""
+
+    def __init__(self, name: QName) -> None:
+        """Initialize the class instance.
+
+        :param name: member name
+        """
+        self.name = name
+
+    def __str__(self) -> str:
+        """Return a string representation of the receiver."""
+        return "/" + self.name
+
+class EntryIndex(InstanceSelector):
+    """Numeric selectors for a list or leaf-list entry."""
+
+    def __init__(self, index: int) -> None:
+        """Initialize the class instance.
+
+        :param index: index of an entry
+        """
+        self.index = index
+
+    def __str__(self) -> str:
+        """Return a string representation of the receiver."""
+        return "[{0:d}]".format(self.index)
+
+class EntryValue(InstanceSelector):
+    """Value-based selectors of an array entry."""
+
+    def __init__(self, value: Value) -> None:
+        """Initialize the class instance.
+
+        :param value: value of a leaf-list entry
+        """
+        self.value = value
+
+    def __str__(self) -> str:
+        """Return a string representation of the receiver."""
+        return "[.=" + str(self.value) +"]"
+
+class EntryKeys(InstanceSelector):
+    """Key-based selectors for a list entry."""
+
+    def __init__(self, keys: Dict[QName, Value]) -> None:
+        """Initialize the class instance.
+
+        :param keys: dictionary with keys of an entry
+        """
+        self.keys = keys
+
+    def __str__(self) -> str:
+        """Return a string representation of the receiver."""
+        return "".join(["[{}={}]".format(k, repr(self.keys[k]))
+                        for k in self.keys])
 
 # Exceptions
 

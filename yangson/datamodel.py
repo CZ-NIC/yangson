@@ -2,9 +2,11 @@ import json
 from typing import Dict, List, Optional
 from .context import Context
 from .exception import YangsonException
+from .instance import InstanceIdentifier, MemberName
 from .modparser import from_file
-from .schema import Internal
+from .schema import Internal, NonexistentSchemaNode
 from .typealiases import *
+from .regex import *
 
 class DataModel(object):
     """YANG data model."""
@@ -138,6 +140,30 @@ class DataModel(object):
                 target._nsswitch = True
                 target.handle_substatements(aug, mid, None)
 
+    def parse_instance_id(self, iid: str) -> InstanceIdentifier:
+        """Parse instance identifier."""
+        end = len(iid)
+        offset = 0
+        res = InstanceIdentifier()
+        sn = self.schema
+        while True:
+            if iid[offset] != "/":
+                raise BadInstanceIdentifier(iid)
+            mo = qname_re.match(iid, offset+1)
+            if mo is None:
+                raise BadInstanceIdentifier(iid)
+            ns = mo.group("prf")
+            name = mo.group("loc")
+            sn = sn.get_data_child(name, ns)
+            if sn is None:
+                raise NonexistentSchemaNode(name, ns)
+            res.append(MemberName(sn.qname))
+            offset = mo.end()
+            if offset < end and iid[offset] != "/":
+                sel, offset = sn._parse_entry_selector(iid, offset)
+                res.append(sel)
+            if offset >= end: return res
+
 class BadYangLibraryData(YangsonException):
     """Exception to be raised for broken YANG Library data."""
 
@@ -146,3 +172,12 @@ class BadYangLibraryData(YangsonException):
 
     def __str__(self) -> str:
         return self.reason
+
+class BadInstanceIdentifier(YangsonException):
+    """Exception to be raised for malformed instance identifier."""
+
+    def __init__(self, iid: str) -> None:
+        self.iid = iid
+
+    def __str__(self) -> str:
+        return self.iid

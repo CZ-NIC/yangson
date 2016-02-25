@@ -1,12 +1,14 @@
 """Classes for schema nodes."""
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Union
 from .context import Context
 from .datatype import *
 from .enumerations import DefaultDeny
 from .exception import YangsonException
+from .instance import EntryIndex, EntryValue, EntryKeys
 from .statement import Statement
 from .typealiases import *
+from .regex import *
 
 # Type aliases
 OptChangeSet = Optional["ChangeSet"]
@@ -65,6 +67,11 @@ class SchemaNode(object):
             return getattr(self, "_config")
         except AttributeError:
             return self.parent.config
+
+    @property
+    def qname(self) -> QName:
+        """Return qualified name of the receiver."""
+        return (self.ns + ":" + self.name if self.ns else self.name)
 
     def get_definition(self, stmt: Statement, mid: ModuleId) -> Statement:
         """Return the statement defining a grouping or derived type.
@@ -152,8 +159,9 @@ class Internal(SchemaNode):
         node.parent = self
         self.children.append(node)
 
-    def get_child(self, name: YangIdentifier,
-                  ns: Optional[YangIdentifier] = None):
+    def get_child(
+            self, name: YangIdentifier,
+            ns: Optional[YangIdentifier] = None) -> Optional["SchemaNode"]:
         """Return receiver's child.
         :param name: child's name
         :param ns: child's namespace (= `self.ns` if absent)
@@ -171,11 +179,13 @@ class Internal(SchemaNode):
         node = self
         for ns, name in path:
             node = node.get_child(name, ns)
-            if node is None: return None
+            if node is None:
+                return None
         return node
 
-    def get_data_child(self, name: YangIdentifier,
-                      ns: Optional[YangIdentifier] = None) -> Optional["DataNode"]:
+    def get_data_child(
+            self, name: YangIdentifier,
+            ns: Optional[YangIdentifier] = None) -> Optional["DataNode"]:
         """Return data node directly under receiver.
 
         :param name: data node name
@@ -240,14 +250,14 @@ class Internal(SchemaNode):
                   mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle leaf statement."""
         node = Leaf()
-        node.data_type(stmt, mid)
+        node.stmt_type(stmt, mid)
         self.handle_child(node, stmt, mid, changes)
 
     def leaf_list_stmt(self, stmt: Statement,
                        mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle leaf-list statement."""
         node = LeafList()
-        node.data_type(stmt, mid)
+        node.stmt_type(stmt, mid)
         self.handle_child(node, stmt, mid, changes)
 
     def anydata_stmt(self, stmt: Statement,
@@ -262,7 +272,20 @@ class Internal(SchemaNode):
 
 class DataNode(object):
     """Abstract superclass for data nodes."""
-    pass
+
+    def _parse_entry_selector(self, iid: str, offset: int) -> Any:
+        """This method is applicable only to a list or leaf-list."""
+        raise BadSchemaNodeType(self, "list or leaf-list")
+
+    @property
+    def type(self):
+        """This method is applicable only to a terminal node."""
+        raise BadSchemaNodeType(self, "leaf or leaf-list")
+
+    @type.setter
+    def type(self, typ: DataType) -> None:
+        """This method is applicable only to a terminal node."""
+        raise BadSchemaNodeType(self, "leaf or leaf-list")
 
 class Terminal(SchemaNode, DataNode):
     """Abstract superclass for leaves in the schema tree."""
@@ -286,9 +309,19 @@ class Terminal(SchemaNode, DataNode):
         """Initialize the class instance."""
         super().__init__()
         self.default = None
-        self.type = None # type: DataType
+        self._type = None # type: DataType
 
-    def data_type(self, stmt: Statement, mid: ModuleId) -> DataType:
+    @property
+    def type(self) -> Optional[DataType]:
+        """Return receiver's type."""
+        return self._type
+
+    @type.setter
+    def type(self, typ: DataType) -> None:
+        """Set receiver's type."""
+        self._type = typ
+
+    def stmt_type(self, stmt: Statement, mid: ModuleId) -> DataType:
         """Return data type for the terminal node defined by `stmt`.
 
         :param stmt: YANG ``leaf`` or ``leaf-list`` statement
@@ -334,7 +367,38 @@ class Container(Internal, DataNode):
 
 class List(Internal, DataNode):
     """List node."""
-    pass
+
+    def _parse_entry_selector(self, iid: str, offset: int) -> Tuple[
+            Union[EntryIndex, EntryKeys], int]:
+        """Parse selector for a list entry.
+
+        :param iid: instance identifier string
+        :param offset:
+        """
+        res = {}
+        key_expr = False
+        while offset < len(iid) and iid[offset] == "[":
+            mo = pred_re.match(iid, offset)
+            if mo is None:
+                raise BadInstanceIdentifier(iid)
+            pos = mo.group("pos")
+            if pos:
+                if key_expr:
+                    raise BadEntrySelector(self, iid)
+                return (EntryIndex(int(pos)), mo.end())
+            key_expr = True
+            name = mo.group("loc")
+            ns = mo.group("prf")
+            kn = self.get_data_child(name, ns)
+            if kn is None:
+                raise NonexistentSchemaNode(name, ns)
+            drhs = mo.group("drhs")
+            val = kn.type.parse_value(drhs if drhs else mo.group("srhs"))
+            res[kn.qname] = val
+            offset = mo.end()
+        if res:
+            return (EntryKeys(res), mo.end())
+        raise BadEntrySelector(self, iid)
 
 class Choice(Internal):
     """Choice node."""
@@ -378,6 +442,28 @@ class LeafList(Terminal):
             self.default = []
         self.default.append(self.type.parse_value(stmt.argument))
 
+    def _parse_entry_selector(self, iid: str, offset: int) -> Tuple[
+            Union[EntryIndex, EntryValue], int]:
+        """Parse selector for a leaf-list entry.
+
+        :param iid: instance identifier string
+        :param offset:
+        """
+        if iid[offset] != "[":
+            raise BadEntrySelector(self, iid)
+        mo = pred_re.match(iid, offset)
+        if mo is None:
+            raise BadEntrySelector(self, iid)
+        pos = mo.group("pos")
+        if pos:
+            return (EntryIndex(int(pos)), mo.end())
+        else:
+            if mo.group("loc"):
+                raise BadEntrySelector(self, iid)
+            drhs = mo.group("drhs")
+            val = self.type.parse_value(drhs if drhs else mo.group("srhs"))
+            return (EntryValue(val), mo.end())
+
 class Anydata(Terminal):
     """Leaf-list node."""
     pass
@@ -385,3 +471,42 @@ class Anydata(Terminal):
 class Anyxml(Terminal):
     """Leaf-list node."""
     pass
+
+class NonexistentSchemaNode(YangsonException):
+    """Exception to be raised when a schema node doesn't exist."""
+
+    def __init__(self, name: YangIdentifier,
+                 ns: Optional[YangIdentifier]) -> None:
+        self.qname = (ns + ":" if ns else "") + name
+
+    def __str__(self) -> str:
+        return self.qname
+
+class SchemaNodeError(YangsonException):
+    """Abstract exception class for schema node errors."""
+
+    def __init__(self, sn: SchemaNode) -> None:
+        self.schema_node = sn
+
+    def __str__(self) -> str:
+        return self.schema_node.qname
+
+class BadSchemaNodeType(SchemaNodeError):
+    """Exception to be raised when a schema node is of a wrong type."""
+
+    def __init__(self, sn: SchemaNode, expected: str) -> None:
+        super().__init__(sn)
+        self.expected = expected
+
+    def __str__(self) -> str:
+        return super().__str__() + " is not a " + self.expected
+
+class BadEntrySelector(SchemaNodeError):
+    """Exception to be raised when a schema node is of a wrong type."""
+
+    def __init__(self, sn: SchemaNode, iid: str) -> None:
+        super().__init__(sn)
+        self.iid = iid
+
+    def __str__(self) -> str:
+        return "in '" + self.iid + "' for " + super().__str__()
