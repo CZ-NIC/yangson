@@ -71,7 +71,8 @@ class SchemaNode(object):
     @property
     def qname(self) -> QName:
         """Return qualified name of the receiver."""
-        return (self.ns + ":" + self.name if self.ns else self.name)
+        return (self.name if self.ns == self.parent.ns
+                else self.ns + ":" + self.name)
 
     def get_definition(self, stmt: Statement, mid: ModuleId) -> Statement:
         """Return the statement defining a grouping or derived type.
