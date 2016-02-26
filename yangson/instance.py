@@ -93,6 +93,26 @@ class Instance(object):
         """Return JSON pointer of the receiver."""
         return "/" + "/".join([ c.pointer_fragment() for c in self.trace ])
 
+    def goto(self, ii: "InstanceIdentifier") -> "Instance":
+        """Return an instance in the receiver's subtree.
+
+        :param ii: instance identifier (relative to the receiver)
+        """
+        inst = self # type: "Instance"
+        for sel in ii:
+            inst = sel.goto_step(inst)
+        return inst
+
+    def peek(self, ii: "InstanceIdentifier") -> Value:
+        """Return a value in the receiver's subtree.
+
+        :param ii: instance identifier (relative to the receiver)
+        """
+        val = self.value
+        for sel in ii:
+            val = sel.peek_step(val)
+        return val
+
     def update(self, newval: Value) -> "Instance":
         """Return a copy of the receiver with a new value.
 
@@ -259,6 +279,20 @@ class MemberName(InstanceSelector):
         """Return a string representation of the receiver."""
         return "/" + self.name
 
+    def peek_step(self, obj: Object) -> Value:
+        """Return the member of `obj` addressed by the receiver.
+
+        :param obj: current object
+        """
+        return obj.get(self.name)
+
+    def goto_step(self, inst: Instance) -> Instance:
+        """Return member instance of `inst` addressed by the receiver.
+
+        :param inst: current instance
+        """
+        return inst.member(self.name)
+
 class EntryIndex(InstanceSelector):
     """Numeric selectors for a list or leaf-list entry."""
 
@@ -272,6 +306,23 @@ class EntryIndex(InstanceSelector):
     def __str__(self) -> str:
         """Return a string representation of the receiver."""
         return "[{0:d}]".format(self.index)
+
+    def peek_step(self, arr: Array) -> Value:
+        """Return the entry of `arr` addressed by the receiver.
+
+        :param arr: current array
+        """
+        try:
+            return arr[self.index]
+        except IndexError:
+            return None
+
+    def goto_step(self, inst: Instance) -> Instance:
+        """Return member instance of `inst` addressed by the receiver.
+
+        :param inst: current instance
+        """
+        return inst.entry(self.index)
 
 class EntryValue(InstanceSelector):
     """Value-based selectors of an array entry."""
@@ -287,6 +338,27 @@ class EntryValue(InstanceSelector):
         """Return a string representation of the receiver."""
         return "[.=" + str(self.value) +"]"
 
+    def peek_step(self, arr: Array) -> Value:
+        """Return the entry of `arr` addressed by the receiver.
+
+        :param arr: current array
+        """
+        try:
+            return arr[arr.index(self.value)]
+        except ValueError:
+            return None
+
+    def goto_step(self, inst: Instance) -> Instance:
+        """Return member instance of `inst` addressed by the receiver.
+
+        :param inst: current instance
+        """
+        try:
+            return inst.entry(inst.value.index(self.value))
+        except ValueError:
+            raise NonexistentInstance(inst,
+                                       "entry '{}'".format(str(self.value)))
+
 class EntryKeys(InstanceSelector):
     """Key-based selectors for a list entry."""
 
@@ -301,6 +373,26 @@ class EntryKeys(InstanceSelector):
         """Return a string representation of the receiver."""
         return "".join(["[{}={}]".format(k, repr(self.keys[k]))
                         for k in self.keys])
+
+    def peek_step(self, arr: Array) -> Value:
+        """Return the entry of `arr` addressed by the receiver.
+
+        :param arr: current array
+        """
+        for en in arr:
+            flag = True
+            for k in self.keys:
+                if en[k] != self.keys[k]:
+                    flag = False
+                    break
+            if flag: return en
+
+    def goto_step(self, inst: Instance) -> Instance:
+        """Return member instance of `inst` addressed by the receiver.
+
+        :param inst: current instance
+        """
+        return inst.look_up(self.keys)
 
 # Exceptions
 
