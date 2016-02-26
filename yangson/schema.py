@@ -386,7 +386,7 @@ class List(Internal, DataNode):
             if pos:
                 if key_expr:
                     raise BadEntrySelector(self, iid)
-                return (EntryIndex(int(pos)), mo.end())
+                return (EntryIndex(int(pos) - 1), mo.end())
             key_expr = True
             name = mo.group("loc")
             ns = mo.group("prf")
@@ -457,7 +457,7 @@ class LeafList(Terminal):
             raise BadEntrySelector(self, iid)
         pos = mo.group("pos")
         if pos:
-            return (EntryIndex(int(pos)), mo.end())
+            return (EntryIndex(int(pos) - 1), mo.end())
         else:
             if mo.group("loc"):
                 raise BadEntrySelector(self, iid)
