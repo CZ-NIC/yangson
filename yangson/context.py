@@ -76,6 +76,19 @@ class Context(object):
                 raise BadPath(path)
         return res
 
+    @classmethod
+    def get_definition(cls, stmt: Statement, mid: ModuleId) -> Statement:
+        """Return the statement defining a grouping or derived type.
+
+        :param stmt: "uses" or "type" statement
+        :param mid: YANG module context
+        """
+        kw = "grouping" if stmt.keyword == "uses" else "typedef"
+        did, loc = cls.resolve_qname(mid, stmt.argument)
+        dstmt = (stmt.get_definition(loc, kw) if did == mid else
+                 cls.modules[did].find1(kw, loc, required=True))
+        return (dstmt, did)
+
 class BadPath(YangsonException):
     """Exception to be raised for invalid schema or data path."""
 

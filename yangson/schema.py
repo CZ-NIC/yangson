@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Optional, Tuple, Union
 from .context import Context
-from .datatype import *
+from .datatype import DataType
 from .enumerations import DefaultDeny
 from .exception import YangsonException
 from .instance import EntryIndex, EntryValue, EntryKeys
@@ -73,19 +73,6 @@ class SchemaNode(object):
         """Return qualified name of the receiver."""
         return (self.name if self.ns == self.parent.ns
                 else self.ns + ":" + self.name)
-
-    def get_definition(self, stmt: Statement, mid: ModuleId) -> Statement:
-        """Return the statement defining a grouping or derived type.
-
-        :param stmt: parsed YANG statement
-        :param mid: YANG module context
-        :param name: name of the grouping or type
-        """
-        kw = "grouping" if stmt.keyword == "uses" else "typedef"
-        did, loc = Context.resolve_qname(mid, stmt.argument)
-        dstmt = (stmt.get_definition(loc, kw) if did == mid else
-                 Context.modules[did].find1(kw, loc, required=True))
-        return (dstmt, did)
 
     def handle_substatements(self, stmt: Statement,
                              mid: ModuleId,
@@ -199,7 +186,7 @@ class Internal(SchemaNode):
                 if isinstance(c, DataNode):
                     return c
                 cands.insert(0,c)
-            elif isinstance(c, (Choice, Case)):
+            elif isinstance(c, (ChoiceNode, CaseNode)):
                 cands.append(c)
         if cands:
             for c in cands:
@@ -224,52 +211,52 @@ class Internal(SchemaNode):
     def uses_stmt(self, stmt: Statement,
                   mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle uses statement."""
-        grp, gid = self.get_definition(stmt, mid)
+        grp, gid = Context.get_definition(stmt, mid)
         self.handle_substatements(grp, gid, changes)
 
     def container_stmt(self, stmt: Statement,
                   mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle container statement."""
-        self.handle_child(Container(), stmt, mid, changes)
+        self.handle_child(ContainerNode(), stmt, mid, changes)
 
     def list_stmt(self, stmt: Statement,
                   mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle list statement."""
-        self.handle_child(List(), stmt, mid, changes)
+        self.handle_child(ListNode(), stmt, mid, changes)
 
     def choice_stmt(self, stmt: Statement,
                     mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle choice statement."""
-        self.handle_child(Choice(), stmt, mid, changes)
+        self.handle_child(ChoiceNode(), stmt, mid, changes)
 
     def case_stmt(self, stmt: Statement,
                   mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle case statement."""
-        self.handle_child(Case(), stmt, mid, changes)
+        self.handle_child(CaseNode(), stmt, mid, changes)
 
     def leaf_stmt(self, stmt: Statement,
                   mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle leaf statement."""
-        node = Leaf()
+        node = LeafNode()
         node.stmt_type(stmt, mid)
         self.handle_child(node, stmt, mid, changes)
 
     def leaf_list_stmt(self, stmt: Statement,
                        mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle leaf-list statement."""
-        node = LeafList()
+        node = LeafListNode()
         node.stmt_type(stmt, mid)
         self.handle_child(node, stmt, mid, changes)
 
     def anydata_stmt(self, stmt: Statement,
                      mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle anydata statement."""
-        self.handle_child(Anydata(), stmt, mid, changes)
+        self.handle_child(AnydataNode(), stmt, mid, changes)
 
     def anyxml_stmt(self, stmt: Statement,
                     mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle anyxml statement."""
-        self.handle_child(Anyxml(), stmt, mid, changes)
+        self.handle_child(AnyxmlNode(), stmt, mid, changes)
 
 class DataNode(object):
     """Abstract superclass for data nodes."""
@@ -291,21 +278,6 @@ class DataNode(object):
 class Terminal(SchemaNode, DataNode):
     """Abstract superclass for leaves in the schema tree."""
 
-    dtypes = { "boolean": Boolean,
-               "decimal64": Decimal64,
-               "empty": Empty,
-               "int8": Int8,
-               "int16": Int16,
-               "int32": Int32,
-               "int64": Int64,
-               "uint8": Uint8,
-               "uint16": Uint16,
-               "uint32": Uint32,
-               "uint64": Uint64,
-               "string": String,
-               }
-    """Dictionary mapping type names to classes."""
-
     def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
@@ -322,39 +294,15 @@ class Terminal(SchemaNode, DataNode):
         """Set receiver's type."""
         self._type = typ
 
-    def stmt_type(self, stmt: Statement, mid: ModuleId) -> DataType:
-        """Return data type for the terminal node defined by `stmt`.
+    def stmt_type(self, stmt: Statement, mid: ModuleId) -> None:
+        """Assign data type to the terminal node defined by `stmt`.
 
         :param stmt: YANG ``leaf`` or ``leaf-list`` statement
         :param mid: id of the context module
         """
-        tstmt = stmt.find1("type", required=True)
-        typ = tstmt.argument
-        if typ in self.dtypes:
-            self.type = self.dtypes[typ]()
-            self.type.handle_substatements(tstmt, mid)
-        else:
-            self.type = self.derived_type(tstmt, mid)
+        self.type = DataType.resolve_type(stmt.find1("type", required=True), mid)
 
-    def derived_type(self, stmt: Statement, mid: ModuleId) -> DataType:
-        """Completely resolve a derived type.
-
-        :param stmt: derived type statement
-        :param mid: id of the context module
-        """
-        tchain = []
-        qst = (stmt, mid)
-        while qst[0].argument not in self.dtypes:
-            tchain.append(qst)
-            tdef, tid = self.get_definition(*qst)
-            qst = (tdef.find1("type", required=True), tid)
-        res = self.dtypes[qst[0].argument]()
-        res.handle_substatements(*qst)
-        while tchain:
-            res.handle_substatements(*tchain.pop())
-        return res
-
-class Container(Internal, DataNode):
+class ContainerNode(Internal, DataNode):
     """Container node."""
 
     def __init__(self) -> None:
@@ -366,7 +314,7 @@ class Container(Internal, DataNode):
                       changes: OptChangeSet) -> None:
         self.presence = True
 
-class List(Internal, DataNode):
+class ListNode(Internal, DataNode):
     """List node."""
 
     def _parse_entry_selector(self, iid: str, offset: int) -> Tuple[
@@ -401,7 +349,7 @@ class List(Internal, DataNode):
             return (EntryKeys(res), mo.end())
         raise BadEntrySelector(self, iid)
 
-class Choice(Internal):
+class ChoiceNode(Internal):
     """Choice node."""
 
     def handle_child(self, node: SchemaNode, stmt: SchemaNode,
@@ -413,28 +361,28 @@ class Choice(Internal):
         :param mid: module context
         :param changes: change set
         """
-        if isinstance(node, Case):
+        if isinstance(node, CaseNode):
             super().handle_child(node, stmt, mid, changes)
         else:
-            cn = Case()
+            cn = CaseNode()
             cn.name = stmt.argument
             cn.ns = mid[0]
             self.add_child(cn)
             cn.handle_child(node, stmt, mid,
                             changes.get_subset(name) if changes else None)
 
-class Case(Internal):
+class CaseNode(Internal):
     """Case node."""
     pass
 
-class Leaf(Terminal):
+class LeafNode(Terminal):
     """Leaf node."""
 
     def default_stmt(self, stmt: Statement, mid: ModuleId,
                      changes: OptChangeSet) -> None:
         self.default = self.type.parse_value(stmt.argument)
 
-class LeafList(Terminal):
+class LeafListNode(Terminal):
     """Leaf-list node."""
 
     def default_stmt(self, stmt: Statement, mid: ModuleId,
@@ -465,12 +413,12 @@ class LeafList(Terminal):
             val = self.type.parse_value(drhs if drhs else mo.group("srhs"))
             return (EntryValue(val), mo.end())
 
-class Anydata(Terminal):
-    """Leaf-list node."""
+class AnydataNode(Terminal):
+    """Anydata node."""
     pass
 
-class Anyxml(Terminal):
-    """Leaf-list node."""
+class AnyxmlNode(Terminal):
+    """Anyxml node."""
     pass
 
 class NonexistentSchemaNode(YangsonException):
