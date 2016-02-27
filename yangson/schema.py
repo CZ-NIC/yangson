@@ -64,7 +64,7 @@ class SchemaNode(object):
     def config(self) -> bool:
         """Is the receiver configuration?"""
         try:
-            return getattr(self, "_config")
+            return self._config
         except AttributeError:
             return self.parent.config
 
@@ -352,6 +352,11 @@ class ListNode(Internal, DataNode):
 class ChoiceNode(Internal):
     """Choice node."""
 
+    def __init__(self) -> None:
+        """Initialize the class instance."""
+        super().__init__()
+        self.default = None # type: NodeName
+
     def handle_child(self, node: SchemaNode, stmt: SchemaNode,
                      mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle a child node to be added to the receiver.
@@ -370,6 +375,10 @@ class ChoiceNode(Internal):
             self.add_child(cn)
             cn.handle_child(node, stmt, mid,
                             changes.get_subset(name) if changes else None)
+
+    def default_stmt(self, stmt: Statement, mid: ModuleId,
+                     changes: OptChangeSet) -> None:
+        self.default = Context.translate_qname(mid, stmt.argument)
 
 class CaseNode(Internal):
     """Case node."""

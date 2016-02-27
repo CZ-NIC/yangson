@@ -1,3 +1,4 @@
+import base64
 import decimal
 import re
 from typing import Any, Callable, List, Optional, Tuple, Union
@@ -12,13 +13,9 @@ class DataType(object):
     @classmethod
     def resolve_type(cls, stmt: Statement, mid: ModuleId) -> "DataType":
         typ = stmt.argument
-        if typ == "union":
-            res = UnionType()
-            res.types = [ cls.resolve_type(ts, mid)
-                          for ts in stmt.find_all("type") ]
-        elif typ in cls.dtypes:
+        if typ in cls.dtypes:
             res = cls.dtypes[typ]()
-            res.handle_substatements(stmt, mid)
+            res.handle_properties(stmt, mid)
         else:
             res = cls.derived_type(stmt, mid)
         return res
@@ -32,20 +29,15 @@ class DataType(object):
         """
         tchain = []
         qst = (stmt, mid)
-        while qst[0].argument != "union" and qst[0].argument not in cls.dtypes:
+        while qst[0].argument not in cls.dtypes:
             tchain.append(qst)
             tdef, tid = Context.get_definition(*qst)
             qst = (tdef.find1("type", required=True), tid)
         tname = qst[0].argument
-        if tname == "union":
-            res = UnionType()
-            res.types = [ cls.resolve_type(ts, qst[1])
-                          for ts in qst[0].find_all("type") ]
-        else:
-            res = cls.dtypes[tname]()
-        res.handle_substatements(*qst)
+        res = cls.dtypes[tname]()
+        res.handle_properties(*qst)
         while tchain:
-            res.handle_substatements(*tchain.pop())
+            res.handle_restrictions(*tchain.pop())
         return res
 
 
@@ -115,10 +107,18 @@ class DataType(object):
     def _constraints(self, val: Any) -> bool:
         return True
 
-    def handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
+    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
-        :param stmt: YANG ``type decimal64`` statement
+        :param stmt: YANG ``type`` statement
+        :param mid: id of the context module
+        """
+        self.handle_restrictions(stmt, mid)
+
+    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle type restriction substatements.
+
+        :param stmt: YANG ``type`` statement
         :param mid: id of the context module
         """
         pass
@@ -130,7 +130,7 @@ class UnionType(DataType):
         """Initialize the class instance."""
         self.types = [] # type: List[DataType]
 
-    def _parse(self, input: str):
+    def _parse(self, input: str) -> Any:
         for t in self.types:
             try:
                 val = t._parse(input)
@@ -149,6 +149,15 @@ class UnionType(DataType):
             if t.contains(val): return True
         return False
 
+    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle type substatements.
+
+        :param stmt: YANG ``type`` statement
+        :param mid: id of the context module
+        """
+        self.types = [ self.resolve_type(ts, mid)
+                       for ts in stmt.find_all("type") ]
+
 class EmptyType(DataType):
     """Class representing YANG "empty" type."""
 
@@ -159,6 +168,50 @@ class EmptyType(DataType):
         if not cls._instance:
             cls._instance = super(EmptyType, cls).__new__(cls)
         return cls._instance
+
+class BitsType(DataType):
+    """Class representing YANG "bits" type."""
+
+    def __init__(self) -> None:
+        """Initialize the class instance."""
+        self.bit = {}
+
+    def _parse(self, input: str) -> List[str]:
+        return input.split()
+
+    def _constraints(self, val: List[str]) -> bool:
+        for b in val:
+            if b not in self.bit: return False
+        return True
+
+    def as_int(self, val: List[str]) -> int:
+        """Transform a "bits" value to an integer."""
+        res = 0
+        try:
+            for b in val:
+                res += 1 << self.bit[b]
+        except KeyError:
+            raise YangTypeError(val)
+        return res
+
+    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle type restrictionns.
+
+        :param stmt: YANG ``type bits`` statement
+        :param mid: id of the context module
+        """
+        nextpos = 0
+        for bst in stmt.find_all("bit"):
+            label = bst.argument
+            pst = bst.find1("position")
+            if pst:
+                pos = int(pst.argument)
+                if not self.bit or pos > nextpos:
+                    nextpos = pos
+                self.bit[label] = pos
+            else:
+                self.bit[label] = nextpos
+                nextpos += 1
 
 class BooleanType(DataType):
     """Class representing YANG "boolean" type."""
@@ -189,8 +242,8 @@ class StringType(DataType):
         super().__init__()
         self.regexps = []
 
-    def handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type substatements.
+    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle type restrictions.
 
         :param stmt: YANG string type statement
         :param mid: id of the context module
@@ -200,37 +253,101 @@ class StringType(DataType):
             self._length = self._combine_ranges(self._length,
                                                 lstmt.argument, int)
 
+    def contains(self, val: str) -> bool:
+        """Return ``True`` if the receiver type contains `val`.
+
+        :param val: value to test
+        """
+        return isinstance(val, str) and self._constraints(val)
+
     def _constraints(self, val: str) -> bool:
         return self._in_range(len(val), self._length)
+
+class BinaryType(StringType):
+    """Class representing YANG "binary" type."""
+
+    def _parse(self, input: str) -> bytes:
+        return base64.b64decode(input, validate=True)
 
 class EnumerationType(DataType):
     """Class representing YANG "enumeration" type."""
 
     def __init__(self) -> None:
         """Initialize the class instance."""
-        self._nextval = 0
         self.enum = {}
 
     def _constraints(self, val: str) -> bool:
         return val in self.enum
 
-    def handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type substatements.
+    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle type restrictions.
 
         :param stmt: YANG ``type enumeration`` statement
         :param mid: id of the context module
         """
+        nextval = 0
         for est in stmt.find_all("enum"):
             label = est.argument
             vst = est.find1("value")
             if vst:
                 val = int(vst.argument)
-                if not self.enum or val > self._nextval:
-                    self._nextval = val
+                if not self.enum or val > nextval:
+                    nextval = val
                 self.enum[label] = val
             else:
-                self.enum[label] = self._nextval
-                self._nextval += 1
+                self.enum[label] = nextval
+                nextval += 1
+
+class LinkType(DataType):
+    """Abstract class for instance-referencing types."""
+
+    def __init__(self) -> None:
+        """Initialize the class instance."""
+        self.require_instance = True # type: bool
+
+    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle type substatements.
+
+        :param stmt: YANG ``type leafref/instance-identifier`` statement
+        :param mid: id of the context module
+        """
+        if stmt.find1("require-instance", "false"):
+            self.require_instance = False
+
+class LeafrefType(LinkType):
+    """Class representing YANG "leafref" type."""
+
+    def __init__(self) -> None:
+        """Initialize the class instance."""
+        super().__init__()
+        self.path = None
+
+    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle type substatements.
+
+        :param stmt: YANG ``type leafref`` statement
+        :param mid: id of the context module
+        """
+        self.path = stmt.find1("path", required=True).argument
+
+class InstanceIdentifierType(LinkType):
+    """Class representing YANG "instance-identifier" type."""
+    pass
+
+class IdentityrefType(DataType):
+    """Class representing YANG "identityref" type."""
+
+    def __init__(self) -> None:
+        """Initialize the class instance."""
+        self.bases = [] # type: List[QName]
+
+    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle type substatements.
+
+        :param stmt: YANG ``type identityref`` statement
+        :param mid: id of the context module
+        """
+        self.bases = [ b.argument for b in stmt.find_all("base") ]
 
 class NumericType(DataType):
     """Abstract class for numeric data types."""
@@ -238,7 +355,7 @@ class NumericType(DataType):
     def _constraints(self, val: Union[int, decimal.Decimal]) -> bool:
         return self._in_range(val, self._range)
 
-    def handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
+    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
         :param stmt: YANG ``type`` statement
@@ -258,7 +375,7 @@ class Decimal64Type(NumericType):
         self._epsilon = decimal.Decimal(0) # type: decimal.Decimal
         self.context = None # type: Optional[decimal.Context]
 
-    def handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
+    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
         :param stmt: YANG ``type decimal64`` statement
@@ -269,7 +386,7 @@ class Decimal64Type(NumericType):
         quot = decimal.Decimal(10**fd)
         lim = decimal.Decimal(9223372036854775808)
         self._range = [[-lim / quot, (lim - 1) / quot]]
-        super().handle_substatements(stmt, mid)
+        super().handle_properties(stmt, mid)
 
     def _parse(self, input: str) -> decimal.Decimal:
         """Parse decimal value.
@@ -286,7 +403,7 @@ class Decimal64Type(NumericType):
 
         :param val: value to test
         """
-        return isinstance(val, decimal.Decimal)
+        return isinstance(val, decimal.Decimal) and self._constraints(val)
 
 class IntegralType(NumericType):
     """Abstract class for integral data types."""
@@ -368,14 +485,19 @@ class YangTypeError(YangsonException):
     def __str__(self) -> str:
         return "incorrect type error for value " + str(self.value)
 
-DataType.dtypes = { "boolean": BooleanType,
+DataType.dtypes = { "binary": BinaryType,
+                    "bits": BitsType,
+                    "boolean": BooleanType,
                     "decimal64": Decimal64Type,
                     "empty": EmptyType,
                     "enumeration": EnumerationType,
+                    "identityref": IdentityrefType,
+                    "instance-identifier": InstanceIdentifierType,
                     "int8": Int8Type,
                     "int16": Int16Type,
                     "int32": Int32Type,
                     "int64": Int64Type,
+                    "leafref": LeafrefType,
                     "string": StringType,
                     "uint8": Uint8Type,
                     "uint16": Uint16Type,
