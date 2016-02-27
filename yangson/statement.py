@@ -67,7 +67,7 @@ class Statement(object):
             if (sub.keyword == kw and sub.prefix == pref and
                 (arg is None or sub.argument == arg)):
                 return sub
-        if required: raise StatementNotFound(kw)
+        if required: raise StatementNotFound(self, kw)
 
     def find_all(self,
                  kw: YangIdentifier,
@@ -97,12 +97,13 @@ class Statement(object):
 class StatementNotFound(YangsonException):
     """Exception to raise when a statement should exist but doesn't."""
 
-    def __init__(self, kw: YangIdentifier) -> None:
+    def __init__(self, parent: Statement, kw: YangIdentifier) -> None:
+        self.parent = parent
         self.keyword = kw
 
     def __str__(self) -> str:
         """Print the statement's keyword."""
-        return self.keyword
+        return "`{}' in `{}'".format(self.keyword, self.parent)
 
 class DefinitionNotFound(YangsonException):
     """Exception to be raised when a requested definition doesn't exist."""
