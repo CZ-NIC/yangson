@@ -8,7 +8,7 @@ from .schema import Internal, NonexistentSchemaNode
 from .typealiases import *
 from .regex import *
 
-class DataModel(object):
+class DataModel:
     """YANG data model."""
 
     @classmethod

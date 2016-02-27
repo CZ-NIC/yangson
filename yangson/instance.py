@@ -9,7 +9,7 @@ Value = Any
 Object = Dict[QName, Value]
 Array = List[Value]
 
-class Crumb(object):
+class Crumb:
     """Abstract class of crumb object representing a zipper context."""
     pass
 
@@ -61,7 +61,7 @@ class EntryCrumb(Crumb):
         """
         return self.before + [value] + self.after
 
-class Instance(object):
+class Instance:
     """YANG data node instance implemented as a zipper structure."""
 
     def __init__(self, value: Value, trace: Trace = []) -> None:
@@ -261,7 +261,7 @@ class InstanceIdentifier(list):
         """Return a string representation of the receiver."""
         return "".join([ str(i) for i in self ])
 
-class InstanceSelector(object):
+class InstanceSelector:
     """Components of instance identifers."""
     pass
 

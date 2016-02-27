@@ -13,7 +13,7 @@ from .regex import *
 # Type aliases
 OptChangeSet = Optional["ChangeSet"]
 
-class ChangeSet(object):
+class ChangeSet:
     """Set of changes to be applied to a node and its children."""
 
     @classmethod
@@ -50,7 +50,7 @@ class ChangeSet(object):
                 res.subset[n] = cs.subset[n]
         return res
 
-class SchemaNode(object):
+class SchemaNode:
     """Abstract superclass for schema nodes."""
 
     def __init__(self) -> None:
@@ -258,7 +258,7 @@ class Internal(SchemaNode):
         """Handle anyxml statement."""
         self.handle_child(AnyxmlNode(), stmt, mid, changes)
 
-class DataNode(object):
+class DataNode:
     """Abstract superclass for data nodes."""
 
     def _parse_entry_selector(self, iid: str, offset: int) -> Any:

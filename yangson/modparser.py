@@ -14,7 +14,7 @@ ParseTable = List[
     ]
 ]
 
-class Parser(object):
+class Parser:
 
     """Parser of YANG modules.
 

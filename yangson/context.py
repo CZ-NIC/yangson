@@ -7,7 +7,7 @@ from .typealiases import *
 # Type aliases
 ModuleDict = Dict[ModuleId, Statement]
 
-class Context(object):
+class Context:
     """This class provides context for schema generation.
 
     The information is installed in class varables, which means that

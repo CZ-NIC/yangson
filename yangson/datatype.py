@@ -7,7 +7,7 @@ from .exception import YangsonException
 from .statement import Statement
 from .typealiases import *
 
-class DataType(object):
+class DataType:
     """Abstract class for YANG data types."""
 
     @classmethod
