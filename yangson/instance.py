@@ -1,5 +1,6 @@
 """Classes related to JSON-encoded instance data."""
 
+from datetime import datetime
 from typing import Any, Callable, List, Tuple
 from .exception import YangsonException
 from .typealiases import *
@@ -393,6 +394,31 @@ class EntryKeys(InstanceSelector):
         :param inst: current instance
         """
         return inst.look_up(self.keys)
+
+class StructuredValue:
+    """Abstract class for array and object values."""
+
+    def __init__(self, ts: Optional[datetime] = None) -> None:
+        """Initialize class instance.
+
+        :param ts: creation time stamp (if ``None``, set it to current time)
+        """
+        self.time_stamp(ts)
+
+    def time_stamp(self, ts = Optional[datetime]) -> None:
+        """Update the receiver's last-modified time stamp.
+
+        :param ts: new time stamp (if ``None``, set it to current time)
+        """
+        self.last_modified = ts if ts else datetime.now()
+
+class Array(StructuredValue, list):
+    """Array values corresponding to YANG lists and leaf-lists."""
+    pass
+
+class Object(StructuredValue, dict):
+    """Array values corresponding to YANG container."""
+    pass
 
 # Exceptions
 
