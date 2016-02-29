@@ -33,12 +33,19 @@ class ObjectValue(StructuredValue, dict):
 class Crumb:
     """Class of crumb objects representing zipper context."""
 
-    def __init__(self, parent: Optional["Crumb"] = None) -> None:
+    def __init__(self, parent: "Crumb", ts: datetime) -> None:
         """Initialize the class instance.
 
         :param parent: parent crumb
+        :param ts: receiver's time stamp
         """
         self.parent = parent
+        self._timestamp = ts
+
+    @property
+    def timestamp(self) -> datetime:
+        """Return receiver's timestamp (or parent's if ``None``)."""
+        return self._timestamp if self._timestamp else self.parent.timestamp
 
     def pointer(self):
         """Return JSON pointer of the receiver."""
@@ -49,14 +56,16 @@ class Crumb:
 class MemberCrumb(Crumb):
     """Zipper contexts for an object member."""
 
-    def __init__(self, name: QName, obj: ObjectValue, parent: Crumb) -> None:
+    def __init__(self, name: QName, obj: Dict[QName, Value], parent: Crumb,
+                 ts: Optional[datetime] = None) -> None:
         """Initialize the class instance.
 
         :param name: name of an object member that's the current focus
         :param obj: an object containing the remaining members
         :param parent: parent crumb
+        :param ts: receiver's time stamp
         """
-        super().__init__(parent)
+        super().__init__(parent, ts)
         self.name = name
         self.object = obj
 
@@ -69,21 +78,31 @@ class MemberCrumb(Crumb):
 
         :param value: value of the focused member
         """
-        res = self.object.copy()
+        res = ObjectValue(self.timestamp)
         res[self.name] = value
+        res.update(self.object)
         return res
+
+    def _copy(self, ts: datetime) -> "MemberCrumb":
+        """Return a shallow copy of the receiver.
+
+        :param ts: timestamp of the copy
+        """
+        return MemberCrumb(self.name, self.object, self.parent, ts)
 
 class EntryCrumb(Crumb):
     """Zipper contexts for an array entry."""
 
-    def __init__(self, before: Array, after: Array, parent: Crumb) -> None:
+    def __init__(self, before: List[Value], after: List[Value],
+                 parent: Crumb, ts: Optional[datetime] = None) -> None:
         """Initialize the class instance.
 
         :param before: array entries before the focused entry
         :param after: array entries after the focused entry
         :param parent: parent crumb
+        :param ts: receiver's time stamp
         """
-        super().__init__(parent)
+        super().__init__(parent, ts)
         self.before = before
         self.after = after
 
@@ -91,24 +110,34 @@ class EntryCrumb(Crumb):
         """Return the JSON pointer fragment of the focused value."""
         return len(self.before)
 
-    def zip(self, value: Value) -> Array:
+    def zip(self, value: Value) -> ArrayValue:
         """Concatenate the receiver's parts with the focused entry.
 
         :param value: value of the focused entry
         """
-        return self.before + [value] + self.after
+        res = ArrayValue(self.timestamp)
+        res.extend(self.after)
+        res[0:0] = self.before
+        return res
+
+    def _copy(self, ts: datetime) -> "EntryCrumb":
+        """Return a shallow copy of the receiver.
+
+        :param ts: timestamp of the copy
+        """
+        return EntryCrumb(self.before, self.after, self.parent, ts)
 
 class Instance:
     """YANG data node instance implemented as a zipper structure."""
 
-    def __init__(self, value: Value, crumb: Optional[Crumb] = None) -> None:
+    def __init__(self, value: Value, crumb: Crumb) -> None:
         """Initialize the class instance.
 
         :param value: instance value
         :param crumb: receiver's crumb
         """
         self.value = value
-        self.crumb = crumb if crumb else Crumb()
+        self.crumb = crumb
 
     @property
     def namespace(self):
@@ -143,12 +172,14 @@ class Instance:
 
         :param newval: new value
         """
-        return Instance(newval, self.crumb)
+        return Instance(newval, self.crumb._copy(datetime.now()))
 
     @property
     def up(self) -> "Instance":
         """Ascend to the parent instance."""
         try:
+            if self.crumb._timestamp:
+                self.crumb.parent._timestamp = self.crumb._timestamp
             return Instance(self.crumb.zip(self.value), self.crumb.parent)
         except IndexError:
             raise NonexistentInstance(self, "up of top") from None
@@ -172,7 +203,8 @@ class Instance:
     def new_member(self, name: QName, value: Value) -> "Instance":
         if name in self.value:
             raise DuplicateMember(self, name)
-        return Instance(value, MemberCrumb(name, self.value, self.crumb))
+        return Instance(value, MemberCrumb(name, self.value, self.crumb,
+                                           datetime.now()))
 
     def sibling(self, name: QName) -> "Instance":
         try:
@@ -262,7 +294,8 @@ class Instance:
         try:
             cr = self.crumb
             return Instance(value,
-                            EntryCrumb(cr.before, [self.value] + cr.after, cr))
+                            EntryCrumb(cr.before, [self.value] + cr.after, cr,
+                                       datetime.now()))
         except (AttributeError, IndexError):
             raise InstanceTypeError(self, "insert before non-entry") from None
 
@@ -270,7 +303,8 @@ class Instance:
         try:
             cr = self.crumb
             return Instance(value,
-                            EntryCrumb(cr.before + [self.value], cr.after, cr))
+                            EntryCrumb(cr.before + [self.value], cr.after, cr,
+                                       datetime.now()))
         except (AttributeError, IndexError):
             raise InstanceTypeError(self, "insert after non-entry") from None
 
@@ -327,7 +361,7 @@ class EntryIndex(InstanceSelector):
         """Return a string representation of the receiver."""
         return "[{0:d}]".format(self.index)
 
-    def peek_step(self, arr: Array) -> Value:
+    def peek_step(self, arr: ArrayValue) -> Value:
         """Return the entry of `arr` addressed by the receiver.
 
         :param arr: current array
@@ -358,7 +392,7 @@ class EntryValue(InstanceSelector):
         """Return a string representation of the receiver."""
         return "[.=" + str(self.value) +"]"
 
-    def peek_step(self, arr: Array) -> Value:
+    def peek_step(self, arr: ArrayValue) -> Value:
         """Return the entry of `arr` addressed by the receiver.
 
         :param arr: current array
@@ -394,7 +428,7 @@ class EntryKeys(InstanceSelector):
         return "".join(["[{}={}]".format(k, repr(self.keys[k]))
                         for k in self.keys])
 
-    def peek_step(self, arr: Array) -> Value:
+    def peek_step(self, arr: ArrayValue) -> Value:
         """Return the entry of `arr` addressed by the receiver.
 
         :param arr: current array

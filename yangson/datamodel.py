@@ -2,7 +2,7 @@ import json
 from typing import Dict, List, Optional
 from .context import Context
 from .exception import YangsonException
-from .instance import Instance, InstanceIdentifier, MemberName
+from .instance import Crumb, Instance, InstanceIdentifier, MemberName
 from .modparser import from_file
 from .schema import InternalNode, NonexistentSchemaNode
 from .typealiases import *
@@ -75,7 +75,8 @@ class DataModel:
 
         :param robj: raw object
         """
-        return Instance(self.schema.from_raw(robj))
+        cooked = self.schema.from_raw(robj)
+        return Instance(cooked, Crumb(None, cooked.last_modified))
 
     def _build_schema(self) -> None:
         """Build the schema."""
