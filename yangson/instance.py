@@ -5,7 +5,6 @@ from typing import Any, Callable, List, Tuple
 from .exception import YangsonException
 from .typealiases import *
 
-Value = Any
 Object = Dict[QName, Value]
 Array = List[Value]
 
