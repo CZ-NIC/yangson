@@ -5,8 +5,30 @@ from typing import Any, Callable, List, Tuple
 from .exception import YangsonException
 from .typealiases import *
 
-Object = Dict[QName, Value]
-Array = List[Value]
+class StructuredValue:
+    """Abstract class for array and object values."""
+
+    def __init__(self, ts: Optional[datetime] = None) -> None:
+        """Initialize class instance.
+
+        :param ts: creation time stamp
+        """
+        self.last_modified = ts
+
+    def time_stamp(self, ts: Optional[datetime] = None) -> None:
+        """Update the receiver's last-modified time stamp.
+
+        :param ts: new time stamp (if ``None``, set it to current time)
+        """
+        self.last_modified = ts if ts else datetime.now()
+
+class ArrayValue(StructuredValue, list):
+    """Array values corresponding to YANG lists and leaf-lists."""
+    pass
+
+class ObjectValue(StructuredValue, dict):
+    """Array values corresponding to YANG container."""
+    pass
 
 class Crumb:
     """Class of crumb objects representing zipper context."""
@@ -27,7 +49,7 @@ class Crumb:
 class MemberCrumb(Crumb):
     """Zipper contexts for an object member."""
 
-    def __init__(self, name: QName, obj: Object, parent: Crumb) -> None:
+    def __init__(self, name: QName, obj: ObjectValue, parent: Crumb) -> None:
         """Initialize the class instance.
 
         :param name: name of an object member that's the current focus
@@ -42,7 +64,7 @@ class MemberCrumb(Crumb):
         """Return the JSON pointer fragment of the focused value."""
         return self.name
 
-    def zip(self, value: Value) -> Object:
+    def zip(self, value: Value) -> ObjectValue:
         """Put focused value back to a copy of the object and return it.
 
         :param value: value of the focused member
@@ -277,7 +299,7 @@ class MemberName(InstanceSelector):
         """Return a string representation of the receiver."""
         return "/" + self.name
 
-    def peek_step(self, obj: Object) -> Value:
+    def peek_step(self, obj: ObjectValue) -> Value:
         """Return the member of `obj` addressed by the receiver.
 
         :param obj: current object
@@ -391,31 +413,6 @@ class EntryKeys(InstanceSelector):
         :param inst: current instance
         """
         return inst.look_up(self.keys)
-
-class StructuredValue:
-    """Abstract class for array and object values."""
-
-    def __init__(self, ts: Optional[datetime] = None) -> None:
-        """Initialize class instance.
-
-        :param ts: creation time stamp
-        """
-        self.last_modified = ts
-
-    def time_stamp(self, ts: Optional[datetime] = None) -> None:
-        """Update the receiver's last-modified time stamp.
-
-        :param ts: new time stamp (if ``None``, set it to current time)
-        """
-        self.last_modified = ts if ts else datetime.now()
-
-class ArrayValue(StructuredValue, list):
-    """Array values corresponding to YANG lists and leaf-lists."""
-    pass
-
-class ObjectValue(StructuredValue, dict):
-    """Array values corresponding to YANG container."""
-    pass
 
 # Exceptions
 
