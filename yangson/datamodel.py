@@ -2,9 +2,9 @@ import json
 from typing import Dict, List, Optional
 from .context import Context
 from .exception import YangsonException
-from .instance import InstanceIdentifier, MemberName
+from .instance import Instance, InstanceIdentifier, MemberName
 from .modparser import from_file
-from .schema import Internal, NonexistentSchemaNode
+from .schema import InternalNode, NonexistentSchemaNode
 from .typealiases import *
 from .regex import *
 
@@ -67,8 +67,15 @@ class DataModel:
         """
         self.revisions = revisions
         self.implement = implement
-        self.schema = Internal() # type: Internal
+        self.schema = InternalNode() # type: Internal
         self.schema._nsswitch = self.schema._config = True
+
+    def from_raw(self, robj: Dict[QName, Value]) -> Instance:
+        """Return an instance created from a raw object.
+
+        :param robj: raw object
+        """
+        return Instance(self.schema.from_raw(robj))
 
     def _build_schema(self) -> None:
         """Build the schema."""

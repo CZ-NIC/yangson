@@ -5,24 +5,37 @@ from typing import Any, Callable, List, Tuple
 from .exception import YangsonException
 from .typealiases import *
 
-Trace = List["Crumb"]
 Value = Any
 Object = Dict[QName, Value]
 Array = List[Value]
 
 class Crumb:
-    """Abstract class of crumb object representing a zipper context."""
-    pass
+    """Class of crumb objects representing zipper context."""
+
+    def __init__(self, parent: Optional["Crumb"] = None) -> None:
+        """Initialize the class instance.
+
+        :param parent: parent crumb
+        """
+        self.parent = parent
+
+    def pointer(self):
+        """Return JSON pointer of the receiver."""
+
+        return ("{}/{}".format(self.parent.pointer(), self.pointer_fragment())
+                if self.parent else "")
 
 class MemberCrumb(Crumb):
-    """Zipper context for an object member."""
+    """Zipper contexts for an object member."""
 
-    def __init__(self, name: QName, obj: Object) -> None:
+    def __init__(self, name: QName, obj: Object, parent: Crumb) -> None:
         """Initialize the class instance.
 
         :param name: name of an object member that's the current focus
         :param obj: an object containing the remaining members
+        :param parent: parent crumb
         """
+        super().__init__(parent)
         self.name = name
         self.object = obj
 
@@ -40,14 +53,16 @@ class MemberCrumb(Crumb):
         return res
 
 class EntryCrumb(Crumb):
-    """Zipper context for an array entry."""
+    """Zipper contexts for an array entry."""
 
-    def __init__(self, before: Array, after: Array) -> None:
+    def __init__(self, before: Array, after: Array, parent: Crumb) -> None:
         """Initialize the class instance.
 
         :param before: array entries before the focused entry
         :param after: array entries after the focused entry
+        :param parent: parent crumb
         """
+        super().__init__(parent)
         self.before = before
         self.after = after
 
@@ -65,14 +80,14 @@ class EntryCrumb(Crumb):
 class Instance:
     """YANG data node instance implemented as a zipper structure."""
 
-    def __init__(self, value: Value, trace: Trace = []) -> None:
+    def __init__(self, value: Value, crumb: Optional[Crumb] = None) -> None:
         """Initialize the class instance.
 
         :param value: instance value
-        :param trace: sequence of crumbs
+        :param crumb: receiver's crumb
         """
         self.value = value
-        self.trace = trace
+        self.crumb = crumb if crumb else Crumb()
 
     @property
     def namespace(self):
@@ -81,18 +96,6 @@ class Instance:
             if isinstance(cr, MemberCrumb):
                 p, s, loc = cr.name.partition(":")
                 if s: return p
-
-    def crumb(self) -> Crumb:
-        """Return the most recent crumb in receiver's trace."""
-        return self.trace[-1]
-
-    def _replace_crumb(self, crumb: Crumb) -> Trace:
-        """Return receiver's trace with a new last crumb."""
-        return self.trace[:-1] + [crumb]
-
-    def pointer(self) -> str:
-        """Return JSON pointer of the receiver."""
-        return "/" + "/".join([ c.pointer_fragment() for c in self.trace ])
 
     def goto(self, ii: "InstanceIdentifier") -> "Instance":
         """Return an instance in the receiver's subtree.
@@ -119,58 +122,55 @@ class Instance:
 
         :param newval: new value
         """
-        return self.__class__(newval, self.trace)
+        return Instance(newval, self.crumb)
 
     @property
     def up(self) -> "Instance":
         """Ascend to the parent instance."""
         try:
-            return self.__class__(self.crumb().zip(self.value),
-                                  self.trace[:-1])
+            return Instance(self.crumb.zip(self.value), self.crumb.parent)
         except IndexError:
             raise NonexistentInstance(self, "up of top") from None
 
     @property
     def top(self) -> "Instance":
         inst = self
-        while inst.trace:
+        while inst.crumb.parent:
             inst = inst.up
         return inst
 
     def member(self, name: QName) -> "Instance":
         obj = self.value.copy()
         try:
-            return self.__class__(obj.pop(name),
-                                  self.trace + [MemberCrumb(name, obj)])
+            return Instance(obj.pop(name), MemberCrumb(name, obj, self.crumb))
         except TypeError:
             raise InstanceTypeError(self, "member of non-object") from None
         except KeyError:
-            raise NonexistentInstance(self, "member " + name)
+            raise NonexistentInstance(self, "member " + name) from None
 
     def new_member(self, name: QName, value: Value) -> "Instance":
         if name in self.value:
-            raise DuplicateMember(self, name) from None
-        return self.__class__(value, self.trace + [MemberCrumb(name, self.value)])
+            raise DuplicateMember(self, name)
+        return Instance(value, MemberCrumb(name, self.value, self.crumb))
 
     def sibling(self, name: QName) -> "Instance":
         try:
-            cr = self.crumb()
-            obj = cr.object.copy()
+            obj = self.crumb.object.copy()
             newval = obj.pop(name)
-            obj[cr.name] = self.value
-            return self.__class__(newval, self._replace_crumb(MemberCrumb(name, obj)))
+            obj[self.crumb.name] = self.value
+            return Instance(newval, MemberCrumb(name, obj, self.crumb.parent))
         except KeyError:
-            raise NonexistentInstance(self, "member " + name)
+            raise NonexistentInstance(self, "member " + name) from None
         except IndexError:
-            raise InstanceTypeError(self, "sibling of non-member")
+            raise InstanceTypeError(self, "sibling of non-member") from None
 
     def entry(self, index: int) -> "Instance":
         val = self.value
         if not isinstance(val, list):
             raise InstanceTypeError(self, "entry of non-array") from None
         try:
-            return self.__class__(val[index], self.trace +
-                                  [EntryCrumb(val[:index], val[index+1:])])
+            return Instance(val[index],
+                            EntryCrumb(val[:index], val[index+1:], self.crumb))
         except IndexError:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
@@ -178,9 +178,9 @@ class Instance:
     def first_entry(self):
         val = self.value
         if not isinstance(val, list):
-            raise InstanceTypeError(self, "first entry of non-array") from None
+            raise InstanceTypeError(self, "first entry of non-array")
         try:
-            return self.__class__(val[0], self.trace + [EntryCrumb([], val[1:])])
+            return Instance(val[0], EntryCrumb([], val[1:], self.crumb))
         except IndexError:
             raise NonexistentInstance(self, "first of empty") from None
 
@@ -188,9 +188,9 @@ class Instance:
     def last_entry(self):
         val = self.value
         if not isinstance(val, list):
-            raise InstanceTypeError(self, "last entry of non-array") from None
+            raise InstanceTypeError(self, "last entry of non-array")
         try:
-            return self.__class__(val[-1], self.trace + [EntryCrumb(val[:-1], [])])
+            return Instance(val[-1], EntryCrumb(val[:-1], [], self.crumb))
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
@@ -216,11 +216,10 @@ class Instance:
     @property
     def next(self) -> "Instance":
         try:
-            cr = self.crumb()
-            return self.__class__(
+            cr = self.crumb
+            return Instance(
                 cr.after[0],
-                self._replace_crumb(
-                    EntryCrumb(cr.before + [self.value], cr.after[1:])))
+                EntryCrumb(cr.before + [self.value], cr.after[1:], cr.parent))
         except IndexError:
             raise NonexistentInstance(self, "next of last") from None
         except AttributeError:
@@ -229,11 +228,10 @@ class Instance:
     @property
     def previous(self) -> "Instance":
         try:
-            cr = self.crumb()
-            return self.__class__(
+            cr = self.crumb
+            return Instance(
                 cr.before[-1],
-                self._replace_crumb(
-                    EntryCrumb(cr.before[:-1], [self.value] + cr.after)))
+                EntryCrumb(cr.before[:-1], [self.value] + cr.after, cr.parent))
         except IndexError:
             raise NonexistentInstance(self, "previous of first") from None
         except AttributeError:
@@ -241,17 +239,17 @@ class Instance:
 
     def insert_before(self, value: Value):
         try:
-            cr = self.crumb()
-            return self.__class__(value, self._replace_crumb(
-                EntryCrumb(cr.before, [self.value] + cr.after)))
+            cr = self.crumb
+            return Instance(value,
+                            EntryCrumb(cr.before, [self.value] + cr.after, cr))
         except (AttributeError, IndexError):
             raise InstanceTypeError(self, "insert before non-entry") from None
 
     def insert_after(self, value: Value):
         try:
-            cr = self.crumb()
-            return self.__class__(value, self._replace_crumb(
-                EntryCrumb(cr.before + [self.value], cr.after)))
+            cr = self.crumb
+            return Instance(value,
+                            EntryCrumb(cr.before + [self.value], cr.after, cr))
         except (AttributeError, IndexError):
             raise InstanceTypeError(self, "insert after non-entry") from None
 
@@ -357,8 +355,8 @@ class EntryValue(InstanceSelector):
         try:
             return inst.entry(inst.value.index(self.value))
         except ValueError:
-            raise NonexistentInstance(inst,
-                                       "entry '{}'".format(str(self.value)))
+            raise NonexistentInstance(
+                inst, "entry '{}'".format(str(self.value))) from None
 
 class EntryKeys(InstanceSelector):
     """Key-based selectors for a list entry."""
@@ -401,22 +399,22 @@ class StructuredValue:
     def __init__(self, ts: Optional[datetime] = None) -> None:
         """Initialize class instance.
 
-        :param ts: creation time stamp (if ``None``, set it to current time)
+        :param ts: creation time stamp
         """
-        self.time_stamp(ts)
+        self.last_modified = ts
 
-    def time_stamp(self, ts = Optional[datetime]) -> None:
+    def time_stamp(self, ts: Optional[datetime] = None) -> None:
         """Update the receiver's last-modified time stamp.
 
         :param ts: new time stamp (if ``None``, set it to current time)
         """
         self.last_modified = ts if ts else datetime.now()
 
-class Array(StructuredValue, list):
+class ArrayValue(StructuredValue, list):
     """Array values corresponding to YANG lists and leaf-lists."""
     pass
 
-class Object(StructuredValue, dict):
+class ObjectValue(StructuredValue, dict):
     """Array values corresponding to YANG container."""
     pass
 
@@ -429,7 +427,7 @@ class InstanceError(YangsonException):
         self.instance = inst
 
     def __str__(self):
-        return "[" + self.instance.pointer() + "] "
+        return "[" + self.instance.crumb.pointer() + "] "
 
 class NonexistentInstance(InstanceError):
     """Exception to raise when moving out of bounds."""

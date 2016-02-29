@@ -5,7 +5,7 @@ from .context import Context
 from .datatype import DataType
 from .enumerations import DefaultDeny
 from .exception import YangsonException
-from .instance import EntryIndex, EntryValue, EntryKeys
+from .instance import ArrayValue, EntryIndex, EntryValue, EntryKeys, ObjectValue
 from .statement import Statement
 from .typealiases import *
 from .regex import *
@@ -57,7 +57,7 @@ class SchemaNode:
         """Initialize the class instance."""
         self.name = None # type: Optional[YangIdentifier]
         self.ns = None # type: Optional[YangIdentifier]
-        self.parent = None # type: Optional["Internal"]
+        self.parent = None # type: Optional["InternalNode"]
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
     @property
@@ -130,7 +130,7 @@ class SchemaNode:
     """Map of statement keywords to names of handler methods."""
 
 
-class Internal(SchemaNode):
+class InternalNode(SchemaNode):
     """Abstract superclass for schema nodes that have children."""
 
     def __init__(self) -> None:
@@ -258,6 +258,25 @@ class Internal(SchemaNode):
         """Handle anyxml statement."""
         self.handle_child(AnyxmlNode(), stmt, mid, changes)
 
+    def from_raw(self, val: Dict[QName, Value],
+                 ns: YangIdentifier = None) -> ObjectValue:
+        """Transform a raw dictionary into object value.
+
+        :param val: raw dictionary
+        :param ns: current namespace
+        """
+        res = ObjectValue()
+        for qn in val:
+            p, s, loc = qn.partition(":")
+            if s:
+                ns = p
+            else:
+                loc = p
+            cn = self.get_data_child(loc, ns)
+            res[cn.qname] = cn.from_raw(val[qn])
+        res.time_stamp()
+        return res
+
 class DataNode:
     """Abstract superclass for data nodes."""
 
@@ -275,7 +294,7 @@ class DataNode:
         """This method is applicable only to a terminal node."""
         raise BadSchemaNodeType(self, "leaf or leaf-list")
 
-class Terminal(SchemaNode, DataNode):
+class TerminalNode(SchemaNode, DataNode):
     """Abstract superclass for leaves in the schema tree."""
 
     def __init__(self) -> None:
@@ -302,7 +321,15 @@ class Terminal(SchemaNode, DataNode):
         """
         self.type = DataType.resolve_type(stmt.find1("type", required=True), mid)
 
-class ContainerNode(Internal, DataNode):
+    def from_raw(self, val: Value, ns: YangIdentifier = None) -> Value:
+        """Transform a scalar entry.
+
+        :param val: raw lis
+        :param ns: current namespace
+        """
+        return val # TODO: handle special cases (Decimal64)
+
+class ContainerNode(InternalNode, DataNode):
     """Container node."""
 
     def __init__(self) -> None:
@@ -314,7 +341,8 @@ class ContainerNode(Internal, DataNode):
                       changes: OptChangeSet) -> None:
         self.presence = True
 
-class ListNode(Internal, DataNode):
+
+class ListNode(InternalNode, DataNode):
     """List node."""
 
     def _parse_entry_selector(self, iid: str, offset: int) -> Tuple[
@@ -349,7 +377,20 @@ class ListNode(Internal, DataNode):
             return (EntryKeys(res), mo.end())
         raise BadEntrySelector(self, iid)
 
-class ChoiceNode(Internal):
+    def from_raw(self, val: List[Dict[QName, Value]],
+                 ns: YangIdentifier = None) -> ArrayValue:
+        """Transform a raw list array into array value.
+
+        :param val: raw list array
+        :param ns: current namespace
+        """
+        res = ArrayValue()
+        for en in val:
+            res.append(super().from_raw(en, ns))
+        res.time_stamp()
+        return res
+
+class ChoiceNode(InternalNode):
     """Choice node."""
 
     def __init__(self) -> None:
@@ -380,18 +421,18 @@ class ChoiceNode(Internal):
                      changes: OptChangeSet) -> None:
         self.default = Context.translate_qname(mid, stmt.argument)
 
-class CaseNode(Internal):
+class CaseNode(InternalNode):
     """Case node."""
     pass
 
-class LeafNode(Terminal):
+class LeafNode(TerminalNode):
     """Leaf node."""
 
     def default_stmt(self, stmt: Statement, mid: ModuleId,
                      changes: OptChangeSet) -> None:
         self.default = self.type.parse_value(stmt.argument)
 
-class LeafListNode(Terminal):
+class LeafListNode(TerminalNode):
     """Leaf-list node."""
 
     def default_stmt(self, stmt: Statement, mid: ModuleId,
@@ -422,11 +463,24 @@ class LeafListNode(Terminal):
             val = self.type.parse_value(drhs if drhs else mo.group("srhs"))
             return (EntryValue(val), mo.end())
 
-class AnydataNode(Terminal):
+    def from_raw(self, val: List[Dict[QName, Value]],
+                 ns: YangIdentifier = None) -> ArrayValue:
+        """Transform a raw list array into array value.
+
+        :param val: raw list array
+        :param ns: current namespace
+        """
+        res = ArrayValue()
+        for en in val:
+            res.append(super().from_raw(en, ns))
+        res.time_stamp()
+        return res
+
+class AnydataNode(TerminalNode):
     """Anydata node."""
     pass
 
-class AnyxmlNode(Terminal):
+class AnyxmlNode(TerminalNode):
     """Anyxml node."""
     pass
 
