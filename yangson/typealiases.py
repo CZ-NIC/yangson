@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 RevisionDate = Optional[str]
 Uri = str
 YangIdentifier = str
+Value = Any
 QName = str # [YangIdentifier:]YangIdentifier
 NodeName = Tuple[YangIdentifier, YangIdentifier] # (namespace, name)
 SchemaAddress = List[NodeName]
