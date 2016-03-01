@@ -22,13 +22,26 @@ class StructuredValue:
         """
         self.last_modified = ts if ts else datetime.now()
 
+    def __eq__(self, val: "StructuredValue") -> bool:
+        """Is the receiver equal to `val`?
+
+        :param val: value to compare
+        """
+        return hash(self) == hash(val)
+
 class ArrayValue(StructuredValue, list):
     """Array values corresponding to YANG lists and leaf-lists."""
-    pass
+
+    def __hash__(self) -> int:
+        """Return an integer hash value for the receiver."""
+        return tuple([ x.__hash__() for x in self]).__hash__()
 
 class ObjectValue(StructuredValue, dict):
     """Array values corresponding to YANG container."""
-    pass
+
+    def __hash__(self) -> int:
+        """Return an integer hash value for the receiver."""
+        return tuple(sorted((self.items()))).__hash__()
 
 class Crumb:
     """Class of crumb objects representing zipper context."""
