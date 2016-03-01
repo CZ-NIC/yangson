@@ -116,8 +116,9 @@ class EntryCrumb(Crumb):
         :param value: value of the focused entry
         """
         res = ArrayValue(self.timestamp)
+        res.extend(self.before)
+        res.append(value)
         res.extend(self.after)
-        res[0:0] = self.before
         return res
 
     def _copy(self, ts: datetime) -> "EntryCrumb":
