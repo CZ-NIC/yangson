@@ -268,11 +268,10 @@ class InternalNode(SchemaNode):
         res = ObjectValue()
         for qn in val:
             p, s, loc = qn.partition(":")
-            if s:
-                ns = p
-            else:
+            if not s:
                 loc = p
-            cn = self.get_data_child(loc, ns)
+                p = ns
+            cn = self.get_data_child(loc, p)
             res[cn.qname] = cn.from_raw(val[qn])
         res.time_stamp()
         return res
