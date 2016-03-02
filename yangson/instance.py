@@ -201,7 +201,7 @@ class Instance:
     @property
     def is_top(self):
         """Is the receiver the top-level instance?"""
-        return inst.crumb.parent is None
+        return self.crumb.parent is None
 
     @property
     def top(self) -> "Instance":
