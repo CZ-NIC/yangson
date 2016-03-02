@@ -272,6 +272,8 @@ class InternalNode(SchemaNode):
                 loc = p
                 p = ns
             cn = self.get_data_child(loc, p)
+            if cn is None:
+                raise NonexistentSchemaNode(loc, p)
             res[cn.qname] = cn.from_raw(val[qn])
         res.time_stamp()
         return res
