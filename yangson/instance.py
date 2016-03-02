@@ -195,8 +195,13 @@ class Instance:
             if self.crumb._timestamp:
                 self.crumb.parent._timestamp = self.crumb._timestamp
             return Instance(self.crumb.zip(self.value), self.crumb.parent)
-        except IndexError:
+        except (AttributeError, IndexError):
             raise NonexistentInstance(self, "up of top") from None
+
+    @property
+    def is_top(self):
+        """Is the receiver the top-level instance?"""
+        return inst.crumb.parent is None
 
     @property
     def top(self) -> "Instance":
