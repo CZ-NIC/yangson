@@ -373,7 +373,7 @@ class Decimal64Type(NumericType):
         """Initialize the class instance."""
         super().__init__()
         self._epsilon = decimal.Decimal(0) # type: decimal.Decimal
-        self.context = None # type: Optional[decimal.Context]
+        self.context = None # type: decimal.Context
 
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.

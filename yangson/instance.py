@@ -8,14 +8,14 @@ from .typealiases import *
 class StructuredValue:
     """Abstract class for array and object values."""
 
-    def __init__(self, ts: Optional[datetime] = None) -> None:
+    def __init__(self, ts: datetime = None) -> None:
         """Initialize class instance.
 
         :param ts: creation time stamp
         """
         self.last_modified = ts
 
-    def time_stamp(self, ts: Optional[datetime] = None) -> None:
+    def time_stamp(self, ts: datetime = None) -> None:
         """Update the receiver's last-modified time stamp.
 
         :param ts: new time stamp (if ``None``, set it to current time)
@@ -70,7 +70,7 @@ class MemberCrumb(Crumb):
     """Zipper contexts for an object member."""
 
     def __init__(self, name: QName, obj: Dict[QName, Value], parent: Crumb,
-                 ts: Optional[datetime] = None) -> None:
+                 ts: datetime = None) -> None:
         """Initialize the class instance.
 
         :param name: name of an object member that's the current focus
@@ -107,7 +107,7 @@ class EntryCrumb(Crumb):
     """Zipper contexts for an array entry."""
 
     def __init__(self, before: List[Value], after: List[Value],
-                 parent: Crumb, ts: Optional[datetime] = None) -> None:
+                 parent: Crumb, ts: datetime = None) -> None:
         """Initialize the class instance.
 
         :param before: array entries before the focused entry

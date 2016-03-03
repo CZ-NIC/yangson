@@ -55,9 +55,9 @@ class SchemaNode:
 
     def __init__(self) -> None:
         """Initialize the class instance."""
-        self.name = None # type: Optional[YangIdentifier]
-        self.ns = None # type: Optional[YangIdentifier]
-        self.parent = None # type: Optional["InternalNode"]
+        self.name = None # type: YangIdentifier
+        self.ns = None # type: YangIdentifier
+        self.parent = None # type: "InternalNode"
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
     @property
@@ -76,7 +76,7 @@ class SchemaNode:
 
     def handle_substatements(self, stmt: Statement,
                              mid: ModuleId,
-                             changes: Optional[ChangeSet]) -> None:
+                             changes: OptChangeSet) -> None:
         """Dispatch actions for substatements of `stmt`.
 
         :param stmt: parsed YANG statement
@@ -99,12 +99,12 @@ class SchemaNode:
 
     def config_stmt(self, stmt: Statement,
                     mid: ModuleId,
-                    changes: Optional[ChangeSet]) -> None:
+                    changes: OptChangeSet) -> None:
         if stmt.argument == "false": self._config = False
 
     def nacm_default_deny_stmt(self, stmt: Statement,
                                mid: ModuleId,
-                               changes: Optional[ChangeSet]) -> None:
+                               changes: OptChangeSet) -> None:
         """Set NACM default access."""
         if stmt.keyword == "default-deny-all":
             self.default_deny = DefaultDeny.all
@@ -147,9 +147,8 @@ class InternalNode(SchemaNode):
         node.parent = self
         self.children.append(node)
 
-    def get_child(
-            self, name: YangIdentifier,
-            ns: Optional[YangIdentifier] = None) -> Optional["SchemaNode"]:
+    def get_child(self, name: YangIdentifier,
+                  ns: YangIdentifier = None) -> Optional["SchemaNode"]:
         """Return receiver's child.
         :param name: child's name
         :param ns: child's namespace (= `self.ns` if absent)
@@ -158,8 +157,8 @@ class InternalNode(SchemaNode):
         for c in self.children:
             if c.name == name and c.ns == ns: return c
 
-    def get_schema_descendant(self,
-                              path: SchemaAddress) -> Optional["SchemaNode"]:
+    def get_schema_descendant(
+            self, path: SchemaAddress) -> Optional["SchemaNode"]:
         """Return descendant schema node or ``None``.
 
         :param path: schema address of the descendant node
@@ -173,7 +172,7 @@ class InternalNode(SchemaNode):
 
     def get_data_child(
             self, name: YangIdentifier,
-            ns: Optional[YangIdentifier] = None) -> Optional["DataNode"]:
+            ns: YangIdentifier = None) -> Optional["DataNode"]:
         """Return data node directly under receiver.
 
         :param name: data node name
@@ -489,7 +488,7 @@ class NonexistentSchemaNode(YangsonException):
     """Exception to be raised when a schema node doesn't exist."""
 
     def __init__(self, name: YangIdentifier,
-                 ns: Optional[YangIdentifier]) -> None:
+                 ns: YangIdentifier = None) -> None:
         self.qname = (ns + ":" if ns else "") + name
 
     def __str__(self) -> str:

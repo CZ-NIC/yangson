@@ -23,9 +23,9 @@ class Statement:
     def __init__(self,
                  kw: YangIdentifier,
                  arg: Optional[str],
-                 sup: Optional["Statement"] = None,
+                 sup: "Statement" = None,
                  sub: List["Statement"] = [],
-                 pref: Optional[YangIdentifier] = None) -> None:
+                 pref: YangIdentifier = None) -> None:
         """Initialize the class instance.
 
         :param kw: keyword
@@ -50,10 +50,8 @@ class Statement:
         rest = " { ... }" if self.substatements else ";"
         return kw + arg + rest
 
-    def find1(self,
-              kw: YangIdentifier,
-              arg: Optional[str] = None,
-              pref: Optional[YangIdentifier] = None,
+    def find1(self, kw: YangIdentifier, arg: str = None,
+              pref: YangIdentifier = None,
               required: bool = False) -> Optional["Statement"]:
         """Return first substatement with the given parameters.
 
@@ -69,9 +67,8 @@ class Statement:
                 return sub
         if required: raise StatementNotFound(self, kw)
 
-    def find_all(self,
-                 kw: YangIdentifier,
-                 pref: Optional[YangIdentifier] = None) -> List["Statement"]:
+    def find_all(self, kw: YangIdentifier,
+                 pref: YangIdentifier = None) -> List["Statement"]:
         """Find all substatements with the given keyword (and prefix).
 
         :param kw: keyword
