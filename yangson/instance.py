@@ -211,10 +211,10 @@ class Instance:
         return inst
 
     def member(self, name: QName) -> "Instance":
-        obj = self.value.copy()
         try:
+            obj = self.value.copy()
             return Instance(obj.pop(name), MemberCrumb(name, obj, self.crumb))
-        except TypeError:
+        except (TypeError, AttributeError):
             raise InstanceTypeError(self, "member of non-object") from None
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
@@ -224,6 +224,16 @@ class Instance:
             raise DuplicateMember(self, name)
         return Instance(value, MemberCrumb(name, self.value, self.crumb,
                                            datetime.now()))
+
+    def remove_member(self, name: QName) -> "Instance":
+        try:
+            val = self.value.copy()
+            del val[name]
+            return Instance(val, self.crumb)
+        except (TypeError, AttributeError):
+            raise InstanceTypeError(self, "member of non-object") from None
+        except KeyError:
+            raise NonexistentInstance(self, "member " + name) from None
 
     def sibling(self, name: QName) -> "Instance":
         try:
@@ -243,6 +253,15 @@ class Instance:
         try:
             return Instance(val[index],
                             EntryCrumb(val[:index], val[index+1:], self.crumb))
+        except IndexError:
+            raise NonexistentInstance(self, "entry " + str(index)) from None
+
+    def remove_entry(self, index: int) -> "Instance":
+        val = self.value
+        if not isinstance(val, list):
+            raise InstanceTypeError(self, "entry of non-array") from None
+        try:
+            return Instance(val[:index] + val[index+1:], self.crumb)
         except IndexError:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
