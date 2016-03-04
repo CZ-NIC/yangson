@@ -6,7 +6,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   parser
+   instances
 
 
 Indices and tables
