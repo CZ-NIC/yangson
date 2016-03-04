@@ -207,11 +207,20 @@ class InternalNode(SchemaNode):
         node.handle_substatements(stmt, mid,
                                   changes.get_subset(name) if changes else None)
 
+    def augment_refine(self, stmt: Statement, mid: ModuleId,
+                       nsswitch: bool = False) -> None:
+        path = Context.sid2address(mid, stmt.argument)
+        target = self.get_schema_descendant(path)
+        target._nsswitch = nsswitch
+        target.handle_substatements(stmt, mid, None)
+
     def uses_stmt(self, stmt: Statement,
                   mid: ModuleId, changes: OptChangeSet) -> None:
         """Handle uses statement."""
         grp, gid = Context.get_definition(stmt, mid)
         self.handle_substatements(grp, gid, changes)
+        for augref in stmt.find_all("augment") + stmt.find_all("refine"):
+            self.augment_refine(augref, mid, False)
 
     def container_stmt(self, stmt: Statement,
                   mid: ModuleId, changes: OptChangeSet) -> None:

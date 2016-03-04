@@ -143,10 +143,7 @@ class DataModel:
         for mid in self.implement:
             mod = Context.modules[mid]
             for aug in mod.find_all("augment"):
-                path = Context.sid2address(mid, aug.argument)
-                target = self.schema.get_schema_descendant(path)
-                target._nsswitch = True
-                target.handle_substatements(aug, mid, None)
+                self.schema.augment_refine(aug, mid, True)
 
     def parse_instance_id(self, iid: str) -> InstanceIdentifier:
         """Parse instance identifier."""
