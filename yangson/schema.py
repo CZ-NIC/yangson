@@ -10,46 +10,6 @@ from .statement import Statement
 from .typealiases import *
 from .regex import *
 
-# Type aliases
-OptChangeSet = Optional["ChangeSet"]
-
-class ChangeSet:
-    """Set of changes to be applied to a node and its children."""
-
-    @classmethod
-    def from_statement(cls, stmt: Statement) -> "ChangeSet":
-        """Construct an instance from a statement.
-
-        :param stmt: YANG statement (``refine`` or ``uses-augment``)
-        """
-        path = stmt.argument.split("/")
-        cs = cls([stmt])
-        while path:
-            last = path.pop()
-            cs = cls(subset={last: cs})
-        return cs
-
-    def __init__(self, patch: List[Statement] = [],
-                 subset: Dict[NodeName, "ChangeSet"] = {}) -> None:
-        self.patch = patch
-        self.subset = subset
-
-    def get_subset(self, name: NodeName) -> OptChangeSet:
-        return self.subset.get(name)
-
-    def join(self, cs: "ChangeSet") -> "ChangeSet":
-        """Join the receiver with another change set.
-
-        :param cs: change set
-        """
-        res = ChangeSet(self.patch + cs.patch, self.subset.copy())
-        for n in cs.subset:
-            if n in self.subset:
-                res.subset[n] = self.subset[n].join(cs.subset[n])
-            else:
-                res.subset[n] = cs.subset[n]
-        return res
-
 class SchemaNode:
     """Abstract superclass for schema nodes."""
 
@@ -74,14 +34,11 @@ class SchemaNode:
         return (self.name if self.ns == self.parent.ns
                 else self.ns + ":" + self.name)
 
-    def handle_substatements(self, stmt: Statement,
-                             mid: ModuleId,
-                             changes: OptChangeSet) -> None:
+    def handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         """Dispatch actions for substatements of `stmt`.
 
         :param stmt: parsed YANG statement
         :param mid: YANG module context
-        :param changes: change set
         """
         for s in stmt.substatements:
             if s.prefix:
@@ -90,21 +47,16 @@ class SchemaNode:
                 key = s.keyword
             mname = SchemaNode.handler.get(key, "noop")
             method = getattr(self, mname)
-            method(s, mid, changes)
+            method(s, mid)
 
-    def noop(self, stmt: Statement, mid: ModuleId,
-             changes: OptChangeSet) -> None:
+    def noop(self, stmt: Statement, mid: ModuleId) -> None:
         """Do nothing."""
         pass
 
-    def config_stmt(self, stmt: Statement,
-                    mid: ModuleId,
-                    changes: OptChangeSet) -> None:
+    def config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         if stmt.argument == "false": self._config = False
 
-    def nacm_default_deny_stmt(self, stmt: Statement,
-                               mid: ModuleId,
-                               changes: OptChangeSet) -> None:
+    def nacm_default_deny_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Set NACM default access."""
         if stmt.keyword == "default-deny-all":
             self.default_deny = DefaultDeny.all
@@ -192,79 +144,68 @@ class InternalNode(SchemaNode):
                 res = c.get_data_child(name, ns)
                 if res: return res
 
-    def handle_child(self, node: SchemaNode, stmt: Statement,
-                     mid: ModuleId, changes: OptChangeSet) -> None:
+    def handle_child(
+            self, node: SchemaNode, stmt: Statement, mid: ModuleId) -> None:
         """Add child node to the receiver and handle substatements.
 
         :param node: child node
         :param stmt: YANG statement defining the child node
         :param mid: module context
-        :param changes: change set
         """
         node.name = stmt.argument
         node.ns = mid[0] if self._nsswitch else self.ns
         self.add_child(node)
-        node.handle_substatements(stmt, mid,
-                                  changes.get_subset(name) if changes else None)
+        node.handle_substatements(stmt, mid)
 
     def augment_refine(self, stmt: Statement, mid: ModuleId,
                        nsswitch: bool = False) -> None:
         path = Context.sid2address(mid, stmt.argument)
         target = self.get_schema_descendant(path)
         target._nsswitch = nsswitch
-        target.handle_substatements(stmt, mid, None)
+        target.handle_substatements(stmt, mid)
 
-    def uses_stmt(self, stmt: Statement,
-                  mid: ModuleId, changes: OptChangeSet) -> None:
+    def uses_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle uses statement."""
         grp, gid = Context.get_definition(stmt, mid)
-        self.handle_substatements(grp, gid, changes)
+        self.handle_substatements(grp, gid)
         for augref in stmt.find_all("augment") + stmt.find_all("refine"):
             self.augment_refine(augref, mid, False)
 
-    def container_stmt(self, stmt: Statement,
-                  mid: ModuleId, changes: OptChangeSet) -> None:
+    def container_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle container statement."""
-        self.handle_child(ContainerNode(), stmt, mid, changes)
+        self.handle_child(ContainerNode(), stmt, mid)
 
-    def list_stmt(self, stmt: Statement,
-                  mid: ModuleId, changes: OptChangeSet) -> None:
+    def list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle list statement."""
-        self.handle_child(ListNode(), stmt, mid, changes)
+        self.handle_child(ListNode(), stmt, mid)
 
-    def choice_stmt(self, stmt: Statement,
-                    mid: ModuleId, changes: OptChangeSet) -> None:
+    def choice_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle choice statement."""
-        self.handle_child(ChoiceNode(), stmt, mid, changes)
+        self.handle_child(ChoiceNode(), stmt, mid)
 
-    def case_stmt(self, stmt: Statement,
-                  mid: ModuleId, changes: OptChangeSet) -> None:
+    def case_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle case statement."""
-        self.handle_child(CaseNode(), stmt, mid, changes)
+        self.handle_child(CaseNode(), stmt, mid)
 
-    def leaf_stmt(self, stmt: Statement,
-                  mid: ModuleId, changes: OptChangeSet) -> None:
+    def leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf statement."""
         node = LeafNode()
         node.stmt_type(stmt, mid)
-        self.handle_child(node, stmt, mid, changes)
+        self.handle_child(node, stmt, mid)
 
-    def leaf_list_stmt(self, stmt: Statement,
-                       mid: ModuleId, changes: OptChangeSet) -> None:
+    def leaf_list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf-list statement."""
         node = LeafListNode()
         node.stmt_type(stmt, mid)
-        self.handle_child(node, stmt, mid, changes)
+        self.handle_child(node, stmt, mid)
 
-    def anydata_stmt(self, stmt: Statement,
-                     mid: ModuleId, changes: OptChangeSet) -> None:
+    def anydata_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle anydata statement."""
-        self.handle_child(AnydataNode(), stmt, mid, changes)
+        self.handle_child(AnydataNode(), stmt, mid)
 
-    def anyxml_stmt(self, stmt: Statement,
-                    mid: ModuleId, changes: OptChangeSet) -> None:
+    def anyxml_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle anyxml statement."""
-        self.handle_child(AnyxmlNode(), stmt, mid, changes)
+        self.handle_child(AnyxmlNode(), stmt, mid)
 
     def from_raw(self, val: Dict[QName, Value],
                  ns: YangIdentifier = None) -> ObjectValue:
@@ -346,10 +287,8 @@ class ContainerNode(InternalNode, DataNode):
         super().__init__()
         self.presence = False # type: bool
 
-    def presence_stmt(self, stmt: Statement, mid: ModuleId,
-                      changes: OptChangeSet) -> None:
+    def presence_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.presence = True
-
 
 class ListNode(InternalNode, DataNode):
     """List node."""
@@ -408,26 +347,23 @@ class ChoiceNode(InternalNode):
         self.default = None # type: NodeName
 
     def handle_child(self, node: SchemaNode, stmt: SchemaNode,
-                     mid: ModuleId, changes: OptChangeSet) -> None:
+                     mid: ModuleId) -> None:
         """Handle a child node to be added to the receiver.
 
         :param node: child node
         :param stmt: YANG statement defining the child node
         :param mid: module context
-        :param changes: change set
         """
         if isinstance(node, CaseNode):
-            super().handle_child(node, stmt, mid, changes)
+            super().handle_child(node, stmt, mid)
         else:
             cn = CaseNode()
             cn.name = stmt.argument
             cn.ns = mid[0]
             self.add_child(cn)
-            cn.handle_child(node, stmt, mid,
-                            changes.get_subset(name) if changes else None)
+            cn.handle_child(node, stmt, mid)
 
-    def default_stmt(self, stmt: Statement, mid: ModuleId,
-                     changes: OptChangeSet) -> None:
+    def default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.default = Context.translate_qname(mid, stmt.argument)
 
 class CaseNode(InternalNode):
@@ -437,15 +373,13 @@ class CaseNode(InternalNode):
 class LeafNode(TerminalNode):
     """Leaf node."""
 
-    def default_stmt(self, stmt: Statement, mid: ModuleId,
-                     changes: OptChangeSet) -> None:
+    def default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.default = self.type.parse_value(stmt.argument)
 
 class LeafListNode(TerminalNode):
     """Leaf-list node."""
 
-    def default_stmt(self, stmt: Statement, mid: ModuleId,
-                     changes: OptChangeSet) -> None:
+    def default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         if self.default is None:
             self.default = []
         self.default.append(self.type.parse_value(stmt.argument))
