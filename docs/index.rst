@@ -7,7 +7,7 @@ Contents:
    :maxdepth: 2
 
    instances
-
+   references
 
 Indices and tables
 ==================
