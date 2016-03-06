@@ -153,14 +153,6 @@ class Instance:
         self.value = value
         self.crumb = crumb
 
-    @property
-    def namespace(self):
-        """Return the receiver's namespace identifier."""
-        for cr in reversed(self.trace):
-            if isinstance(cr, MemberCrumb):
-                p, s, loc = cr.name.partition(":")
-                if s: return p
-
     def goto(self, ii: "InstanceIdentifier") -> "Instance":
         """Return an instance in the receiver's subtree.
 
