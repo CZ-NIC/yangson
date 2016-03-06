@@ -95,3 +95,11 @@ Persistent Instances
 ====================
 
 .. class:: Instance(value: Value, crumb: Crumb)
+
+   .. method:: goto(ii: InstanceIdentifier) -> Instance
+
+   .. method:: peek(ii: InstanceIdentifier) -> Value
+
+   .. method:: update(newval: Value) -> Instance
+
+   .. method:: up() -> Instance
