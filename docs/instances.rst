@@ -103,3 +103,23 @@ Persistent Instances
    .. method:: update(newval: Value) -> Instance
 
    .. method:: up() -> Instance
+
+   .. method:: top() -> Instance
+
+   .. method:: is_top() -> Instance
+
+   .. method:: member(name: QName) -> Instance
+
+   .. method:: new_member(name: QName, value: Value) -> Instance
+
+   .. method:: () -> Instance
+
+   .. method:: () -> Instance
+
+   .. method:: () -> Instance
+
+   .. method:: () -> Instance
+
+   .. method:: () -> Instance
+
+   .. method:: () -> Instance
