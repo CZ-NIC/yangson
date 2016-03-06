@@ -5,6 +5,11 @@ from typing import Any, Callable, List, Tuple
 from .exception import YangsonException
 from .typealiases import *
 
+# Local type aliases
+
+Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
+"""Instance value."""
+
 class StructuredValue:
     """Abstract class for array and object values."""
 
@@ -27,7 +32,7 @@ class StructuredValue:
 
         :param val: value to compare
         """
-        return hash(self) == hash(val)
+        return self.__class__ == val.__class__ and hash(self) == hash(val)
 
 class ArrayValue(StructuredValue, list):
     """Array values corresponding to YANG lists and leaf-lists."""
@@ -180,7 +185,6 @@ class Instance:
         """
         return Instance(newval, self.crumb._copy(datetime.now()))
 
-    @property
     def up(self) -> "Instance":
         """Ascend to the parent instance."""
         try:
@@ -190,16 +194,14 @@ class Instance:
         except (AttributeError, IndexError):
             raise NonexistentInstance(self, "up of top") from None
 
-    @property
-    def is_top(self):
+    def is_top(self) -> bool:
         """Is the receiver the top-level instance?"""
         return self.crumb.parent is None
 
-    @property
     def top(self) -> "Instance":
         inst = self
         while inst.crumb.parent:
-            inst = inst.up
+            inst = inst.up()
         return inst
 
     def member(self, name: QName) -> "Instance":
@@ -257,7 +259,6 @@ class Instance:
         except IndexError:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
-    @property
     def first_entry(self):
         val = self.value
         if not isinstance(val, list):
@@ -267,7 +268,6 @@ class Instance:
         except IndexError:
             raise NonexistentInstance(self, "first of empty") from None
 
-    @property
     def last_entry(self):
         val = self.value
         if not isinstance(val, list):
@@ -277,7 +277,7 @@ class Instance:
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
-    def look_up(self, keys: Dict[QName, Value]) -> "Instance":
+    def look_up(self, keys: Dict[QName, ScalarValue]) -> "Instance":
         """Return the entry with matching keys."""
         if not isinstance(self.value, list):
             raise InstanceTypeError(self, "lookup on non-list")
@@ -296,7 +296,6 @@ class Instance:
         except TypeError:
             raise InstanceTypeError(self, "lookup on non-list") from None
 
-    @property
     def next(self) -> "Instance":
         try:
             cr = self.crumb
@@ -308,7 +307,6 @@ class Instance:
         except AttributeError:
             raise InstanceTypeError(self, "next of non-entry") from None
 
-    @property
     def previous(self) -> "Instance":
         try:
             cr = self.crumb
@@ -411,7 +409,7 @@ class EntryIndex(InstanceSelector):
 class EntryValue(InstanceSelector):
     """Value-based selectors of an array entry."""
 
-    def __init__(self, value: Value) -> None:
+    def __init__(self, value: ScalarValue) -> None:
         """Initialize the class instance.
 
         :param value: value of a leaf-list entry
@@ -446,7 +444,7 @@ class EntryValue(InstanceSelector):
 class EntryKeys(InstanceSelector):
     """Key-based selectors for a list entry."""
 
-    def __init__(self, keys: Dict[QName, Value]) -> None:
+    def __init__(self, keys: Dict[QName, ScalarValue]) -> None:
         """Initialize the class instance.
 
         :param keys: dictionary with keys of an entry

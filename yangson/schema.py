@@ -10,6 +10,13 @@ from .statement import Statement
 from .typealiases import *
 from .regex import *
 
+# Local type aliases
+RawScalar = Union[int, str]
+RawObject = Dict[QName, "RawValue"]
+RawList = List["RawObject"]
+RawLeafList = List["RawScalar"]
+RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
+
 class SchemaNode:
     """Abstract superclass for schema nodes."""
 
@@ -207,7 +214,7 @@ class InternalNode(SchemaNode):
         """Handle anyxml statement."""
         self.handle_child(AnyxmlNode(), stmt, mid)
 
-    def from_raw(self, val: Dict[QName, Value],
+    def from_raw(self, val: RawObject,
                  ns: YangIdentifier = None) -> ObjectValue:
         """Transform a raw dictionary into object value.
 
@@ -271,7 +278,7 @@ class TerminalNode(SchemaNode, DataNode):
         """
         self.type = DataType.resolve_type(stmt.find1("type", required=True), mid)
 
-    def from_raw(self, val: Value, ns: YangIdentifier = None) -> Value:
+    def from_raw(self, val: RawScalar, ns: YangIdentifier = None) -> ScalarValue:
         """Transform a scalar entry.
 
         :param val: raw lis
@@ -325,8 +332,7 @@ class ListNode(InternalNode, DataNode):
             return (EntryKeys(res), mo.end())
         raise BadEntrySelector(self, iid)
 
-    def from_raw(self, val: List[Dict[QName, Value]],
-                 ns: YangIdentifier = None) -> ArrayValue:
+    def from_raw(self, val: RawList, ns: YangIdentifier = None) -> ArrayValue:
         """Transform a raw list array into array value.
 
         :param val: raw list array
@@ -406,8 +412,8 @@ class LeafListNode(TerminalNode):
             val = self.type.parse_value(drhs if drhs else mo.group("srhs"))
             return (EntryValue(val), mo.end())
 
-    def from_raw(self, val: List[Dict[QName, Value]],
-                 ns: YangIdentifier = None) -> ArrayValue:
+    def from_raw(
+            self, val: RawLeafList, ns: YangIdentifier = None) -> ArrayValue:
         """Transform a raw list array into array value.
 
         :param val: raw list array

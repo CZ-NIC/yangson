@@ -4,9 +4,6 @@ from .typealiases import *
 
 """Context for schema generation."""
 
-# Type aliases
-ModuleDict = Dict[ModuleId, Statement]
-
 class Context:
     """This class provides context for schema generation.
 
@@ -14,7 +11,7 @@ class Context:
     different schemas cannot be generated in parallel.
     """
 
-    modules = {} # type: ModuleDict
+    modules = {} # type: Dict[ModuleId, Statement]
     """Dictionary of parsed modules comprising the data model."""
 
     prefix_map = {} # type: Dict[ModuleId, Dict[YangIdentifier, ModuleId]]

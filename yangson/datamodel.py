@@ -4,7 +4,7 @@ from .context import Context
 from .exception import YangsonException
 from .instance import Crumb, Instance, InstanceIdentifier, MemberName
 from .modparser import from_file
-from .schema import InternalNode, NonexistentSchemaNode
+from .schema import InternalNode, NonexistentSchemaNode, RawObject
 from .typealiases import *
 from .regex import *
 
@@ -70,7 +70,7 @@ class DataModel:
         self.schema = InternalNode() # type: Internal
         self.schema._nsswitch = self.schema._config = True
 
-    def from_raw(self, robj: Dict[QName, Value]) -> Instance:
+    def from_raw(self, robj: RawObject) -> Instance:
         """Return an instance created from a raw object.
 
         :param robj: raw object

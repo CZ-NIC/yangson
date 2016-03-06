@@ -4,8 +4,7 @@ from typing import Callable, List, Mapping, Optional, Tuple
 from yangson.exception import YangsonException
 from .statement import Statement
 
-# Type aliases
-Offset = int
+# Local type aliases
 State = int
 ParseTable = List[
     Tuple[
@@ -34,7 +33,7 @@ class Parser:
         :param inp: input string
         """
         self.input = inp # type: str
-        self.offset = 0 # type: Offset
+        self.offset = 0 # type: int
 
     @staticmethod
     def unescape(text: str) -> str:
