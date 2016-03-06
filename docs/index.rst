@@ -7,6 +7,7 @@ Contents:
    :maxdepth: 2
 
    instances
+   typealiases
    references
 
 Indices and tables
