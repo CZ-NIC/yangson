@@ -80,6 +80,7 @@ class SchemaNode:
         "default": "default_stmt",
         "ietf-netconf-acm:default-deny-all": "nacm_default_deny_stmt",
         "ietf-netconf-acm:default-deny-write": "nacm_default_deny_stmt",
+        "include": "include_stmt",
         "leaf": "leaf_stmt",
         "leaf-list": "leaf_list_stmt",
         "list": "list_stmt",
@@ -160,7 +161,7 @@ class InternalNode(SchemaNode):
         :param mid: module context
         """
         node.name = stmt.argument
-        node.ns = mid[0] if self._nsswitch else self.ns
+        node.ns = Context.ns_map[mid[0]] if self._nsswitch else self.ns
         self.add_child(node)
         node.handle_substatements(stmt, mid)
 
@@ -170,6 +171,12 @@ class InternalNode(SchemaNode):
         target = self.get_schema_descendant(path)
         target._nsswitch = nsswitch
         target.handle_substatements(stmt, mid)
+
+    def include_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        name = stmt.argument
+        revst = stmt.find1("revision-date")
+        smid = (name, revst.argument if revst else None)
+        self.handle_substatements(Context.modules[smid], smid)
 
     def uses_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle uses statement."""

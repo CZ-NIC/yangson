@@ -5,6 +5,7 @@ from .exception import YangsonException
 from .instance import Crumb, Instance, InstanceIdentifier, MemberName
 from .modparser import from_file
 from .schema import InternalNode, NonexistentSchemaNode, RawObject
+from .statement import Statement
 from .typealiases import *
 from .regex import *
 
@@ -27,16 +28,27 @@ class DataModel:
             yl = json.loads(txt)
             for item in yl["ietf-yang-library:modules-state"]["module"]:
                 name = item["name"]
+                Context.ns_map[name] = name
                 rev = item["revision"] if item["revision"] else None
                 mid = (name, rev)
                 ct = item["conformance-type"]
                 if ct == "implement": implement.append(mid)
                 revisions.setdefault(name, []).append(rev)
-                cls.load_module(name, rev, mod_dir)
+                mod = cls.load_module(name, rev, mod_dir)
+                locpref = mod.find1("prefix", required=True).argument
+                Context.prefix_map[mid] = { locpref: mid }
                 if "submodules" in item and "submodule" in item["submodules"]:
                     for s in item["submodules"]["submodule"]:
+                        sname = s["name"]
+                        Context.ns_map[sname] = name
                         rev = s["revision"] if s["revision"] else None
-                        cls.load_module(s["name"], rev, mod_dir)
+                        smid = (sname, rev)
+                        if ct == "implement": implement.append(smid)
+                        revisions.setdefault(sname, []).append(rev)
+                        submod = cls.load_module(sname, rev, mod_dir)
+                        bt = submod.find1("belongs-to", name, required=True)
+                        locpref = bt.find1("prefix", required=True).argument
+                        Context.prefix_map[smid] = { locpref: mid }
         except (json.JSONDecodeError, KeyError, AttributeError):
             raise BadYangLibraryData()
         res = cls(revisions, implement)
@@ -45,7 +57,7 @@ class DataModel:
 
     @classmethod
     def load_module(cls, name: YangIdentifier, rev: RevisionDate,
-                    mod_dir: str = ".") -> None:
+                    mod_dir: str = ".") -> Statement:
         """Read, parse and register YANG module or submodule.
 
         :param name: module or submodule name
@@ -55,7 +67,8 @@ class DataModel:
         """
         fn = "{}/{}".format(mod_dir, name)
         if rev: fn += "@" + rev
-        Context.modules[(name, rev)] = from_file(fn + ".yang")
+        Context.modules[(name, rev)] = res = from_file(fn + ".yang")
+        return res
 
     def __init__(self,
                  revisions: Dict[YangIdentifier, List[RevisionDate]],
@@ -90,8 +103,6 @@ class DataModel:
         mods = Context.modules
         for mid in mods:
             mod = mods[mid]
-            locpref = mod.find1("prefix", required=True).argument
-            Context.prefix_map[mid] = pmap = { locpref: mid }
             try:
                 pos = self.implement.index(mid)
             except ValueError:            # mod not implemented
@@ -108,8 +119,8 @@ class DataModel:
                         break
                 if imid is None and rev is None:   # use last revision in the list
                     imid = (iname, self.revisions[iname][-1])
-                pmap[prefix] = imid
-                if pos is None: return
+                Context.prefix_map[mid][prefix] = imid
+                if pos is None: continue
                 i = pos
                 while i < len(self.implement):
                     if self.implement[i] == imid:

@@ -17,6 +17,9 @@ class Context:
     prefix_map = {} # type: Dict[ModuleId, Dict[YangIdentifier, ModuleId]]
     """Per-module prefix assignments."""
 
+    ns_map = {} # type: Dict[YangIdentifier, YangIdentifier]
+    """Map of module and submodule names to namespaces."""
+
     @classmethod
     def resolve_qname(cls, mid: ModuleId,
                       qname: QName) -> Tuple[ModuleId, YangIdentifier]:
@@ -29,7 +32,7 @@ class Context:
         try:
             return (cls.prefix_map[mid][p], loc) if s else (mid, p)
         except KeyError:
-            raise BadQName(qname)
+            raise BadQName(qname) from None
 
     @classmethod
     def translate_qname(cls, mid: ModuleId, qname: QName) -> NodeName:
