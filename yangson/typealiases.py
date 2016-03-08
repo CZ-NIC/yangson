@@ -11,5 +11,3 @@ ScalarValue = Union[int, Decimal, str]
 NodeName = Tuple[YangIdentifier, YangIdentifier] # (namespace, name)
 SchemaAddress = List[NodeName]
 ModuleId = Tuple[YangIdentifier, Optional[RevisionDate]]
-Range = List[List[Any]]
-PrefixMap = Dict[YangIdentifier, ModuleId]

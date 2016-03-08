@@ -7,6 +7,9 @@ from .exception import YangsonException
 from .statement import Statement
 from .typealiases import *
 
+# Local type aliases
+Range = List[List[Union[int, decimal.Decimal]]]
+
 class DataType:
     """Abstract class for YANG data types."""
 
