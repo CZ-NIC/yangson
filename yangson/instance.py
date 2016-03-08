@@ -214,6 +214,8 @@ class Instance:
             raise NonexistentInstance(self, "member " + name) from None
 
     def new_member(self, name: QName, value: Value) -> "Instance":
+        if not isinstance(self.value, ObjectValue):
+            raise InstanceTypeError(self, "member of non-object")
         if name in self.value:
             raise DuplicateMember(self, name)
         return Instance(value, MemberCrumb(name, self.value, self.crumb,
@@ -242,8 +244,8 @@ class Instance:
 
     def entry(self, index: int) -> "Instance":
         val = self.value
-        if not isinstance(val, list):
-            raise InstanceTypeError(self, "entry of non-array") from None
+        if not isinstance(val, ArrayValue):
+            raise InstanceTypeError(self, "entry of non-array")
         try:
             return Instance(val[index],
                             EntryCrumb(val[:index], val[index+1:], self.crumb))
@@ -252,8 +254,8 @@ class Instance:
 
     def remove_entry(self, index: int) -> "Instance":
         val = self.value
-        if not isinstance(val, list):
-            raise InstanceTypeError(self, "entry of non-array") from None
+        if not isinstance(val, ArrayValue):
+            raise InstanceTypeError(self, "entry of non-array")
         try:
             return Instance(val[:index] + val[index+1:], self.crumb)
         except IndexError:
@@ -261,7 +263,7 @@ class Instance:
 
     def first_entry(self):
         val = self.value
-        if not isinstance(val, list):
+        if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "first entry of non-array")
         try:
             return Instance(val[0], EntryCrumb([], val[1:], self.crumb))
@@ -270,7 +272,7 @@ class Instance:
 
     def last_entry(self):
         val = self.value
-        if not isinstance(val, list):
+        if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "last entry of non-array")
         try:
             return Instance(val[-1], EntryCrumb(val[:-1], [], self.crumb))
@@ -279,7 +281,7 @@ class Instance:
 
     def look_up(self, keys: Dict[QName, ScalarValue]) -> "Instance":
         """Return the entry with matching keys."""
-        if not isinstance(self.value, list):
+        if not isinstance(self.value, ArrayValue):
             raise InstanceTypeError(self, "lookup on non-list")
         try:
             for i in range(len(self.value)):
