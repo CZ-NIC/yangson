@@ -156,53 +156,143 @@ Methods for All Types of Instances
    .. method:: update(newval: Value) -> Instance
 
       Return a new instance that is identical to the receiver, only
-      its value is replaced with *newval*. The receiver's value
-      remains the same.
+      its value is replaced with *newval*. The receiver does not
+      change.
 
    .. method:: up() -> Instance
 
+      Return the instance of the parent structure (object or
+      array). Raises :exc:`NonexistentInstance` if called on a
+      top-level instance.
+
    .. method:: top() -> Instance
 
+      Return the instance of the top-level structure. This essentially
+      means “zipping” the whole data tree.
+
    .. method:: is_top() -> bool
+
+      Return ``True`` if the receiver is the top-level instance.
 
 Methods for :class:`ObjectValue` Instances
 ------------------------------------------
 
    .. method:: member(name: QName) -> Instance
 
+      Return the instance of the receiver's member specified by
+      *name*. Raises :exc:`InstanceTypeError` if called on a
+      non-object, and :exc:`NonexistentInstance` if a member of that
+      name doesn't exist.
+
    .. method:: new_member(name: QName, value: Value) -> Instance
 
+      Add a new member to the receiver object with the name and value
+      specified in the method's parameters, and return the instance of
+      the new member. As always, the receiver instance is not
+      modified, so the new member only exists in the returned
+      instance. The method raises :exc:`InstanceTypeError` if called
+      on a non-object, and :exc:`DuplicateMember` if a member of that
+      name already exists.
+
    .. method:: remove_member(name: QName) -> Instance
+
+      Return a new object instance in which the receiver's member specified
+      by *name* is removed. Raises :exc:`InstanceTypeError` if called on a
+      non-object, and :exc:`NonexistentInstance` if a member of that
+      name doesn't exist.
 
 Methods for Object Member Instances
 -----------------------------------
 
    .. method:: sibling(name: QName) -> Instance
 
+      Return the instance of the sibling member specified by
+      *name*. Raises :exc:`InstanceTypeError` if called on a
+      non-member, and :exc:`NonexistentInstance` if a sibling member
+      of that name doesn't exist.
+
 Methods for :class:`ArrayValue` Instances
 ------------------------------------------
 
    .. method:: entry(index: int) -> Instance
 
+      Return the instance of the receiver's entry specified by
+      *index*. Raises :exc:`InstanceTypeError` if called on a
+      non-array, and :exc:`NonexistentInstance` if an entry of that
+      index doesn't exist.
+
    .. method:: remove_entry(index: int) -> Instance
+
+      Return a new array instance in which the receiver's entry
+      specified by *index* is removed. Raises :exc:`InstanceTypeError`
+      if called on a non-array, and :exc:`NonexistentInstance` if an
+      entry of that index doesn't exist.
 
    .. method:: first_entry() -> Instance
 
+      Return the instance of the receiver's first entry. Raises
+      :exc:`InstanceTypeError` if called on a non-array, and
+      :exc:`NonexistentInstance` if the array is empty.
+
    .. method:: last_entry() -> Instance
+
+      Return the instance of the receiver's last entry. Raises
+      :exc:`InstanceTypeError` if called on a non-array, and
+      :exc:`NonexistentInstance` if the array is empty.
 
    .. method:: look_up(keys: Dict[QName, ScalarValue]) -> Instance
 
+      Return the instance of the receiver's entry specified by
+      *keys*. The paremeter is a dictionary of key-value pairs that
+      the selected entry matches. This method is intended to be used
+      on YANG list instances. It raises :exc:`InstanceTypeError` if
+      called on a non-array, and :exc:`NonexistentInstance` if the
+      matching entry doesn't exist.
+
 Methods for Array Entry Instances
------------------------------------
+---------------------------------
 
    .. method:: next() -> Instance
 
+      Return the instance of the following entry. Raises
+      :exc:`InstanceTypeError` if called on a non-entry, and
+      :exc:`NonexistentInstance` if called on the last entry.
+
    .. method:: previous() -> Instance
+
+      Return the instance of the preceding entry. Raises
+      :exc:`InstanceTypeError` if called on a non-entry, and
+      :exc:`NonexistentInstance` if called on the first entry.
 
    .. method:: insert_before(value: Value) -> Instance
 
+      Insert *value* a new entry before the receiver and return the
+      instance of the new entry. Raises :exc:`InstanceTypeError` if
+      called on a non-entry.
+
    .. method:: insert_after(value: Value) -> Instance
 
+      Insert *value* a new entry after the receiver and return the
+      instance of the new entry. Raises :exc:`InstanceTypeError` if
+      called on a non-entry.
+
+Exceptions
+**********
+
+    .. exception:: NonexistentInstance
+
+    This exception is raised if a method requests an instance that
+    doesn't exist.
+
+    .. exception:: DuplicateMember
+
+    This exception is raised if a method tries to create an object
+    member with a name that already exists.
+
+    .. exception:: InstanceTypeError
+
+    This exception is raised if a method is called with a receiver of
+    a wrong type.
 
 .. _sec-example:
 
