@@ -31,16 +31,23 @@ class DataType:
         :param mid: id of the context module
         """
         tchain = []
-        qst = (stmt, mid)
-        while qst[0].argument not in cls.dtypes:
-            tchain.append(qst)
-            tdef, tid = Context.get_definition(*qst)
-            qst = (tdef.find1("type", required=True), tid)
-        tname = qst[0].argument
-        res = cls.dtypes[tname]()
-        res.handle_properties(*qst)
+        tctx = (stmt, mid)
+        while True:
+            tdef = Context.get_definition(*tctx)
+            tchain.append(tdef)
+            tst = tdef[0].find1("type", required=True)
+            if tst.argument in cls.dtypes: break
+            tctx = (tst, tdef[1])
+        res = cls.dtypes[tst.argument]()
+        res.handle_properties(tst, tdef[1])
         while tchain:
-            res.handle_restrictions(*tchain.pop())
+            tdst, tid = tchain.pop()
+            typst = tdst.find1("type", required=True)
+            res.handle_restrictions(typst, tid)
+            dfst = tdst.find1("default")
+            if dfst:
+                res.default = res.parse_value(dfst.argument)
+        res.handle_restrictions(stmt, mid)
         return res
 
 
@@ -79,6 +86,10 @@ class DataType:
             [[lo, parser(ran[0][-1])]] +
             [ to_num(r) for r in ran[1:-1] ] +
             [[parser(ran[-1][0]), hi]])
+
+    def __init__(self) -> None:
+        """Initialize the class instance."""
+        self.default = None
 
     def __str__(self) -> str:
         """String representation of the receiver type."""
@@ -131,6 +142,7 @@ class UnionType(DataType):
 
     def __init__(self):
         """Initialize the class instance."""
+        super().__init__()
         self.types = [] # type: List[DataType]
 
     def _parse(self, input: str) -> Any:
@@ -177,6 +189,7 @@ class BitsType(DataType):
 
     def __init__(self) -> None:
         """Initialize the class instance."""
+        super().__init__()
         self.bit = {}
 
     def _parse(self, input: str) -> List[str]:
@@ -277,6 +290,7 @@ class EnumerationType(DataType):
 
     def __init__(self) -> None:
         """Initialize the class instance."""
+        super().__init__()
         self.enum = {}
 
     def _constraints(self, val: str) -> bool:
@@ -306,6 +320,7 @@ class LinkType(DataType):
 
     def __init__(self) -> None:
         """Initialize the class instance."""
+        super().__init__()
         self.require_instance = True # type: bool
 
     def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
@@ -342,6 +357,7 @@ class IdentityrefType(DataType):
 
     def __init__(self) -> None:
         """Initialize the class instance."""
+        super().__init__()
         self.bases = [] # type: List[QName]
 
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:

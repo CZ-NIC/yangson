@@ -204,13 +204,13 @@ class InternalNode(SchemaNode):
     def leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf statement."""
         node = LeafNode()
-        node.stmt_type(stmt, mid)
+        node.type_stmt(stmt, mid)
         self.handle_child(node, stmt, mid)
 
     def leaf_list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf-list statement."""
         node = LeafListNode()
-        node.stmt_type(stmt, mid)
+        node.type_stmt(stmt, mid)
         self.handle_child(node, stmt, mid)
 
     def anydata_stmt(self, stmt: Statement, mid: ModuleId) -> None:
@@ -277,7 +277,7 @@ class TerminalNode(SchemaNode, DataNode):
         """Set receiver's type."""
         self._type = typ
 
-    def stmt_type(self, stmt: Statement, mid: ModuleId) -> None:
+    def type_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Assign data type to the terminal node defined by `stmt`.
 
         :param stmt: YANG ``leaf`` or ``leaf-list`` statement
