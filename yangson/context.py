@@ -42,7 +42,7 @@ class Context:
         :param qname: qualified name in prefix form
         """
         nid, loc = cls.resolve_qname(mid, qname)
-        return (nid[0], loc)
+        return (loc, nid[0])
 
     @classmethod
     def sid2address(cls, mid: ModuleId, sid: str) -> SchemaAddress:
@@ -68,10 +68,10 @@ class Context:
             p, s, loc = n.partition(":")
             if s:
                 if p == prevns: raise BadPath(path)
-                res.append((p, loc))
+                res.append((loc, p))
                 prevns = p
             elif prevns:
-                res.append((prevns, p))
+                res.append((p, prevns))
             else:
                 raise BadPath(path)
         return res

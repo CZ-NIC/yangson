@@ -1,10 +1,13 @@
 import json
 from typing import Dict, List, Optional
+from urllib.parse import unquote
 from .context import Context
 from .exception import YangsonException
-from .instance import Crumb, Instance, InstanceIdentifier, MemberName
+from .instance import (Crumb, EntryKeys, Instance, InstanceIdentifier,
+                       MemberName)
 from .modparser import from_file
-from .schema import InternalNode, NonexistentSchemaNode, RawObject
+from .schema import (BadSchemaNodeType, InternalNode, NonexistentSchemaNode,
+                     RawObject)
 from .statement import Statement
 from .typealiases import *
 from .regex import *
@@ -144,8 +147,8 @@ class DataModel:
         """
         addr = Context.path2address(path)
         node = self.schema
-        for ns, name in addr:
-            node = node.get_data_child(name, ns)
+        for p in addr:
+            node = node.get_data_child(*p)
             if node is None: return None
         return node
 
@@ -179,6 +182,40 @@ class DataModel:
                 sel, offset = sn._parse_entry_selector(iid, offset)
                 res.append(sel)
             if offset >= end: return res
+
+    def parse_resource_id(self, rid: str) -> InstanceIdentifier:
+        """Parse RESTCONF data resource identifier.
+
+        :param rid: data resource identifier
+        """
+        inp = rid[1:] if rid[0] == "/" else rid
+        res = InstanceIdentifier()
+        sn = self.schema
+        for p in inp.split("/"):
+            apiid, eq, keys = p.partition("=")
+            mo = qname_re.match(unquote(apiid))
+            if mo is None:
+                raise BadInstanceIdentifier(rid)
+            ns = mo.group("prf")
+            name = mo.group("loc")
+            sn = sn.get_data_child(name, ns)
+            if sn is None:
+                raise NonexistentSchemaNode(name, ns)
+            res.append(MemberName(sn.qname))
+            if eq:                        # list instance
+                ks = keys.split(",")
+                try:
+                    if len(ks) != len(sn.keys):
+                        raise BadInstanceIdentifier(rid)
+                except AttributeError:
+                    raise BadSchemaNodeType(sn, "list") from None
+                sel = {}
+                for i in range(len(ks)):
+                    klf = sn.get_child(*sn.keys[i])
+                    val = klf.type.parse_value(unquote(ks[i]))
+                    sel[klf.qname] = val
+                res.append(EntryKeys(sel))
+        return res
 
 class BadYangLibraryData(YangsonException):
     """Exception to be raised for broken YANG Library data."""

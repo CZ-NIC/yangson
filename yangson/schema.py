@@ -81,6 +81,7 @@ class SchemaNode:
         "ietf-netconf-acm:default-deny-all": "nacm_default_deny_stmt",
         "ietf-netconf-acm:default-deny-write": "nacm_default_deny_stmt",
         "include": "include_stmt",
+        "key": "key_stmt",
         "leaf": "leaf_stmt",
         "leaf-list": "leaf_list_stmt",
         "list": "list_stmt",
@@ -124,8 +125,8 @@ class InternalNode(SchemaNode):
         :param path: schema address of the descendant node
         """
         node = self
-        for ns, name in path:
-            node = node.get_child(name, ns)
+        for p in path:
+            node = node.get_child(*p)
             if node is None:
                 return None
         return node
@@ -306,6 +307,15 @@ class ContainerNode(InternalNode, DataNode):
 
 class ListNode(InternalNode, DataNode):
     """List node."""
+
+    def __init__(self) -> None:
+        """Initialize the class instance."""
+        super().__init__()
+        self.keys = [] # type: List[NodeName]
+
+    def key_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        self.keys = [
+            Context.translate_qname(mid, k) for k in stmt.argument.split() ]
 
     def _parse_entry_selector(self, iid: str, offset: int) -> Tuple[
             Union[EntryIndex, EntryKeys], int]:

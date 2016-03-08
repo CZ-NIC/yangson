@@ -50,8 +50,8 @@ module.
 5. Scalar value of a **leaf** or **leaf-list** instance.
 
 6. Node name identifying a *schema node*. The first component of the
-   tuple is the namespace (i.e. name of the module in which the node
-   is defined), and the second component is the node identifier.
+   tuple is the node identifier, and the second component is the
+   namespace (i.e. name of the module in which the node is defined).
 
 7. Schema address in the form of a sequence of node names.
 

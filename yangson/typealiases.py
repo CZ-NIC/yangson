@@ -8,6 +8,6 @@ Uri = str
 YangIdentifier = str
 QName = str # [YangIdentifier:]YangIdentifier
 ScalarValue = Union[int, Decimal, str]
-NodeName = Tuple[YangIdentifier, YangIdentifier] # (namespace, name)
+NodeName = Tuple[YangIdentifier, YangIdentifier] # (name, namespace)
 SchemaAddress = List[NodeName]
 ModuleId = Tuple[YangIdentifier, Optional[RevisionDate]]
