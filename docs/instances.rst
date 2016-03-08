@@ -37,8 +37,18 @@ The following classes and their method implement all this functionality.
 
 __ https://en.wikipedia.org/wiki/Persistent_data_structure
 
+This module defines a type alias representing an union of possible
+types of instance values.
+
++-----+--------------------------------------------------------------+
+|Alias|Type                                                          |
++=====+==============================================================+
+|Value| Union[ScalarValue, :class:`ArrayValue`, :class:`ObjectValue`]|
++-----+--------------------------------------------------------------+
+
+
 Instance Values
-===============
+***************
 
 .. class:: StructuredValue(ts:datetime.datetime=None)
 
@@ -92,34 +102,111 @@ Instance Values
       and applying the :func:`hash` function.
 
 Persistent Instances
-====================
+********************
 
 .. class:: Instance(value: Value, crumb: Crumb)
 
+   This class implements a *zipper* interface for JSON-like values
+   pretty much along the lines of Gérard Huet's original
+   paper [Hue97]_. Every :class:`Instance` contains
+
+   * a *value*, as defined by the ``Value`` type alias;
+
+   * a *crumb* that describes the neighborhood of the *value*.
+
+   Inside a larger data structure, an :class:Instance represents
+   “focus” on a particular element of the structure, where the *value*
+   contains the element and its subtree, and *crumb* contains the rest
+   of the structure: all ancestors and siblings of the focused
+   element.
+
+   The focus can be moved and values added, deleted and updated around
+   the current focus by using the methods described below. Each of the
+   methods returns a new :class:`Instance` that shares as much as
+   possible of the entire data tree with other instances, but any
+   modifications of an :class:`Instance` – if performed via the
+   methods of this class – don't affect any other instances.
+
+   Due to the heterogeneity of JSON-like values, the zipper interface is not
+   as elegant as for trees: some operations are intended to work only
+   with certain :class:`Instance` types. In the following subsections,
+   the methods are classified according to the context for which they
+   are designed.
+
+   Section :ref:`sec-example` illustrates the zipper interface with
+   several examples.
+
+Methods for All Types of Instances
+----------------------------------
+
    .. method:: goto(ii: InstanceIdentifier) -> Instance
+
+      Return the instance inside the receiver's subtree identified by
+      the instance identifier *ii* (see TODO). The path specified in
+      *ii* is interpreted relative to the receiver.
 
    .. method:: peek(ii: InstanceIdentifier) -> Value
 
+      Return the value inside the receiver's value subtree identified by
+      the instance identifier *ii* (see TODO). This
+      method doesn't create a new instance, so the access to the
+      returned value should in general be read-only, because
+      modifications would destroy persistence properties.
+
    .. method:: update(newval: Value) -> Instance
+
+      Return a new instance that is identical to the receiver, only
+      its value is replaced with *newval*. The receiver's value
+      remains the same.
 
    .. method:: up() -> Instance
 
    .. method:: top() -> Instance
 
-   .. method:: is_top() -> Instance
+   .. method:: is_top() -> bool
+
+Methods for :class:`ObjectValue` Instances
+------------------------------------------
 
    .. method:: member(name: QName) -> Instance
 
    .. method:: new_member(name: QName, value: Value) -> Instance
 
-   .. method:: () -> Instance
+   .. method:: remove_member(name: QName) -> Instance
 
-   .. method:: () -> Instance
+Methods for Object Member Instances
+-----------------------------------
 
-   .. method:: () -> Instance
+   .. method:: sibling(name: QName) -> Instance
 
-   .. method:: () -> Instance
+Methods for :class:`ArrayValue` Instances
+------------------------------------------
 
-   .. method:: () -> Instance
+   .. method:: entry(index: int) -> Instance
 
-   .. method:: () -> Instance
+   .. method:: remove_entry(index: int) -> Instance
+
+   .. method:: first_entry() -> Instance
+
+   .. method:: last_entry() -> Instance
+
+   .. method:: look_up(keys: Dict[QName, ScalarValue]) -> Instance
+
+Methods for Array Entry Instances
+-----------------------------------
+
+   .. method:: next() -> Instance
+
+   .. method:: previous() -> Instance
+
+   .. method:: insert_before(value: Value) -> Instance
+
+   .. method:: insert_after(value: Value) -> Instance
+
+
+.. _sec-example:
+
+Example
+*******
+
+TODO.

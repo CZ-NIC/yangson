@@ -2,6 +2,17 @@
 References
 **********
 
+.. [Bjo16] Bjorklund, M. (ed.). *The YANG 1.1 Data Modeling Language.*
+	   `draft-ietf-netmod-rfc6020bis`__, Internet Engineering Task
+	   Force, 2016.
+
+__ https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis
+
+.. [Hue97] Huet, G. The Zipper. *J. Functional Programming* **7** (5):
+	   549–554, 1997. Available online__.
+
+__ https://www.st.cs.uni-saarland.de/edu/seminare/2005/advanced-fp/docs/huet-zipper.pdf
+
 .. [Lho16] Lhotka, L. *JSON Encoding of Data Modeled with YANG.*
 	   `draft-ietf-netmod-yang-json`__, Internet Engineering Task
 	   Force, 2016.
