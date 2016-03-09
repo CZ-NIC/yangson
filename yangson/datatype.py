@@ -9,6 +9,7 @@ from .typealiases import *
 
 # Local type aliases
 Range = List[List[Union[int, decimal.Decimal]]]
+RawScalar = Union[int, str]
 
 class DataType:
     """Abstract class for YANG data types."""
@@ -111,12 +112,25 @@ class DataType:
         if self._constraints(res): return res
         raise YangTypeError(res)
 
-    def _parse(self, input: str) -> str:
+    def _parse(self, input: str) -> ScalarValue:
         """The most generic parsing method is to return `input`.
 
         :param input: string representation of the value
         """
         return input
+
+    def from_raw(self, raw: RawScalar) -> ScalarValue:
+        """Return a cooked value of the receiver type.
+
+        :param raw: raw value obtained from JSON parser
+        """
+        res = self._from_raw(raw)
+        if self._constraints(res): return res
+        raise YangTypeError(res)
+
+    def _from_raw(self, raw: RawScalar) -> ScalarValue:
+        """Return a cooked value."""
+        return raw
 
     def _constraints(self, val: Any) -> bool:
         return True
@@ -184,6 +198,15 @@ class EmptyType(DataType):
             cls._instance = super(EmptyType, cls).__new__(cls)
         return cls._instance
 
+    def _constraints(self, val: Tuple[None]) -> bool:
+        return val == (None,)
+
+    def _from_raw(self, raw: List[None]) -> Tuple[None]:
+        try:
+            return tuple(raw)
+        except TypeError:
+            raise YangTypeError(raw) from None
+
 class BitsType(DataType):
     """Class representing YANG "bits" type."""
 
@@ -194,6 +217,9 @@ class BitsType(DataType):
 
     def _parse(self, input: str) -> List[str]:
         return input.split()
+
+    def _from_raw(self, raw: str) -> List[str]:
+        return raw.split()
 
     def _constraints(self, val: List[str]) -> bool:
         for b in val:
@@ -207,7 +233,7 @@ class BitsType(DataType):
             for b in val:
                 res += 1 << self.bit[b]
         except KeyError:
-            raise YangTypeError(val)
+            raise YangTypeError(val) from None
         return res
 
     def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
@@ -415,7 +441,10 @@ class Decimal64Type(NumericType):
         try:
             return decimal.Decimal(input).quantize(self._epsilon)
         except decimal.InvalidOperation:
-            raise YangTypeError(input)
+            raise YangTypeError(input) from None
+
+    def _from_raw(self, raw: str) -> decimal.Decimal:
+        return decimal.Decimal(raw)
 
     def contains(self, val: decimal.Decimal) -> bool:
         """Return ``True`` if the receiver type contains `val`.
@@ -438,7 +467,7 @@ class IntegralType(NumericType):
         try:
             return (int(input, 16) if self.hexa_re.match(input) else int(input))
         except ValueError:
-            raise YangTypeError(input)
+            raise YangTypeError(input) from None
 
     def contains(self, val: int) -> bool:
         """Return ``True`` if the receiver type contains `val`.
@@ -475,6 +504,12 @@ class Int64Type(SignedIntegerType):
 
     _range = [[-9223372036854775808, 9223372036854775807]] # type: Range
 
+    def _from_raw(self, raw: str) -> int:
+        try:
+            return int(raw)
+        except ValueError:
+            raise YangTypeError(raw) from None
+
 class Uint8Type(UnsignedIntegerType):
     """Class representing YANG "uint8" type."""
 
@@ -494,6 +529,12 @@ class Uint64Type(UnsignedIntegerType):
     """Class representing YANG "uint64" type."""
 
     _range = [[0, 18446744073709551615]] # type: Range
+
+    def _from_raw(self, raw: str) -> int:
+        try:
+            return int(raw)
+        except ValueError:
+            raise YangTypeError(raw) from None
 
 class YangTypeError(YangsonException):
     """Exception to be raised if a value doesn't match its type."""

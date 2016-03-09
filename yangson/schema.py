@@ -2,7 +2,7 @@
 
 from typing import Dict, List, Optional, Tuple, Union
 from .context import Context
-from .datatype import DataType
+from .datatype import DataType, RawScalar
 from .enumerations import DefaultDeny
 from .exception import YangsonException
 from .instance import ArrayValue, EntryIndex, EntryValue, EntryKeys, ObjectValue
@@ -11,7 +11,6 @@ from .typealiases import *
 from .regex import *
 
 # Local type aliases
-RawScalar = Union[int, str]
 RawObject = Dict[QName, "RawValue"]
 RawList = List["RawObject"]
 RawLeafList = List["RawScalar"]
@@ -292,7 +291,7 @@ class TerminalNode(SchemaNode, DataNode):
         :param val: raw lis
         :param ns: current namespace
         """
-        return val # TODO: handle special cases (Decimal64)
+        return self.type.from_raw(val)
 
 class ContainerNode(InternalNode, DataNode):
     """Container node."""

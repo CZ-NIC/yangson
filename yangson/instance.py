@@ -46,7 +46,8 @@ class ObjectValue(StructuredValue, dict):
 
     def __hash__(self) -> int:
         """Return an integer hash value for the receiver."""
-        return tuple(sorted((self.items()))).__hash__()
+        sks = sorted(self.keys())
+        return tuple([ (k, self[k].__hash__()) for k in sks ]).__hash__()
 
 class Crumb:
     """Class of crumb objects representing zipper context."""
