@@ -66,7 +66,7 @@ class Crumb:
         """Return receiver's timestamp (or parent's if ``None``)."""
         return self._timestamp if self._timestamp else self.parent.timestamp
 
-    def pointer(self):
+    def pointer(self) -> str:
         """Return JSON pointer of the receiver."""
 
         return ("{}/{}".format(self.parent.pointer(), self.pointer_fragment())

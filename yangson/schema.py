@@ -62,6 +62,13 @@ class SchemaNode:
     def config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         if stmt.argument == "false": self._config = False
 
+    def mandatory_stmt(self, stmt, mid: ModuleId) -> None:
+        if stmt.argument == "true":
+            self.mandatory = True
+            self.parent.mandatory_child()
+        else:
+            self.mandatory = False
+
     def nacm_default_deny_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Set NACM default access."""
         if stmt.keyword == "default-deny-all":
@@ -84,6 +91,9 @@ class SchemaNode:
         "leaf": "leaf_stmt",
         "leaf-list": "leaf_list_stmt",
         "list": "list_stmt",
+        "mandatory": "mandatory_stmt",
+        "max-elements": "max_elements_stmt",
+        "min-elements": "min_elements_stmt",
         "presence": "presence_stmt",
         "uses": "uses_stmt",
         }
@@ -98,6 +108,10 @@ class InternalNode(SchemaNode):
         super().__init__()
         self.children = [] # type: List[SchemaNode]
         self._nsswitch = False # type: bool
+
+    def mandatory_child(self) -> None:
+        """A child of the receiver is mandatory; perform necessary actions."""
+        pass
 
     def add_child(self, node: SchemaNode) -> None:
         """Add child node to the receiver.
@@ -244,6 +258,10 @@ class InternalNode(SchemaNode):
 class DataNode:
     """Abstract superclass for data nodes."""
 
+    def __init__(self):
+        """Initialize the class instance."""
+        self.mandatory = False # type: bool
+
     def _parse_entry_selector(self, iid: str, offset: int) -> Any:
         """This method is applicable only to a list or leaf-list."""
         raise BadSchemaNodeType(self, "list or leaf-list")
@@ -257,6 +275,18 @@ class DataNode:
     def type(self, typ: DataType) -> None:
         """This method is applicable only to a terminal node."""
         raise BadSchemaNodeType(self, "leaf or leaf-list")
+
+    def min_elements_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        self.min_elements = int(stmt.argument)
+        if self.min_elements > 0:
+            self.parent.mandatory_child()
+
+    def max_elements_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        arg = stmt.argument
+        if arg == "unbounded":
+            self.max_elements = None
+        else:
+            self.max_elements = int(arg)
 
 class TerminalNode(SchemaNode, DataNode):
     """Abstract superclass for leaves in the schema tree."""
@@ -300,6 +330,13 @@ class ContainerNode(InternalNode, DataNode):
         """Initialize the class instance."""
         super().__init__()
         self.presence = False # type: bool
+        self.mandatory = False # type: bool
+
+    def mandatory_child(self) -> None:
+        """A child of the receiver is mandatory; perform necessary actions."""
+        if self.presence: return
+        self.mandatory = True
+        self.parent.mandatory_child()
 
     def presence_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.presence = True
@@ -311,6 +348,8 @@ class ListNode(InternalNode, DataNode):
         """Initialize the class instance."""
         super().__init__()
         self.keys = [] # type: List[NodeName]
+        self.min_elements = 0 # type: int
+        self.max_elements = None # type: Optional[int]
 
     def key_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.keys = [
@@ -367,6 +406,7 @@ class ChoiceNode(InternalNode):
         """Initialize the class instance."""
         super().__init__()
         self.default = None # type: NodeName
+        self.mandatory = False # type: bool
 
     def handle_child(self, node: SchemaNode, stmt: SchemaNode,
                      mid: ModuleId) -> None:
@@ -400,6 +440,12 @@ class LeafNode(TerminalNode):
 
 class LeafListNode(TerminalNode):
     """Leaf-list node."""
+
+    def __init__(self) -> None:
+        """Initialize the class instance."""
+        super().__init__()
+        self.min_elements = 0 # type: int
+        self.max_elements = None # type: Optional[int]
 
     def default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         if self.default is None:
