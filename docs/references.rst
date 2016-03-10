@@ -2,6 +2,12 @@
 References
 **********
 
+.. [BBW16] Bierman, A.; Bjorklund, M.; Watsen, K. *YANG Module
+	   Library.* `draft-ietf-netconf-yang-library`__, Internet
+	   Engineering Task Force, 2016.
+
+__ https://tools.ietf.org/html/draft-ietf-netconf-yang-library
+
 .. [Bjo16] Bjorklund, M. (ed.). *The YANG 1.1 Data Modeling Language.*
 	   `draft-ietf-netmod-rfc6020bis`__, Internet Engineering Task
 	   Force, 2016.

@@ -299,4 +299,127 @@ Exceptions
 Example
 *******
 
-TODO.
+Consider this very simple YANG module::
+
+  module test {
+    namespace "http://example.com/test";
+    prefix t;
+
+    container root {
+      leaf foo {
+        type boolean;
+      }
+      leaf-list bar {
+        type uint8;
+      }
+    }
+  }
+
+In order to use this YANG module with the *Yangson* library, we need to
+write a *YANG library* specification [BBW16]_::
+
+  {
+    "ietf-yang-library:modules-state": {
+      "module-set-id": "",
+      "module": [
+        {
+          "name": "test",
+          "revision": "",
+          "namespace": "http://example.com/test",
+          "conformance-type": "implement"
+        }
+      ]
+    }
+  }
+
+The only useful information that this JSON snippet provides is that
+our data model consists of a single YANG module, namely
+``test``. Given that it is about as long as than the YANG module
+itself, it looks like a serious overkill, but real-life data models
+typically comprise a number of modules in various roles, support
+different features, etc., and YANG library info then makes much more
+sense. Anyway, we can now load our simple data model::
+
+  >>> import json
+  >>> from yangson import DataModel
+  >>> module_dir = "examples" # where test.yang lives
+  >>> ylfile = open("examples/yang-library.json")
+  >>> dm = DataModel.from_yang_library(ylfile.read(), module_dir)
+
+Here is a JSON document that happens to be a valid instance of the
+data model::
+
+  >>> data = """{"test:root": {"foo": true, "bar": [1, 2]}}"""
+
+We parse the JSON data with the standard library function
+:func:`json.loads` and create an :class:`Instance` from it right away::
+
+  >>> inst = dm.from_raw(json.loads(data))
+
+Attribute :attr:`inst.value` now holds the complete data::
+
+  >>> inst.value
+  {'test:root': {'foo': True, 'bar': [1, 2]}}
+
+We can now use the methods in the :class:`Instance` class to “unzip”
+the structure and focus on an arbitrary value inside it, for example
+the ``foo`` boolean value:
+
+  >>> foo = inst.member("test:root").member("foo")
+  >>> foo.value
+  True
+
+We can change this value and get a new :class:`Instance` with the
+modified value, while ``foo`` still keeps the original value::
+
+  >>> mfoo = foo.update(False)
+  >>> mfoo.value
+  False
+  >>> foo.value
+  True
+
+So far it doesn't look very exciting, but the important point here is
+that both ``foo`` and ``mfoo`` keep complete information about the
+ancestor structures, and in fact share most of them. From ``minst`` we
+can easily get back to the top and see the whole structure again,
+but with the modified value of the ``foo`` member::
+
+  >>> minst = mfoo.top()
+  >>> minst.value
+  {'test:root': {'foo': False, 'bar': [1, 2]}}
+
+However, the ``inst`` variable still points to the data structure that
+we started with, it wasn't affected at all::
+
+  >>> inst.value
+  {'test:root': {'foo': True, 'bar': [1, 2]}}
+
+But the nicest thing is that ``inst`` and ``minst`` still *share* the
+parts of the structure that we didn't touch. How can we see this?
+Easy. We just use the standard Python way for accessing structure
+elements and modify the left array entry in the ``bar`` member of ``inst``::
+
+  >>> inst.value["test:root"]["bar"][0] = 111
+  >>> inst.value
+  {'test:root': {'foo': True, 'bar': [111, 2]}}
+  >>> minst.value
+  {'test:root': {'foo': False, 'bar': [111, 2]}}
+
+Sure enough, the value changed not only in ``inst`` but also in
+``minst``, so the array is indeed shared! If we use the
+:class:`Instance` methods for changing the other entry of the same
+array, the result will be quite different::
+
+  >>> bar = inst.member("test:root").member("bar").entry(1)
+  >>> bar.value
+  2
+  >>> minst2 = bar.update(222).top()
+  >>> minst2.value
+  {'test:root': {'bar': [111, 222], 'foo': True}}
+  >>> inst.value
+  {'test:root': {'foo': True, 'bar': [111, 2]}}
+  >>> minst.value
+  {'test:root': {'foo': False, 'bar': [111, 2]}}
+
+The new :class:`Instance` ``minst2`` contains the modified value, but
+neither ``inst`` nor ``minst`` changed.
