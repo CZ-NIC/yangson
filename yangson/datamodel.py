@@ -120,7 +120,7 @@ class DataModel:
                     if r == rev:
                         imid = (iname, rev)
                         break
-                if imid is None and rev is None:   # use last revision in the list
+                if imid is None and rev is None:   # use last revision
                     imid = (iname, self.revisions[iname][-1])
                 Context.prefix_map[mid][prefix] = imid
                 if pos is None: continue
@@ -216,6 +216,10 @@ class DataModel:
                     sel[klf.qname] = val
                 res.append(EntryKeys(sel))
         return res
+
+    def ascii_data_tree(self) -> str:
+        """Return ascii-art representation of the main data tree."""
+        return self.schema.ascii_tree("")
 
 class BadYangLibraryData(YangsonException):
     """Exception to be raised for broken YANG Library data."""

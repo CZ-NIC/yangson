@@ -68,6 +68,9 @@ class SchemaNode:
         else:
             self.mandatory = False
 
+    def _tree_line_prefix(self) -> str:
+        return "+--{}".format("rw" if self.config else "ro")
+
     handler = {
         "anydata": "anydata_stmt",
         "anyxml": "anyxml_stmt",
@@ -78,8 +81,6 @@ class SchemaNode:
         "default": "default_stmt",
         "ietf-netconf-acm:default-deny-all": "nacm_default_deny_stmt",
         "ietf-netconf-acm:default-deny-write": "nacm_default_deny_stmt",
-        "include": "include_stmt",
-        "key": "key_stmt",
         "leaf": "leaf_stmt",
         "leaf-list": "leaf_list_stmt",
         "list": "list_stmt",
@@ -178,12 +179,6 @@ class InternalNode(SchemaNode):
         target._nsswitch = nsswitch
         target.handle_substatements(stmt, mid)
 
-    def include_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        name = stmt.argument
-        revst = stmt.find1("revision-date")
-        smid = (name, revst.argument if revst else None)
-        self.handle_substatements(Context.modules[smid], smid)
-
     def uses_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle uses statement."""
         grp, gid = Context.get_definition(stmt, mid)
@@ -197,7 +192,9 @@ class InternalNode(SchemaNode):
 
     def list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle list statement."""
-        self.handle_child(ListNode(), stmt, mid)
+        node = ListNode()
+        node.key_stmt(stmt, mid)
+        self.handle_child(node, stmt, mid)
 
     def choice_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle choice statement."""
@@ -246,6 +243,14 @@ class InternalNode(SchemaNode):
             res[cn.qname] = cn.from_raw(val[qn])
         res.time_stamp()
         return res
+
+    def ascii_tree(self, indent: str) -> str:
+        """Return the receiver's ascii-art subtree."""
+        res = ""
+        for c in self.children[:-1]:
+            res += indent + c.tree_line() + c.ascii_tree(indent + "|  ")
+        return (res + indent + self.children[-1].tree_line() +
+                self.children[-1].ascii_tree(indent + "   "))
 
 class DataNode(SchemaNode):
     """Abstract superclass for data nodes."""
@@ -314,15 +319,21 @@ class TerminalNode(DataNode):
         :param stmt: YANG ``leaf`` or ``leaf-list`` statement
         :param mid: id of the context module
         """
-        self.type = DataType.resolve_type(stmt.find1("type", required=True), mid)
+        self.type = DataType.resolve_type(
+            stmt.find1("type", required=True), mid)
 
-    def from_raw(self, val: RawScalar, ns: YangIdentifier = None) -> ScalarValue:
+    def from_raw(self, val: RawScalar,
+                 ns: YangIdentifier = None) -> ScalarValue:
         """Transform a scalar entry.
 
         :param val: raw lis
         :param ns: current namespace
         """
         return self.type.from_raw(val)
+
+    def ascii_tree(self, indent: str) -> str:
+        """Return the receiver's ascii-art subtree."""
+        return ""
 
 class ContainerNode(InternalNode, DataNode):
     """Container node."""
@@ -342,6 +353,17 @@ class ContainerNode(InternalNode, DataNode):
     def presence_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.presence = True
 
+    def tree_line(self) -> str:
+        """Return the receiver's contribution to tree diagram."""
+        if self.presence:
+            suff = "!"
+        elif self.mandatory:
+            suff = ""
+        else:
+            suff = "?"
+        return "{} {}{}\n".format(
+            self._tree_line_prefix(), self.qname, suff)
+
 class ListNode(InternalNode, DataNode):
     """List node."""
 
@@ -353,8 +375,18 @@ class ListNode(InternalNode, DataNode):
         self.max_elements = None # type: Optional[int]
 
     def key_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        kst = stmt.find1("key")
+        if kst is None: return
         self.keys = [
-            Context.translate_qname(mid, k) for k in stmt.argument.split() ]
+            Context.translate_qname(mid, k) for k in kst.argument.split() ]
+
+    def leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle leaf statement."""
+        node = LeafNode()
+        node.type_stmt(stmt, mid)
+        self.handle_child(node, stmt, mid)
+        if (node.name, node.ns) in self.keys:
+            node.mandatory = True
 
     def _parse_entry_selector(self, iid: str, offset: int) -> Tuple[
             Union[EntryIndex, EntryKeys], int]:
@@ -400,6 +432,13 @@ class ListNode(InternalNode, DataNode):
         res.time_stamp()
         return res
 
+    def tree_line(self) -> str:
+        """Return the receiver's contribution to tree diagram."""
+        keys = (" [" + " ".join([ k[0] for k in self.keys ]) + "]"
+                if self.keys else "")
+        return "{} {}*{}\n".format(
+            self._tree_line_prefix(), self.qname, keys)
+
 class ChoiceNode(InternalNode):
     """Choice node."""
 
@@ -429,15 +468,31 @@ class ChoiceNode(InternalNode):
     def default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.default = Context.translate_qname(mid, stmt.argument)
 
+    def tree_line(self) -> str:
+        """Return the receiver's contribution to tree diagram."""
+        return "{} ({}){}\n".format(
+            self._tree_line_prefix(), self.qname,
+            "" if self.mandatory else "?")
+
 class CaseNode(InternalNode):
     """Case node."""
-    pass
+
+    def tree_line(self) -> str:
+        """Return the receiver's contribution to tree diagram."""
+        return "{}:({})\n".format(
+            self._tree_line_prefix(), self.qname)
 
 class LeafNode(TerminalNode):
     """Leaf node."""
 
     def default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.default = self.type.parse_value(stmt.argument)
+
+    def tree_line(self) -> str:
+        """Return the receiver's contribution to tree diagram."""
+        return "{} {}{}\n".format(
+            self._tree_line_prefix(), self.qname,
+            "" if self.mandatory else "?")
 
 class LeafListNode(TerminalNode):
     """Leaf-list node."""
@@ -488,13 +543,28 @@ class LeafListNode(TerminalNode):
         res.time_stamp()
         return res
 
+    def tree_line(self) -> str:
+        """Return the receiver's contribution to tree diagram."""
+        return "{} {}*\n".format(
+            self._tree_line_prefix(), self.qname)
+
 class AnydataNode(TerminalNode):
     """Anydata node."""
-    pass
+
+    def tree_line(self) -> str:
+        """Return the receiver's contribution to tree diagram."""
+        return "{} {}{}\n".format(
+            self._tree_line_prefix(), self.qname,
+            "" if self.mandatory else "?")
 
 class AnyxmlNode(TerminalNode):
     """Anyxml node."""
-    pass
+
+    def tree_line(self) -> str:
+        """Return the receiver's contribution to tree diagram."""
+        return "{} {}{}\n".format(
+            self._tree_line_prefix(), self.qname,
+            "" if self.mandatory else "?")
 
 class NonexistentSchemaNode(YangsonException):
     """Exception to be raised when a schema node doesn't exist."""
