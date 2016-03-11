@@ -24,7 +24,6 @@ class SchemaNode:
         self.name = None # type: YangIdentifier
         self.ns = None # type: YangIdentifier
         self.parent = None # type: "InternalNode"
-        self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
     @property
     def config(self) -> bool:
@@ -68,13 +67,6 @@ class SchemaNode:
             self.parent.mandatory_child()
         else:
             self.mandatory = False
-
-    def nacm_default_deny_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        """Set NACM default access."""
-        if stmt.keyword == "default-deny-all":
-            self.default_deny = DefaultDeny.all
-        elif stmt.keyword == "default-deny-write":
-            self.default_deny = DefaultDeny.write
 
     handler = {
         "anydata": "anydata_stmt",
@@ -255,12 +247,13 @@ class InternalNode(SchemaNode):
         res.time_stamp()
         return res
 
-class DataNode:
+class DataNode(SchemaNode):
     """Abstract superclass for data nodes."""
 
     def __init__(self):
         """Initialize the class instance."""
-        self.mandatory = False # type: bool
+        super().__init__()
+        self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
     def _parse_entry_selector(self, iid: str, offset: int) -> Any:
         """This method is applicable only to a list or leaf-list."""
@@ -288,13 +281,21 @@ class DataNode:
         else:
             self.max_elements = int(arg)
 
-class TerminalNode(SchemaNode, DataNode):
+    def nacm_default_deny_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        """Set NACM default access."""
+        if stmt.keyword == "default-deny-all":
+            self.default_deny = DefaultDeny.all
+        elif stmt.keyword == "default-deny-write":
+            self.default_deny = DefaultDeny.write
+
+class TerminalNode(DataNode):
     """Abstract superclass for leaves in the schema tree."""
 
     def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.default = None
+        self.mandatory = False # type: bool
         self._type = None # type: DataType
 
     @property
