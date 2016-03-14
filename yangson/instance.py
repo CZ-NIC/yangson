@@ -364,6 +364,9 @@ class MemberName(InstanceSelector):
         """Return a string representation of the receiver."""
         return "/" + self.name
 
+    def __eq__(self, other: "MemberName") -> bool:
+        return self.name == other.name
+
     def peek_step(self, obj: ObjectValue) -> Value:
         """Return the member of `obj` addressed by the receiver.
 
@@ -391,6 +394,9 @@ class EntryIndex(InstanceSelector):
     def __str__(self) -> str:
         """Return a string representation of the receiver."""
         return "[{0:d}]".format(self.index)
+
+    def __eq__(self, other: "EntryIndex") -> bool:
+        return self.index == other.index
 
     def peek_step(self, arr: ArrayValue) -> Value:
         """Return the entry of `arr` addressed by the receiver.
@@ -422,6 +428,9 @@ class EntryValue(InstanceSelector):
     def __str__(self) -> str:
         """Return a string representation of the receiver."""
         return "[.=" + str(self.value) +"]"
+
+    def __eq__(self, other: "EntryValue") -> bool:
+        return self.value == other.value
 
     def peek_step(self, arr: ArrayValue) -> Value:
         """Return the entry of `arr` addressed by the receiver.
@@ -458,6 +467,9 @@ class EntryKeys(InstanceSelector):
         """Return a string representation of the receiver."""
         return "".join(["[{}={}]".format(k, repr(self.keys[k]))
                         for k in self.keys])
+
+    def __eq__(self, other: "EntryKeys") -> bool:
+        return self.keys == other.keys
 
     def peek_step(self, arr: ArrayValue) -> Value:
         """Return the entry of `arr` addressed by the receiver.
