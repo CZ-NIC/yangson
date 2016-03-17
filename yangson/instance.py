@@ -36,6 +36,10 @@ class StructuredValue:
 
 class ArrayValue(StructuredValue, list):
     """Array values corresponding to YANG lists and leaf-lists."""
+    def __init__(self, ts: datetime=None, val=None):
+        StructuredValue.__init__(self, ts)
+        if val is not None:
+            list.__init__(self, val)
 
     def __hash__(self) -> int:
         """Return an integer hash value for the receiver."""
@@ -43,6 +47,10 @@ class ArrayValue(StructuredValue, list):
 
 class ObjectValue(StructuredValue, dict):
     """Array values corresponding to YANG container."""
+    def __init__(self, ts: datetime=None, val=None):
+        StructuredValue.__init__(self, ts)
+        if val is not None:
+            dict.__init__(self, val)
 
     def __hash__(self) -> int:
         """Return an integer hash value for the receiver."""
