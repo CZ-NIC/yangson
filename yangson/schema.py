@@ -224,12 +224,10 @@ class InternalNode(SchemaNode):
         """Handle anyxml statement."""
         self.handle_child(AnyxmlNode(), stmt, mid)
 
-    def from_raw(self, val: RawObject,
-                 ns: YangIdentifier = None) -> ObjectValue:
+    def from_raw(self, val: RawObject) -> ObjectValue:
         """Transform a raw dictionary into object value.
 
         :param val: raw dictionary
-        :param ns: current namespace
         """
         res = ObjectValue()
         for qn in val:
@@ -322,8 +320,7 @@ class TerminalNode(DataNode):
         self.type = DataType.resolve_type(
             stmt.find1("type", required=True), mid)
 
-    def from_raw(self, val: RawScalar,
-                 ns: YangIdentifier = None) -> ScalarValue:
+    def from_raw(self, val: RawScalar) -> ScalarValue:
         """Transform a scalar entry.
 
         :param val: raw lis
@@ -420,7 +417,7 @@ class ListNode(InternalNode, DataNode):
             return (EntryKeys(res), mo.end())
         raise BadEntrySelector(self, iid)
 
-    def from_raw(self, val: RawList, ns: YangIdentifier = None) -> ArrayValue:
+    def from_raw(self, val: RawList) -> ArrayValue:
         """Transform a raw list array into array value.
 
         :param val: raw list array
@@ -428,7 +425,7 @@ class ListNode(InternalNode, DataNode):
         """
         res = ArrayValue()
         for en in val:
-            res.append(super().from_raw(en, ns))
+            res.append(super().from_raw(en))
         res.time_stamp()
         return res
 
@@ -530,8 +527,7 @@ class LeafListNode(TerminalNode):
             val = self.type.parse_value(drhs if drhs else mo.group("srhs"))
             return (EntryValue(val), mo.end())
 
-    def from_raw(
-            self, val: RawLeafList, ns: YangIdentifier = None) -> ArrayValue:
+    def from_raw(self, val: RawLeafList) -> ArrayValue:
         """Transform a raw list array into array value.
 
         :param val: raw list array
@@ -539,7 +535,7 @@ class LeafListNode(TerminalNode):
         """
         res = ArrayValue()
         for en in val:
-            res.append(super().from_raw(en, ns))
+            res.append(super().from_raw(en))
         res.time_stamp()
         return res
 
