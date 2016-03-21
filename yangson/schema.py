@@ -6,7 +6,8 @@ from .datatype import DataType, RawScalar
 from .enumerations import DefaultDeny
 from .exception import YangsonException
 from .instance import (ArrayValue, EntryIndex, EntryValue,
-                       EntryKeys, InstanceIdentifier, ObjectValue)
+                       EntryKeys, InstanceIdentifier, MemberName,
+                       ObjectValue, Value)
 from .statement import Statement
 from .typealiases import *
 from .regex import *
@@ -256,7 +257,7 @@ class InternalNode(SchemaNode):
         for qn in val:
             cn = self.get_data_child(*self.unqname(qn))
             if cn is None:
-                raise NonexistentSchemaNode(loc, p)
+                raise NonexistentSchemaNode(*self.unqname(qn))
             res[cn.qname] = cn.from_raw(val[qn])
         res.time_stamp()
         return res
@@ -444,9 +445,16 @@ class ListNode(InternalNode, DataNode):
         """
         res = ArrayValue()
         for en in val:
-            res.append(super().from_raw(en))
+            res.append(self.entry_from_raw(en))
         res.time_stamp()
         return res
+
+    def entry_from_raw(self, val: RawValue) -> Value:
+        """Transform a raw list entry into a value.
+
+        :param val: raw list entry
+        """
+        return super().from_raw(val)
 
     def tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -554,9 +562,16 @@ class LeafListNode(TerminalNode):
         """
         res = ArrayValue()
         for en in val:
-            res.append(super().from_raw(en))
+            res.append(self.entry_from_raw(en))
         res.time_stamp()
         return res
+
+    def entry_from_raw(self, val: RawValue) -> Value:
+        """Transform a raw leaf-list entry into a value.
+
+        :param val: raw list entry
+        """
+        return super().from_raw(val)
 
     def tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
