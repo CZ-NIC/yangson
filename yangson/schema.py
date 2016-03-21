@@ -5,7 +5,8 @@ from .context import Context
 from .datatype import DataType, RawScalar
 from .enumerations import DefaultDeny
 from .exception import YangsonException
-from .instance import ArrayValue, EntryIndex, EntryValue, EntryKeys, ObjectValue
+from .instance import (ArrayValue, EntryIndex, EntryValue,
+                       EntryKeys, InstanceIdentifier, ObjectValue)
 from .statement import Statement
 from .typealiases import *
 from .regex import *
@@ -38,6 +39,16 @@ class SchemaNode:
         """Return qualified name of the receiver."""
         return (self.name if self.ns == self.parent.ns
                 else self.ns + ":" + self.name)
+
+    @staticmethod
+    def unqname(qn: QName) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
+        """Translate qualified name to (name, namespace) tuple.
+
+        :param qn: qualified name
+        """
+        p, s, loc = qn.partition(":")
+        if s: return (loc, p)
+        return (p, None)
 
     def handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         """Dispatch actions for substatements of `stmt`.
@@ -133,8 +144,7 @@ class InternalNode(SchemaNode):
         node = self
         for p in path:
             node = node.get_child(*p)
-            if node is None:
-                return None
+            if node is None: return None
         return node
 
     def get_data_child(
@@ -158,6 +168,19 @@ class InternalNode(SchemaNode):
             for c in cands:
                 res = c.get_data_child(name, ns)
                 if res: return res
+
+    def get_data_descendant(
+            self, ii: InstanceIdentifier) -> Optional["DataNode"]:
+        """Return descendant data node.
+
+        :param ii: instance identifier (relative to the receiver)
+        """
+        node = self
+        for sel in ii:
+            if not isinstance(sel, MemberName): continue
+            node = node.get_child(*self.unqname(sel.name))
+            if node is None: return None
+        return node
 
     def handle_child(
             self, node: SchemaNode, stmt: Statement, mid: ModuleId) -> None:
@@ -231,11 +254,7 @@ class InternalNode(SchemaNode):
         """
         res = ObjectValue()
         for qn in val:
-            p, s, loc = qn.partition(":")
-            if not s:
-                loc = p
-                p = ns
-            cn = self.get_data_child(loc, p)
+            cn = self.get_data_child(*self.unqname(qn))
             if cn is None:
                 raise NonexistentSchemaNode(loc, p)
             res[cn.qname] = cn.from_raw(val[qn])
