@@ -1,8 +1,8 @@
 import json
 from typing import Dict, List, Optional
 from urllib.parse import unquote
+from .constants import qname_re, YangsonException
 from .context import Context
-from .exception import YangsonException
 from .instance import (Crumb, EntryKeys, Instance, InstanceIdentifier,
                        MemberName)
 from .modparser import from_file
@@ -10,7 +10,6 @@ from .schema import (BadSchemaNodeType, InternalNode, NonexistentSchemaNode,
                      RawObject)
 from .statement import Statement
 from .typealiases import *
-from .regex import *
 
 class DataModel:
     """YANG data model."""

@@ -2,8 +2,8 @@ import base64
 import decimal
 import re
 from typing import Any, Callable, List, Optional, Tuple, Union
+from .constants import YangsonException
 from .context import Context
-from .exception import YangsonException
 from .statement import Statement
 from .typealiases import *
 

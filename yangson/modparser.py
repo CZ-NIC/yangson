@@ -1,7 +1,7 @@
 """Parser of YANG modules."""
 
 from typing import Callable, List, Mapping, Optional, Tuple
-from yangson.exception import YangsonException
+from .constants import YangsonException
 from .statement import Statement
 
 # Local type aliases

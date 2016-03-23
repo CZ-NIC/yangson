@@ -1,16 +1,14 @@
 """Classes for schema nodes."""
 
 from typing import Dict, List, Optional, Tuple, Union
+from .constants import DefaultDeny, pred_re, YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
-from .enumerations import DefaultDeny
-from .exception import YangsonException
 from .instance import (ArrayValue, EntryIndex, EntryValue,
                        EntryKeys, InstanceIdentifier, MemberName,
                        ObjectValue, Value)
 from .statement import Statement
 from .typealiases import *
-from .regex import *
 
 # Local type aliases
 RawObject = Dict[QName, "RawValue"]

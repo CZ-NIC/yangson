@@ -1,4 +1,4 @@
-from .exception import YangsonException
+from .constants import YangsonException
 from .statement import Statement
 from .typealiases import *
 

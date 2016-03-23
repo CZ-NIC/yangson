@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from typing import Any, Callable, List, Tuple
-from .exception import YangsonException
+from .constants import YangsonException
 from .typealiases import *
 
 # Local type aliases
