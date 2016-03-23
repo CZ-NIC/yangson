@@ -266,7 +266,8 @@ class Instance:
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "entry of non-array")
         try:
-            return Instance(ArrayValue(val[:index] + val[index+1:]), self.crumb)
+            return Instance(ArrayValue(val = val[:index] + val[index+1:]),
+                            self.crumb)
         except IndexError:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
