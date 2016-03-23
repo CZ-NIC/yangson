@@ -1,5 +1,6 @@
 """Classes related to JSON-encoded instance data."""
 
+import copy
 from datetime import datetime
 from typing import Any, Callable, List, Tuple
 from .constants import YangsonException
@@ -26,6 +27,9 @@ class StructuredValue:
         :param ts: new time stamp (if ``None``, set it to current time)
         """
         self.last_modified = ts if ts else datetime.now()
+
+    def copy(self):
+        return copy.copy(self)
 
     def __eq__(self, val: "StructuredValue") -> bool:
         """Is the receiver equal to `val`?
