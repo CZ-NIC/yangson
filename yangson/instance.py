@@ -36,7 +36,7 @@ class StructuredValue:
 
 class ArrayValue(StructuredValue, list):
     """Array values corresponding to YANG lists and leaf-lists."""
-    def __init__(self, ts: datetime=None, val=None):
+    def __init__(self, ts: datetime=None, val: List[Value] = None):
         StructuredValue.__init__(self, ts)
         if val is not None:
             list.__init__(self, val)
@@ -47,7 +47,7 @@ class ArrayValue(StructuredValue, list):
 
 class ObjectValue(StructuredValue, dict):
     """Array values corresponding to YANG container."""
-    def __init__(self, ts: datetime=None, val=None):
+    def __init__(self, ts: datetime=None, val: Dict[QName, Value] = None):
         StructuredValue.__init__(self, ts)
         if val is not None:
             dict.__init__(self, val)
@@ -266,7 +266,7 @@ class Instance:
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "entry of non-array")
         try:
-            return Instance(ArrayValue(val=(val[:index] + val[index+1:])), self.crumb)
+            return Instance(ArrayValue(val[:index] + val[index+1:]), self.crumb)
         except IndexError:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
