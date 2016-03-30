@@ -34,7 +34,8 @@ The Yangson package comprises the following Python modules:
     as `persistent structures`_.
 
 :mod:`statement`
-    This module defines the :class:`Statement` class tha
+    This module defines the :class:`Statement` class that represents a
+    generic YANG statement.
 
 :mod:`modparser`
     This module implements a parser for YANG modules and submodules.

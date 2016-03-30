@@ -2,6 +2,12 @@
 References
 **********
 
+.. [Bie16] Bierman, A. *Guidelines for Authors and Reviewers of YANG
+	   Data Model Documents*. `draft-ietf-netmod-rfc6087bis`__,
+	   Internet Engineering Task Force, 2016.
+
+__ https://tools.ietf.org/html/draft-ietf-netmod-rfc6087bis
+
 .. [BBW16] Bierman, A.; Bjorklund, M.; Watsen, K. *YANG Module
 	   Library.* `draft-ietf-netconf-yang-library`__, Internet
 	   Engineering Task Force, 2016.
