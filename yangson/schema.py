@@ -79,7 +79,7 @@ class SchemaNode:
             self.mandatory = False
 
     def _tree_line_prefix(self) -> str:
-        return "+--{}".format("rw" if self.config else "ro")
+        return "+--"
 
     handler = {
         "anydata": "anydata_stmt",
@@ -276,6 +276,9 @@ class DataNode(SchemaNode):
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
+    def _tree_line_prefix(self) -> str:
+        return super()._tree_line_prefix() + ("rw" if self.config else "ro")
+
     def _parse_entry_selector(self, iid: str, offset: int) -> Any:
         """This method is applicable only to a list or leaf-list."""
         raise BadSchemaNodeType(self, "list or leaf-list")
@@ -469,6 +472,9 @@ class ChoiceNode(InternalNode):
         super().__init__()
         self.default = None # type: NodeName
         self.mandatory = False # type: bool
+
+    def _tree_line_prefix(self) -> str:
+        return super()._tree_line_prefix() + ("rw" if self.config else "ro")
 
     def handle_child(self, node: SchemaNode, stmt: SchemaNode,
                      mid: ModuleId) -> None:
