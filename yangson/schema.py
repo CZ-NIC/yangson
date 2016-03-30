@@ -82,6 +82,7 @@ class SchemaNode:
         return "+--"
 
     handler = {
+        "action": "rpc_action_stmt",
         "anydata": "anydata_stmt",
         "anyxml": "anyxml_stmt",
         "case": "case_stmt",
@@ -91,13 +92,16 @@ class SchemaNode:
         "default": "default_stmt",
         "ietf-netconf-acm:default-deny-all": "nacm_default_deny_stmt",
         "ietf-netconf-acm:default-deny-write": "nacm_default_deny_stmt",
+        "input": "input_stmt",
         "leaf": "leaf_stmt",
         "leaf-list": "leaf_list_stmt",
         "list": "list_stmt",
         "mandatory": "mandatory_stmt",
         "max-elements": "max_elements_stmt",
         "min-elements": "min_elements_stmt",
+        "output": "output_stmt",
         "presence": "presence_stmt",
+        "rpc": "rpc_action_stmt",
         "uses": "uses_stmt",
         }
     """Map of statement keywords to names of handler methods."""
@@ -237,6 +241,10 @@ class InternalNode(SchemaNode):
         node = LeafListNode()
         node.type_stmt(stmt, mid)
         self.handle_child(node, stmt, mid)
+
+    def rpc_action_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle anydata statement."""
+        self.handle_child(RpcActionNode(), stmt, mid)
 
     def anydata_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle anydata statement."""
@@ -510,6 +518,33 @@ class CaseNode(InternalNode):
         """Return the receiver's contribution to tree diagram."""
         return "{}:({})\n".format(
             self._tree_line_prefix(), self.qname)
+
+class RpcActionNode(InternalNode):
+    """RPC or action node."""
+
+    def input_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle RPC or action input statement."""
+        inp = InputNode()
+        inp.name = "input"
+        inp.ns = self.ns
+        self.add_child(inp)
+        inp.handle_substatements(stmt, mid)
+
+    def output_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle RPC or action output statement."""
+        outp = OutputNode()
+        outp.name = "output"
+        outp.ns = self.ns
+        self.add_child(outp)
+        outp.handle_substatements(stmt, mid)
+
+class InputNode(InternalNode):
+    """RPC or action input node."""
+    pass
+
+class OutputNode(InternalNode):
+    """RPC or action output node."""
+    pass
 
 class LeafNode(TerminalNode):
     """Leaf node."""
