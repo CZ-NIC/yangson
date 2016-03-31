@@ -263,6 +263,7 @@ class InternalNode(SchemaNode):
     def ascii_tree(self, indent: str) -> str:
         """Return the receiver's ascii-art subtree."""
         res = ""
+        if not self.children: return res
         for c in self.children[:-1]:
             res += indent + c.tree_line() + c.ascii_tree(indent + "|  ")
         return (res + indent + self.children[-1].tree_line() +
