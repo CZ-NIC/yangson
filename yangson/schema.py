@@ -185,6 +185,10 @@ class InternalNode(SchemaNode):
             if node is None: return None
         return node
 
+    def tree_line(self) -> str:
+        """Return the receiver's contribution to tree diagram."""
+        return "{} {}\n".format(self._tree_line_prefix(), self.qname)
+
     def handle_child(
             self, node: SchemaNode, stmt: Statement, mid: ModuleId) -> None:
         """Add child node to the receiver and handle substatements.
@@ -522,11 +526,15 @@ class CaseNode(InternalNode):
 class RpcActionNode(InternalNode):
     """RPC or action node."""
 
+    def _tree_line_prefix(self) -> str:
+        return super()._tree_line_prefix() + "-x"
+
     def input_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle RPC or action input statement."""
         inp = InputNode()
         inp.name = "input"
         inp.ns = self.ns
+        inp._config = False
         self.add_child(inp)
         inp.handle_substatements(stmt, mid)
 
@@ -535,16 +543,21 @@ class RpcActionNode(InternalNode):
         outp = OutputNode()
         outp.name = "output"
         outp.ns = self.ns
+        outp._config = False
         self.add_child(outp)
         outp.handle_substatements(stmt, mid)
 
 class InputNode(InternalNode):
     """RPC or action input node."""
-    pass
+
+    def _tree_line_prefix(self) -> str:
+        return super()._tree_line_prefix() + "ro"
 
 class OutputNode(InternalNode):
     """RPC or action output node."""
-    pass
+
+    def _tree_line_prefix(self) -> str:
+        return super()._tree_line_prefix() + "ro"
 
 class LeafNode(TerminalNode):
     """Leaf node."""
