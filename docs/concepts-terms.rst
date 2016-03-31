@@ -38,8 +38,30 @@ A complete data model usually corresponds to a particular device or network serv
 Trees and Nodes
 ***************
 
+In most practical applications of the Yangson library, a programmer needs to work with two types of trees:
+
+* *data tree* contains real data such as configuration, state data, RPC input/output parameters, or notifications. For our purposes, a data tree is a JSON document, or a parsed in-memory representation thereof.
+
+* *schema tree* allows us to decide which data trees are valid and which are not.
+
+Each node in the data tree corresponds to a *data node* in the schema tree. This looks confusing but in fact it is quite logical: data nodes are special schema nodes that have counterparts in the data tree. There are other schema nodes, namely *choice* and *case*, that don't have this property – they are used in the schema for specifying possible alternatives of which only one can appear in the data tree.
+
 YANG Modules
 ************
+
+YANG data models consist of *modules*. Each module defines the schema for some (usually related) parts of the data trees. Typically, a YANG module covers a certain subsystem or function. Every module defines a namespace that needs to be locally unique in a given data model. In Yangson, the namespace is identified by the YANG module name.
+
+YANG modules may also offload parts of their contents into *submodules*. One can then have one (main) module and any number of submodules that are included from the main module. The main module and all its submodules share the same namespace identified by the main module name.
+
+In order to create a particular data model, one has to decide which YANG modules will become part of it. The selection is recorded in *YANG library* data [BBW16]. And since YANG modules may exist in multiple revisions, a revision also needs to be specified for each module.
+
+YANG also offers two mechanisms that allow for finer-grain control of data model content:
+
+* *features* are essentially boolean flags that indicate whether an optional subsystem or function is supported or not. Parts of the schema tree can be labelled as being dependent on a feature: such a part exists only if the feature is supported.
+
+* *deviations* allow for specifying that a given implementation doesn't exactly follow what's written in a YANG module. In effect, a deviation can be understood as a “patch” of the original YANG module.
+
+Support for individual features and/or deviations are also indicated in YANG library data.
 
 Paths
 *****
