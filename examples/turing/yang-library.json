@@ -1,0 +1,19 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "",
+    "module": [
+      {
+        "name": "turing-machine",
+        "revision": "2016-04-11",
+        "namespace": "http://example.net/turing-machine",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "second-tape",
+        "revision": "2016-04-11",
+        "namespace": "http://example.net/turing-machine/tape-2",
+        "conformance-type": "implement"
+      }
+    ]
+  }
+}
