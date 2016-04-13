@@ -1,3 +1,4 @@
+from typing import Dict, MutableSet
 from .constants import YangsonException
 from .statement import Statement
 from .typealiases import *
@@ -19,6 +20,8 @@ class Context:
 
     ns_map = {} # type: Dict[YangIdentifier, YangIdentifier]
     """Map of module and submodule names to namespaces."""
+
+    features = set() # type: MutableSet[QName]
 
     @classmethod
     def resolve_qname(cls, mid: ModuleId,

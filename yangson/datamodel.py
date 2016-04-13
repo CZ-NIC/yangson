@@ -31,6 +31,9 @@ class DataModel:
             for item in yl["ietf-yang-library:modules-state"]["module"]:
                 name = item["name"]
                 Context.ns_map[name] = name
+                if "feature" in item:
+                    Context.features.update(
+                        [ name + ":" + f for f in item["feature"] ])
                 rev = item["revision"] if item["revision"] else None
                 mid = (name, rev)
                 ct = item["conformance-type"]
