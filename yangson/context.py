@@ -21,30 +21,30 @@ class Context:
     ns_map = {} # type: Dict[YangIdentifier, YangIdentifier]
     """Map of module and submodule names to namespaces."""
 
-    features = set() # type: MutableSet[QName]
+    features = set() # type: MutableSet[QualName]
 
     @classmethod
-    def resolve_qname(cls, mid: ModuleId,
-                      qname: QName) -> Tuple[ModuleId, YangIdentifier]:
-        """Resolve prefix-based QName.
+    def resolve_pname(cls, pname: PrefName,
+                      mid: ModuleId) -> Tuple[YangIdentifier, ModuleId]:
+        """Resolve prefixed name.
 
+        :param pname: prefixed name
         :param mid: identifier of the context module
-        :param qname: qualified name in prefix form
         """
-        p, s, loc = qname.partition(":")
+        p, s, loc = pname.partition(":")
         try:
-            return (cls.prefix_map[mid][p], loc) if s else (mid, p)
+            return (loc, cls.prefix_map[mid][p]) if s else (p, mid)
         except KeyError:
-            raise BadQName(qname) from None
+            raise BadPrefName(pname) from None
 
     @classmethod
-    def translate_qname(cls, mid: ModuleId, qname: QName) -> NodeName:
-        """Translate prefix-based QName to an absolute name.
+    def translate_pname(cls, pname: PrefName, mid: ModuleId) -> QualName:
+        """Translate prefixed name to a qualified name.
 
+        :param qname: prefixed name
         :param mid: identifier of the context module
-        :param qname: qualified name in prefix form
         """
-        nid, loc = cls.resolve_qname(mid, qname)
+        loc, nid = cls.resolve_pname(pname, mid)
         return (loc, nid[0])
 
     @classmethod
@@ -55,7 +55,7 @@ class Context:
         :param sid: schema node identifier (absolute or relative)
         """
         nlist = sid.split("/")
-        return [ cls.translate_qname(mid, qn)
+        return [ cls.translate_pname(qn, mid)
                  for qn in (nlist[1:] if sid[0] == "/" else nlist) ]
 
     @classmethod
@@ -87,7 +87,7 @@ class Context:
         :param mid: YANG module context
         """
         kw = "grouping" if stmt.keyword == "uses" else "typedef"
-        did, loc = cls.resolve_qname(mid, stmt.argument)
+        loc, did = cls.resolve_pname(stmt.argument, mid)
         dstmt = (stmt.get_definition(loc, kw) if did == mid else
                  cls.modules[did].find1(kw, loc, required=True))
         return (dstmt, did)
@@ -101,8 +101,8 @@ class BadPath(YangsonException):
     def __str__(self) -> str:
         return self.path
 
-class BadQName(YangsonException):
-    """Exception to be raised for QName."""
+class BadPrefName(YangsonException):
+    """Exception to be raised for a broken prefixed name."""
 
     def __init__(self, qname: str) -> None:
         self.qname = qname

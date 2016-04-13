@@ -384,7 +384,7 @@ class IdentityrefType(DataType):
     def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
-        self.bases = [] # type: List[QName]
+        self.bases = [] # type: List[QualName]
 
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
@@ -392,7 +392,8 @@ class IdentityrefType(DataType):
         :param stmt: YANG ``type identityref`` statement
         :param mid: id of the context module
         """
-        self.bases = [ b.argument for b in stmt.find_all("base") ]
+        self.bases = [ Context.translate_pname(b.argument, mid)
+                       for b in stmt.find_all("base") ]
 
 class NumericType(DataType):
     """Abstract class for numeric data types."""

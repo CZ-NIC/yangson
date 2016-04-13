@@ -11,7 +11,7 @@ from .statement import Statement
 from .typealiases import *
 
 # Local type aliases
-RawObject = Dict[QName, "RawValue"]
+RawObject = Dict[MemName, "RawValue"]
 RawList = List["RawObject"]
 RawLeafList = List["RawScalar"]
 RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
@@ -34,14 +34,14 @@ class SchemaNode:
             return self.parent.config
 
     @property
-    def qname(self) -> QName:
-        """Return qualified name of the receiver."""
+    def qname(self) -> MemName:
+        """Return member name of a receiver instance."""
         return (self.name if self.ns == self.parent.ns
                 else self.ns + ":" + self.name)
 
     @staticmethod
-    def unqname(qn: QName) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
-        """Translate qualified name to (name, namespace) tuple.
+    def unqname(qn: MemName) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
+        """Translate member name to a qualified tuple.
 
         :param qn: qualified name
         """
@@ -401,7 +401,7 @@ class ListNode(InternalNode, DataNode):
     def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
-        self.keys = [] # type: List[NodeName]
+        self.keys = [] # type: List[QualName]
         self.min_elements = 0 # type: int
         self.max_elements = None # type: Optional[int]
 
@@ -409,7 +409,7 @@ class ListNode(InternalNode, DataNode):
         kst = stmt.find1("key")
         if kst is None: return
         self.keys = [
-            Context.translate_qname(mid, k) for k in kst.argument.split() ]
+            Context.translate_pname(k, mid) for k in kst.argument.split() ]
 
     def leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf statement."""
@@ -483,7 +483,7 @@ class ChoiceNode(InternalNode):
     def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
-        self.default = None # type: NodeName
+        self.default = None # type: QualName
         self.mandatory = False # type: bool
 
     def _tree_line_prefix(self) -> str:
@@ -507,7 +507,7 @@ class ChoiceNode(InternalNode):
             cn.handle_child(node, stmt, mid)
 
     def default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self.default = Context.translate_qname(mid, stmt.argument)
+        self.default = Context.translate_pname(stmt.argument, mid)
 
     def tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""

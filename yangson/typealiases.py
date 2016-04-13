@@ -6,8 +6,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 RevisionDate = Optional[str]
 Uri = str
 YangIdentifier = str
-QName = str # [YangIdentifier:]YangIdentifier
+MemName = str # [YangIdentifier:]YangIdentifier
+PrefName = str # [Prefix:]YangIdentifier
 ScalarValue = Union[int, Decimal, str]
-NodeName = Tuple[YangIdentifier, YangIdentifier] # (name, namespace)
-SchemaAddress = List[NodeName]
+QualName = Tuple[YangIdentifier, YangIdentifier] # (name, namespace)
+SchemaAddress = List[QualName]
 ModuleId = Tuple[YangIdentifier, Optional[RevisionDate]]
