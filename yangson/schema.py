@@ -26,6 +26,19 @@ class SchemaNode:
         self.parent = None # type: "InternalNode"
 
     @property
+    def handler(self):
+        """Return the receiver's handler object."""
+        try:
+            return self._handler
+        except AttributeError:
+            return self.parent.handler
+
+    @handler.setter
+    def handler(self, obj) -> None:
+        """Set the receiver's handler."""
+        self._handler = obj
+
+    @property
     def config(self) -> bool:
         """Is the receiver configuration?"""
         try:
@@ -60,7 +73,7 @@ class SchemaNode:
                 key = Context.prefix_map[mid][s.prefix][0] + ":" + s.keyword
             else:
                 key = s.keyword
-            mname = SchemaNode.handler.get(key, "noop")
+            mname = SchemaNode.stmt_callback.get(key, "noop")
             method = getattr(self, mname)
             method(s, mid)
 
@@ -81,7 +94,7 @@ class SchemaNode:
     def _tree_line_prefix(self) -> str:
         return "+--"
 
-    handler = {
+    stmt_callback = {
         "action": "rpc_action_stmt",
         "anydata": "anydata_stmt",
         "anyxml": "anyxml_stmt",
@@ -104,7 +117,7 @@ class SchemaNode:
         "rpc": "rpc_action_stmt",
         "uses": "uses_stmt",
         }
-    """Map of statement keywords to names of handler methods."""
+    """Map of statement keywords to callback methods."""
 
 
 class InternalNode(SchemaNode):
