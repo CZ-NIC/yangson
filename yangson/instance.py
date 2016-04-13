@@ -51,7 +51,7 @@ class ArrayValue(StructuredValue, list):
 
 class ObjectValue(StructuredValue, dict):
     """Array values corresponding to YANG container."""
-    def __init__(self, ts: datetime=None, val: Dict[MemName, Value] = None):
+    def __init__(self, ts: datetime=None, val: Dict[JsonName, Value] = None):
         StructuredValue.__init__(self, ts)
         if val is not None:
             dict.__init__(self, val)
@@ -87,7 +87,7 @@ class Crumb:
 class MemberCrumb(Crumb):
     """Zipper contexts for an object member."""
 
-    def __init__(self, name: MemName, obj: Dict[MemName, Value],
+    def __init__(self, name: JsonName, obj: Dict[JsonName, Value],
                  parent: Crumb, ts: datetime = None) -> None:
         """Initialize the class instance.
 
@@ -100,7 +100,7 @@ class MemberCrumb(Crumb):
         self.name = name
         self.object = obj
 
-    def pointer_fragment(self) -> MemName:
+    def pointer_fragment(self) -> JsonName:
         """Return the JSON pointer fragment of the focused value."""
         return self.name
 
@@ -217,7 +217,7 @@ class Instance:
             inst = inst.up()
         return inst
 
-    def member(self, name: MemName) -> "Instance":
+    def member(self, name: JsonName) -> "Instance":
         try:
             obj = self.value.copy()
             return Instance(obj.pop(name), MemberCrumb(name, obj, self.crumb))
@@ -226,7 +226,7 @@ class Instance:
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
 
-    def new_member(self, name: MemName, value: Value) -> "Instance":
+    def new_member(self, name: JsonName, value: Value) -> "Instance":
         if not isinstance(self.value, ObjectValue):
             raise InstanceTypeError(self, "member of non-object")
         if name in self.value:
@@ -234,7 +234,7 @@ class Instance:
         return Instance(value, MemberCrumb(name, self.value, self.crumb,
                                            datetime.now()))
 
-    def remove_member(self, name: MemName) -> "Instance":
+    def remove_member(self, name: JsonName) -> "Instance":
         try:
             val = self.value.copy()
             del val[name]
@@ -244,7 +244,7 @@ class Instance:
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
 
-    def sibling(self, name: MemName) -> "Instance":
+    def sibling(self, name: JsonName) -> "Instance":
         try:
             obj = self.crumb.object.copy()
             newval = obj.pop(name)
@@ -293,7 +293,7 @@ class Instance:
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
-    def look_up(self, keys: Dict[MemName, ScalarValue]) -> "Instance":
+    def look_up(self, keys: Dict[JsonName, ScalarValue]) -> "Instance":
         """Return the entry with matching keys."""
         if not isinstance(self.value, ArrayValue):
             raise InstanceTypeError(self, "lookup on non-list")
@@ -366,7 +366,7 @@ class InstanceSelector:
 class MemberName(InstanceSelector):
     """Selectors of object members."""
 
-    def __init__(self, name: MemName) -> None:
+    def __init__(self, name: JsonName) -> None:
         """Initialize the class instance.
 
         :param name: member name
@@ -469,7 +469,7 @@ class EntryValue(InstanceSelector):
 class EntryKeys(InstanceSelector):
     """Key-based selectors for a list entry."""
 
-    def __init__(self, keys: Dict[MemName, ScalarValue]) -> None:
+    def __init__(self, keys: Dict[JsonName, ScalarValue]) -> None:
         """Initialize the class instance.
 
         :param keys: dictionary with keys of an entry
@@ -538,7 +538,7 @@ class InstanceTypeError(InstanceError):
 class DuplicateMember(InstanceError):
     """Exception to raise on attempt to create a member that already exists."""
 
-    def __init__(self, inst: Instance, name: MemName) -> None:
+    def __init__(self, inst: Instance, name: JsonName) -> None:
         super().__init__(inst)
         self.name = name
 

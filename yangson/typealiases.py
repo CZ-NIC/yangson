@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 RevisionDate = Optional[str]
 Uri = str
 YangIdentifier = str
-MemName = str # [YangIdentifier:]YangIdentifier
+JsonName = str # [YangIdentifier:]YangIdentifier
 PrefName = str # [Prefix:]YangIdentifier
 ScalarValue = Union[int, Decimal, str]
 QualName = Tuple[YangIdentifier, YangIdentifier] # (name, namespace)

@@ -11,7 +11,7 @@ from .statement import Statement
 from .typealiases import *
 
 # Local type aliases
-RawObject = Dict[MemName, "RawValue"]
+RawObject = Dict[JsonName, "RawValue"]
 RawList = List["RawObject"]
 RawLeafList = List["RawScalar"]
 RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
@@ -34,13 +34,13 @@ class SchemaNode:
             return self.parent.config
 
     @property
-    def qname(self) -> MemName:
+    def qname(self) -> JsonName:
         """Return member name of a receiver instance."""
         return (self.name if self.ns == self.parent.ns
                 else self.ns + ":" + self.name)
 
     @staticmethod
-    def unqname(qn: MemName) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
+    def unqname(qn: JsonName) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
         """Translate member name to a qualified tuple.
 
         :param qn: qualified name
