@@ -1,0 +1,76 @@
+{
+  "turing-machine:turing-machine": {
+    "transition-function": {
+      "delta": [
+        {
+          "label": "left summand",
+          "input": {
+            "state": 0,
+            "symbol": "1"
+          }
+        },
+        {
+          "label": "separator",
+          "input": {
+            "state": 0,
+            "symbol": "0"
+          },
+          "output": {
+            "state": 1,
+            "symbol": "1"
+          }
+        },
+        {
+          "label": "right summand",
+          "input": {
+            "state": 1,
+            "symbol": "1"
+          }
+        },
+        {
+          "label": "right end",
+          "input": {
+            "state": 1,
+            "symbol": ""
+          },
+          "output": {
+            "state": 2,
+            "head-move": "left"
+          }
+        },
+        {
+          "label": "write separator",
+          "input": {
+            "state": 2,
+            "symbol": "1"
+          },
+          "output": {
+            "state": 3,
+            "symbol": "0",
+            "head-move": "left"
+          }
+        },
+        {
+          "label": "go home",
+          "input": {
+            "state": 3,
+            "symbol": "1"
+          },
+          "output": {
+            "head-move": "left"
+          }
+        },
+        {
+          "label": "final step",
+          "input": {
+            "state": 3,
+            "symbol": ""
+          },
+          "output": {
+            "state": 4
+          }
+        }
+      ]
+    }
+  }
+}

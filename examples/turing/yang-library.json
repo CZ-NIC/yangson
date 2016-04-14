@@ -4,13 +4,13 @@
     "module": [
       {
         "name": "turing-machine",
-        "revision": "2016-04-11",
+        "revision": "",
         "namespace": "http://example.net/turing-machine",
         "conformance-type": "implement"
       },
       {
         "name": "second-tape",
-        "revision": "2016-04-11",
+        "revision": "",
         "namespace": "http://example.net/turing-machine/tape-2",
         "conformance-type": "implement"
       }
