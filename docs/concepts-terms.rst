@@ -63,5 +63,28 @@ YANG also offers two mechanisms that allow for finer-grain control of data model
 
 Support for individual features and/or deviations are also indicated in YANG library data.
 
+Names of Things
+***************
+
+YANG modules defines entities of different types, most of them are named. In order to avoid conflicts between names defined in different modules, every such name belongs to the namespace of the module in which it is defined. In Yangson, we represent such qualified names as a tuple ``(name, modname)`` where ``modname`` is the name of the module in which ``name`` is defined. The module :mod:`typealiases` defines an alias for qualified names, namely :const:`QualName`.
+
+For example, assume YANG module ``mymod`` contains the following definition of a *leaf* node::
+
+  leaf foo {
+    type string;
+  }
+
+In Yangson functions, such a node would be identified with a qualified name ``(foo, mymod)``.
+
+In YANG modules, however, references to named entities use a prefix format, namely ::
+
+  prefix:name
+
+where ``prefix`` is the prefix defined for the module in which ``name`` is defined. If the reference appears in the same module as the definition of ``name``, then the prefix (and colon) may be omitted.
+
+Class method :meth:`translate_name` in the :class:`Context` class is available for translating a qualified name in prefix format to the tuple format of Yangson.
+
+Finally, JSON-encoded instance documents use yet another set of naming rules that are defined in [Lho16]_.
+
 Paths
 *****
