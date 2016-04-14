@@ -24,19 +24,18 @@ class SchemaNode:
         self.name = None # type: YangIdentifier
         self.ns = None # type: YangIdentifier
         self.parent = None # type: "InternalNode"
+        self._handlers = []
 
     @property
-    def handler(self):
+    def handlers(self):
         """Return the receiver's handler object."""
-        try:
-            return self._handler
-        except AttributeError:
-            return self.parent.handler
+        return (self._handlers + self.parent.handlers if self.parent
+                else self._handlers)
 
-    @handler.setter
-    def handler(self, obj) -> None:
-        """Set the receiver's handler."""
-        self._handler = obj
+    @handlers.setter
+    def handlers(self, hlist) -> None:
+        """Set the receiver's handlers."""
+        self._handlers = hlist
 
     @property
     def config(self) -> bool:
