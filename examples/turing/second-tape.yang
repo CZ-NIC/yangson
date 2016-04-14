@@ -49,8 +49,7 @@ module second-tape {
     leaf head-move-2 {
       type tm:head-dir;
       description
-        "Move the head on the second tape one cell to the left or
-         right.";
+        "Motion of the second tape's head.";
     }
   }
 

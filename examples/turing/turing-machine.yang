@@ -1,11 +1,21 @@
 module turing-machine {
 
+  yang-version "1.1";
+
   namespace "http://example.net/turing-machine";
 
   prefix "tm";
 
   description
     "Data model for the Turing Machine.";
+
+  /* Features */
+
+  feature head-stay {
+    description
+      "This feature indicates support for the 'stay' option for
+       read-write head motion.";
+  }
 
   /* Typedefs */
 
@@ -35,11 +45,15 @@ module turing-machine {
     type enumeration {
       enum left;
       enum right;
+      enum stay;
     }
     default "right";
     description
       "Possible directions for moving the read/write head, one cell
-       to the left or right (default).";
+       to the left or right (default).
+
+       Feature 'head-stay' adds the third option, 'stay', which means
+       that the head doesn't move.";
   }
 
   /* Groupings */
@@ -145,7 +159,7 @@ module turing-machine {
           leaf head-move {
             type head-dir;
             description
-              "Move the head one cell to the left or right";
+              "Head motion.";
           }
         }
       }
