@@ -48,21 +48,21 @@ class Context:
         return (loc, nid[0])
 
     @classmethod
-    def sid2address(cls, mid: ModuleId, sid: str) -> SchemaAddress:
-        """Construct schema address from a schema node identifier.
+    def sid2route(cls, sid: str, mid: ModuleId) -> SchemaRoute:
+        """Construct schema route from a schema node identifier.
 
-        :param mid: identifier of the context module
         :param sid: schema node identifier (absolute or relative)
+        :param mid: identifier of the context module
         """
         nlist = sid.split("/")
         return [ cls.translate_pname(qn, mid)
                  for qn in (nlist[1:] if sid[0] == "/" else nlist) ]
 
     @classmethod
-    def path2address(cls, path: str) -> SchemaAddress:
-        """Translate path to schema address.
+    def path2address(cls, path: str) -> SchemaRoute:
+        """Translate schema path to schema route.
 
-        :param path: schema or data path
+        :param path: schema path
         """
         nlist = path.split("/")
         prevns = None

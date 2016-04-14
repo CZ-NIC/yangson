@@ -52,7 +52,8 @@ class SchemaNode:
                 else self.ns + ":" + self.name)
 
     @staticmethod
-    def unqname(qn: JsonName) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
+    def unqname(qn: JsonName) -> Tuple[YangIdentifier,
+                                       Optional[YangIdentifier]]:
         """Translate member name to a qualified tuple.
 
         :param qn: qualified name
@@ -151,10 +152,10 @@ class InternalNode(SchemaNode):
             if c.name == name and c.ns == ns: return c
 
     def get_schema_descendant(
-            self, path: SchemaAddress) -> Optional["SchemaNode"]:
+            self, path: SchemaRoute) -> Optional["SchemaNode"]:
         """Return descendant schema node or ``None``.
 
-        :param path: schema address of the descendant node
+        :param path: schema route of the descendant node
         """
         node = self
         for p in path:
@@ -216,7 +217,7 @@ class InternalNode(SchemaNode):
 
     def augment_refine(self, stmt: Statement, mid: ModuleId,
                        nsswitch: bool = False) -> None:
-        path = Context.sid2address(mid, stmt.argument)
+        path = Context.sid2route(stmt.argument, mid)
         target = self.get_schema_descendant(path)
         target._nsswitch = nsswitch
         target.handle_substatements(stmt, mid)

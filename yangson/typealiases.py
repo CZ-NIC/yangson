@@ -10,5 +10,5 @@ JsonName = str # [YangIdentifier:]YangIdentifier
 PrefName = str # [Prefix:]YangIdentifier
 ScalarValue = Union[int, Decimal, str]
 QualName = Tuple[YangIdentifier, YangIdentifier] # (name, namespace)
-SchemaAddress = List[QualName]
+SchemaRoute = List[QualName]
 ModuleId = Tuple[YangIdentifier, Optional[RevisionDate]]
