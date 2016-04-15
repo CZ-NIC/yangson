@@ -140,14 +140,14 @@ class DataModel:
 
         :param path: schema node path
         """
-        return self.schema.get_schema_descendant(Context.path2address(path))
+        return self.schema.get_schema_descendant(Context.path2route(path))
 
     def get_data_node(self, path: str) -> Optional["DataNode"]:
         """Return a data node.
 
         :param path: data node path
         """
-        addr = Context.path2address(path)
+        addr = Context.path2route(path)
         node = self.schema
         for p in addr:
             node = node.get_data_child(*p)
