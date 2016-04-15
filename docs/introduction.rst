@@ -64,5 +64,17 @@ following diagram.
 
 .. image:: imports.png
 
-.. _persistent structures: https://en.wikipedia.org/wiki/Persistent_data_structure
+Example Data Model
+******************
 
+Throughout this documentation, examples will refer to a data model of
+the `Turing machine`_. This data model consists of two YANG modules,
+``turing-machine.yang`` and ``second-tape.yang`` that are included in
+the Yangson package (directory ``examples/turing``). Their complete
+listings are also included in :ref:`app-a`.
+
+:ref:`app-b` then shows a JSON-encoded instance document conforming to
+the data model. (Guess what this Turing machine “program” actually does.)
+
+.. _persistent structures: https://en.wikipedia.org/wiki/Persistent_data_structure
+.. _Turing machine: https://en.wikipedia.org/wiki/Turing_machine

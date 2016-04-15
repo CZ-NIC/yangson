@@ -68,23 +68,42 @@ Names of Things
 
 YANG modules defines entities of different types, most of them are named. In order to avoid conflicts between names defined in different modules, every such name belongs to the namespace of the module in which it is defined. In Yangson, we represent such qualified names as a tuple ``(name, modname)`` where ``modname`` is the name of the module in which ``name`` is defined. The module :mod:`typealiases` defines an alias for qualified names, namely :const:`QualName`.
 
-For example, assume YANG module ``mymod`` contains the following definition of a *leaf* node::
+For example, the :ref:`turing-machine` module contains (at line 123) the following definition of a *leaf* data node::
 
-  leaf foo {
+  leaf label {
     type string;
-  }
+    description
+      "An arbitrary label of the transition rule.";
+   }
 
-In Yangson functions, such a node would be identified with a qualified name ``(foo, mymod)``.
+In Yangson functions, such a node would be identified with a qualified name ``(label, turing-machine)``.
 
-In YANG modules, however, references to named entities use a prefix format, namely ::
+In YANG modules, however, references to named entities use a prefix form, namely ::
 
   prefix:name
 
-where ``prefix`` is the prefix defined for the module in which ``name`` is defined. If the reference appears in the same module as the definition of ``name``, then the prefix (and colon) may be omitted.
+where ``prefix`` is the prefix with which the module that defines ``name`` is imported. For example, the :ref:`second-tape` module imports the :ref:`turing-machine` module with the prefix ``tm``, and then (at line 15)
+uses the prefix form for referring to the derived type ``cell-index`` defined in the latter module::
 
-Class method :meth:`translate_name` in the :class:`Context` class is available for translating a qualified name in prefix format to the tuple format of Yangson.
+  type tm:cell-index;
 
-Finally, JSON-encoded instance documents use yet another set of naming rules that are defined in [Lho16]_.
+If the reference appears in the same module as the definition of ``name``, then the prefix (and colon) may be omitted.
 
-Paths
-*****
+Class method :meth:`translate_name` in the :class:`Context` class is available for translating a qualified name in prefix form to the tuple form of Yangson.
+
+Finally, JSON-encoded instance documents use yet another set of naming rules that are defined in [Lho16]_. Examples can be found in :ref:`app-b`.
+
+Navigating in Schema and Data Trees
+***********************************
+
+In order to effectively navigate in tree structures, Yangson uses several means that represent a sequence of nodes that have to be traversed. Unfortunately, the variability of node names, as described in the previous section, is multiplied by the fact that we have to deal with two trees simultaneously: the schema tree and the data tree. So this is where it becomes really complicated. In order to reduce the entropy somewhat, we introduce the following terms that will be used in the rest of this manual:
+
+*schema address* (Python data structure)
+  List of qualified schema nodes in the tuple form. It is always interpreted relative to a starting node and identifies its descendant schema node.
+
+  For example, ``[("tape", "turing-machine"), ("cell", "turing-machine")]`` is a valid schema address if the starting node is the ``("turing-machine", "turing-machine")`` container.
+
+*schema node identifier* (string, see [Bjo16]_, `sec. 6.5`_)
+  Sequence of qualified names of schema nodes in the prefix form, separated with slashes. A schema node identifier that starts with a slash is absolute, otherwise it is relative. For example, ``tm:tape/tm:cell`` is a schema node identifier corresponding to the schema address
+
+.. _sec. 6.5: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-6.5

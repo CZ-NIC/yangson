@@ -11,6 +11,8 @@ Contents:
    instances
    typealiases
    references
+   app-a
+   app-b
 
 Indices and tables
 ==================
