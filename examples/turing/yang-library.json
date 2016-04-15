@@ -6,6 +6,7 @@
         "name": "turing-machine",
         "revision": "",
         "namespace": "http://example.net/turing-machine",
+	"feature": ["head-stay"],
         "conformance-type": "implement"
       },
       {
