@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from urllib.parse import unquote
 from .constants import qname_re, YangsonException
 from .context import Context
-from .instance import (Crumb, EntryKeys, Instance, InstanceIdentifier,
+from .instance import (Crumb, EntryKeys, Instance, InstanceRoute,
                        MemberName)
 from .modparser import from_file
 from .schema import (BadSchemaNodeType, InternalNode, NonexistentSchemaNode,
@@ -161,11 +161,11 @@ class DataModel:
             for aug in mod.find_all("augment"):
                 self.schema.augment_refine(aug, mid, True)
 
-    def parse_instance_id(self, iid: str) -> InstanceIdentifier:
+    def parse_instance_id(self, iid: str) -> InstanceRoute:
         """Parse instance identifier."""
         end = len(iid)
         offset = 0
-        res = InstanceIdentifier()
+        res = InstanceRoute()
         sn = self.schema
         while True:
             if iid[offset] != "/":
@@ -185,19 +185,19 @@ class DataModel:
                 res.append(sel)
             if offset >= end: return res
 
-    def parse_resource_id(self, rid: str) -> InstanceIdentifier:
+    def parse_resource_id(self, rid: str) -> InstanceRoute:
         """Parse RESTCONF data resource identifier.
 
         :param rid: data resource identifier
         """
         inp = rid[1:] if rid[0] == "/" else rid
-        res = InstanceIdentifier()
+        res = InstanceRoute()
         sn = self.schema
         for p in inp.split("/"):
             apiid, eq, keys = p.partition("=")
             mo = qname_re.match(unquote(apiid))
             if mo is None:
-                raise BadInstanceIdentifier(rid)
+                raise BadResourceIdentifier(rid)
             ns = mo.group("prf")
             name = mo.group("loc")
             sn = sn.get_data_child(name, ns)
@@ -208,7 +208,7 @@ class DataModel:
                 ks = keys.split(",")
                 try:
                     if len(ks) != len(sn.keys):
-                        raise BadInstanceIdentifier(rid)
+                        raise BadResourceIdentifier(rid)
                 except AttributeError:
                     raise BadSchemaNodeType(sn, "list") from None
                 sel = {}
@@ -240,3 +240,12 @@ class BadInstanceIdentifier(YangsonException):
 
     def __str__(self) -> str:
         return self.iid
+
+class BadResourceIdentifier(YangsonException):
+    """Exception to be raised for malformed resource identifier."""
+
+    def __init__(self, rid: str) -> None:
+        self.rid = rid
+
+    def __str__(self) -> str:
+        return self.rid

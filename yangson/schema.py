@@ -5,7 +5,7 @@ from .constants import DefaultDeny, pred_re, YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
 from .instance import (ArrayValue, EntryIndex, EntryValue,
-                       EntryKeys, InstanceIdentifier, MemberName,
+                       EntryKeys, InstanceRoute, MemberName,
                        ObjectValue, Value)
 from .statement import Statement
 from .typealiases import *
@@ -186,13 +186,13 @@ class InternalNode(SchemaNode):
                 if res: return res
 
     def get_data_descendant(
-            self, ii: InstanceIdentifier) -> Optional["DataNode"]:
+            self, iroute: InstanceRoute) -> Optional["DataNode"]:
         """Return descendant data node.
 
-        :param ii: instance identifier (relative to the receiver)
+        :param iroute: instance identifier (relative to the receiver)
         """
         node = self
-        for sel in ii:
+        for sel in iroute:
             if not isinstance(sel, MemberName): continue
             node = node.get_child(*self.unqname(sel.name))
             if node is None: return None

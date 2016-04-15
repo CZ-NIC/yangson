@@ -171,23 +171,23 @@ class Instance:
         self.value = value
         self.crumb = crumb
 
-    def goto(self, ii: "InstanceIdentifier") -> "Instance":
+    def goto(self, iroute: "InstanceRoute") -> "Instance":
         """Return an instance in the receiver's subtree.
 
-        :param ii: instance identifier (relative to the receiver)
+        :param iroute: instance route (relative to the receiver)
         """
         inst = self # type: "Instance"
-        for sel in ii:
+        for sel in iroute:
             inst = sel.goto_step(inst)
         return inst
 
-    def peek(self, ii: "InstanceIdentifier") -> Value:
+    def peek(self, iroute: "InstanceRoute") -> Value:
         """Return a value in the receiver's subtree.
 
-        :param ii: instance identifier (relative to the receiver)
+        :param iroute: instance route (relative to the receiver)
         """
         val = self.value
-        for sel in ii:
+        for sel in iroute:
             val = sel.peek_step(val)
         return val
 
@@ -352,8 +352,8 @@ class Instance:
         except (AttributeError, IndexError):
             raise InstanceTypeError(self, "insert after non-entry") from None
 
-class InstanceIdentifier(list):
-    """Instance identifiers."""
+class InstanceRoute(list):
+    """Instance route."""
 
     def __str__(self):
         """Return a string representation of the receiver."""
