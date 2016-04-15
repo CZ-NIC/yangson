@@ -96,14 +96,32 @@ Finally, JSON-encoded instance documents use yet another set of naming rules tha
 Navigating in Schema and Data Trees
 ***********************************
 
-In order to effectively navigate in tree structures, Yangson uses several means that represent a sequence of nodes that have to be traversed. Unfortunately, the variability of node names, as described in the previous section, is multiplied by the fact that we have to deal with two trees simultaneously: the schema tree and the data tree. So this is where it becomes really complicated. In order to reduce the entropy somewhat, we introduce the following terms that will be used in the rest of this manual:
+The concept of paths in tree structures is familiar from other application domains, such as filesystems or XML. Yangson uses this concept in a number of different ways and variants. Apart from the variability in node naming, as described above, another major reason for the plenitude of path types has to do with the fact that we have to deal with two trees simultaneously: the schema tree and the data tree.
 
-*schema address* (Python data structure)
-  List of qualified schema nodes in the tuple form. It is always interpreted relative to a starting node and identifies its descendant schema node.
+In order to reduce the entropy somewhat, we introduce the following terminology convention:
 
-  For example, ``[("tape", "turing-machine"), ("cell", "turing-machine")]`` is a valid schema address if the starting node is the ``("turing-machine", "turing-machine")`` container.
+* Python structures (typically lists) representing tree paths are called *routes*.
 
-*schema node identifier* (string, see [Bjo16]_, `sec. 6.5`_)
-  Sequence of qualified names of schema nodes in the prefix form, separated with slashes. A schema node identifier that starts with a slash is absolute, otherwise it is relative. For example, ``tm:tape/tm:cell`` is a schema node identifier corresponding to the schema address
+* Strings describing tree paths bear other names (path, identifier).
 
+Here is a complete list of various tree path types that are used in Yangson and/or YANG:
+
+*schema route* (type alias :const:`SchemaRoute`)
+  List of qualified schema nodes in the tuple form. It is always interpreted relative to a given starting node and identifies its descendant schema node.
+
+  For example, ``[("tape", "turing-machine"), ("cell", "turing-machine")]`` is a valid schema route if the starting node is the ``("turing-machine", "turing-machine")`` container.
+
+*schema node identifier* (see [Bjo16]_, `sec. 6.5`_)
+  Sequence of qualified names of schema nodes in the prefix form, separated with slashes. A schema node identifier that starts with a slash is absolute, otherwise it is relative. For example, ``tm:tape/tm:cell`` is a schema node identifier corresponding to the schema route example above.
+
+*data route*
+  This is similar to schema route, except that the list contains only names of *data nodes*. This means that other schema nodes (**choice** and **case**) are omitted. A data route also identifes a unique descendant schema node because names of data nodes belonging to the cases of the same choice are requires to be unique (see `sec. 6.2.1`_ in [Bjo16]_).
+
+*XPath 1.0*
+
+*instance route* (class :class:`InstanceRoute`)
+
+*instance identifier*
+
+.. _sec. 6.2.1: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-6.2.1
 .. _sec. 6.5: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-6.5
