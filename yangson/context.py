@@ -1,5 +1,6 @@
+import re
 from typing import Dict, MutableSet
-from .constants import YangsonException
+from .constants import qname_re, YangsonException
 from .statement import Statement
 from .typealiases import *
 
@@ -22,6 +23,11 @@ class Context:
     """Map of module and submodule names to namespaces."""
 
     features = set() # type: MutableSet[QualName]
+
+    # Regular expressions
+    not_re = re.compile(r"not\s+")
+    and_re = re.compile(r"\s+and\s+")
+    or_re = re.compile(r"\s+or\s+")
 
     @classmethod
     def resolve_pname(cls, pname: PrefName,
@@ -92,6 +98,69 @@ class Context:
                  cls.modules[did].find1(kw, loc, required=True))
         return (dstmt, did)
 
+    @classmethod
+    def feature_test(cls, fname: PrefName, mid: ModuleId) -> bool:
+        """Test feature support.
+
+        :param fname: prefixed qname of a feature
+        :param mid: YANG module context
+        """
+        return cls.translate_pname(fname, mid) in cls.features
+
+    @classmethod
+    def feature_expr(cls, fexpr: str, mid: ModuleId) -> bool:
+        """Evaluate feature expression.
+
+        :param fexpr: feature expression
+        :param mid: YANG module context
+        """
+        x, px = cls._feature_disj(fexpr, 0, mid)
+        if px < len(fexpr):
+            raise BadFeatureExpression(fexpr)
+        return x
+
+    @classmethod
+    def _feature_atom(cls, fexpr: str, ptr: int,
+                      mid: ModuleId) -> Tuple[bool, int]:
+        if fexpr[ptr] == "(":
+            x, px = cls._feature_disj(fexpr, ptr + 1, mid)
+            if fexpr[px] == ")":
+                return (x, px + 1)
+        else:
+            mo = qname_re.match(fexpr, ptr)
+            if mo:
+                return (cls.feature_test(mo.group(), mid), mo.end())
+        raise BadFeatureExpression(fexpr)
+
+    @classmethod
+    def _feature_term(cls, fexpr: str, ptr: int,
+                      mid: ModuleId) -> Tuple[bool, int]:
+        mo = cls.not_re.match(fexpr, ptr)
+        if mo:
+            x, px = cls._feature_atom(fexpr, mo.end(), mid)
+            return (not x, px)
+        return cls._feature_atom(fexpr, ptr, mid)
+
+    @classmethod
+    def _feature_conj(cls, fexpr: str, ptr: int,
+                      mid: ModuleId) -> Tuple[bool, int]:
+        x, px = cls._feature_term(fexpr, ptr, mid)
+        mo = cls.and_re.match(fexpr, px)
+        if mo:
+            y, py = cls._feature_conj(fexpr, mo.end(), mid)
+            return (x and y, py)
+        return (x, px)
+
+    @classmethod
+    def _feature_disj(cls, fexpr: str, ptr: int,
+                      mid: ModuleId) -> Tuple[bool, int]:
+        x, px = cls._feature_conj(fexpr, ptr, mid)
+        mo = cls.or_re.match(fexpr, px)
+        if mo:
+            y, py = cls._feature_disj(fexpr, mo.end(), mid)
+            return (x or y, py)
+        return (x, px)
+
 class BadPath(YangsonException):
     """Exception to be raised for invalid schema or data path."""
 
@@ -109,3 +178,12 @@ class BadPrefName(YangsonException):
 
     def __str__(self) -> str:
         return self.qname
+
+class BadFeatureExpression(YangsonException):
+    """Exception to be raised for a broken "if-feature" argument."""
+
+    def __init__(self, expr: str) -> None:
+        self.expr = expr
+
+    def __str__(self) -> str:
+        return self.expr

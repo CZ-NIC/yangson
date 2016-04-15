@@ -18,7 +18,15 @@ def test_schema_nodes(data_model):
     state = top.get_child("state")
     assert state.config == False
     with pytest.raises(BadPath):
-        Context.path2address("transition-function")
-    label = top.get_schema_descendant(Context.path2address(
+        Context.path2route("transition-function")
+    label = top.get_schema_descendant(Context.path2route(
         "turing-machine:transition-function/delta/label"))
     assert label.config == True
+
+def test_feature_expr(data_model):
+    assert Context.feature_expr(
+        "head-stay or not tm:head-stay and not tm:head-stay",
+        ("turing-machine", None)) == True
+    assert Context.feature_expr(
+        "(head-stay or not tm:head-stay) and not tm:head-stay",
+        ("turing-machine", None)) == False
