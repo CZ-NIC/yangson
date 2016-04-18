@@ -98,6 +98,24 @@ class Context:
                  cls.modules[did].find1(kw, loc, required=True))
         return (dstmt, did)
 
+    # Feature handling
+
+    @classmethod
+    def if_features(cls, stmt: Statement, mid: ModuleId) -> bool:
+        """Check ``if-feature`` substatements, if any.
+
+        :param stmt: YANG statement
+        :param mid: YANG module context
+        """
+        iffs = stmt.find_all("if-feature")
+        if not iffs:
+            return True
+        for i in iffs:
+            if cls.feature_expr(i.argument, mid):
+                continue
+            return False
+        return True
+
     @classmethod
     def feature_test(cls, fname: PrefName, mid: ModuleId) -> bool:
         """Test feature support.

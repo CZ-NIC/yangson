@@ -205,59 +205,70 @@ class InternalNode(SchemaNode):
 
     def augment_refine(self, stmt: Statement, mid: ModuleId,
                        nsswitch: bool = False) -> None:
-        path = Context.sid2route(stmt.argument, mid)
-        target = self.get_schema_descendant(path)
-        target._nsswitch = nsswitch
-        target.handle_substatements(stmt, mid)
+        if Context.if_features(stmt, mid):
+            path = Context.sid2route(stmt.argument, mid)
+            target = self.get_schema_descendant(path)
+            target._nsswitch = nsswitch
+            target.handle_substatements(stmt, mid)
 
     def uses_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle uses statement."""
-        grp, gid = Context.get_definition(stmt, mid)
-        self.handle_substatements(grp, gid)
-        for augref in stmt.find_all("augment") + stmt.find_all("refine"):
-            self.augment_refine(augref, mid, False)
+        if Context.if_features(stmt, mid):
+            grp, gid = Context.get_definition(stmt, mid)
+            self.handle_substatements(grp, gid)
+            for augref in stmt.find_all("augment") + stmt.find_all("refine"):
+                self.augment_refine(augref, mid, False)
 
     def container_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle container statement."""
-        self.handle_child(ContainerNode(), stmt, mid)
+        if Context.if_features(stmt, mid):
+            self.handle_child(ContainerNode(), stmt, mid)
 
     def list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle list statement."""
-        node = ListNode()
-        node.key_stmt(stmt, mid)
-        self.handle_child(node, stmt, mid)
+        if Context.if_features(stmt, mid):
+            node = ListNode()
+            node.key_stmt(stmt, mid)
+            self.handle_child(node, stmt, mid)
 
     def choice_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle choice statement."""
-        self.handle_child(ChoiceNode(), stmt, mid)
+        if Context.if_features(stmt, mid):
+            self.handle_child(ChoiceNode(), stmt, mid)
 
     def case_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle case statement."""
-        self.handle_child(CaseNode(), stmt, mid)
+        if Context.if_features(stmt, mid):
+            self.handle_child(CaseNode(), stmt, mid)
 
     def leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf statement."""
-        node = LeafNode()
-        node.type_stmt(stmt, mid)
-        self.handle_child(node, stmt, mid)
+        if Context.if_features(stmt, mid):
+            node = LeafNode()
+            node.type_stmt(stmt, mid)
+            self.handle_child(node, stmt, mid)
 
     def leaf_list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf-list statement."""
-        node = LeafListNode()
-        node.type_stmt(stmt, mid)
-        self.handle_child(node, stmt, mid)
+        if Context.if_features(stmt, mid):
+            node = LeafListNode()
+            node.type_stmt(stmt, mid)
+            self.handle_child(node, stmt, mid)
 
     def rpc_action_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle anydata statement."""
-        self.handle_child(RpcActionNode(), stmt, mid)
+        if Context.if_features(stmt, mid):
+            self.handle_child(RpcActionNode(), stmt, mid)
 
     def anydata_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle anydata statement."""
-        self.handle_child(AnydataNode(), stmt, mid)
+        if Context.if_features(stmt, mid):
+            self.handle_child(AnydataNode(), stmt, mid)
 
     def anyxml_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle anyxml statement."""
-        self.handle_child(AnyxmlNode(), stmt, mid)
+        if Context.if_features(stmt, mid):
+            self.handle_child(AnyxmlNode(), stmt, mid)
 
     def from_raw(self, val: RawObject) -> ObjectValue:
         """Transform a raw dictionary into object value.

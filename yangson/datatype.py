@@ -237,13 +237,15 @@ class BitsType(DataType):
         return res
 
     def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type restrictionns.
+        """Handle type restrictions.
 
         :param stmt: YANG ``type bits`` statement
         :param mid: id of the context module
         """
         nextpos = 0
         for bst in stmt.find_all("bit"):
+            if not Context.if_features(bst, mid):
+                continue
             label = bst.argument
             pst = bst.find1("position")
             if pst:
@@ -330,6 +332,8 @@ class EnumerationType(DataType):
         """
         nextval = 0
         for est in stmt.find_all("enum"):
+            if not Context.if_features(est, mid):
+                continue
             label = est.argument
             vst = est.find1("value")
             if vst:
