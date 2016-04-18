@@ -11,12 +11,14 @@ def data_model():
         
 def test_schema_nodes(data_model):
     top = data_model.get_data_node("/turing-machine:turing-machine")
-    assert top.qname == "turing-machine:turing-machine"
+    assert top.instance_name() == "turing-machine:turing-machine"
     assert top.config == True
+    assert len(top.state_roots()) == 5
     nonex = top.get_child("NONEXISTENT")
     assert nonex is None
     state = top.get_child("state")
     assert state.config == False
+    assert state.state_roots() == [["turing-machine:turing-machine", "state"]]
     with pytest.raises(BadPath):
         Context.path2route("transition-function")
     label = top.get_schema_descendant(Context.path2route(

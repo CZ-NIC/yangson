@@ -5,13 +5,13 @@ from .constants import DefaultDeny, pred_re, YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
 from .instance import (ArrayValue, EntryIndex, EntryValue,
-                       EntryKeys, InstanceRoute, MemberName,
+                       EntryKeys, InstanceIdentifier, MemberName,
                        ObjectValue, Value)
 from .statement import Statement
 from .typealiases import *
 
 # Local type aliases
-RawObject = Dict[JsonName, "RawValue"]
+RawObject = Dict[InstanceName, "RawValue"]
 RawList = List["RawObject"]
 RawLeafList = List["RawScalar"]
 RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
@@ -33,14 +33,8 @@ class SchemaNode:
         except AttributeError:
             return self.parent.config
 
-    @property
-    def qname(self) -> JsonName:
-        """Return member name of a receiver instance."""
-        return (self.name if self.ns == self.parent.ns
-                else self.ns + ":" + self.name)
-
     @staticmethod
-    def unqname(qn: JsonName) -> Tuple[YangIdentifier,
+    def uniname(qn: InstanceName) -> Tuple[YangIdentifier,
                                        Optional[YangIdentifier]]:
         """Translate member name to a qualified tuple.
 
@@ -49,6 +43,22 @@ class SchemaNode:
         p, s, loc = qn.partition(":")
         if s: return (loc, p)
         return (p, None)
+
+    def instance_name(self) -> InstanceName:
+        """Return the receiver's instance name."""
+        return (self.name if self.ns == self.parent.ns
+                else self.ns + ":" + self.name)
+
+    def instance_route(self) -> InstanceRoute:
+        """Return the instance route of the receiver."""
+        return (self.parent.instance_route() + [self.instance_name()]
+                if self.parent else [])
+
+    def state_roots(self) -> List[InstanceRoute]:
+        """Return a list of routes to descendant state data roots (or self)."""
+        if self.config:
+            return [r.instance_route() for r in self._state_roots()]
+        return [self.instance_route()]
 
     def handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         """Dispatch actions for substatements of `stmt`.
@@ -140,13 +150,13 @@ class InternalNode(SchemaNode):
             if c.name == name and c.ns == ns: return c
 
     def get_schema_descendant(
-            self, path: SchemaRoute) -> Optional["SchemaNode"]:
+            self, route: SchemaRoute) -> Optional["SchemaNode"]:
         """Return descendant schema node or ``None``.
 
         :param path: schema route of the descendant node
         """
         node = self
-        for p in path:
+        for p in route:
             node = node.get_child(*p)
             if node is None: return None
         return node
@@ -174,21 +184,29 @@ class InternalNode(SchemaNode):
                 if res: return res
 
     def get_data_descendant(
-            self, iroute: InstanceRoute) -> Optional["DataNode"]:
+            self, ii: InstanceIdentifier) -> Optional["DataNode"]:
         """Return descendant data node.
 
-        :param iroute: instance identifier (relative to the receiver)
+        :param ii: instance identifier (relative to the receiver)
         """
         node = self
-        for sel in iroute:
+        for sel in ii:
             if not isinstance(sel, MemberName): continue
-            node = node.get_child(*self.unqname(sel.name))
+            node = node.get_child(*self.uniname(sel.name))
             if node is None: return None
         return node
 
     def tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
-        return "{} {}\n".format(self._tree_line_prefix(), self.qname)
+        return "{} {}\n".format(self._tree_line_prefix(), self.instance_name())
+
+    def _state_roots(self) -> List[SchemaNode]:
+        if hasattr(self,"_config") and not self._config:
+            return [self]
+        res = []
+        for c in self.children:
+            res.extend(c._state_roots())
+        return res
 
     def handle_child(
             self, node: SchemaNode, stmt: Statement, mid: ModuleId) -> None:
@@ -277,10 +295,10 @@ class InternalNode(SchemaNode):
         """
         res = ObjectValue()
         for qn in val:
-            cn = self.get_data_child(*self.unqname(qn))
+            cn = self.get_data_child(*self.uniname(qn))
             if cn is None:
-                raise NonexistentSchemaNode(*self.unqname(qn))
-            res[cn.qname] = cn.from_raw(val[qn])
+                raise NonexistentSchemaNode(*self.uniname(qn))
+            res[cn.instance_name()] = cn.from_raw(val[qn])
         res.time_stamp()
         return res
 
@@ -378,6 +396,11 @@ class TerminalNode(DataNode):
         """Return the receiver's ascii-art subtree."""
         return ""
 
+    def _state_roots(self) -> List[SchemaNode]:
+        if hasattr(self,"_config") and not self._config:
+            return [self]
+        return []
+
 class ContainerNode(InternalNode, DataNode):
     """Container node."""
 
@@ -405,7 +428,7 @@ class ContainerNode(InternalNode, DataNode):
         else:
             suff = "?"
         return "{} {}{}\n".format(
-            self._tree_line_prefix(), self.qname, suff)
+            self._tree_line_prefix(), self.instance_name(), suff)
 
 class ListNode(InternalNode, DataNode):
     """List node."""
@@ -457,7 +480,7 @@ class ListNode(InternalNode, DataNode):
                 raise NonexistentSchemaNode(name, ns)
             drhs = mo.group("drhs")
             val = kn.type.parse_value(drhs if drhs else mo.group("srhs"))
-            res[kn.qname] = val
+            res[kn.instance_name()] = val
             offset = mo.end()
         if res:
             return (EntryKeys(res), mo.end())
@@ -487,7 +510,7 @@ class ListNode(InternalNode, DataNode):
         keys = (" [" + " ".join([ k[0] for k in self.keys ]) + "]"
                 if self.keys else "")
         return "{} {}*{}\n".format(
-            self._tree_line_prefix(), self.qname, keys)
+            self._tree_line_prefix(), self.instance_name(), keys)
 
 class ChoiceNode(InternalNode):
     """Choice node."""
@@ -524,7 +547,7 @@ class ChoiceNode(InternalNode):
     def tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} ({}){}\n".format(
-            self._tree_line_prefix(), self.qname,
+            self._tree_line_prefix(), self.instance_name(),
             "" if self.mandatory else "?")
 
 class CaseNode(InternalNode):
@@ -533,13 +556,20 @@ class CaseNode(InternalNode):
     def tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{}:({})\n".format(
-            self._tree_line_prefix(), self.qname)
+            self._tree_line_prefix(), self.instance_name())
 
 class RpcActionNode(InternalNode):
     """RPC or action node."""
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "-x"
+
+    def state_roots(self) -> List[InstanceRoute]:
+        """Return a list of routes to descendant state data roots (or self)."""
+        return []
+
+    def _state_roots(self) -> List[SchemaNode]:
+        return []
 
     def input_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle RPC or action input statement."""
@@ -580,7 +610,7 @@ class LeafNode(TerminalNode):
     def tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} {}{}\n".format(
-            self._tree_line_prefix(), self.qname,
+            self._tree_line_prefix(), self.instance_name(),
             "" if self.mandatory else "?")
 
 class LeafListNode(TerminalNode):
@@ -641,7 +671,7 @@ class LeafListNode(TerminalNode):
     def tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} {}*\n".format(
-            self._tree_line_prefix(), self.qname)
+            self._tree_line_prefix(), self.instance_name())
 
 class AnydataNode(TerminalNode):
     """Anydata node."""
@@ -649,7 +679,7 @@ class AnydataNode(TerminalNode):
     def tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} {}{}\n".format(
-            self._tree_line_prefix(), self.qname,
+            self._tree_line_prefix(), self.instance_name(),
             "" if self.mandatory else "?")
 
 class AnyxmlNode(TerminalNode):
@@ -658,7 +688,7 @@ class AnyxmlNode(TerminalNode):
     def tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} {}{}\n".format(
-            self._tree_line_prefix(), self.qname,
+            self._tree_line_prefix(), self.instance_name(),
             "" if self.mandatory else "?")
 
 class NonexistentSchemaNode(YangsonException):
@@ -666,10 +696,10 @@ class NonexistentSchemaNode(YangsonException):
 
     def __init__(self, name: YangIdentifier,
                  ns: YangIdentifier = None) -> None:
-        self.qname = (ns + ":" if ns else "") + name
+        self.sname = (name, ns)
 
     def __str__(self) -> str:
-        return self.qname
+        return "{} in module {}".format(*self.sname),
 
 class SchemaNodeError(YangsonException):
     """Abstract exception class for schema node errors."""
@@ -678,7 +708,8 @@ class SchemaNodeError(YangsonException):
         self.schema_node = sn
 
     def __str__(self) -> str:
-        return self.schema_node.qname
+        return "{} in module {}".format(self.schema_node.name,
+                                        self.schema_node.ns)
 
 class BadSchemaNodeType(SchemaNodeError):
     """Exception to be raised when a schema node is of a wrong type."""

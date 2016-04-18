@@ -1,9 +1,9 @@
 import json
 from typing import Dict, List, Optional
 from urllib.parse import unquote
-from .constants import qname_re, YangsonException
+from .constants import pname_re, YangsonException
 from .context import Context
-from .instance import (Crumb, EntryKeys, Instance, InstanceRoute,
+from .instance import (Crumb, EntryKeys, Instance, InstanceIdentifier,
                        MemberName)
 from .modparser import from_file
 from .schema import (BadSchemaNodeType, InternalNode, NonexistentSchemaNode,
@@ -161,16 +161,16 @@ class DataModel:
             for aug in mod.find_all("augment"):
                 self.schema.augment_refine(aug, mid, True)
 
-    def parse_instance_id(self, iid: str) -> InstanceRoute:
+    def parse_instance_id(self, iid: str) -> InstanceIdentifier:
         """Parse instance identifier."""
         end = len(iid)
         offset = 0
-        res = InstanceRoute()
+        res = InstanceIdentifier()
         sn = self.schema
         while True:
             if iid[offset] != "/":
                 raise BadInstanceIdentifier(iid)
-            mo = qname_re.match(iid, offset+1)
+            mo = pname_re.match(iid, offset+1)
             if mo is None:
                 raise BadInstanceIdentifier(iid)
             ns = mo.group("prf")
@@ -178,24 +178,24 @@ class DataModel:
             sn = sn.get_data_child(name, ns)
             if sn is None:
                 raise NonexistentSchemaNode(name, ns)
-            res.append(MemberName(sn.qname))
+            res.append(MemberName(sn.instance_name()))
             offset = mo.end()
             if offset < end and iid[offset] != "/":
                 sel, offset = sn._parse_entry_selector(iid, offset)
                 res.append(sel)
             if offset >= end: return res
 
-    def parse_resource_id(self, rid: str) -> InstanceRoute:
+    def parse_resource_id(self, rid: str) -> InstanceIdentifier:
         """Parse RESTCONF data resource identifier.
 
         :param rid: data resource identifier
         """
         inp = rid[1:] if rid[0] == "/" else rid
-        res = InstanceRoute()
+        res = InstanceIdentifier()
         sn = self.schema
         for p in inp.split("/"):
             apiid, eq, keys = p.partition("=")
-            mo = qname_re.match(unquote(apiid))
+            mo = pname_re.match(unquote(apiid))
             if mo is None:
                 raise BadResourceIdentifier(rid)
             ns = mo.group("prf")
@@ -203,7 +203,7 @@ class DataModel:
             sn = sn.get_data_child(name, ns)
             if sn is None:
                 raise NonexistentSchemaNode(name, ns)
-            res.append(MemberName(sn.qname))
+            res.append(MemberName(sn.instance_name()))
             if eq:                        # list instance
                 ks = keys.split(",")
                 try:
@@ -215,7 +215,7 @@ class DataModel:
                 for i in range(len(ks)):
                     klf = sn.get_child(*sn.keys[i])
                     val = klf.type.parse_value(unquote(ks[i]))
-                    sel[klf.qname] = val
+                    sel[klf.instance_name()] = val
                 res.append(EntryKeys(sel))
         return res
 

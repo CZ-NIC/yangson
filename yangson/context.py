@@ -1,6 +1,6 @@
 import re
 from typing import Dict, MutableSet
-from .constants import qname_re, YangsonException
+from .constants import pname_re, YangsonException
 from .statement import Statement
 from .typealiases import *
 
@@ -47,7 +47,7 @@ class Context:
     def translate_pname(cls, pname: PrefName, mid: ModuleId) -> QualName:
         """Translate prefixed name to a qualified name.
 
-        :param qname: prefixed name
+        :param pname: prefixed name
         :param mid: identifier of the context module
         """
         loc, nid = cls.resolve_pname(pname, mid)
@@ -120,7 +120,7 @@ class Context:
     def feature_test(cls, fname: PrefName, mid: ModuleId) -> bool:
         """Test feature support.
 
-        :param fname: prefixed qname of a feature
+        :param fname: prefixed name of a feature
         :param mid: YANG module context
         """
         return cls.translate_pname(fname, mid) in cls.features
@@ -145,7 +145,7 @@ class Context:
             if fexpr[px] == ")":
                 return (x, px + 1)
         else:
-            mo = qname_re.match(fexpr, ptr)
+            mo = pname_re.match(fexpr, ptr)
             if mo:
                 return (cls.feature_test(mo.group(), mid), mo.end())
         raise BadFeatureExpression(fexpr)
@@ -191,11 +191,11 @@ class BadPath(YangsonException):
 class BadPrefName(YangsonException):
     """Exception to be raised for a broken prefixed name."""
 
-    def __init__(self, qname: str) -> None:
-        self.qname = qname
+    def __init__(self, pname: str) -> None:
+        self.pname = pname
 
     def __str__(self) -> str:
-        return self.qname
+        return self.pname
 
 class BadFeatureExpression(YangsonException):
     """Exception to be raised for a broken "if-feature" argument."""

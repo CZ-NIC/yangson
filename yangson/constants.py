@@ -10,11 +10,11 @@ class YangsonException(Exception):
 # Regular expressions
 
 _ident = "[a-zA-Z_][a-zA-Z_.-]*"
-_qname = "((?P<prf>{}):)?(?P<loc>{})".format(_ident, _ident)
-qname_re = re.compile(_qname)
+_pname = "((?P<prf>{}):)?(?P<loc>{})".format(_ident, _ident)
+pname_re = re.compile(_pname)
 _rhs = """("(?P<drhs>[^"]*)"|'(?P<srhs>[^']*)')"""
 pred_re = re.compile(
-    r"\[\s*(({}|\.)\s*=\s*{}|(?P<pos>\d*))\s*\]".format(_qname, _rhs))
+    r"\[\s*(({}|\.)\s*=\s*{}|(?P<pos>\d*))\s*\]".format(_pname, _rhs))
 
 # Enumeration classes
 

@@ -10,7 +10,7 @@ def contents(*filenames):
 setup(
     name = "yangson",
     packages = ["yangson"],
-    version = "0.1.26",
+    version = "0.1.27",
     description = "Library for working with YANG schemas and data",
     author = "Ladislav Lhotka",
     author_email = "lhotka@nic.cz",
