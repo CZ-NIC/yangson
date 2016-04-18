@@ -45,7 +45,9 @@ module turing-machine {
     type enumeration {
       enum left;
       enum right;
-      enum stay;
+      enum stay {
+        if-feature "head-stay";
+      }
     }
     default "right";
     description
