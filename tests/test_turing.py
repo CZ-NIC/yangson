@@ -1,5 +1,6 @@
 import pytest
 from yangson import DataModel
+from yangson.schema import NonexistentSchemaNode
 from yangson.context import Context, BadPath
 
 @pytest.fixture
@@ -16,6 +17,8 @@ def test_schema_nodes(data_model):
     assert len(top.state_roots()) == 5
     nonex = top.get_child("NONEXISTENT")
     assert nonex is None
+    with pytest.raises(NonexistentSchemaNode):
+        data_model.parse_instance_id("/turing-machine:turing-machine/ftate")
     state = top.get_child("state")
     assert state.config == False
     assert state.state_roots() == [["turing-machine:turing-machine", "state"]]

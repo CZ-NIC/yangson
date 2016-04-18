@@ -175,9 +175,10 @@ class DataModel:
                 raise BadInstanceIdentifier(iid)
             ns = mo.group("prf")
             name = mo.group("loc")
-            sn = sn.get_data_child(name, ns)
-            if sn is None:
-                raise NonexistentSchemaNode(name, ns)
+            cn = sn.get_data_child(name, ns)
+            if cn is None:
+                raise NonexistentSchemaNode(name, ns if ns else sn.ns)
+            sn = cn
             res.append(MemberName(sn.instance_name()))
             offset = mo.end()
             if offset < end and iid[offset] != "/":
@@ -200,9 +201,10 @@ class DataModel:
                 raise BadResourceIdentifier(rid)
             ns = mo.group("prf")
             name = mo.group("loc")
-            sn = sn.get_data_child(name, ns)
-            if sn is None:
-                raise NonexistentSchemaNode(name, ns)
+            cn = sn.get_data_child(name, ns)
+            if cn is None:
+                raise NonexistentSchemaNode(name, ns if ns else sn.ns)
+            sn = cn
             res.append(MemberName(sn.instance_name()))
             if eq:                        # list instance
                 ks = keys.split(",")

@@ -34,13 +34,13 @@ class SchemaNode:
             return self.parent.config
 
     @staticmethod
-    def uniname(qn: InstanceName) -> Tuple[YangIdentifier,
+    def uniname(iname: InstanceName) -> Tuple[YangIdentifier,
                                        Optional[YangIdentifier]]:
-        """Translate member name to a qualified tuple.
+        """Translate instance name to a qualified name.
 
-        :param qn: qualified name
+        :param iname: instance name
         """
-        p, s, loc = qn.partition(":")
+        p, s, loc = iname.partition(":")
         if s: return (loc, p)
         return (p, None)
 
@@ -696,10 +696,11 @@ class NonexistentSchemaNode(YangsonException):
 
     def __init__(self, name: YangIdentifier,
                  ns: YangIdentifier = None) -> None:
-        self.sname = (name, ns)
+        self.name = name
+        self.ns = ns
 
     def __str__(self) -> str:
-        return "{} in module {}".format(*self.sname),
+        return "{} in module {}".format(self.name, self.ns)
 
 class SchemaNodeError(YangsonException):
     """Abstract exception class for schema node errors."""
