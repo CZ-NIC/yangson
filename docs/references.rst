@@ -41,3 +41,9 @@ __ https://www.python.org/dev/peps/pep-0484
 	     Internet Engineering Task Force, 2005.
 
 __ https://tools.ietf.org/html/rfc3986
+
+.. [XPath] Clark, J.; DeRose S. *XML Path Language (XPath) Version
+	   1.0*. W3C Recommendation `REC-xpath-19991116`__, World Wide
+	   Web Consortium, 1999.
+
+__ http://www.w3.org/TR/1999/REC-xpath-19991116/

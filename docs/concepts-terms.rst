@@ -66,9 +66,11 @@ Support for individual features and/or deviations are also indicated in YANG lib
 Names of Things
 ***************
 
-YANG modules defines entities of different types, most of them are named. In order to avoid conflicts between names defined in different modules, every such name belongs to the namespace of the module in which it is defined. In Yangson, we represent such qualified names as a tuple ``(name, modname)`` where ``modname`` is the name of the module in which ``name`` is defined. The module :mod:`typealiases` defines an alias for qualified names, namely :const:`QualName`.
+YANG modules defines entities of different types, most of them are named. In order to avoid conflicts between names defined in different modules, every such name belongs to the namespace of the module in which it is defined. In Yangson, we represent such qualified names as a tuple ``(name, modname)`` where ``modname`` is the name of the module in which ``name`` is defined.
 
-For example, the :ref:`turing-machine` module contains (at line 123) the following definition of a *leaf* data node::
+The module :mod:`typealiases` defines an alias for qualified names, namely :const:`QualName`.
+
+For example, the :ref:`turing-machine` module contains (at line 123) the following definition of a **leaf** data node::
 
   leaf label {
     type string;
@@ -89,9 +91,11 @@ uses the prefix form for referring to the derived type ``cell-index`` defined in
 
 If the reference appears in the same module as the definition of ``name``, then the prefix (and colon) may be omitted.
 
+The module :mod:`typealiases` defines the alias :const:`PrefName` that is intended to be used for prefixed names.
+
 Class method :meth:`translate_name` in the :class:`Context` class is available for translating a qualified name in prefix form to the tuple form of Yangson.
 
-Finally, JSON-encoded instance documents use yet another set of naming rules that are defined in [Lho16]_. Examples can be found in :ref:`app-b`.
+Finally, JSON-encoded instance documents use yet another set of naming rules that are defined in [Lho16]_. Examples can be found in :ref:`app-b`. The module :mod:`typealiases` defines the alias :const:`InstanceName` that for such instance names.
 
 Navigating in Schema and Data Trees
 ***********************************
@@ -107,21 +111,56 @@ In order to reduce the entropy somewhat, we introduce the following terminology 
 Here is a complete list of various tree path types that are used in Yangson and/or YANG:
 
 *schema route* (type alias :const:`SchemaRoute`)
-  List of qualified schema nodes in the tuple form. It is always interpreted relative to a given starting node and identifies its descendant schema node.
+  Python list of qualified schema nodes in the tuple form. It is always interpreted relative to a given reference node and identifies its descendant schema node.
 
-  For example, ``[("tape", "turing-machine"), ("cell", "turing-machine")]`` is a valid schema route if the starting node is the ``("turing-machine", "turing-machine")`` container.
-
-*schema node identifier* (see [Bjo16]_, `sec. 6.5`_)
-  Sequence of qualified names of schema nodes in the prefix form, separated with slashes. A schema node identifier that starts with a slash is absolute, otherwise it is relative. For example, ``tm:tape/tm:cell`` is a schema node identifier corresponding to the schema route example above.
+*schema node identifier* (see [Bjo16]_, sec. `6.5`_)
+  Sequence of qualified names of schema nodes in the prefix form, separated with slashes. A schema node identifier that starts with a slash is absolute, otherwise it is relative.
 
 *data route*
-  This is similar to schema route, except that the list contains only names of *data nodes*. This means that other schema nodes (**choice** and **case**) are omitted. A data route also identifes a unique descendant schema node because names of data nodes belonging to the cases of the same choice are requires to be unique (see `sec. 6.2.1`_ in [Bjo16]_).
-
-*XPath 1.0*
+  This is similar to schema route, except that the list contains only names of *data nodes*. This means that other schema nodes (**choice** and **case**) are omitted. A data route also identifes a unique descendant schema node because names of data nodes belonging to the cases of the same choice are requires to be unique (see sec. `6.2.1`_ in [Bjo16]_).
 
 *instance route* (class :class:`InstanceRoute`)
+  Python list of instance names that specifies a route between a context node in the instance data tree and its descendant node.
 
-*instance identifier*
+*XPath 1.0* (see [XPath]_)
+  XPath is a powerful language that is used in YANG modules for defining paths in the instance data tree, but also for specifying semantic constraints on instance data using **must** and **when** statements (see [Bjo16]_, sections `7.5.3`_ and `7.21.5`_). Other YANG statements, such as **path** (sec. `9.9.2`_ in [Bjo16]_), use restricted XPath expressions. 
 
-.. _sec. 6.2.1: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-6.2.1
-.. _sec. 6.5: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-6.5
+*instance identifier* (see [Bjo16]_, sec. `9.13`_, and [Lho16]_, sec. `6.11`_).
+  An instance identifier is a string that encodes an “address” of a *unique* instance node in the data tree. Instance identifiers are always absolute and start with the slash character (“``/``”).
+
+Examples
+--------
+
+Consider the Turing machine data model from :ref:`app-a`. If we take the top-level ``turing-machine`` container as the reference schema node, then
+
+* ``[("transition-function", "turing-machine"), ("delta", "turing-machine")]`` is a valid schema route;
+
+* if  ``tm`` is the prefix assigned to the ``turing-machine`` module, then ``tm:transition-function/tm:delta`` is a schema node identifier corresponding to the above schema route.
+
+Now, consider the JSON instance document from :ref:`app-b`, and take the container instance ``turing-machine:turing-machine`` as the context node. Then
+
+* ``["turing-machine:transition-function", "delta"]`` is the instance route to *any* instance of the ``delta`` list.
+
+* if  ``tm`` is the prefix assigned to the ``turing-machine`` module, then the result of the following XPath expression is the first entry of the ``delta`` list::
+
+    tm:transition-function/tm:delta[tm:label='both-a']
+
+  or also
+
+  ::
+
+    tm:transition-function/tm:delta[1]
+
+* The instance identifier of the third entry of the ``delta`` list is
+
+  ::
+     
+     /turing-machine:turing-machine/transition-function/delta[label='end']
+
+.. _6.2.1: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-6.2.1
+.. _6.5: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-6.5
+.. _7.5.3: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-7.5.3
+.. _7.21.5: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-7.21.5
+.. _9.9.2: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-9.9.2
+.. _9.13: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-9.13
+.. _6.11: https://tools.ietf.org/html/draft-ietf-netmod-yang-json-10#section-6.11

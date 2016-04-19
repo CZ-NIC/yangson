@@ -3,7 +3,7 @@
     "transition-function": {
       "delta": [
         {
-          "label": "'a' on both tapes",
+          "label": "both-a",
           "input": {
             "state": 0,
             "symbol": "a",
@@ -11,7 +11,7 @@
           }
         },
         {
-          "label": "'b' on both tapes",
+          "label": "both-b",
           "input": {
             "state": 0,
             "symbol": "b",
@@ -19,7 +19,7 @@
           }
         },
         {
-          "label": "end of string on both tapes",
+          "label": "end",
           "input": {
             "state": 0,
             "symbol": "",
