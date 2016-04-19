@@ -101,6 +101,16 @@ class Context:
     # Feature handling
 
     @classmethod
+    def check_feature_dependences(cls):
+        """Verify feature dependences."""
+        for mid in cls.modules:
+            for fst in cls.modules[mid].find_all("feature"):
+                fn = cls.translate_pname(fst.argument, mid)
+                if fn not in cls.features: continue
+                if not cls.if_features(fst, mid):
+                    raise FeaturePrerequisiteError(*fn)
+
+    @classmethod
     def if_features(cls, stmt: Statement, mid: ModuleId) -> bool:
         """Check ``if-feature`` substatements, if any.
 
@@ -205,3 +215,13 @@ class BadFeatureExpression(YangsonException):
 
     def __str__(self) -> str:
         return self.expr
+
+class FeaturePrerequisiteError(YangsonException):
+    """Exception to be raised for missing feature dependences."""
+
+    def __init__(self, fname, ns) -> None:
+        self.fname = fname
+        self.ns = ns
+
+    def __str__(self) -> str:
+        return "{}:{}".format(self.ns, self.fname)

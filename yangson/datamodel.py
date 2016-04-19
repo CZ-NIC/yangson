@@ -99,6 +99,7 @@ class DataModel:
     def _build_schema(self) -> None:
         """Build the schema."""
         self.setup_context()
+        Context.check_feature_dependences()
         for mid in self.implement:
             self.schema.handle_substatements(Context.modules[mid], mid)
         self.apply_augments()
