@@ -95,12 +95,14 @@ The module :mod:`typealiases` defines the alias :const:`PrefName` that is intend
 
 Class method :meth:`translate_name` in the :class:`Context` class is available for translating a qualified name in prefix form to the tuple form of Yangson.
 
-Finally, JSON-encoded instance documents use yet another set of naming rules that are defined in [Lho16]_. Examples can be found in :ref:`app-b`. The module :mod:`typealiases` defines the alias :const:`InstanceName` that for such instance names.
+Finally, JSON-encoded instance documents use yet another set of naming rules that are defined in [Lho16]_. The module :mod:`typealiases` defines the alias :const:`InstanceName` that for such instance names.
+
+.. _sec-paths:
 
 Navigating in Schema and Data Trees
 ***********************************
 
-The concept of paths in tree structures is familiar from other application domains, such as filesystems or XML. Yangson uses this concept in a number of different ways and variants. Apart from the variability in node naming, as described above, another major reason for the plenitude of path types has to do with the fact that we have to deal with two trees simultaneously: the schema tree and the data tree.
+The concept of paths in tree structures is familiar from other application domains, such as filesystems or XML. Yangson uses this concept in a number of different ways and variants. Apart from the variability in node naming, as described above, another major reason for the somewhat overwhelming plenitude of path types has to do with the fact that we have to deal with two trees simultaneously: the schema tree and the data tree.
 
 In order to reduce the entropy somewhat, we introduce the following terminology convention:
 
@@ -112,6 +114,11 @@ Here is a complete list of various tree path types that are used in Yangson and/
 
 *schema route* (type alias :const:`SchemaRoute`)
   Python list of qualified schema nodes in the tuple form. It is always interpreted relative to a given reference node and identifies its descendant schema node.
+
+*schema path* (type alias :const:`SchemaPath`)
+  String of slash-separated schema node names in the form [*module_name*``:``]*node_name*. The initial component must always be qualified with a module name. Any subsequent component is qualified with a module name if and only if its namespace is different from the previous component.
+
+  A schema path is always absolute (a leading slash is optional).
 
 *schema node identifier* (see [Bjo16]_, sec. `6.5`_)
   Sequence of qualified names of schema nodes in the prefix form, separated with slashes. A schema node identifier that starts with a slash is absolute, otherwise it is relative.
@@ -128,6 +135,9 @@ Here is a complete list of various tree path types that are used in Yangson and/
 *instance identifier* (see [Bjo16]_, sec. `9.13`_, and [Lho16]_, sec. `6.11`_).
   An instance identifier is a string that encodes an “address” of a *unique* instance node in the data tree. Instance identifiers are always absolute and start with the slash character (“``/``”).
 
+*resource identifer* (see [BBW16a]_, sec. `3.5.1`)
+  A string identifying an instance node that is suitable for use in URLs.
+
 Examples
 --------
 
@@ -135,7 +145,13 @@ Consider the Turing machine data model from :ref:`app-a`. If we take the top-lev
 
 * ``[("transition-function", "turing-machine"), ("delta", "turing-machine")]`` is a valid schema route;
 
-* if  ``tm`` is the prefix assigned to the ``turing-machine`` module, then ``tm:transition-function/tm:delta`` is a schema node identifier corresponding to the above schema route.
+* if  ``tm`` is the prefix assigned to the ``turing-machine`` module, then ``tm:transition-function/tm:delta`` is a schema node identifier corresponding to the above schema route;
+
+* the (absolute) schema path of the same ``delta`` node is
+
+  ::
+
+     /turing-machine:turing-machine/transition-function/delta
 
 Now, consider the JSON instance document from :ref:`app-b`, and take the container instance ``turing-machine:turing-machine`` as the context node. Then
 
@@ -157,6 +173,7 @@ Now, consider the JSON instance document from :ref:`app-b`, and take the contain
      
      /turing-machine:turing-machine/transition-function/delta[label='end']
 
+.. _3.5.1: https://tools.ietf.org/html/draft-ietf-netconf-restconf-12#section-3.5.1
 .. _6.2.1: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-6.2.1
 .. _6.5: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-6.5
 .. _7.5.3: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-7.5.3

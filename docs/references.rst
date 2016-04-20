@@ -14,6 +14,12 @@ __ https://tools.ietf.org/html/draft-ietf-netmod-rfc6087bis
 
 __ https://tools.ietf.org/html/draft-ietf-netconf-yang-library
 
+.. [BBW16a] Bierman, A.; Bjorklund, M.; Watsen, K. *RESTCONF
+	   Protocol.* `draft-ietf-netconf-restconf`__, Internet
+	   Engineering Task Force, 2016.
+
+__ https://tools.ietf.org/html/draft-ietf-netconf-restconf
+
 .. [Bjo16] Bjorklund, M. (ed.). *The YANG 1.1 Data Modeling Language.*
 	   `draft-ietf-netmod-rfc6020bis`__, Internet Engineering Task
 	   Force, 2016.
