@@ -65,7 +65,7 @@ class Context:
                  for qn in (nlist[1:] if sid[0] == "/" else nlist) ]
 
     @classmethod
-    def path2route(cls, path: str) -> SchemaRoute:
+    def path2route(cls, path: SchemaPath) -> SchemaRoute:
         """Translate schema path to schema route.
 
         :param path: schema path

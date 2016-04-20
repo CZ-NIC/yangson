@@ -6,10 +6,11 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 RevisionDate = Optional[str]
 Uri = str
 YangIdentifier = str
-InstanceName = str # [YangIdentifier:]YangIdentifier
+InstanceName = str # [YangIdentifier ":"] YangIdentifier
 InstanceRoute = List[InstanceName]
-PrefName = str # [Prefix:]YangIdentifier
+PrefName = str # [Prefix ":"]YangIdentifier
 ScalarValue = Union[int, Decimal, str]
 QualName = Tuple[YangIdentifier, YangIdentifier] # (name, namespace)
 SchemaRoute = List[QualName]
-ModuleId = Tuple[YangIdentifier, Optional[RevisionDate]]
+SchemaPath = str # ["/"] ModuleName ":" NodeName *("/" [ModuleName ":"] NodeName)
+ModuleId = Tuple[YangIdentifier, RevisionDate]

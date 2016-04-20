@@ -136,14 +136,14 @@ class DataModel:
                         break
                     i += 1
 
-    def get_schema_node(self, path: str) -> Optional["SchemaNode"]:
+    def get_schema_node(self, path: SchemaPath) -> Optional["SchemaNode"]:
         """Return a schema node.
 
         :param path: schema node path
         """
         return self.schema.get_schema_descendant(Context.path2route(path))
 
-    def get_data_node(self, path: str) -> Optional["DataNode"]:
+    def get_data_node(self, path: SchemaPath) -> Optional["DataNode"]:
         """Return a data node.
 
         :param path: data node path
