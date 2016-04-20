@@ -216,10 +216,10 @@ class BitsType(DataType):
         self.bit = {}
 
     def _parse(self, input: str) -> List[str]:
-        return input.split()
+        return tuple(input.split())
 
     def _from_raw(self, raw: str) -> List[str]:
-        return raw.split()
+        return tuple(raw.split())
 
     def _constraints(self, val: List[str]) -> bool:
         for b in val:
