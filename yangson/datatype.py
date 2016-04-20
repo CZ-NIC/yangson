@@ -117,7 +117,7 @@ class DataType:
 
         :param input: string representation of the value
         """
-        return input
+        return self._from_raw(input)
 
     def from_raw(self, raw: RawScalar) -> ScalarValue:
         """Return a cooked value of the receiver type.
@@ -201,6 +201,10 @@ class EmptyType(DataType):
     def _constraints(self, val: Tuple[None]) -> bool:
         return val == (None,)
 
+    def _parse(self, input: str) -> Tuple[None]:
+        if input: raise YangTypeError(raw)
+        return (None,)
+
     def _from_raw(self, raw: List[None]) -> Tuple[None]:
         try:
             return tuple(raw)
@@ -214,9 +218,6 @@ class BitsType(DataType):
         """Initialize the class instance."""
         super().__init__()
         self.bit = {}
-
-    def _parse(self, input: str) -> List[str]:
-        return tuple(input.split())
 
     def _from_raw(self, raw: str) -> List[str]:
         return tuple(raw.split())
@@ -310,8 +311,8 @@ class StringType(DataType):
 class BinaryType(StringType):
     """Class representing YANG "binary" type."""
 
-    def _parse(self, input: str) -> bytes:
-        return base64.b64decode(input, validate=True)
+    def _from_raw(self, raw: str) -> bytes:
+        return base64.b64decode(raw, validate=True)
 
 class EnumerationType(DataType):
     """Class representing YANG "enumeration" type."""
@@ -438,18 +439,11 @@ class Decimal64Type(NumericType):
         self._range = [[-lim / quot, (lim - 1) / quot]]
         super().handle_properties(stmt, mid)
 
-    def _parse(self, input: str) -> decimal.Decimal:
-        """Parse decimal value.
-
-        :param input: string representation of the value
-        """
-        try:
-            return decimal.Decimal(input).quantize(self._epsilon)
-        except decimal.InvalidOperation:
-            raise YangTypeError(input) from None
-
     def _from_raw(self, raw: str) -> decimal.Decimal:
-        return decimal.Decimal(raw)
+        try:
+            return decimal.Decimal(raw).quantize(self._epsilon)
+        except decimal.InvalidOperation:
+            raise YangTypeError(raw) from None
 
     def contains(self, val: decimal.Decimal) -> bool:
         """Return ``True`` if the receiver type contains `val`.
@@ -481,30 +475,22 @@ class IntegralType(NumericType):
         """
         return isinstance(val, int) and self._constraints(val)
 
-class SignedIntegerType(IntegralType):
-    """Abstract class for signed integer types."""
-    pass
-
-class UnsignedIntegerType(IntegralType):
-    """Abstract class for unsigned integer types."""
-    pass
-
-class Int8Type(SignedIntegerType):
+class Int8Type(IntegralType):
     """Class representing YANG "int8" type."""
 
     _range = [[-128,127]] # type: Range
 
-class Int16Type(SignedIntegerType):
+class Int16Type(IntegralType):
     """Class representing YANG "int16" type."""
 
     _range = [[-32768, 32767]] # type: Range
 
-class Int32Type(SignedIntegerType):
+class Int32Type(IntegralType):
     """Class representing YANG "int32" type."""
 
     _range = [[-2147483648, 2147483647]]  # type: Range
 
-class Int64Type(SignedIntegerType):
+class Int64Type(IntegralType):
     """Class representing YANG "int64" type."""
 
     _range = [[-9223372036854775808, 9223372036854775807]] # type: Range
@@ -515,22 +501,22 @@ class Int64Type(SignedIntegerType):
         except ValueError:
             raise YangTypeError(raw) from None
 
-class Uint8Type(UnsignedIntegerType):
+class Uint8Type(IntegralType):
     """Class representing YANG "uint8" type."""
 
     _range = [[0, 255]] # type: Range
 
-class Uint16Type(UnsignedIntegerType):
+class Uint16Type(IntegralType):
     """Class representing YANG "uint16" type."""
 
     _range = [[0, 65535]] # type: Range
 
-class Uint32Type(UnsignedIntegerType):
+class Uint32Type(IntegralType):
     """Class representing YANG "uint32" type."""
 
     _range = [[0, 4294967295]] # type: Range
 
-class Uint64Type(UnsignedIntegerType):
+class Uint64Type(IntegralType):
     """Class representing YANG "uint64" type."""
 
     _range = [[0, 18446744073709551615]] # type: Range
