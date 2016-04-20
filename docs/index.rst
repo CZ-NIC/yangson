@@ -8,6 +8,7 @@ Contents:
 
    introduction
    concepts-terms
+   schema
    instances
    typealiases
    references
