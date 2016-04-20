@@ -40,11 +40,12 @@ __ https://en.wikipedia.org/wiki/Persistent_data_structure
 This module defines a type alias representing an union of possible
 types of instance values.
 
-+-----+--------------------------------------------------------------+
-|Alias|Type                                                          |
-+=====+==============================================================+
-|Value| Union[ScalarValue, :class:`ArrayValue`, :class:`ObjectValue`]|
-+-----+--------------------------------------------------------------+
++--------------+-------------------------------+
+|Alias         |Type                           |
++==============+===============================+
+|:const:`Value`|``Union[ScalarValue,           |
+|              |ArrayValue, ObjectValue]``     |
++--------------+-------------------------------+
 
 
 Instance Values

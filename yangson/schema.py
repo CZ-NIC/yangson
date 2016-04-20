@@ -13,7 +13,7 @@ from .typealiases import *
 # Local type aliases
 RawObject = Dict[InstanceName, "RawValue"]
 RawList = List["RawObject"]
-RawLeafList = List["RawScalar"]
+RawLeafList = List[RawScalar]
 RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
 
 class SchemaNode:
