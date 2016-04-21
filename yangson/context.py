@@ -22,6 +22,8 @@ class Context:
     ns_map = {} # type: Dict[YangIdentifier, YangIdentifier]
     """Map of module and submodule names to namespaces."""
 
+    derived_identities = {} # type Dict[QualName, MutableSet[QualName]]
+
     features = set() # type: MutableSet[QualName]
 
     # Regular expressions
@@ -97,6 +99,20 @@ class Context:
         dstmt = (stmt.get_definition(loc, kw) if did == mid else
                  cls.modules[did].find1(kw, loc, required=True))
         return (dstmt, did)
+
+    @classmethod
+    def identity_derivations(cls):
+        """Create the graph of identity derivations."""
+        for mid in cls.modules:
+            for idst in cls.modules[mid].find_all("identity"):
+                if not cls.if_features(idst, mid): continue
+                idn = cls.translate_pname(idst.argument, mid)
+                if idn not in cls.derived_identities:
+                    cls.derived_identities[idn] = set()
+                for bst in idst.find_all("base"):
+                    bn = cls.translate_pname(bst.argument, mid)
+                    der = cls.derived_identities.setdefault(bn, set())
+                    der.add(idn)
 
     # Feature handling
 

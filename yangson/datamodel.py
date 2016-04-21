@@ -100,6 +100,7 @@ class DataModel:
         """Build the schema."""
         self.setup_context()
         Context.check_feature_dependences()
+        Context.identity_derivations()
         for mid in self.implement:
             self.schema.handle_substatements(Context.modules[mid], mid)
         self.apply_augments()
