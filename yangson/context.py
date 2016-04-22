@@ -1,35 +1,150 @@
 import re
-from typing import Dict, MutableSet
+from typing import Dict, List, MutableSet
 from .constants import pname_re, YangsonException
+from .modparser import from_file
 from .statement import Statement
 from .typealiases import *
 
 """Context for schema generation."""
 
 class Context:
-    """This class provides context for schema generation.
+    """This private class provides context for schema generation.
 
     The information is installed in class varables, which means that
     different schemas cannot be generated in parallel.
     """
 
-    modules = {} # type: Dict[ModuleId, Statement]
-    """Dictionary of parsed modules comprising the data model."""
-
-    prefix_map = {} # type: Dict[ModuleId, Dict[YangIdentifier, ModuleId]]
-    """Per-module prefix assignments."""
-
-    ns_map = {} # type: Dict[YangIdentifier, YangIdentifier]
-    """Map of module and submodule names to namespaces."""
-
-    derived_identities = {} # type Dict[QualName, MutableSet[QualName]]
-
-    features = set() # type: MutableSet[QualName]
+    @classmethod
+    def initialize(cls) -> None:
+        """Initialize the context variables."""
+        cls.module_search_path = [] # type: MutableSet[str]
+        cls.modules = {} # type: Dict[ModuleId, Statement]
+        cls.implement = [] # type: List[YangIdentifier]
+        cls.revisions = {} # type: Dict[YangIdentifier, List[str]]
+        cls.prefix_map = {} # type: Dict[ModuleId, Dict[YangIdentifier, ModuleId]]
+        cls.ns_map = {} # type: Dict[YangIdentifier, YangIdentifier]
+        cls.derived_identities = {} # type Dict[QualName, MutableSet[QualName]]
+        cls.features = set() # type: MutableSet[QualName]
 
     # Regular expressions
     not_re = re.compile(r"not\s+")
     and_re = re.compile(r"\s+and\s+")
     or_re = re.compile(r"\s+or\s+")
+
+    @classmethod
+    def from_yang_library(cls, yang_lib: Dict[str, Any],
+                          mod_path: List[str]) -> None:
+        """Build context from YANG library object."""
+        cls.initialize()
+        cls.module_search_path = mod_path
+        cls.schema._nsswitch = cls.schema._config = True
+        try:
+            for item in yang_lib["ietf-yang-library:modules-state"]["module"]:
+                name = item["name"]
+                cls.ns_map[name] = name
+                if "feature" in item:
+                    cls.features.update(
+                        [ (f,name) for f in item["feature"] ])
+                rev = item["revision"] if item["revision"] else None
+                mid = (name, rev)
+                ct = item["conformance-type"]
+                if ct == "implement": cls.implement.append(name)
+                cls.revisions.setdefault(name, []).append(rev)
+                mod = cls.load_module(name, rev)
+                locpref = mod.find1("prefix", required=True).argument
+                cls.prefix_map[mid] = { locpref: mid }
+                if "submodules" in item and "submodule" in item["submodules"]:
+                    for s in item["submodules"]["submodule"]:
+                        sname = s["name"]
+                        cls.ns_map[sname] = name
+                        rev = s["revision"] if s["revision"] else None
+                        smid = (sname, rev)
+                        if ct == "implement": cls.implement.append(sname)
+                        cls.revisions.setdefault(sname, []).append(rev)
+                        submod = cls.load_module(sname, rev)
+                        bt = submod.find1("belongs-to", name, required=True)
+                        locpref = bt.find1("prefix", required=True).argument
+                        cls.prefix_map[smid] = { locpref: mid }
+        except (KeyError, AttributeError):
+            raise BadYangLibraryData()
+        for mod in cls.revisions:
+            cls.revisions[mod].sort(key=lambda r: "0" if r is None else r)
+        cls.process_imports()
+        cls.check_feature_dependences()
+        cls.identity_derivations()
+        for mn in cls.implement:
+            if len(cls.revisions[mn]) > 1:
+                raise MultipleImplementedRevisions(mn)
+            mid = (mn, cls.revisions[mn][0])
+            cls.schema.handle_substatements(cls.modules[mid], mid)
+        cls.apply_augments()
+
+    @classmethod
+    def load_module(cls, name: YangIdentifier,
+                    rev: RevisionDate) -> Statement:
+        """Read, parse and register YANG module or submodule."""
+        for d in cls.module_search_path:
+            fn = "{}/{}".format(d, name)
+            if rev: fn += "@" + rev
+            try:
+                res = from_file(fn + ".yang")
+            except FileNotFoundError:
+                continue
+            cls.modules[(name, rev)] = res
+            return res
+        raise ModuleNotFound(name, rev)
+
+    @classmethod
+    def process_imports(cls) -> None:
+        for mid in cls.modules:
+            mod = cls.modules[mid]
+            try:
+                pos = cls.implement.index(mid[0])
+            except ValueError:                # mod not implemented
+                pos = None
+            for impst in mod.find_all("import"):
+                impn = impst.argument
+                prefix = impst.find1("prefix", required=True).argument
+                revst = impst.find1("revision-date")
+                rev = revst.argument if revst else None
+                if rev in cls.revisions[impn]:
+                    imid = (impn, rev)
+                elif rev is None:             # use last revision
+                    imid = (impn, cls.revisions[impn][-1])
+                else:
+                    raise ModuleNotFound(impn, rev)
+                cls.prefix_map[mid][prefix] = imid
+                if pos is None: continue
+                i = pos
+                while i < len(cls.implement):
+                    if cls.implement[i] == impn:
+                        cls.implement[pos] = impn
+                        cls.implement[i] = mid[0]
+                        pos = i
+                        break
+                    i += 1
+
+    @classmethod
+    def apply_augments(cls) -> None:
+        """Apply top-level augments from all implemented modules."""
+        for mn in cls.implement:
+            mid = (mn, cls.revisions[mn][0])
+            mod = cls.modules[mid]
+            for aug in mod.find_all("augment"):
+                cls.schema.augment_refine(aug, mid, True)
+
+    @classmethod
+    def identity_derivations(cls):
+        """Create the graph of identity derivations."""
+        for mid in cls.modules:
+            for idst in cls.modules[mid].find_all("identity"):
+                if not cls.if_features(idst, mid): continue
+                idn = cls.translate_pname(idst.argument, mid)
+                if idn not in cls.derived_identities:
+                    cls.derived_identities[idn] = set()
+                for bst in idst.find_all("base"):
+                    bn = cls.translate_pname(bst.argument, mid)
+                    cls.derived_identities.setdefault(bn, set()).add(idn)
 
     @classmethod
     def resolve_pname(cls, pname: PrefName,
@@ -99,20 +214,6 @@ class Context:
         dstmt = (stmt.get_definition(loc, kw) if did == mid else
                  cls.modules[did].find1(kw, loc, required=True))
         return (dstmt, did)
-
-    @classmethod
-    def identity_derivations(cls):
-        """Create the graph of identity derivations."""
-        for mid in cls.modules:
-            for idst in cls.modules[mid].find_all("identity"):
-                if not cls.if_features(idst, mid): continue
-                idn = cls.translate_pname(idst.argument, mid)
-                if idn not in cls.derived_identities:
-                    cls.derived_identities[idn] = set()
-                for bst in idst.find_all("base"):
-                    bn = cls.translate_pname(bst.argument, mid)
-                    der = cls.derived_identities.setdefault(bn, set())
-                    der.add(idn)
 
     # Feature handling
 
@@ -205,8 +306,29 @@ class Context:
             return (x or y, py)
         return (x, px)
 
+class ModuleNotFound(YangsonException):
+    """A module is not found."""
+
+    def __init__(self, name: YangIdentifier, rev: str = None) -> None:
+        self.name = name
+        self.rev = rev
+
+    def __str__(self) -> str:
+        if self.rev:
+            return self.name + "@" + self.rev
+        return self.name
+
+class BadYangLibraryData(YangsonException):
+    """Broken YANG Library data."""
+
+    def __init__(self, reason: str = "broken yang-library data") -> None:
+        self.reason = reason
+
+    def __str__(self) -> str:
+        return self.reason
+
 class BadPath(YangsonException):
-    """Exception to be raised for invalid schema or data path."""
+    """Invalid schema or data path."""
 
     def __init__(self, path: str) -> None:
         self.path = path
@@ -215,7 +337,7 @@ class BadPath(YangsonException):
         return self.path
 
 class BadPrefName(YangsonException):
-    """Exception to be raised for a broken prefixed name."""
+    """Broken prefixed name."""
 
     def __init__(self, pname: str) -> None:
         self.pname = pname
@@ -224,7 +346,7 @@ class BadPrefName(YangsonException):
         return self.pname
 
 class BadFeatureExpression(YangsonException):
-    """Exception to be raised for a broken "if-feature" argument."""
+    """Broken "if-feature" argument."""
 
     def __init__(self, expr: str) -> None:
         self.expr = expr
@@ -233,11 +355,20 @@ class BadFeatureExpression(YangsonException):
         return self.expr
 
 class FeaturePrerequisiteError(YangsonException):
-    """Exception to be raised for missing feature dependences."""
+    """Missing feature dependences."""
 
-    def __init__(self, fname, ns) -> None:
+    def __init__(self, fname: YangIdentifier, ns: YangIdentifier) -> None:
         self.fname = fname
         self.ns = ns
 
     def __str__(self) -> str:
         return "{}:{}".format(self.ns, self.fname)
+
+class MultipleImplementedRevisions(YangsonException):
+    """An implemented module has multiple revisions."""
+
+    def __init__(self, module: YangIdentifier) -> None:
+        self.module = module
+
+    def __str__(self) -> str:
+        return self.module

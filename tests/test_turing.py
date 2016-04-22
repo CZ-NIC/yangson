@@ -5,10 +5,10 @@ from yangson.context import Context, BadPath
 
 @pytest.fixture
 def data_model():
-    tdir = "examples/turing/"
-    with open(tdir + "yang-library.json", encoding="utf-8") as ylfile:
+    tpath = ["examples/turing/"]
+    with open("examples/turing/yang-library.json", encoding="utf-8") as ylfile:
         ylib = ylfile.read()
-    return DataModel.from_yang_library(ylib, tdir)
+    return DataModel(ylib, tpath)
         
 def test_schema_nodes(data_model):
     top = data_model.get_data_node("/turing-machine:turing-machine")
