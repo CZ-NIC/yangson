@@ -9,7 +9,7 @@ def data_model():
     with open("examples/turing/yang-library.json", encoding="utf-8") as ylfile:
         ylib = ylfile.read()
     return DataModel(ylib, tpath)
-        
+
 def test_schema_nodes(data_model):
     top = data_model.get_data_node("/turing-machine:turing-machine")
     assert top.instance_name() == "turing-machine:turing-machine"

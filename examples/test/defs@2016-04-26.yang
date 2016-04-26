@@ -1,0 +1,17 @@
+module defs {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/defs";
+
+  prefix "d";
+
+  revision 2016-04-26;
+
+  typedef typA {
+    type int16 {
+      range "-6378..412";
+    }
+    default "111";
+  }
+}

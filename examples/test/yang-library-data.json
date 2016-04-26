@@ -1,0 +1,36 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "TO-BE-INVENTED",
+    "module": [
+      {
+        "name": "testb",
+        "revision": "2016-04-26",
+        "schema": "https://example.com/testb.yang",
+        "namespace": "http://example.com/testb",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "test",
+        "revision": "2016-04-26",
+        "schema": "https://example.com/test.yang",
+        "namespace": "http://example.com/test",
+        "conformance-type": "implement",
+        "submodules": {
+          "submodule": [
+            {
+              "name": "subtest",
+              "revision": "2016-04-26"
+            }
+          ]
+        }
+      },
+      {
+        "name": "defs",
+        "revision": "2016-04-26",
+        "schema": "https://example.com/defs.yang",
+        "namespace": "http://example.com/defs",
+        "conformance-type": "import"
+      }
+    ]
+  }
+}
