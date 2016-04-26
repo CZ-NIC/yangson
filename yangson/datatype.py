@@ -124,8 +124,11 @@ class DataType:
 
         :param raw: raw value obtained from JSON parser
         """
-        res = self._from_raw(raw)
-        if self._constraints(res): return res
+        try:
+            res = self._from_raw(raw)
+            if self._constraints(res): return res
+        except TypeError:
+            raise YangTypeError(res) from None
         raise YangTypeError(res)
 
     def _from_raw(self, raw: RawScalar) -> ScalarValue:
@@ -406,7 +409,7 @@ class NumericType(DataType):
     def _constraints(self, val: Union[int, decimal.Decimal]) -> bool:
         return self._in_range(val, self._range)
 
-    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
         :param stmt: YANG ``type`` statement
@@ -534,7 +537,7 @@ class YangTypeError(YangsonException):
         self.value = value
 
     def __str__(self) -> str:
-        return "incorrect type error for value " + str(self.value)
+        return "value " + repr(self.value)
 
 DataType.dtypes = { "binary": BinaryType,
                     "bits": BitsType,
