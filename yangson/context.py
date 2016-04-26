@@ -95,6 +95,10 @@ class Context:
         raise ModuleNotFound(name, rev)
 
     @classmethod
+    def _last_revision(cls, mname: YangIdentifier) -> ModuleId:
+        return (mname, cls.revisions[mname][-1])
+
+    @classmethod
     def process_imports(cls) -> None:
         for mid in cls.modules:
             mod = cls.modules[mid]
@@ -110,7 +114,7 @@ class Context:
                 if rev in cls.revisions[impn]:
                     imid = (impn, rev)
                 elif rev is None:             # use last revision
-                    imid = (impn, cls.revisions[impn][-1])
+                    imid = cls._last_revision(impn)
                 else:
                     raise ModuleNotFound(impn, rev)
                 cls.prefix_map[mid][prefix] = imid
