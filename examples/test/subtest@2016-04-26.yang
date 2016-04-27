@@ -6,15 +6,38 @@ submodule subtest {
     prefix "t";
   }
 
+  import ietf-inet-types {
+    prefix "inet";
+    revision-date 2013-07-15;
+  }
+
+  import ietf-inet-types {
+    prefix "oin";
+    revision-date 2010-09-24;
+  }
+
   import defs {
     prefix "sd";
   }
 
   revision 2016-04-26;
 
-  leaf leafA {
-    type sd:typA {
-      range "100..200";
+  container contC {
+    leaf leafD {
+      type sd:typB;
+      default "199";
     }
+    leaf-list llistA {
+      type inet:ip-address-no-zone;
+      min-elements "2";
+      max-elements "3";
+    }
+  }
+
+  leaf-list llistB {
+    type sd:typA;
+    default "42";
+    default "54";
+    ordered-by "user";
   }
 }

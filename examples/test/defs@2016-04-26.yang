@@ -12,6 +12,13 @@ module defs {
     type int16 {
       range "-6378..412";
     }
+    default "11";
+  }
+
+  typedef typB {
+    type typA {
+      range "100..200";
+    }
     default "111";
   }
 }

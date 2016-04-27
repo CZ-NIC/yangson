@@ -17,9 +17,12 @@ module testb {
   revision 2016-04-26;
 
   augment "/t:contA" {
-    leaf leafA {
-      type d:typA;
-      default "1";
+    container contB {
+      presence "YES";
+      leaf leafC {
+        type d:typA;
+        mandatory "true";
+      }
     }
   }
 }

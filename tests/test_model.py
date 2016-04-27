@@ -6,7 +6,7 @@ from yangson.context import Context, BadPath, BadPrefName
 
 @pytest.fixture
 def data_model():
-    tpath = ["examples/test"]
+    tpath = ["examples/test", "examples/ietf"]
     with open("examples/test/yang-library-data.json",
               encoding="utf-8") as ylfile:
         ylib = ylfile.read()
@@ -24,20 +24,33 @@ def test_context(data_model):
         Context.translate_pname("d:foo", stid)
 
 def test_schema(data_model):
-    la = data_model.get_data_node("/test:contA/leafA")
+    ca = data_model.get_data_node("/test:contA")
+    la = ca.get_child("leafA")
     lb = data_model.get_data_node("/test:contA/leafB")
-    lsa = data_model.get_data_node("/test:leafA")
-    lab = data_model.get_data_node("/test:contA/testb:leafA")
-    assert la.parent == lb.parent
-    assert la.mandatory == False
-    assert lb.mandatory == True
-    assert la.config == True
+    cc = data_model.get_schema_node("/test:contC")
+    ld = data_model.get_data_node("/test:contC/leafD")
+    lla = cc.get_child("llistA")
+    cb = data_model.get_data_node("/test:contA/testb:contB")
+    lc = cb.get_data_child("leafC")
+    llb = data_model.get_schema_node("/test:llistB")
+    assert la.parent == lb.parent == cb.parent == ca
+    assert la.mandatory == cb.mandatory == ld.mandatory == False
+    assert lb.mandatory == ca.mandatory == lc.mandatory == cc.mandatory == True
+    assert la.config == ca.config == ld.config == lc.config == True
     assert lb.config == False
-    assert la.name == lsa.name and la.ns == lsa.ns
-    assert lab.name == "leafA" and lab.ns == "testb"
-    assert la.default is None
-    assert la.type.default == 111
-    assert lab.default == 1
+    assert la.ns == ld.ns
+    assert lc.ns == "testb"
+    assert la.default == 11
+    assert ld.default == 199
+    assert ld.type.default == 111
+    assert llb.default == [42, 54]
+    assert llb.type.default == 11
     assert la.type.parse_value("99") == 99
     with pytest.raises(YangTypeError):
-        lsa.type.parse_value("99")
+        ld.type.parse_value("99")
+    assert ca.presence == (not cb.presence) == cc.presence == False
+    assert lla.min_elements == 2
+    assert lla.max_elements == 3
+    assert llb.min_elements == 0
+    assert llb.max_elements is None
+    assert llb.user_ordered == (not lla.user_ordered) == True
