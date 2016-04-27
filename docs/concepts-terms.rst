@@ -78,7 +78,7 @@ For example, the :ref:`turing-machine` module contains (at line 123) the follow
       "An arbitrary label of the transition rule.";
    }
 
-In Yangson functions, such a node would be identified with a qualified name ``(label, turing-machine)``.
+In Yangson functions, such a node would be identified with a *qualified name* ``(label, turing-machine)``.
 
 In YANG modules, however, references to named entities use a prefix form, namely ::
 
@@ -95,7 +95,13 @@ The module :mod:`typealiases` defines the alias :const:`PrefName` that is intend
 
 Class method :meth:`translate_name` in the :class:`Context` class is available for translating a qualified name in prefix form to the tuple form of Yangson.
 
-Finally, JSON-encoded instance documents use yet another set of naming rules that are defined in [Lho16]_. The module :mod:`typealiases` defines the alias :const:`InstanceName` that for such instance names.
+Finally, JSON-encoded instance documents use *instance names* as defined in [Lho16]_, sec. `4`_. In particular, data node names need to be prefixed with the module name in which the data node is defined if and only if either
+
+* the data node is at the top level of the data tree, or
+
+* the parent data node is defined in a different module.
+
+The module :mod:`typealiases` defines the alias :const:`InstanceName` that for such instance names.
 
 .. _sec-paths:
 
@@ -174,6 +180,7 @@ Now, consider the JSON instance document from :ref:`app-b`, and take the contain
      /turing-machine:turing-machine/transition-function/delta[label='end']
 
 .. _3.5.1: https://tools.ietf.org/html/draft-ietf-netconf-restconf-12#section-3.5.1
+.. _4: https://tools.ietf.org/html/draft-ietf-netmod-yang-json-10#section-4
 .. _6.2.1: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-6.2.1
 .. _6.5: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-6.5
 .. _7.5.3: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-7.5.3

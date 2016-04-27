@@ -41,6 +41,142 @@ This module defines several type aliases representing “raw” values produced 
 
       Parent schema node.
 
-    .. property:: config
+   .. attribute:: config
 
-       This property
+      This boolean attribute is ``True`` if the receiver represents
+      configuration, and ``False`` otherwise. It is implemented as a
+      :class:`property`.
+
+   .. automethod:: uniname
+
+   .. automethod:: instance_name
+
+   .. automethod:: instance_route
+
+   .. automethod:: state_roots
+
+.. class:: InternalNode(SchemaNode)
+
+   This is the superclass for schema nodes that have children.
+
+   The whole schema in :attr:`Context.schema` is an instance of this
+   class. Other instances should not be created.
+
+   .. attribute:: children
+
+      The list of children.
+
+   .. automethod:: get_child
+
+   .. automethod:: get_schema_descendant
+
+   .. automethod:: get_data_child
+
+   .. automethod:: get_data_descendant
+
+.. class:: DataNode(SchemaNode)
+
+   This is the abstract superclass for data nodes.
+
+   .. attribute:: default_deny
+
+      NACM default deny value belonging to the :class:`DefaultDeny` enumeration.
+
+.. class:: TerminalNode(DataNode)
+
+   This is the abstract superclass for terminal nodes in the schema
+   tree.
+
+   .. attribute:: default
+
+      Optional default value.
+
+   .. attribute:: mandatory
+
+      A boolean value specifying whether the instance is mandatory.
+
+   .. attribute:: type
+
+      The data type object.
+
+.. class:: ContainerNode(InternalNode, DataNode)
+
+   Class representing YANG **container** node.
+
+   .. attribute:: presence
+
+      A boolean value specifying whether the instance is a container
+      with presence.
+
+   .. attribute:: mandatory
+
+      A boolean value specifying whether the instance is mandatory.
+
+.. class:: ListNode(InternalNode, DataNode)
+
+   Class representing YANG **list** node.
+
+   .. attribute:: keys
+
+      List containing qualified names of all keys.
+
+   .. attribute:: min_elements
+
+      An integer value specifying the minimum number of list entries.
+
+   .. attribute:: max_elements
+
+      An integer value specifying the maximum number of list entries.
+
+.. class:: ChoiceNode(InternalNode)
+
+   Class representing YANG **Choice** node.
+
+   .. attribute:: default
+
+      Optional qualified name specifying the default case.
+
+   .. attribute:: mandatory
+
+      A boolean value specifying whether one of the cases is required
+      to exist.
+
+.. class:: CaseNode(InternalNode)
+
+   Class representing YANG **case** node.
+
+.. class:: RpcActionNode(InternalNode)
+
+   Class representing YANG **rpc** or **action** node.
+
+.. class:: InputNode(InternalNode)
+
+   Class representing YANG **input** node.
+
+.. class:: OutputNode(InternalNode)
+
+   Class representing YANG **output** node.
+
+.. class:: LeafNode(TerminalNode)
+
+   Class representing YANG **leaf** node.
+
+.. class:: LeafListNode(TerminalNode)
+
+   Class representing YANG **leaf-list** node.
+
+   .. attribute:: min_elements
+
+      An integer value specifying the minimum number of leaf-list entries.
+
+   .. attribute:: max_elements
+
+      An integer value specifying the maximum number of leaf-list entries.
+
+.. class:: AnydataNode(TerminalNode)
+
+   Class representing YANG **anydata** node.
+
+.. class:: AnyxmlNode(TerminalNode)
+
+   Class representing YANG **anyxml** node.
