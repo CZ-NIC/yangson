@@ -526,18 +526,12 @@ class ChoiceNode(InternalNode):
 
     def _handle_child(self, node: SchemaNode, stmt: SchemaNode,
                      mid: ModuleId) -> None:
-        """Handle a child node to be added to the receiver.
-
-        :param node: child node
-        :param stmt: YANG statement defining the child node
-        :param mid: module context
-        """
         if isinstance(node, CaseNode):
             super()._handle_child(node, stmt, mid)
         else:
             cn = CaseNode()
             cn.name = stmt.argument
-            cn.ns = mid[0]
+            cn.ns = Context.ns_map[mid[0]] if self._nsswitch else self.ns
             self.add_child(cn)
             cn._handle_child(node, stmt, mid)
 
@@ -630,7 +624,11 @@ class LeafListNode(TerminalNode, SequenceNode):
     @property
     def default(self):
         """Return the default value of the receiver or its type."""
-        return self._default if self._default else [self.type.default]
+        if self._default:
+            return self._default
+        if self.type.default is None:
+            return None
+        return [self.type.default]
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         val = self.type.parse_value(stmt.argument)
