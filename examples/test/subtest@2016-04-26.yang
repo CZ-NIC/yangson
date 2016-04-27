@@ -22,22 +22,29 @@ submodule subtest {
 
   revision 2016-04-26;
 
-  container contC {
-    leaf leafD {
-      type sd:typB;
-      default "199";
-    }
-    leaf-list llistA {
+  choice choiA {
+    default "caseA";
+    leaf-list llistB {
       type inet:ip-address-no-zone;
       min-elements "2";
       max-elements "3";
+      ordered-by "user";
     }
-  }
-
-  leaf-list llistB {
-    type sd:typA;
-    default "42";
-    default "54";
-    ordered-by "user";
+    case caseA {
+      container contC {
+        leaf leafD {
+          type sd:typB;
+          default "199";
+        }
+        leaf-list llistA {
+          type sd:typA;
+          default "42";
+          default "54";
+        }
+      }
+      leaf leafH {
+        type oin:ip-address;
+      }
+    }
   }
 }

@@ -28,32 +28,36 @@ def test_schema(data_model):
     la = ca.get_child("leafA")
     lb = data_model.get_data_node("/test:contA/leafB")
     lsta = data_model.get_data_node("/test:contA/listA")
-    cc = data_model.get_schema_node("/test:contC")
+    cha = data_model.get_schema_node("/test:choiA")
+    cc = cha.get_data_child("contC")
     ld = data_model.get_data_node("/test:contC/leafD")
     lla = cc.get_child("llistA")
-    cb = data_model.get_data_node("/test:contA/testb:contB")
+    chb = data_model.get_schema_node("/test:contA/testb:choiB")
+    cb = chb.get_data_child("contB")
     lc = cb.get_data_child("leafC")
-    llb = data_model.get_schema_node("/test:llistB")
-    assert la.parent == lb.parent == cb.parent == ca
-    assert la.mandatory == cb.mandatory == ld.mandatory == False
-    assert lb.mandatory == ca.mandatory == lc.mandatory == cc.mandatory == True
-    assert la.config == ca.config == ld.config == lc.config == True
+    llb = data_model.get_schema_node("/test:choiA/llistB/llistB")
+    assert la.parent == lb.parent == chb.parent == ca
+    assert (la.mandatory == cb.mandatory == cc.mandatory ==
+            ld.mandatory == cha.mandatory == False)
+    assert (lb.mandatory == ca.mandatory == lc.mandatory ==
+            chb.mandatory == True)
+    assert la.config == ca.config == ld.config == lc.config == cha.config == True
     assert lb.config == False
     assert la.ns == ld.ns
     assert lc.ns == "testb"
     assert la.default == 11
     assert ld.default == 199
     assert ld.type.default == 111
-    assert llb.default == [42, 54]
-    assert llb.type.default == 11
+    assert lla.default == [42, 54]
+    assert lla.type.default == 11
     assert la.type.parse_value("99") == 99
     with pytest.raises(YangTypeError):
         ld.type.parse_value("99")
     assert ca.presence == (not cb.presence) == cc.presence == False
-    assert lla.min_elements == 2
-    assert lla.max_elements == 3
-    assert llb.min_elements == 0
-    assert llb.max_elements is None
+    assert llb.min_elements == 2
+    assert llb.max_elements == 3
+    assert lla.min_elements == 0
+    assert lla.max_elements is None
     assert llb.user_ordered == (not lla.user_ordered) == True
     assert lsta.get_schema_descendant(lsta.keys[1:]).name == "leafF"
     assert lsta.get_schema_descendant(lsta.unique[0][0]).name == "leafG"

@@ -17,11 +17,17 @@ module testb {
   revision 2016-04-26;
 
   augment "/t:contA" {
-    container contB {
-      presence "YES";
-      leaf leafC {
-        type d:typA;
-        mandatory "true";
+    choice choiB {
+      mandatory "true";
+      container contB {
+        presence "YES";
+        leaf leafC {
+          type d:typA;
+          mandatory "true";
+        }
+      }
+      leaf leafI {
+        type d:typB;
       }
     }
   }
