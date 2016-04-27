@@ -27,7 +27,7 @@ class DataModel:
 
         :param robj: raw object
         """
-        cooked = Context.schema.from_raw(robj)
+        cooked = Context.schema._from_raw(robj)
         return Instance(cooked, Crumb(None, cooked.last_modified))
 
     def get_schema_node(self, path: SchemaPath) -> Optional["SchemaNode"]:
@@ -109,9 +109,9 @@ class DataModel:
                 res.append(EntryKeys(sel))
         return res
 
-    def ascii_data_tree(self) -> str:
+    def ascii_tree(self) -> str:
         """Return ascii-art representation of the main data tree."""
-        return Context.schema.ascii_tree("")
+        return Context.schema._ascii_tree("")
 
 class BadInstanceIdentifier(YangsonException):
     """Exception to be raised for malformed instance identifier."""

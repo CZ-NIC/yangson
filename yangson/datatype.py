@@ -117,21 +117,21 @@ class DataType:
 
         :param input: string representation of the value
         """
-        return self._from_raw(input)
+        return self._convert_raw(input)
 
-    def from_raw(self, raw: RawScalar) -> ScalarValue:
+    def _from_raw(self, raw: RawScalar) -> ScalarValue:
         """Return a cooked value of the receiver type.
 
         :param raw: raw value obtained from JSON parser
         """
         try:
-            res = self._from_raw(raw)
+            res = self._convert_raw(raw)
             if self._constraints(res): return res
         except TypeError:
             raise YangTypeError(res) from None
         raise YangTypeError(res)
 
-    def _from_raw(self, raw: RawScalar) -> ScalarValue:
+    def _convert_raw(self, raw: RawScalar) -> ScalarValue:
         """Return a cooked value."""
         return raw
 
@@ -208,7 +208,7 @@ class EmptyType(DataType):
         if input: raise YangTypeError(raw)
         return (None,)
 
-    def _from_raw(self, raw: List[None]) -> Tuple[None]:
+    def _convert_raw(self, raw: List[None]) -> Tuple[None]:
         try:
             return tuple(raw)
         except TypeError:
@@ -222,7 +222,7 @@ class BitsType(DataType):
         super().__init__()
         self.bit = {}
 
-    def _from_raw(self, raw: str) -> List[str]:
+    def _convert_raw(self, raw: str) -> List[str]:
         return tuple(raw.split())
 
     def _constraints(self, val: List[str]) -> bool:
@@ -314,7 +314,7 @@ class StringType(DataType):
 class BinaryType(StringType):
     """Class representing YANG "binary" type."""
 
-    def _from_raw(self, raw: str) -> bytes:
+    def _convert_raw(self, raw: str) -> bytes:
         return base64.b64decode(raw, validate=True)
 
 class EnumerationType(DataType):
@@ -442,7 +442,7 @@ class Decimal64Type(NumericType):
         self._range = [[-lim / quot, (lim - 1) / quot]]
         super().handle_properties(stmt, mid)
 
-    def _from_raw(self, raw: str) -> decimal.Decimal:
+    def _convert_raw(self, raw: str) -> decimal.Decimal:
         try:
             return decimal.Decimal(raw).quantize(self._epsilon)
         except decimal.InvalidOperation:
@@ -498,7 +498,7 @@ class Int64Type(IntegralType):
 
     _range = [[-9223372036854775808, 9223372036854775807]] # type: Range
 
-    def _from_raw(self, raw: str) -> int:
+    def _convert_raw(self, raw: str) -> int:
         try:
             return int(raw)
         except ValueError:
@@ -524,7 +524,7 @@ class Uint64Type(IntegralType):
 
     _range = [[0, 18446744073709551615]] # type: Range
 
-    def _from_raw(self, raw: str) -> int:
+    def _convert_raw(self, raw: str) -> int:
         try:
             return int(raw)
         except ValueError:

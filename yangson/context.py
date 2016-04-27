@@ -76,7 +76,7 @@ class Context:
             if len(cls.revisions[mn]) > 1:
                 raise MultipleImplementedRevisions(mn)
             mid = (mn, cls.revisions[mn][0])
-            cls.schema.handle_substatements(cls.modules[mid], mid)
+            cls.schema._handle_substatements(cls.modules[mid], mid)
         cls.apply_augments()
 
     @classmethod
@@ -135,7 +135,7 @@ class Context:
             mid = (mn, cls.revisions[mn][0])
             mod = cls.modules[mid]
             for aug in mod.find_all("augment"):
-                cls.schema.augment_refine(aug, mid, True)
+                cls.schema._augment_refine(aug, mid, True)
 
     @classmethod
     def identity_derivations(cls):
