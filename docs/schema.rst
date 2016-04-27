@@ -44,7 +44,7 @@ This module defines several type aliases representing “raw” values produced 
    .. attribute:: config
 
       This boolean attribute is ``True`` if the receiver represents
-      configuration, and ``False`` otherwise. It is implemented as a
+      configuration, and ``False`` otherwise. Implemented as a
       :class:`property`.
 
    .. automethod:: uniname
@@ -86,10 +86,6 @@ This module defines several type aliases representing “raw” values produced 
 
    This is the abstract superclass for terminal nodes in the schema
    tree.
-
-   .. attribute:: default
-
-      Optional default value.
 
    .. attribute:: mandatory
 
@@ -161,9 +157,19 @@ This module defines several type aliases representing “raw” values produced 
 
    Class representing YANG **leaf** node.
 
+   .. attribute:: default
+
+      Default value of the leaf instance or its type. Implemented as a
+      :class:`property`.
+
 .. class:: LeafListNode(TerminalNode)
 
    Class representing YANG **leaf-list** node.
+
+   .. attribute:: default
+
+      Default value of the leaf-list instance or its type. Implemented
+      as a :class:`property`.
 
    .. attribute:: min_elements
 

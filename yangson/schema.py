@@ -352,7 +352,7 @@ class TerminalNode(DataNode):
     def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
-        self.default = None
+        self._default = None
         self.mandatory = False # type: bool
         self.type = None # type: DataType
 
@@ -585,8 +585,13 @@ class OutputNode(InternalNode):
 class LeafNode(TerminalNode):
     """Leaf node."""
 
+    @property
+    def default(self):
+        """Return the default value of the receiver or its type."""
+        return self._default if self._default else self.type.default
+
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self.default = self.type.parse_value(stmt.argument)
+        self._default = self.type.parse_value(stmt.argument)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -603,10 +608,17 @@ class LeafListNode(TerminalNode):
         self.min_elements = 0 # type: int
         self.max_elements = None # type: Optional[int]
 
+    @property
+    def default(self):
+        """Return the default value of the receiver or its type."""
+        return self._default if self._default else [self.type.default]
+
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        if self.default is None:
-            self.default = []
-        self.default.append(self.type.parse_value(stmt.argument))
+        val = self.type.parse_value(stmt.argument)
+        if self._default is None:
+            self._default = [val]
+        else:
+            self._default.append(val)
 
     def _parse_entry_selector(self, iid: str, offset: int) -> Tuple[
             Union[EntryIndex, EntryValue], int]:
