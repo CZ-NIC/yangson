@@ -114,6 +114,7 @@ class SchemaNode:
         "ordered-by": "_ordered_by_stmt",
         "presence": "_presence_stmt",
         "rpc": "_rpc_action_stmt",
+        "unique": "_unique_stmt",
         "uses": "_uses_stmt",
         }
     """Map of statement keywords to callback methods."""
@@ -433,12 +434,17 @@ class ListNode(InternalNode, SequenceNode):
         """Initialize the class instance."""
         super().__init__()
         self.keys = [] # type: List[QualName]
+        self.unique = [] # type: List[List[SchemaRoute]]
 
     def _key_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         kst = stmt.find1("key")
         if kst is None: return
         self.keys = [
             Context.translate_pname(k, mid) for k in kst.argument.split() ]
+
+    def _unique_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        self.unique.append(
+            [ Context.sid2route(sid, mid) for sid in stmt.argument.split() ])
 
     def _leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf statement."""

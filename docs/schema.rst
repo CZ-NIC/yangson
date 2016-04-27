@@ -139,6 +139,12 @@ This module defines several type aliases representing “raw” values produced 
 
       List containing qualified names of all keys.
 
+   .. attribute:: unique
+
+      List of lists of schema routes. Each internal list represents a
+      group of descendant leafs whose values are required to be unique
+      across all list entries. See [Bjo16]_, sec. `7.8.3`_.
+
 .. class:: ChoiceNode(InternalNode)
 
    Class representing YANG **Choice** node.
@@ -201,3 +207,5 @@ This module defines several type aliases representing “raw” values produced 
 .. class:: AnyxmlNode(TerminalNode, DataNode)
 
    Class representing YANG **anyxml** node.
+
+.. _7.8.3: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-11#section-7.8.3

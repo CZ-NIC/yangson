@@ -56,3 +56,4 @@ def test_schema(data_model):
     assert llb.max_elements is None
     assert llb.user_ordered == (not lla.user_ordered) == True
     assert lsta.get_schema_descendant(lsta.keys[1:]).name == "leafF"
+    assert lsta.get_schema_descendant(lsta.unique[0][0]).name == "leafG"
