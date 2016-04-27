@@ -6,6 +6,11 @@ module test {
 
   prefix "t";
 
+  import ietf-yang-types {
+    prefix "yang";
+    revision-date 2013-07-15;
+  }
+
   import defs {
     prefix "d";
     revision-date 2016-04-26;
@@ -16,6 +21,12 @@ module test {
   revision 2016-04-26;
 
   container contA {
+    typedef hex-number {
+      type string {
+        length "1..max";
+        pattern "[0-9A-Fa-f]*";
+      }
+    }
     leaf leafA {
       type d:typA;
     }
@@ -23,6 +34,21 @@ module test {
       type d:typA;
       config "false";
       mandatory "true";
+    }
+    list listA {
+      key "leafE leafF";
+      unique "contD/leafG";
+      leaf leafE {
+        type hex-number;
+      }
+      leaf leafF {
+        type boolean;
+      }
+      container contD {
+        leaf leafG {
+          type yang:yang-identifier;
+        }
+      }
     }
   }
 }

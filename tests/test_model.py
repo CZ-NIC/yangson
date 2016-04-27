@@ -27,6 +27,7 @@ def test_schema(data_model):
     ca = data_model.get_data_node("/test:contA")
     la = ca.get_child("leafA")
     lb = data_model.get_data_node("/test:contA/leafB")
+    lsta = data_model.get_data_node("/test:contA/listA")
     cc = data_model.get_schema_node("/test:contC")
     ld = data_model.get_data_node("/test:contC/leafD")
     lla = cc.get_child("llistA")
@@ -54,3 +55,4 @@ def test_schema(data_model):
     assert llb.min_elements == 0
     assert llb.max_elements is None
     assert llb.user_ordered == (not lla.user_ordered) == True
+    assert lsta.get_schema_descendant(lsta.keys[1:]).name == "leafF"
