@@ -82,7 +82,7 @@ This module defines several type aliases representing “raw” values produced 
 
       NACM default deny value belonging to the :class:`DefaultDeny` enumeration.
 
-.. class:: TerminalNode(DataNode)
+.. class:: TerminalNode(SchemaNode)
 
    This is the abstract superclass for terminal nodes in the schema
    tree.
@@ -108,21 +108,36 @@ This module defines several type aliases representing “raw” values produced 
 
       A boolean value specifying whether the instance is mandatory.
 
-.. class:: ListNode(InternalNode, DataNode)
+.. class:: SequenceNode(DataNode)
+
+   Abstract class for data nodes representing a sequence,
+   i.e. **list** and **leaf-list**.
+
+   .. attribute:: min_elements
+
+      An integer value specifying the minimum number of list or
+      leaf-list entries.
+
+   .. attribute:: max_elements
+
+      An integer value specifying the maximum number of list or
+      leaf-list entries. If no maximum is specified, the value of this
+      attribute is ``None``.
+
+   .. attribute:: user_ordered
+
+      A boolean value specifying whether the list or leaf-list entries
+      are ordered by user. The value of ``False`` means the
+      (leaf-)list is ordered by system, which means that the server
+      may rearrange the entries.
+
+.. class:: ListNode(InternalNode, SequenceNode)
 
    Class representing YANG **list** node.
 
    .. attribute:: keys
 
       List containing qualified names of all keys.
-
-   .. attribute:: min_elements
-
-      An integer value specifying the minimum number of list entries.
-
-   .. attribute:: max_elements
-
-      An integer value specifying the maximum number of list entries.
 
 .. class:: ChoiceNode(InternalNode)
 
@@ -153,7 +168,7 @@ This module defines several type aliases representing “raw” values produced 
 
    Class representing YANG **output** node.
 
-.. class:: LeafNode(TerminalNode)
+.. class:: LeafNode(TerminalNode, DataNode)
 
    Class representing YANG **leaf** node.
 
@@ -162,7 +177,7 @@ This module defines several type aliases representing “raw” values produced 
       Default value of the leaf instance or its type. Implemented as a
       :class:`property`.
 
-.. class:: LeafListNode(TerminalNode)
+.. class:: LeafListNode(TerminalNode, SequenceNode)
 
    Class representing YANG **leaf-list** node.
 
@@ -179,10 +194,10 @@ This module defines several type aliases representing “raw” values produced 
 
       An integer value specifying the maximum number of leaf-list entries.
 
-.. class:: AnydataNode(TerminalNode)
+.. class:: AnydataNode(TerminalNode, DataNode)
 
    Class representing YANG **anydata** node.
 
-.. class:: AnyxmlNode(TerminalNode)
+.. class:: AnyxmlNode(TerminalNode, DataNode)
 
    Class representing YANG **anyxml** node.

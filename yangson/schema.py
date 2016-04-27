@@ -111,6 +111,7 @@ class SchemaNode:
         "max-elements": "_max_elements_stmt",
         "min-elements": "_min_elements_stmt",
         "output": "_output_stmt",
+        "ordered-by": "_ordered_by_stmt",
         "presence": "_presence_stmt",
         "rpc": "_rpc_action_stmt",
         "uses": "_uses_stmt",
@@ -327,18 +328,6 @@ class DataNode(SchemaNode):
         """This method is applicable only to a list or leaf-list."""
         raise BadSchemaNodeType(self, "list or leaf-list")
 
-    def _min_elements_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self.min_elements = int(stmt.argument)
-        if self.min_elements > 0:
-            self.parent._mandatory_child()
-
-    def _max_elements_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        arg = stmt.argument
-        if arg == "unbounded":
-            self.max_elements = None
-        else:
-            self.max_elements = int(arg)
-
     def _nacm_default_deny_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Set NACM default access."""
         if stmt.keyword == "default-deny-all":
@@ -346,7 +335,7 @@ class DataNode(SchemaNode):
         elif stmt.keyword == "default-deny-write":
             self.default_deny = DefaultDeny.write
 
-class TerminalNode(DataNode):
+class TerminalNode(SchemaNode):
     """Abstract superclass for terminal nodes in the schema tree."""
 
     def __init__(self) -> None:
@@ -411,8 +400,8 @@ class ContainerNode(InternalNode, DataNode):
         return "{} {}{}\n".format(
             self._tree_line_prefix(), self.instance_name(), suff)
 
-class ListNode(InternalNode, DataNode):
-    """List node."""
+class SequenceNode(DataNode):
+    """Abstract class for data nodes that represent a sequence."""
 
     def __init__(self) -> None:
         """Initialize the class instance."""
@@ -420,6 +409,30 @@ class ListNode(InternalNode, DataNode):
         self.keys = [] # type: List[QualName]
         self.min_elements = 0 # type: int
         self.max_elements = None # type: Optional[int]
+        self.user_ordered = False # type: bool
+
+    def _min_elements_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        self.min_elements = int(stmt.argument)
+        if self.min_elements > 0:
+            self.parent._mandatory_child()
+
+    def _max_elements_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        arg = stmt.argument
+        if arg == "unbounded":
+            self.max_elements = None
+        else:
+            self.max_elements = int(arg)
+
+    def _ordered_by_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        self.user_ordered = stmt.argument == "user"
+
+class ListNode(InternalNode, SequenceNode):
+    """List node."""
+
+    def __init__(self) -> None:
+        """Initialize the class instance."""
+        super().__init__()
+        self.keys = [] # type: List[QualName]
 
     def _key_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         kst = stmt.find1("key")
@@ -582,7 +595,7 @@ class OutputNode(InternalNode):
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
 
-class LeafNode(TerminalNode):
+class LeafNode(TerminalNode, DataNode):
     """Leaf node."""
 
     @property
@@ -599,7 +612,7 @@ class LeafNode(TerminalNode):
             self._tree_line_prefix(), self.instance_name(),
             "" if self.mandatory else "?")
 
-class LeafListNode(TerminalNode):
+class LeafListNode(TerminalNode, SequenceNode):
     """Leaf-list node."""
 
     def __init__(self) -> None:
@@ -666,7 +679,7 @@ class LeafListNode(TerminalNode):
         return "{} {}*\n".format(
             self._tree_line_prefix(), self.instance_name())
 
-class AnydataNode(TerminalNode):
+class AnydataNode(TerminalNode, DataNode):
     """Anydata node."""
 
     def _tree_line(self) -> str:
@@ -675,7 +688,7 @@ class AnydataNode(TerminalNode):
             self._tree_line_prefix(), self.instance_name(),
             "" if self.mandatory else "?")
 
-class AnyxmlNode(TerminalNode):
+class AnyxmlNode(TerminalNode, DataNode):
     """Anyxml node."""
 
     def _tree_line(self) -> str:
