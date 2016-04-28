@@ -14,7 +14,13 @@ class DataModel:
     """YANG data model."""
 
     def __init__(self, yltxt: str, mod_path: List[str]) -> None:
-        """Initialize the class instance."""
+        """Initialize the class instance.
+
+        :param yltxt: JSON text containing YANG library data
+        :param mod_path: list of filesystem paths from which the
+                         YANG modules listed in `yang_lib` can be
+                         retrieved.
+        """
         Context.schema = InternalNode() # type: InternalNode
         try:
             yl = json.loads(yltxt)

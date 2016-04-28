@@ -5,13 +5,14 @@ from .modparser import from_file
 from .statement import Statement
 from .typealiases import *
 
-"""Context for schema generation."""
+"""This module provides class `Context`."""
 
 class Context:
-    """This private class provides context for schema generation.
+    """Global repository of data model structures and utility methods.
 
     The information is installed in class varables, which means that
-    different schemas cannot be generated in parallel.
+    different schemas cannot be generated in parallel. No instances of
+    this class are expected to be created.
     """
 
     @classmethod
@@ -34,7 +35,13 @@ class Context:
     @classmethod
     def from_yang_library(cls, yang_lib: Dict[str, Any],
                           mod_path: List[str]) -> None:
-        """Build context from YANG library object."""
+        """Initialize the data model structures from YANG library data.
+
+        :param yang_lib: dictionary with YANG library data
+        :param mod_path: list of filesystem paths from which the
+                         YANG modules listed in `yang_lib` can be
+                         retrieved.
+        """
         cls.initialize()
         cls.module_search_path = mod_path
         cls.schema._nsswitch = cls.schema._config = True
@@ -70,7 +77,7 @@ class Context:
         for mod in cls.revisions:
             cls.revisions[mod].sort(key=lambda r: "0" if r is None else r)
         cls.process_imports()
-        cls.check_feature_dependences()
+        cls._check_feature_dependences()
         cls.identity_derivations()
         for mn in cls.implement:
             if len(cls.revisions[mn]) > 1:
@@ -222,7 +229,7 @@ class Context:
     # Feature handling
 
     @classmethod
-    def check_feature_dependences(cls):
+    def _check_feature_dependences(cls):
         """Verify feature dependences."""
         for mid in cls.modules:
             for fst in cls.modules[mid].find_all("feature"):
