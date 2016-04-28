@@ -8,8 +8,10 @@ Contents:
 
    introduction
    concepts-terms
+   datamodel
    schema
    instances
+   context
    typealiases
    references
    app-a
