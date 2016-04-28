@@ -22,6 +22,7 @@ def test_context(data_model):
     assert Context.translate_pname("sd:foo", stid) == ("foo", "defs")
     with pytest.raises(BadPrefName):
         Context.translate_pname("d:foo", stid)
+    assert Context.feature_expr("feA and not feB", tid) == True
 
 def test_schema(data_model):
     ca = data_model.get_data_node("/test:contA")
@@ -36,6 +37,8 @@ def test_schema(data_model):
     lla = cc.get_child("llistA")
     chb = data_model.get_schema_node("/test:contA/testb:choiB")
     cb = chb.get_data_child("contB")
+    ln = chb.get_schema_descendant(Context.path2route(
+        "/testb:leafN/leafN"))
     lc = cb.get_data_child("leafC")
     llb = data_model.get_schema_node("/test:choiA/llistB/llistB")
     lj = data_model.get_data_node("/test:contA/listA/contD/leafJ")
@@ -45,11 +48,11 @@ def test_schema(data_model):
     assert la.parent == lb.parent == chb.parent == ca
     assert ll.parent.name == "output"
     assert (axa.mandatory == la.mandatory == cb.mandatory == cc.mandatory ==
-            ld.mandatory == lj.mandatory == cha.mandatory == False)
+            ld.mandatory == lj.mandatory == ln.mandatory == cha.mandatory == False)
     assert (ada.mandatory == lb.mandatory == ca.mandatory == lc.mandatory ==
             chb.mandatory == True)
     assert (ada.config == axa.config == la.config == ca.config ==
-            ld.config == lc.config == lj.config == cha.config == True)
+            ld.config == lc.config == lj.config == ln.config == cha.config == True)
     assert lb.config == ll.config == False
     assert la.ns == ld.ns
     assert lc.ns == "testb"
@@ -69,3 +72,4 @@ def test_schema(data_model):
     assert llb.user_ordered == (not lla.user_ordered) == True
     assert lsta.get_schema_descendant(lsta.keys[1:]).name == "leafF"
     assert lsta.get_schema_descendant(lsta.unique[0][0]).name == "leafG"
+    assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None

@@ -29,6 +29,10 @@ module testb {
       leaf leafI {
         type d:typB;
       }
+      leaf leafN {
+        if-feature "t:feA";
+        type string;
+      }
     }
   }
 

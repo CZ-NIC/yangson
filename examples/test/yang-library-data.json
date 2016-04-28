@@ -12,6 +12,9 @@
       {
         "name": "test",
         "revision": "2016-04-26",
+        "feature": [
+          "feA"
+        ],
         "schema": "https://example.com/test.yang",
         "namespace": "http://example.com/test",
         "conformance-type": "implement",
