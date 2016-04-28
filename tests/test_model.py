@@ -1,4 +1,5 @@
 import pytest
+from decimal import Decimal
 from yangson import DataModel
 from yangson.schema import NonexistentSchemaNode
 from yangson.datatype import YangTypeError
@@ -76,3 +77,39 @@ def test_schema(data_model):
     assert lsta.get_schema_descendant(lsta.unique[0][0]).name == "leafG"
     assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
     assert data_model.get_data_node("/testb:noA/leafO") is None
+
+def test_types(data_model):
+    ct = data_model.get_data_node("/test:contT")
+    i8 = ct.get_child("int8").type
+    assert i8.contains(100) == (not i8.contains(-101)) == True
+    i16 = ct.get_child("int16").type
+    assert i16.contains(-32768) == (not i16.contains(32768)) == True
+    i32 = ct.get_child("int32").type
+    assert i32.contains(-2147483648) == (not i32.contains(2147483648)) == True
+    i64 = ct.get_child("int64").type
+    assert (i64.contains(-9223372036854775808) ==
+            (not i64.contains(9223372036854775808)) == True)
+    assert i64._from_raw("-6378") == -6378
+    ui8 = ct.get_child("uint8").type
+    assert ui8.contains(150) == (not ui8.contains(99)) == True
+    ui16 = ct.get_child("uint16").type
+    assert ui16.contains(65535) == (not ui16.contains(-1)) == True
+    ui32 = ct.get_child("uint32").type
+    assert ui32.contains(4294967295) == (not ui32.contains(-1)) == True
+    ui64 = ct.get_child("uint64").type
+    assert (ui64.contains(18446744073709551615) ==
+            (not ui64.contains(-1)) == True)
+    assert ui64._from_raw("6378") == 6378
+    with pytest.raises(YangTypeError):
+        ui64._from_raw("-6378")
+    d64 = ct.get_child("decimal64").type
+    pi = Decimal("3.141592653589793238")
+    assert d64.contains(pi)
+    assert not d64.contains(10)
+    assert d64._from_raw("3.14159265358979323846264338327950288") == pi
+    st = ct.get_child("string").type
+    assert st.contains("hello world")
+    assert not st.contains("hello-world")
+    assert not st.contains("h")
+    assert st.contains("9 \tx")
+    assert not st.contains("xx xabcdefg")
