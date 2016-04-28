@@ -50,4 +50,11 @@ module testb {
       }
     }
   }
+
+  notification noA {
+    leaf leafO {
+      type boolean;
+      default "true";
+    }
+  }
 }

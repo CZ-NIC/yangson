@@ -110,6 +110,7 @@ class SchemaNode:
         "mandatory": "_mandatory_stmt",
         "max-elements": "_max_elements_stmt",
         "min-elements": "_min_elements_stmt",
+        "notification": "_notification_stmt",
         "output": "_output_stmt",
         "ordered-by": "_ordered_by_stmt",
         "presence": "_presence_stmt",
@@ -280,6 +281,11 @@ class InternalNode(SchemaNode):
         """Handle rpc or action statement."""
         if Context.if_features(stmt, mid):
             self._handle_child(RpcActionNode(), stmt, mid)
+
+    def _notification_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle notification statement."""
+        if Context.if_features(stmt, mid):
+            self._handle_child(NotificationNode(), stmt, mid)
 
     def _anydata_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle anydata statement."""
@@ -594,6 +600,19 @@ class OutputNode(InternalNode):
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
+
+class NotificationNode(InternalNode):
+    """Notification node."""
+
+    def _tree_line_prefix(self) -> str:
+        return super()._tree_line_prefix() + "-n"
+
+    def state_roots(self) -> List[InstanceRoute]:
+        """Return a list of routes to descendant state data roots (or self)."""
+        return []
+
+    def _state_roots(self) -> List[SchemaNode]:
+        return []
 
 class LeafNode(TerminalNode, DataNode):
     """Leaf node."""

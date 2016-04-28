@@ -45,6 +45,7 @@ def test_schema(data_model):
     llc = data_model.get_schema_node("/testb:rpcA/output/llistC")
     ll = lsta.get_schema_descendant(Context.path2route(
         "test:contD/acA/output/leafL"))
+    lo = data_model.get_schema_node("/testb:noA/leafO")
     assert la.parent == lb.parent == chb.parent == ca
     assert ll.parent.name == "output"
     assert (axa.mandatory == la.mandatory == cb.mandatory == cc.mandatory ==
@@ -61,6 +62,7 @@ def test_schema(data_model):
     assert ld.type.default == 111
     assert lla.default == [42, 54]
     assert lla.type.default == 11
+    assert lo.default == True
     assert la.type.parse_value("99") == 99
     with pytest.raises(YangTypeError):
         ld.type.parse_value("99")
@@ -73,3 +75,4 @@ def test_schema(data_model):
     assert lsta.get_schema_descendant(lsta.keys[1:]).name == "leafF"
     assert lsta.get_schema_descendant(lsta.unique[0][0]).name == "leafG"
     assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
+    assert data_model.get_data_node("/testb:noA/leafO") is None
