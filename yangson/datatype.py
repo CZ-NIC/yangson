@@ -120,7 +120,7 @@ class DataType:
         """
         return self._convert_raw(input)
 
-    def _from_raw(self, raw: RawScalar) -> ScalarValue:
+    def from_raw(self, raw: RawScalar) -> ScalarValue:
         """Return a cooked value of the receiver type.
 
         :param raw: raw value obtained from JSON parser

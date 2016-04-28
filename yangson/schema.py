@@ -297,7 +297,7 @@ class InternalNode(SchemaNode):
         if Context.if_features(stmt, mid):
             self._handle_child(AnyxmlNode(), stmt, mid)
 
-    def _from_raw(self, val: RawObject) -> ObjectValue:
+    def from_raw(self, val: RawObject) -> ObjectValue:
         """Transform a raw dictionary into object value.
 
         :param val: raw dictionary
@@ -307,7 +307,7 @@ class InternalNode(SchemaNode):
             cn = self.get_data_child(*self.uniname(qn))
             if cn is None:
                 raise NonexistentSchemaNode(*self.uniname(qn))
-            res[cn.instance_name()] = cn._from_raw(val[qn])
+            res[cn.instance_name()] = cn.from_raw(val[qn])
         res.time_stamp()
         return res
 
@@ -361,13 +361,13 @@ class TerminalNode(SchemaNode):
         self.type = DataType.resolve_type(
             stmt.find1("type", required=True), mid)
 
-    def _from_raw(self, val: RawScalar) -> ScalarValue:
+    def from_raw(self, val: RawScalar) -> ScalarValue:
         """Transform a scalar entry.
 
         :param val: raw lis
         :param ns: current namespace
         """
-        return self.type._from_raw(val)
+        return self.type.from_raw(val)
 
     def _ascii_tree(self, indent: str) -> str:
         """Return the receiver's ascii-art subtree."""
@@ -492,7 +492,7 @@ class ListNode(InternalNode, SequenceNode):
             return (EntryKeys(res), mo.end())
         raise BadEntrySelector(self, iid)
 
-    def _from_raw(self, val: RawList) -> ArrayValue:
+    def from_raw(self, val: RawList) -> ArrayValue:
         """Transform a raw list array into array value.
 
         :param val: raw list array
@@ -509,7 +509,7 @@ class ListNode(InternalNode, SequenceNode):
 
         :param val: raw list entry
         """
-        return super()._from_raw(val)
+        return super().from_raw(val)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -678,7 +678,7 @@ class LeafListNode(TerminalNode, SequenceNode):
             val = self.type.parse_value(drhs if drhs else mo.group("srhs"))
             return (EntryValue(val), mo.end())
 
-    def _from_raw(self, val: RawLeafList) -> ArrayValue:
+    def from_raw(self, val: RawLeafList) -> ArrayValue:
         """Transform a raw list array into array value.
 
         :param val: raw list array
@@ -695,7 +695,7 @@ class LeafListNode(TerminalNode, SequenceNode):
 
         :param val: raw list entry
         """
-        return super()._from_raw(val)
+        return super().from_raw(val)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""

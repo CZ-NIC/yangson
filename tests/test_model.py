@@ -89,7 +89,7 @@ def test_types(data_model):
     i64 = ct.get_child("int64").type
     assert (i64.contains(-9223372036854775808) ==
             (not i64.contains(9223372036854775808)) == True)
-    assert i64._from_raw("-6378") == -6378
+    assert i64.from_raw("-6378") == -6378
     ui8 = ct.get_child("uint8").type
     assert ui8.contains(150) == (not ui8.contains(99)) == True
     ui16 = ct.get_child("uint16").type
@@ -99,14 +99,14 @@ def test_types(data_model):
     ui64 = ct.get_child("uint64").type
     assert (ui64.contains(18446744073709551615) ==
             (not ui64.contains(-1)) == True)
-    assert ui64._from_raw("6378") == 6378
+    assert ui64.from_raw("6378") == 6378
     with pytest.raises(YangTypeError):
-        ui64._from_raw("-6378")
+        ui64.from_raw("-6378")
     d64 = ct.get_child("decimal64").type
     pi = Decimal("3.141592653589793238")
     assert d64.contains(pi)
     assert not d64.contains(10)
-    assert d64._from_raw("3.14159265358979323846264338327950288") == pi
+    assert d64.from_raw("3.14159265358979323846264338327950288") == pi
     st = ct.get_child("string").type
     assert st.contains("hello world")
     assert not st.contains("hello-world")

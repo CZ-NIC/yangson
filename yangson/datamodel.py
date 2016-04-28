@@ -33,7 +33,7 @@ class DataModel:
 
         :param robj: raw object
         """
-        cooked = Context.schema._from_raw(robj)
+        cooked = Context.schema.from_raw(robj)
         return Instance(cooked, Crumb(None, cooked.last_modified))
 
     def get_schema_node(self, path: SchemaPath) -> Optional["SchemaNode"]:
