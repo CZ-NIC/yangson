@@ -74,6 +74,8 @@ This module defines several type aliases representing “raw” values produced 
 
    .. automethod:: get_data_descendant
 
+   .. automethod:: from_raw
+
 .. class:: DataNode(SchemaNode)
 
    This is the abstract superclass for data nodes.
@@ -94,6 +96,8 @@ This module defines several type aliases representing “raw” values produced 
    .. attribute:: type
 
       The data type object.
+
+   .. automethod:: from_raw
 
 .. class:: ContainerNode(InternalNode, DataNode)
 
@@ -130,6 +134,8 @@ This module defines several type aliases representing “raw” values produced 
       are ordered by user. The value of ``False`` means the
       (leaf-)list is ordered by system, which means that the server
       may rearrange the entries.
+
+   .. automethod:: from_raw
 
 .. class:: ListNode(InternalNode, SequenceNode)
 
