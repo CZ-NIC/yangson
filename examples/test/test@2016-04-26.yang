@@ -38,6 +38,9 @@ module test {
     list listA {
       key "leafE leafF";
       unique "contD/leafG";
+      grouping grA {
+        uses d:grB;
+      }
       leaf leafE {
         type hex-number;
       }
@@ -48,7 +51,15 @@ module test {
         leaf leafG {
           type yang:yang-identifier;
         }
+        uses grA;
       }
+    }
+    anydata anydA {
+      mandatory "true";
+    }
+    anyxml anyxA {
+      description
+        "A description.";
     }
   }
 }

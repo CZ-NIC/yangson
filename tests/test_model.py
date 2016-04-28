@@ -28,6 +28,8 @@ def test_schema(data_model):
     la = ca.get_child("leafA")
     lb = data_model.get_data_node("/test:contA/leafB")
     lsta = data_model.get_data_node("/test:contA/listA")
+    ada = ca.get_child("anydA")
+    axa = ca.get_child("anyxA")
     cha = data_model.get_schema_node("/test:choiA")
     cc = cha.get_data_child("contC")
     ld = data_model.get_data_node("/test:contC/leafD")
@@ -36,12 +38,14 @@ def test_schema(data_model):
     cb = chb.get_data_child("contB")
     lc = cb.get_data_child("leafC")
     llb = data_model.get_schema_node("/test:choiA/llistB/llistB")
+    lj = data_model.get_data_node("/test:contA/listA/contD/leafJ")
     assert la.parent == lb.parent == chb.parent == ca
-    assert (la.mandatory == cb.mandatory == cc.mandatory ==
-            ld.mandatory == cha.mandatory == False)
-    assert (lb.mandatory == ca.mandatory == lc.mandatory ==
+    assert (axa.mandatory == la.mandatory == cb.mandatory == cc.mandatory ==
+            ld.mandatory == lj.mandatory == cha.mandatory == False)
+    assert (ada.mandatory == lb.mandatory == ca.mandatory == lc.mandatory ==
             chb.mandatory == True)
-    assert la.config == ca.config == ld.config == lc.config == cha.config == True
+    assert (ada.config == axa.config == la.config == ca.config ==
+            ld.config == lc.config == lj.config == cha.config == True)
     assert lb.config == False
     assert la.ns == ld.ns
     assert lc.ns == "testb"

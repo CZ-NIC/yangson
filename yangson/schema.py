@@ -277,7 +277,7 @@ class InternalNode(SchemaNode):
             self._handle_child(node, stmt, mid)
 
     def _rpc_action_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle anydata statement."""
+        """Handle rpc or action statement."""
         if Context.if_features(stmt, mid):
             self._handle_child(RpcActionNode(), stmt, mid)
 

@@ -21,4 +21,10 @@ module defs {
     }
     default "111";
   }
+
+  grouping grB {
+    leaf leafJ {
+      type empty;
+    }
+  }
 }
