@@ -156,7 +156,7 @@ class InternalNode(SchemaNode):
             self, route: SchemaRoute) -> Optional["SchemaNode"]:
         """Return descendant schema node or ``None``.
 
-        :param path: schema route of the descendant node
+        :param route: schema route of the descendant node
                      (relative to the receiver).
         """
         node = self

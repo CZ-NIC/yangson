@@ -52,6 +52,14 @@ module test {
           type yang:yang-identifier;
         }
         uses grA;
+        action acA {
+          output {
+            leaf leafL {
+              type boolean;
+              mandatory "true";
+            }
+          }
+        }
       }
     }
     anydata anydA {

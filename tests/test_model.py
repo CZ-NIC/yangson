@@ -39,14 +39,18 @@ def test_schema(data_model):
     lc = cb.get_data_child("leafC")
     llb = data_model.get_schema_node("/test:choiA/llistB/llistB")
     lj = data_model.get_data_node("/test:contA/listA/contD/leafJ")
+    llc = data_model.get_schema_node("/testb:rpcA/output/llistC")
+    ll = lsta.get_schema_descendant(Context.path2route(
+        "test:contD/acA/output/leafL"))
     assert la.parent == lb.parent == chb.parent == ca
+    assert ll.parent.name == "output"
     assert (axa.mandatory == la.mandatory == cb.mandatory == cc.mandatory ==
             ld.mandatory == lj.mandatory == cha.mandatory == False)
     assert (ada.mandatory == lb.mandatory == ca.mandatory == lc.mandatory ==
             chb.mandatory == True)
     assert (ada.config == axa.config == la.config == ca.config ==
             ld.config == lc.config == lj.config == cha.config == True)
-    assert lb.config == False
+    assert lb.config == ll.config == False
     assert la.ns == ld.ns
     assert lc.ns == "testb"
     assert la.default == 11
@@ -60,7 +64,7 @@ def test_schema(data_model):
     assert ca.presence == (not cb.presence) == cc.presence == False
     assert llb.min_elements == 2
     assert llb.max_elements == 3
-    assert lla.min_elements == 0
+    assert lla.min_elements == llc.min_elements == 0
     assert lla.max_elements is None
     assert llb.user_ordered == (not lla.user_ordered) == True
     assert lsta.get_schema_descendant(lsta.keys[1:]).name == "leafF"

@@ -31,4 +31,19 @@ module testb {
       }
     }
   }
+
+  rpc rpcA {
+    input {
+      leaf leafK {
+        type d:typA;
+      }
+    }
+    output {
+      leaf-list llistC {
+        type boolean;
+        default "true";
+        default "false";
+      }
+    }
+  }
 }
