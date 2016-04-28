@@ -1,6 +1,7 @@
 import base64
 import decimal
 import re
+from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, List, Optional, Tuple, Union
 from .constants import YangsonException
 from .context import Context
@@ -288,7 +289,8 @@ class StringType(DataType):
     def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
-        self.regexps = []
+        self.patterns = []
+        self.invert_patterns = []
 
     def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type restrictions.
@@ -300,6 +302,12 @@ class StringType(DataType):
         if lstmt:
             self._length = self._combine_ranges(self._length,
                                                 lstmt.argument, int)
+        for pst in stmt.find_all("pattern"):
+            pat = re.compile(XMLToPython(pst.argument))
+            if pst.find1("modifier", "invert-match"):
+                self.invert_patterns.append(pat)
+            else:
+                self.patterns.append(pat)
 
     def contains(self, val: str) -> bool:
         """Return ``True`` if the receiver type contains `val`.
@@ -309,7 +317,13 @@ class StringType(DataType):
         return isinstance(val, str) and self._constraints(val)
 
     def _constraints(self, val: str) -> bool:
-        return self._in_range(len(val), self._length)
+        if not self._in_range(len(val), self._length):
+            return False
+        for p in self.patterns:
+            if not p.match(val): return False
+        for p in self.invert_patterns:
+            if p.match(val): return False
+        return True
 
 class BinaryType(StringType):
     """Class representing YANG "binary" type."""
