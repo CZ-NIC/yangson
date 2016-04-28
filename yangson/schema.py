@@ -362,10 +362,9 @@ class TerminalNode(SchemaNode):
             stmt.find1("type", required=True), mid)
 
     def from_raw(self, val: RawScalar) -> ScalarValue:
-        """Transform a scalar entry.
+        """Transform a scalar value.
 
-        :param val: raw lis
-        :param ns: current namespace
+        :param val: raw scalar value
         """
         return self.type.from_raw(val)
 
@@ -433,6 +432,24 @@ class SequenceNode(DataNode):
     def _ordered_by_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.user_ordered = stmt.argument == "user"
 
+    def from_raw(self, val: RawList) -> ArrayValue:
+        """Transform a raw array into array value.
+
+        :param val: raw array
+        """
+        res = ArrayValue()
+        for en in val:
+            res.append(self._entry_from_raw(en))
+        res.time_stamp()
+        return res
+
+    def _entry_from_raw(self, val: RawValue) -> Value:
+        """Transform a raw list entry into a value.
+
+        :param val: raw list entry
+        """
+        return super().from_raw(val)
+
 class ListNode(InternalNode, SequenceNode):
     """List node."""
 
@@ -491,25 +508,6 @@ class ListNode(InternalNode, SequenceNode):
         if res:
             return (EntryKeys(res), mo.end())
         raise BadEntrySelector(self, iid)
-
-    def from_raw(self, val: RawList) -> ArrayValue:
-        """Transform a raw list array into array value.
-
-        :param val: raw list array
-        :param ns: current namespace
-        """
-        res = ArrayValue()
-        for en in val:
-            res.append(self._entry_from_raw(en))
-        res.time_stamp()
-        return res
-
-    def _entry_from_raw(self, val: RawValue) -> Value:
-        """Transform a raw list entry into a value.
-
-        :param val: raw list entry
-        """
-        return super().from_raw(val)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -677,25 +675,6 @@ class LeafListNode(TerminalNode, SequenceNode):
             drhs = mo.group("drhs")
             val = self.type.parse_value(drhs if drhs else mo.group("srhs"))
             return (EntryValue(val), mo.end())
-
-    def from_raw(self, val: RawLeafList) -> ArrayValue:
-        """Transform a raw list array into array value.
-
-        :param val: raw list array
-        :param ns: current namespace
-        """
-        res = ArrayValue()
-        for en in val:
-            res.append(self._entry_from_raw(en))
-        res.time_stamp()
-        return res
-
-    def _entry_from_raw(self, val: RawValue) -> Value:
-        """Transform a raw leaf-list entry into a value.
-
-        :param val: raw list entry
-        """
-        return super().from_raw(val)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
