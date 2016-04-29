@@ -241,12 +241,8 @@ class BitsType(DataType):
             raise YangTypeError(val) from None
         return res
 
-    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type restrictions.
-
-        :param stmt: YANG ``type bits`` statement
-        :param mid: id of the context module
-        """
+    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle **bit** statements."""
         nextpos = 0
         for bst in stmt.find_all("bit"):
             if not Context.if_features(bst, mid):
@@ -255,13 +251,20 @@ class BitsType(DataType):
             pst = bst.find1("position")
             if pst:
                 pos = int(pst.argument)
-                if not self.bit or pos > nextpos:
-                    nextpos = pos
                 self.bit[label] = pos
+                if pos > nextpos:
+                    nextpos = pos
             else:
                 self.bit[label] = nextpos
-                nextpos += 1
+            nextpos += 1
 
+    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+        bst = stmt.find_all("bit")
+        if not bst: return
+        new = set([ b.argument for b in bst if Context.if_features(b, mid) ])
+        for bit in set(self.bit) - new:
+            del self.bit[bit]
+        
 class BooleanType(DataType):
     """Class representing YANG "boolean" type."""
 
@@ -342,13 +345,9 @@ class EnumerationType(DataType):
     def _constraints(self, val: str) -> bool:
         return val in self.enum
 
-    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type restrictions.
-
-        :param stmt: YANG ``type enumeration`` statement
-        :param mid: id of the context module
-        """
-        nextval = max(self.enum.values()) + 1 if self.enum else 0
+    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle **enum** statements."""
+        nextval = 0
         for est in stmt.find_all("enum"):
             if not Context.if_features(est, mid):
                 continue
@@ -363,6 +362,13 @@ class EnumerationType(DataType):
                 self.enum[label] = nextval
             nextval += 1
 
+    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+        est = stmt.find_all("enum")
+        if not est: return
+        new = set([ e.argument for e in est if Context.if_features(e, mid) ])
+        for en in set(self.enum) - new:
+            del self.enum[en]
+        
 class LinkType(DataType):
     """Abstract class for instance-referencing types."""
 
