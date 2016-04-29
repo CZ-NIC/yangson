@@ -135,5 +135,17 @@ module test {
         }
       }
     }
+    leaf boolean {
+      type boolean;
+    }
+    leaf enumeration {
+      type enumeration {
+        enum Mars {
+          value "100";
+        }
+        enum Phobos;
+        enum Deimos;
+      }
+    }
   }
 }
