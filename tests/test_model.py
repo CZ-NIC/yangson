@@ -42,11 +42,12 @@ def test_schema(data_model):
         "/testb:leafN/leafN"))
     lc = cb.get_data_child("leafC")
     llb = data_model.get_schema_node("/test:choiA/llistB/llistB")
-    lj = data_model.get_data_node("/test:contA/listA/contD/leafJ")
+    lj = data_model.get_data_node("/test:contA/listA/contD/contE/leafJ")
     llc = data_model.get_schema_node("/testb:rpcA/output/llistC")
     ll = lsta.get_schema_descendant(Context.path2route(
         "test:contD/acA/output/leafL"))
     lo = data_model.get_schema_node("/testb:noA/leafO")
+    lp = data_model.get_data_node("/test:contA/listA/contD/contE/leafP")
     assert la.parent == lb.parent == chb.parent == ca
     assert ll.parent.name == "output"
     assert (axa.mandatory == la.mandatory == cb.mandatory == cc.mandatory ==
@@ -64,6 +65,7 @@ def test_schema(data_model):
     assert lla.default == [42, 54]
     assert lla.type.default == 11
     assert lo.default == True
+    assert lp.default == 42
     assert la.type.parse_value("99") == 99
     with pytest.raises(YangTypeError):
         ld.type.parse_value("99")

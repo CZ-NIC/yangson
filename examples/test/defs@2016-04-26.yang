@@ -23,8 +23,10 @@ module defs {
   }
 
   grouping grB {
-    leaf leafJ {
-      type empty;
+    container contE {
+      leaf leafJ {
+        type empty;
+      }
     }
   }
 }

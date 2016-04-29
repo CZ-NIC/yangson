@@ -43,7 +43,13 @@ module test {
       key "leafE leafF";
       unique "contD/leafG";
       grouping grA {
-        uses d:grB;
+        uses d:grB {
+          augment "contE" {
+            leaf leafP {
+              type uint8;
+            }
+          }
+        }
       }
       leaf leafE {
         type hex-number;
@@ -59,7 +65,11 @@ module test {
           if-feature "feB";
           type uint8;
         }
-        uses grA;
+        uses grA {
+          refine "contE/leafP" {
+            default "42";
+          }
+        }
         action acA {
           output {
             leaf leafL {
