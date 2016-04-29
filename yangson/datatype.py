@@ -348,7 +348,7 @@ class EnumerationType(DataType):
         :param stmt: YANG ``type enumeration`` statement
         :param mid: id of the context module
         """
-        nextval = 0
+        nextval = max(self.enum.values()) + 1 if self.enum else 0
         for est in stmt.find_all("enum"):
             if not Context.if_features(est, mid):
                 continue
@@ -356,12 +356,12 @@ class EnumerationType(DataType):
             vst = est.find1("value")
             if vst:
                 val = int(vst.argument)
-                if not self.enum or val > nextval:
-                    nextval = val
                 self.enum[label] = val
+                if val > nextval:
+                    nextval = val
             else:
                 self.enum[label] = nextval
-                nextval += 1
+            nextval += 1
 
 class LinkType(DataType):
     """Abstract class for instance-referencing types."""
