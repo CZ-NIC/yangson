@@ -121,7 +121,10 @@ def test_types(data_model):
     with pytest.raises(YangTypeError):
         boo.parse_value("boo")
     en = ct.get_child("enumeration").type
-    assert not en.contains("Earth")
-    assert en.enum["Mars"] == 100
+    assert not en.contains("Mars")
+    assert not en.contains("Deimos")
     assert en.enum["Phobos"] == 101
-    assert en.enum["Deimos"] == 102
+    bi = ct.get_child("bits").type
+    assert not bi.contains("un")
+    assert not bi.contains("tres")
+    assert bi.bit["dos"] == 1

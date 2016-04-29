@@ -139,12 +139,23 @@ module test {
       type boolean;
     }
     leaf enumeration {
-      type enumeration {
-        enum Mars {
-          value "100";
+      type d:typC {
+        enum Phobos {
+          if-feature "feA";
         }
-        enum Phobos;
-        enum Deimos;
+        enum Deimos {
+          if-feature "feB";
+        }
+      }
+    }
+    leaf bits {
+      type d:typD {
+        bit dos {
+          if-feature "feA";
+        }
+        bit tres {
+          if-feature "feB";
+        }
       }
     }
   }

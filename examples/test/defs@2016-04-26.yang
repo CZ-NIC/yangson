@@ -22,6 +22,24 @@ module defs {
     default "111";
   }
 
+  typedef typC {
+    type enumeration {
+      enum Mars {
+        value "100";
+      }
+      enum Phobos;
+      enum Deimos;
+    }
+  }
+
+  typedef typD {
+    type bits {
+      bit un;
+      bit dos;
+      bit tres;
+    }
+  }
+
   grouping grB {
     container contE {
       leaf leafJ {
