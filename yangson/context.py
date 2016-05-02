@@ -18,7 +18,7 @@ class Context:
     @classmethod
     def initialize(cls) -> None:
         """Initialize the context variables."""
-        cls.module_search_path = [] # type: MutableSet[str]
+        cls.module_search_path = [] # type: List[str]
         cls.modules = {} # type: Dict[ModuleId, Statement]
         cls.implement = [] # type: List[YangIdentifier]
         cls.revisions = {} # type: Dict[YangIdentifier, List[str]]
@@ -40,7 +40,14 @@ class Context:
         :param yang_lib: dictionary with YANG library data
         :param mod_path: list of filesystem paths from which the
                          YANG modules listed in `yang_lib` can be
-                         retrieved.
+                         retrieved
+        :raises BadYangLibraryData: invalid YANG library data
+        :raises MultipleImplementedRevisions: multiple revisions of an
+                                              implemented module
+        :raises ModuleNotFound: a YANG module wasn't found in any of the
+                                directories listed in `mod_path`
+        :raises FeaturePrerequisiteError: a pre-requisite feature isn't
+                                          supported.
         """
         cls.initialize()
         cls.module_search_path = mod_path
@@ -57,7 +64,7 @@ class Context:
                 ct = item["conformance-type"]
                 if ct == "implement": cls.implement.append(name)
                 cls.revisions.setdefault(name, []).append(rev)
-                mod = cls.load_module(name, rev)
+                mod = cls._load_module(name, rev)
                 locpref = mod.find1("prefix", required=True).argument
                 cls.prefix_map[mid] = { locpref: mid }
                 if "submodules" in item and "submodule" in item["submodules"]:
@@ -68,7 +75,7 @@ class Context:
                         smid = (sname, rev)
                         if ct == "implement": cls.implement.append(sname)
                         cls.revisions.setdefault(sname, []).append(rev)
-                        submod = cls.load_module(sname, rev)
+                        submod = cls._load_module(sname, rev)
                         bt = submod.find1("belongs-to", name, required=True)
                         locpref = bt.find1("prefix", required=True).argument
                         cls.prefix_map[smid] = { locpref: mid }
@@ -76,18 +83,18 @@ class Context:
             raise BadYangLibraryData()
         for mod in cls.revisions:
             cls.revisions[mod].sort(key=lambda r: "0" if r is None else r)
-        cls.process_imports()
+        cls._process_imports()
         cls._check_feature_dependences()
-        cls.identity_derivations()
+        cls._identity_derivations()
         for mn in cls.implement:
             if len(cls.revisions[mn]) > 1:
                 raise MultipleImplementedRevisions(mn)
             mid = (mn, cls.revisions[mn][0])
             cls.schema._handle_substatements(cls.modules[mid], mid)
-        cls.apply_augments()
+        cls._apply_augments()
 
     @classmethod
-    def load_module(cls, name: YangIdentifier,
+    def _load_module(cls, name: YangIdentifier,
                     rev: RevisionDate) -> Statement:
         """Read, parse and register YANG module or submodule."""
         for d in cls.module_search_path:
@@ -106,7 +113,7 @@ class Context:
         return (mname, cls.revisions[mname][-1])
 
     @classmethod
-    def process_imports(cls) -> None:
+    def _process_imports(cls) -> None:
         for mid in cls.modules:
             mod = cls.modules[mid]
             try:
@@ -136,7 +143,7 @@ class Context:
                     i += 1
 
     @classmethod
-    def apply_augments(cls) -> None:
+    def _apply_augments(cls) -> None:
         """Apply top-level augments from all implemented modules."""
         for mn in cls.implement:
             mid = (mn, cls.revisions[mn][0])
@@ -145,7 +152,7 @@ class Context:
                 cls.schema._augment_refine(aug, mid, True)
 
     @classmethod
-    def identity_derivations(cls):
+    def _identity_derivations(cls):
         """Create the graph of identity derivations."""
         for mid in cls.modules:
             for idst in cls.modules[mid].find_all("identity"):
@@ -160,10 +167,11 @@ class Context:
     @classmethod
     def resolve_pname(cls, pname: PrefName,
                       mid: ModuleId) -> Tuple[YangIdentifier, ModuleId]:
-        """Resolve prefixed name.
+        """Return the name and module identifier in which the name is defined.
 
         :param pname: prefixed name
         :param mid: identifier of the context module
+        :raises BadPrefName: invalid prefix
         """
         p, s, loc = pname.partition(":")
         try:
@@ -173,7 +181,7 @@ class Context:
 
     @classmethod
     def translate_pname(cls, pname: PrefName, mid: ModuleId) -> QualName:
-        """Translate prefixed name to a qualified name.
+        """Translate a prefixed name to a qualified name.
 
         :param pname: prefixed name
         :param mid: identifier of the context module
@@ -183,7 +191,7 @@ class Context:
 
     @classmethod
     def sid2route(cls, sid: str, mid: ModuleId) -> SchemaRoute:
-        """Construct schema route from a schema node identifier.
+        """Translate a schema node identifier to a schema route.
 
         :param sid: schema node identifier (absolute or relative)
         :param mid: identifier of the context module
@@ -194,9 +202,10 @@ class Context:
 
     @classmethod
     def path2route(cls, path: SchemaPath) -> SchemaRoute:
-        """Translate schema path to schema route.
+        """Translate a schema path to a schema route.
 
         :param path: schema path
+        :raises BadPath: invalid path
         """
         nlist = path.split("/")
         prevns = None
@@ -218,7 +227,7 @@ class Context:
         """Return the statement defining a grouping or derived type.
 
         :param stmt: "uses" or "type" statement
-        :param mid: YANG module context
+        :param mid: identifier of the context module
         """
         kw = "grouping" if stmt.keyword == "uses" else "typedef"
         loc, did = cls.resolve_pname(stmt.argument, mid)
@@ -240,10 +249,10 @@ class Context:
 
     @classmethod
     def if_features(cls, stmt: Statement, mid: ModuleId) -> bool:
-        """Check ``if-feature`` substatements, if any.
+        """Evaluate ``if-feature`` substatements, if any.
 
-        :param stmt: YANG statement
-        :param mid: YANG module context
+        :param stmt: YANG statement that is tested on if-features
+        :param mid: identifier of the context module
         """
         iffs = stmt.find_all("if-feature")
         if not iffs:
@@ -256,7 +265,7 @@ class Context:
 
     @classmethod
     def feature_test(cls, fname: PrefName, mid: ModuleId) -> bool:
-        """Test feature support.
+        """Is feature `fname` supported?
 
         :param fname: prefixed name of a feature
         :param mid: YANG module context
@@ -269,6 +278,7 @@ class Context:
 
         :param fexpr: feature expression
         :param mid: YANG module context
+        :raises BadFeatureExpression: invalid feature expression
         """
         x, px = cls._feature_disj(fexpr, 0, mid)
         if px < len(fexpr):
