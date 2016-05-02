@@ -158,5 +158,10 @@ module test {
         }
       }
     }
+    leaf binary {
+      type binary {
+        length "1..54";
+      }
+    }
   }
 }

@@ -124,7 +124,12 @@ def test_types(data_model):
     assert not en.contains("Mars")
     assert not en.contains("Deimos")
     assert en.enum["Phobos"] == 101
-    bi = ct.get_child("bits").type
-    assert not bi.contains("un")
-    assert not bi.contains("tres")
-    assert bi.bit["dos"] == 1
+    bits = ct.get_child("bits").type
+    assert not bits.contains("un")
+    assert not bits.contains("tres")
+    assert bits.bit["dos"] == 1
+    bin = ct.get_child("binary").type
+    bv = bin.parse_value(
+        b'UMWZw61sacWhIMW+bHXFpW91xI1rw70ga8' +
+        b'WvxYggw7pwxJtsIMSPw6FiZWxza8OpIMOzZHku')
+    assert bv.decode("utf-8") == "Příliš žluťoučký kůň úpěl ďábelské ódy."
