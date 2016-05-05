@@ -34,7 +34,7 @@ be able to construct the data model:
    .. attribute:: modules
 
       A dictionary mapping :term:`module identifier`\ s to the
-      corresponding **module** or **submodule** statements.
+      corresponding **module** or **submodule** :class:`Statement`\ s.
 
    .. attribute:: implement
 
@@ -45,7 +45,8 @@ be able to construct the data model:
    .. attribute:: revisions
 
       A dictionary mapping module names to the list of module
-      revisions that are used in the data model.
+      revisions that are used in the data model. For each implemented
+      module, this list is a singleton.
 
    .. attribute:: prefix_map
 
