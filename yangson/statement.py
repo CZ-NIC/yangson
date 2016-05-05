@@ -17,7 +17,7 @@ class Statement:
     * substatements: list of substatements.
     """
 
-    escape_table = str.maketrans({ '"': '\\"', '\\': '\\\\'})
+    _escape_table = str.maketrans({ '"': '\\"', '\\': '\\\\'})
     """Table for translating characters to their escaped form."""
 
     def __init__(self,
@@ -46,7 +46,7 @@ class Statement:
         kw = (self.keyword if self.prefix is None
               else self.prefix + ":" + self.keyword)
         arg = ("" if self.argument is None
-               else ' "' + self.argument.translate(self.escape_table) + '"')
+               else ' "' + self.argument.translate(self._escape_table) + '"')
         rest = " { ... }" if self.substatements else ";"
         return kw + arg + rest
 
@@ -55,11 +55,15 @@ class Statement:
               required: bool = False) -> Optional["Statement"]:
         """Return first substatement with the given parameters.
 
-        :param kw: keyword
-        :param arg: argument (all arguments will match if `None`)
-        :param pref: keyword prefix (for extensions)
-        :param required: controls whether exception is raised
-        :raises StatementNotFound: if `required` and statement not found
+        :param kw: statement keyword (local part for extensions)
+        :param arg: argument (all arguments will match if ``None``)
+        :param pref: keyword prefix (``None`` for built-in statements)
+        :param required: this parameter determines what happens if the
+                         statement is not found: if it is ``False``
+                         (which is the default), then ``None`` is returned,
+                         otherwise an exception is raised
+        :raises StatementNotFound: if `required` is ``True`` and the
+                                   statement is not found
         """
         for sub in self.substatements:
             if (sub.keyword == kw and sub.prefix == pref and
@@ -69,27 +73,28 @@ class Statement:
 
     def find_all(self, kw: YangIdentifier,
                  pref: YangIdentifier = None) -> List["Statement"]:
-        """Find all substatements with the given keyword (and prefix).
+        """Return the list all substatements with the given keyword and prefix.
 
-        :param kw: keyword
-        :param pref: keyword prefix (for extensions)
+        :param kw: statement keyword (local part for extensions)
+        :param pref: keyword prefix (``None`` for built-in statements)
         """
         return [c for c in self.substatements
                 if c.keyword == kw and c.prefix == pref]
 
-    def get_definition(self, gname: YangIdentifier,
+    def get_definition(self, name: YangIdentifier,
                        kw: YangIdentifier) -> "Statement":
         """Recursively search ancestor statements for a definition.
 
-        :param gname: name of the grouping or datatype
-        :param kw: "grouping" or "typedef"
+        :param name: name of a grouping or datatype (with no prefix)
+        :param kw: ``grouping`` or ``typedef``
+        :raises DefinitionNotFound: if the definition is not found
         """
         stmt = self.superstmt
         while stmt:
-            res = stmt.find1(kw, gname)
+            res = stmt.find1(kw, name)
             if res: return res
             stmt = stmt.superstmt
-        raise DefinitionNotFound(kw, gname)
+        raise DefinitionNotFound(kw, name)
 
 class StatementNotFound(YangsonException):
     """Exception to raise when a statement should exist but doesn't."""
