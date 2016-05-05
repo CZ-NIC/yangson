@@ -8,6 +8,7 @@ Contents:
 
    introduction
    concepts-terms
+   statement
    datamodel
    schema
    instances
@@ -15,6 +16,7 @@ Contents:
    typealiases
    references
    glossary
+   xpath
    app-a
    app-b
 
