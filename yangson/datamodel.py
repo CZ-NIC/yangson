@@ -5,8 +5,8 @@ from .constants import pname_re, YangsonException
 from .context import Context, BadYangLibraryData
 from .instance import (Crumb, EntryKeys, Instance, InstanceIdentifier,
                        MemberName)
-from .schema import (BadSchemaNodeType, InternalNode, NonexistentSchemaNode,
-                     RawObject)
+from .schema import (BadSchemaNodeType, DataNode, InternalNode,
+                     NonexistentSchemaNode, RawObject, SchemaNode)
 from .statement import Statement
 from .typealiases import *
 
@@ -17,9 +17,9 @@ class DataModel:
         """Initialize the class instance.
 
         :param yltxt: JSON text containing YANG library data
-        :param mod_path: list of filesystem paths from which the
-                         YANG modules listed in `yang_lib` can be
-                         retrieved.
+        :param mod_path: list of filesystem paths from which
+                         YANG modules listed in YANG library
+                         can be retrieved.
         """
         Context.schema = InternalNode() # type: InternalNode
         try:
@@ -29,24 +29,26 @@ class DataModel:
         Context.from_yang_library(yl, mod_path)
 
     def from_raw(self, robj: RawObject) -> Instance:
-        """Return an instance created from a raw object.
+        """Return an instance created from a raw data tree.
 
-        :param robj: raw object
+        :param robj: a dictionary representing raw data tree
         """
         cooked = Context.schema.from_raw(robj)
         return Instance(cooked, Crumb(None, cooked.last_modified))
 
-    def get_schema_node(self, path: SchemaPath) -> Optional["SchemaNode"]:
-        """Return a schema node.
+    def get_schema_node(self, path: SchemaPath) -> Optional[SchemaNode]:
+        """Return the schema node corresponding to `path`.
 
-        :param path: schema node path
+        :param path: schema path
+        :raises BadPath: if the schema path is invalid
         """
         return Context.schema.get_schema_descendant(Context.path2route(path))
 
-    def get_data_node(self, path: SchemaPath) -> Optional["DataNode"]:
-        """Return a data node.
+    def get_data_node(self, path: SchemaPath) -> Optional[DataNode]:
+        """Return the data node corresponding to `path`.
 
-        :param path: data node path
+        :param path: data path
+        :raises BadPath: if the data path is invalid
         """
         addr = Context.path2route(path)
         node = Context.schema
@@ -56,7 +58,13 @@ class DataModel:
         return node
 
     def parse_instance_id(self, iid: str) -> InstanceIdentifier:
-        """Parse instance identifier."""
+        """Parse instance identifier.
+
+        :param iid: instance identifier string
+        :raises BadInstanceIdentifier: if the instance identifier is invalid
+        :raises NonexistentSchemaNode: if the instance identifier refers to
+                                       a data node that doesn't exist
+        """
         end = len(iid)
         offset = 0
         res = InstanceIdentifier()
@@ -84,6 +92,11 @@ class DataModel:
         """Parse RESTCONF data resource identifier.
 
         :param rid: data resource identifier
+        :raises BadResourceIdentifier: if the resource identifier is invalid
+        :raises NonexistentSchemaNode: if the resource identifier refers to
+                                       a data node that doesn't exist
+        :raises BadSchemaNodeType: if keys are specified for a schema node that
+                                   is not a list
         """
         inp = rid[1:] if rid[0] == "/" else rid
         res = InstanceIdentifier()

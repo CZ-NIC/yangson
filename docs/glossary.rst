@@ -7,6 +7,20 @@ Glossary
 .. glossary::
    :sorted:
 
+   raw value
+
+      A value of an instance that is produced by the Python parser
+      from serialised JSON data. Based on its type and data model
+      information, a raw value is transformed to a :term:`cooked
+      value`.
+
+   cooked value
+
+      An instance value that is in the internal form prescribed for
+      that instance. That is, scalar values are represented according
+      to their types, while objects and arrays are instances of a
+      subclass of :class:`Instance`.
+
    qualified name
 
        A tuple in the form *(name, module)* where *name* is the name
@@ -59,13 +73,20 @@ Glossary
    schema path
 
        A string of slash-separated schema node names in the form
-       [*module_name*\ ``:``]\ *node_name*. The initial component must
-       always be qualified with a module name. Any subsequent
-       component is qualified with a module name if and only if its
-       namespace is different from the previous component. A schema
-       path is always absolute, i.e. starts at the top of the
-       schema. A leading slash is optional. Python type alias for the
-       schema path is :const:`SchemaPath`.
+       [*module_name*\ ``:``]\ *schema_node_name*. The initial
+       component must always be qualified with a module name. Any
+       subsequent component is qualified with a module name if and
+       only if its namespace is different from the previous
+       component. A schema path is always absolute, i.e. starts at the
+       top of the schema. A leading slash is optional. Python type
+       alias for the schema path is :const:`SchemaPath`.
+
+   data path
+
+       A special form of :term:`schema path` containing only names of
+       *data nodes*. The relationship of data path and schema path is
+       analogical to how :term:`data route` is related to
+       :term:`schema route`.
 
    schema node identifier
 
