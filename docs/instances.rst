@@ -51,10 +51,12 @@ types of instance values.
 Instance Values
 ***************
 
-.. class:: StructuredValue(ts:datetime.datetime=None)
+.. class:: StructuredValue
 
    This class is an abstract superclass of both :class:`ArrayValue` and
-   :class:`ObjectValue`.
+   :class:`ObjectValue`. Its constructor method has one argument, *ts*
+   (:class:`datetime.datetime`) that is used to set the
+   *last_modified* attribute.
 
    .. attribute:: last_modified
 
@@ -62,28 +64,18 @@ Instance Values
       records the date and time when the :class:StructuredValue
       instance was last modified.
 
-   .. method:: time_stamp(ts: datetime.datetime = None) -> None
+   .. automethod:: time_stamp
 
-      Update the receiver's *last_modified* time stamp with the value
-      *ts*. If *ts* is ``None``, use the current date and time.
+   .. automethod:: __eq__
 
-   .. method:: __eq__(val: StructuredValue) -> bool
-
-      Return ``True`` if the receiver and *val* are equality. Equality
-      is based on their hash values (see below).
-
-.. class:: ArrayValue(ts:datetime.datetime=None)
+.. class:: ArrayValue
 
    This class is a subclass of both :class:`StructuredValue` and
    :class:`list`, and corresponds to a JSON array.
 
-   .. method:: __hash__() -> int
+   .. automethod:: __hash__
 
-      Return integer hash value. It is computed by converting the
-      receiver to a :class:`tuple` and applying the :func:`hash`
-      function to it.
-
-.. class:: ObjectValue(ts:datetime.datetime=None)
+.. class:: ObjectValue
 
    This class is a subclass of both :class:`StructuredValue` and
    :class:`dict`, and corresponds to a JSON object.
@@ -96,11 +88,7 @@ Instance Values
      nodes, or
    * the data node's parent is defined in the same module.
 
-   .. method:: __hash__() -> int
-
-      Return integer hash value. It is computed by taking a sorted
-      list of the receiver's items, converting it to a :class:`tuple`
-      and applying the :func:`hash` function.
+   .. automethod:: __hash__
 
 Persistent Instances
 ********************

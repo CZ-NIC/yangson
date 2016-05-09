@@ -24,7 +24,8 @@ class StructuredValue:
     def time_stamp(self, ts: datetime = None) -> None:
         """Update the receiver's last-modified time stamp.
 
-        :param ts: new time stamp (if ``None``, set it to current time)
+        :param ts: new last-modified time stamp (if it is ``None``,
+                   the time stamp is set to current time)
         """
         self.last_modified = ts if ts else datetime.now()
 
@@ -32,7 +33,7 @@ class StructuredValue:
         return copy.copy(self)
 
     def __eq__(self, val: "StructuredValue") -> bool:
-        """Is the receiver equal to `val`?
+        """Return ``True`` if the receiver equal to `val`.
 
         :param val: value to compare
         """
@@ -46,7 +47,7 @@ class ArrayValue(StructuredValue, list):
             list.__init__(self, val)
 
     def __hash__(self) -> int:
-        """Return an integer hash value for the receiver."""
+        """Return integer hash value for the receiver."""
         return tuple([ x.__hash__() for x in self]).__hash__()
 
 class ObjectValue(StructuredValue, dict):
@@ -57,7 +58,7 @@ class ObjectValue(StructuredValue, dict):
             dict.__init__(self, val)
 
     def __hash__(self) -> int:
-        """Return an integer hash value for the receiver."""
+        """Return integer hash value for the receiver."""
         sks = sorted(self.keys())
         return tuple([ (k, self[k].__hash__()) for k in sks ]).__hash__()
 
