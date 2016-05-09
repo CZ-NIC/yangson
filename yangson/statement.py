@@ -153,25 +153,12 @@ class ModuleParser(Parser):
         :raises EndOfInput: if past the end of `self.input`
         :raises UnexpectedInput: if no syntactically correct keyword is found
         """
-        self._extension = False
-        fst = lambda c: "a" <= c <= "z" or "A" <= c <= "Z" or c == "_"
-        def car(c):
-            if fst(c): return 1
-            raise UnexpectedInput(self, "ASCII letter or underline")
-        def cdr(c):
-            if fst(c) or c == "-" or "0" < c < "9" or c == ".":
-                return 1
-            else:
-                return -1
-        def colon():
-            if self._extension:
-                raise UnexpectedInput(self)
-            self._extension = True
-            return 0
-        start = self.offset
-        self.scan([(car, {}), (cdr, { ":" : colon })])
-        kw = self.input[start:self.offset]
-        return kw.split(":") if self._extension else [None, kw]
+        i1 = self.yang_identifier()
+        if self.peek() == ":":
+            self.offset += 1
+            i2 = self.yang_identifier()
+            return (i1, i2)
+        return (None, i1)
 
     def statement(self) -> Statement:
         """Parse YANG statement.

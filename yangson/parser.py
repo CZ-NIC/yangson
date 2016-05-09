@@ -1,7 +1,8 @@
 """Simple parser class."""
 
+import re
 from typing import Callable, List, Mapping, Optional, Tuple
-from .constants import YangsonException
+from .constants import ident_re, YangsonException
 
 # Local type aliases
 State = int
@@ -62,6 +63,17 @@ class Parser:
              self.offset - self.input.rfind("\n", 0, self.offset) - 1)
         return (l + 1, c)
         
+    def yang_identifier(self) -> str:
+        """Parse YANG identifier.
+
+        :raises UnexpectedInput: if no syntactically correct keyword is found
+        """
+        mo = ident_re.match(self.input, self.offset)
+        if mo is None:
+            raise UnexpectedInput(self, "YANG identifier")
+        self.offset = mo.end()
+        return mo.group()
+
 class ParserException(YangsonException):
     """Base exception class for the parser of YANG modules."""
 
