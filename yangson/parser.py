@@ -1,8 +1,7 @@
 """Simple parser class."""
 
-import re
 from typing import Callable, List, Mapping, Optional, Tuple
-from .constants import ident_re, YangsonException
+from .constants import ident_re, ws_re, YangsonException
 
 # Local type aliases
 State = int
@@ -41,19 +40,20 @@ class Parser:
         except IndexError:
             raise EndOfInput(self)
 
-    def scan(self, ptab: ParseTable) -> None:
+    def scan(self, ptab: ParseTable, init: State = 0) -> State:
         """Simple stateful scanner.
 
         :param ptab: transition table (DFA with possible side-effects).
+        :param init: initial state
         :raises EndOfInput: if past the end of `self.input`
         """
-        state = 0 # type: State
+        state = init
         while True:
             (owise, disp) = ptab[state]
             ch = self.peek()
             state = disp[ch]() if ch in disp else owise(ch)
             if state < 0:
-                break
+                return state
             self.offset += 1
 
     def line_column(self) -> Tuple[int, int]:
@@ -62,17 +62,36 @@ class Parser:
         c = (self.offset if l == 0 else
              self.offset - self.input.rfind("\n", 0, self.offset) - 1)
         return (l + 1, c)
+
+    def match_regex(self, regex, required: bool = False,
+                    meaning: str = "") -> str:
+        """Match a regular expression and advance the parser.
+
+        :param regex: compiled regular expression object
+        :param required: this parameter determines what happens if `regex`
+                         doesn't match: if it is ``False`` (which is the
+                         default), then ``None`` is returned, otherwise
+                         an exception is raised
+        :param meaning: meaning of `regex` (for use in error messages)
+        :raises UnexpectedInput: if no syntactically correct keyword is found
+        """
+        mo = regex.match(self.input, self.offset)
+        if mo:
+            self.offset = mo.end()
+            return mo.group()
+        if required:
+            raise UnexpectedInput(self, meaning)
         
     def yang_identifier(self) -> str:
         """Parse YANG identifier.
 
         :raises UnexpectedInput: if no syntactically correct keyword is found
         """
-        mo = ident_re.match(self.input, self.offset)
-        if mo is None:
-            raise UnexpectedInput(self, "YANG identifier")
-        self.offset = mo.end()
-        return mo.group()
+        return self.match_regex(ident_re, True, "YANG identifier")
+
+    def skip_ws(self) -> None:
+        """Skip optional whitespace."""
+        self.match_regex(ws_re)
 
 class ParserException(YangsonException):
     """Base exception class for the parser of YANG modules."""

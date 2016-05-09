@@ -16,6 +16,7 @@ pname_re = re.compile(_pname)
 _rhs = """("(?P<drhs>[^"]*)"|'(?P<srhs>[^']*)')"""
 pred_re = re.compile(
     r"\[\s*(({}|\.)\s*=\s*{}|(?P<pos>\d*))\s*\]".format(_pname, _rhs))
+ws_re = re.compile(r"[ \n\t\r]*")
 
 # Enumeration classes
 
