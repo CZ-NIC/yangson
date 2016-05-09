@@ -9,7 +9,8 @@ class YangsonException(Exception):
 
 # Regular expressions
 
-_ident = "[a-zA-Z_][a-zA-Z_.-]*"
+_ident = "[a-zA-Z_][a-zA-Z0-9_.-]*"
+ident_re = re.compile(_ident)
 _pname = "((?P<prf>{}):)?(?P<loc>{})".format(_ident, _ident)
 pname_re = re.compile(_pname)
 _rhs = """("(?P<drhs>[^"]*)"|'(?P<srhs>[^']*)')"""
