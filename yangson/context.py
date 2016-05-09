@@ -1,8 +1,7 @@
 import re
 from typing import Dict, List, MutableSet
 from .constants import pname_re, YangsonException
-from .modparser import from_file
-from .statement import Statement
+from .statement import ModuleParser, Statement
 from .typealiases import *
 
 """This module provides class `Context`."""
@@ -79,8 +78,9 @@ class Context:
                         bt = submod.find1("belongs-to", name, required=True)
                         locpref = bt.find1("prefix", required=True).argument
                         cls.prefix_map[smid] = { locpref: mid }
-        except (KeyError, AttributeError):
-            raise BadYangLibraryData()
+        except (KeyError, AttributeError) as e:
+            raise e
+            # raise BadYangLibraryData()
         for mod in cls.revisions:
             cls.revisions[mod].sort(key=lambda r: "0" if r is None else r)
         cls._process_imports()
@@ -100,10 +100,13 @@ class Context:
         for d in cls.module_search_path:
             fn = "{}/{}".format(d, name)
             if rev: fn += "@" + rev
+            fn += ".yang"
             try:
-                res = from_file(fn + ".yang")
+                with open(fn, encoding='utf-8') as infile:
+                    mp = ModuleParser(infile.read())
             except FileNotFoundError:
                 continue
+            res = mp.parse_module()
             cls.modules[(name, rev)] = res
             return res
         raise ModuleNotFound(name, rev)

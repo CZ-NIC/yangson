@@ -1,7 +1,8 @@
 """YANG statements."""
 
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from .constants import YangsonException
+from .parser import EndOfInput, Parser, UnexpectedInput
 from .typealiases import YangIdentifier
 
 class Statement:
@@ -95,6 +96,220 @@ class Statement:
             if res: return res
             stmt = stmt.superstmt
         raise DefinitionNotFound(kw, name)
+
+class ModuleParser(Parser):
+    """Parse YANG modules."""
+
+    unescape_map = { "n" : "\n", "t": "\t", '"': '"',
+                     "\\": "\\" } # type: Mapping[str,str]
+    """Dictionary for mapping escape sequences to characters."""
+
+    @classmethod
+    def unescape(cls, text: str) -> str:
+        """Replace escape sequence with corresponding characters.
+
+        :param text: text to unescape
+        """
+        chop = text.split("\\", 1)
+        return (chop[0] if len(chop) == 1
+                else chop[0] + cls.unescape_map[chop[1][0]] +
+                cls.unescape(chop[1][1:]))
+
+    def opt_separator(self) -> None:
+        """Parse an optional separator.
+
+        :raises EndOfInput: if past the end of `self.input`
+        """
+        def back_break(c):
+            self.offset -= 1
+            return -1
+        self.scan(
+            [(lambda c: -1, { " ": lambda: 0,
+                              "\t": lambda: 0,
+                              "\n": lambda: 0,
+                              "\r": lambda: 1,
+                              "/": lambda: 2 }),
+             (back_break, { "\n": lambda: 0 }),
+             (back_break, { "/": lambda: 3,
+                        "*": lambda: 4 }),
+             (lambda c: -1 if c is None else 3, { "\n": lambda: 0 }),
+             (lambda c: 4, { "*": lambda: 5 }),
+             (lambda c: 4, { "/": lambda: 0,
+                             "*": lambda: 5 })])
+
+    def separator(self) -> None:
+        """Parse a mandatory separator.
+
+        :raises EndOfInput: if past the end of `self.input`
+        :raises UnexpectedInput: if no separator is found
+        """
+        start = self.offset
+        self.opt_separator()
+        if start == self.offset: raise UnexpectedInput(self, "separator")
+
+    def keyword(self) -> Tuple[Optional[str], str]:
+        """Parse a YANG statement keyword.
+
+        :raises EndOfInput: if past the end of `self.input`
+        :raises UnexpectedInput: if no syntactically correct keyword is found
+        """
+        self._extension = False
+        fst = lambda c: "a" <= c <= "z" or "A" <= c <= "Z" or c == "_"
+        def car(c):
+            if fst(c): return 1
+            raise UnexpectedInput(self, "ASCII letter or underline")
+        def cdr(c):
+            if fst(c) or c == "-" or "0" < c < "9" or c == ".":
+                return 1
+            else:
+                return -1
+        def colon():
+            if self._extension:
+                raise UnexpectedInput(self)
+            self._extension = True
+            return 0
+        start = self.offset
+        self.scan([(car, {}), (cdr, { ":" : colon })])
+        kw = self.input[start:self.offset]
+        return kw.split(":") if self._extension else [None, kw]
+
+    def statement(self) -> Statement:
+        """Parse YANG statement.
+
+        :raises EndOfInput: if past the end of `self.input`
+        :raises UnexpectedInput: if no syntactically correct statement is found
+        """
+        pref,kw = self.keyword()
+        self.opt_separator()
+        next = self.peek()
+        if next == ";":
+            arg = None
+            sub = False # type: bool
+        elif next == "{":
+            arg = None
+            sub = True
+        else:
+            self._arg = ""
+            sub = self.argument()
+            arg = self._arg
+        self.offset += 1
+        res = Statement(kw, arg, pref=pref)
+        if sub:
+            res.substatements = self.substatements()
+            for sub in res.substatements:
+                sub.superstmt = res
+        return res
+
+    def argument(self) -> bool:
+        """Parse statement argument.
+
+        Return ``True`` if the argument is followed by block of substatements.
+        """
+        next = self.peek()
+        if next == "'":
+            quoted = True
+            self.sq_argument()
+        elif next == '"':
+            quoted = True
+            self.dq_argument()
+        elif self._arg == "":
+            quoted = False
+            self.unq_argument()
+        else:
+            raise UnexpectedInput(self, "single or double quote")
+        self.opt_separator()
+        next = self.peek()
+        if next == ";":
+            return False
+        if next == "{":
+            return True
+        elif quoted and next == "+":
+            self.offset += 1
+            self.opt_separator();
+            return self.argument()
+        else:
+            raise UnexpectedInput(self, "';', '{'" +
+                                  (" or '+'" if quoted else ""))
+
+    def sq_argument(self) -> str:
+        """Parse single-quoted argument.
+
+        :raises EndOfInput: if past the end of `self.input`
+        """
+        self.offset += 1
+        start = self.offset
+        self.scan([(lambda c: 0, { "'": lambda: -1 })])
+        self._arg += self.input[start:self.offset]
+        self.offset += 1
+
+    def dq_argument(self) -> str:
+        """Parse double-quoted argument.
+
+        :raises EndOfInput: if past the end of `self.input`
+        """
+        def escape():
+            self._escape = True
+            return 1
+        self._escape = False                 # any escaped chars?
+        self.offset += 1
+        start = self.offset
+        self.scan([(lambda c: 0, { '"': lambda: -1,
+                                    '\\': escape }),
+                    (lambda c: 0, {})])
+        self._arg += (self.unescape(self.input[start:self.offset])
+                      if self._escape else self.input[start:self.offset])
+        self.offset += 1
+
+    def unq_argument(self) -> str:
+        """Parse unquoted argument.
+
+        :raises EndOfInput: if past the end of `self.input`
+        """
+        def comm_start():
+            self.offset -= 1
+            return -1
+        start = self.offset
+        self.scan([(lambda c: 0, { ";": lambda: -1,
+                                  " ": lambda: -1,
+                                  "\t": lambda: -1,
+                                  "\r": lambda: -1,
+                                  "\n": lambda: -1,
+                                  "{": lambda: -1,
+                                  '/': lambda: 1 }),
+                    (lambda c: 0, { "/": comm_start,
+                                    "*": comm_start })])
+        self._arg = self.input[start:self.offset]
+
+    def substatements(self) -> List[Statement]:
+        """Parse substatements.
+
+        :raises EndOfInput: if past the end of `self.input`
+        """
+        res = []
+        self.opt_separator()
+        while self.peek() != "}":
+            res.append(self.statement())
+            self.opt_separator()
+        self.offset += 1
+        return res
+
+    def parse_module(self) -> Statement:
+        """Parse a complete YANG module or submodule.
+
+        :raises EndOfInput: if past the end of `self.input`
+        :raises UnexpectedInput: if top-level statement isn't ``(sub)module``
+        """
+        self.opt_separator()
+        start = self.offset
+        res = self.statement()
+        if res.keyword not in ["module", "submodule"]:
+            self.offset = start
+            raise UnexpectedInput(self, "'module' or 'submodule'")
+        try:
+            self.opt_separator()
+        except EndOfInput:
+            return res
+        raise UnexpectedInput(self, "end of input")
 
 class StatementNotFound(YangsonException):
     """Exception to raise when a statement should exist but doesn't."""
