@@ -450,7 +450,7 @@ class SequenceNode(DataNode):
         """
         return super().from_raw(val)
 
-class ListNode(InternalNode, SequenceNode):
+class ListNode(SequenceNode, InternalNode):
     """List node."""
 
     def __init__(self) -> None:
@@ -629,7 +629,7 @@ class LeafNode(TerminalNode, DataNode):
             self._tree_line_prefix(), self.instance_name(),
             "" if self.mandatory else "?")
 
-class LeafListNode(TerminalNode, SequenceNode):
+class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
 
     def __init__(self) -> None:
