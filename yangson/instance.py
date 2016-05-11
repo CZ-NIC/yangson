@@ -339,8 +339,8 @@ class Instance:
         try:
             cr = self.crumb
             return Instance(value,
-                            EntryCrumb(cr.before, [self.value] + cr.after, cr,
-                                       datetime.now()))
+                            EntryCrumb(cr.before, [self.value] + cr.after,
+                                       cr.parent, datetime.now()))
         except (AttributeError, IndexError):
             raise InstanceTypeError(self, "insert before non-entry") from None
 
@@ -348,8 +348,8 @@ class Instance:
         try:
             cr = self.crumb
             return Instance(value,
-                            EntryCrumb(cr.before + [self.value], cr.after, cr,
-                                       datetime.now()))
+                            EntryCrumb(cr.before + [self.value], cr.after,
+                                       cr.parent, datetime.now()))
         except (AttributeError, IndexError):
             raise InstanceTypeError(self, "insert after non-entry") from None
 
