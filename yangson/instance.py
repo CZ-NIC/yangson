@@ -79,14 +79,12 @@ class Crumb:
         """Return receiver's timestamp (or parent's if ``None``)."""
         return self._timestamp if self._timestamp else self.parent.timestamp
 
-    def pointer(self) -> str:
-        """Return JSON pointer of the receiver."""
-
-        return ("{}/{}".format(self.parent.pointer(), self.pointer_fragment())
+    def _pointer(self) -> str:
+        return ("{}/{}".format(self.parent._pointer(), self.pointer_fragment())
                 if self.parent else "")
 
 class MemberCrumb(Crumb):
-    """Zipper contexts for an object member."""
+    """Zipper context for an object member."""
 
     def __init__(self, name: InstanceName, obj: Dict[InstanceName, Value],
                  parent: Crumb, ts: datetime = None) -> None:
@@ -171,6 +169,20 @@ class Instance:
         """
         self.value = value
         self.crumb = crumb
+
+    @property
+    def name(self) -> Optional[InstanceName]:
+        """The name of the receiver."""
+        if isinstance(self.crumb, MemberCrumb):
+            return self.crumb.name
+        if self.crumb.parent:
+            return self.crumb.parent.name
+
+    @property
+    def pointer(self) -> str:
+        """Return JSON pointer of the receiver."""
+
+        return "/" if self.is_top() else self.crumb._pointer()
 
     def goto(self, ii: "InstanceIdentifier") -> "Instance":
         """Return an instance in the receiver's subtree.
@@ -514,7 +526,7 @@ class InstanceError(YangsonException):
         self.instance = inst
 
     def __str__(self):
-        return "[" + self.instance.crumb.pointer() + "] "
+        return "[" + self.instance.pointer + "] "
 
 class NonexistentInstance(InstanceError):
     """Exception to raise when moving out of bounds."""
