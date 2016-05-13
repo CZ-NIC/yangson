@@ -30,6 +30,14 @@ class Parser:
         self.input = inp # type: str
         self.offset = 0 # type: int
 
+    def remaining(self) -> str:
+        """Return the remaining part of the input string."""
+        return self.input[self.offset:]
+
+    def at_end(self) -> bool:
+        """Return ``True`` if at end of input."""
+        self.offset >= len(self.input)
+
     def peek(self) -> str:
         """Peek at the next character.
 
