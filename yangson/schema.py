@@ -304,10 +304,11 @@ class InternalNode(SchemaNode):
         """
         res = ObjectValue()
         for qn in val:
-            cn = self.get_data_child(*self.uniname(qn))
-            if cn is None:
-                raise NonexistentSchemaNode(*self.uniname(qn))
-            res[cn.instance_name()] = cn.from_raw(val[qn])
+            cn = self.uniname(qn)
+            ch = self.get_data_child(*cn)
+            if ch is None:
+                raise NonexistentSchemaNode(cn[0], cn[1] if cn[1] else self.ns)
+            res[ch.instance_name()] = ch.from_raw(val[qn])
         res.time_stamp()
         return res
 
