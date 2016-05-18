@@ -83,9 +83,12 @@ class InstanceNode:
     @property
     def path(self) -> str:
         """Return JSONPointer of the receiver."""
-
-        return ([] if self.is_top() else
-                self.parent.path.append(self.pointer_fragment()))
+        parents = []
+        inst = self
+        while not inst.is_top():
+            parents.append(inst)
+            inst = inst.parent
+        return JSONPointer([ i._pointer_fragment() for i in parents[::-1] ])
 
     def up(self) -> "InstanceNode":
         """Ascend to the parent instance node."""
@@ -152,12 +155,13 @@ class InstanceNode:
     def remove_member(self, name: InstanceName) -> "InstanceNode":
         if not isinstance(self.value, ObjectValue):
             raise InstanceTypeError(self, "member of non-object")
-        res = self._copy(self.value.copy(), datetime.now())
+        val = self.value.copy()
         try:
-            del res.value[name]
-            return res
+            del val[name]
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
+        ts = datetime.now()
+        return self._copy(ObjectValue(val, ts), ts)
 
     def entry(self, index: int) -> "ArrayEntry":
         val = self.value
@@ -189,9 +193,9 @@ class InstanceNode:
         val = self.value
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "entry of non-array")
+        ts = datetime.now()
         try:
-            return self._copy(ArrayValue(val[:index] + val[index+1:]),
-                              datetime.now())
+            return self._copy(ArrayValue(val[:index] + val[index+1:], ts), ts)
         except IndexError:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
