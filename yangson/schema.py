@@ -313,7 +313,6 @@ class InternalNode(SchemaNode):
             if ch is None:
                 raise NonexistentSchemaNode(cn[0], cn[1] if cn[1] else self.ns)
             res[ch.instance_name()] = ch.from_raw(val[qn])
-        res.stamp()
         return res
 
     def _ascii_tree(self, indent: str) -> str:
@@ -445,7 +444,6 @@ class SequenceNode(DataNode):
         res = ArrayValue([])
         for en in val:
             res.append(self._entry_from_raw(en))
-        res.stamp()
         return res
 
     def _entry_from_raw(self, val: RawValue) -> Value:

@@ -14,12 +14,12 @@ Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
 class StructuredValue:
     """Abstract class for array and object values."""
 
-    def __init__(self, ts: datetime = None) -> None:
+    def __init__(self, ts: datetime) -> None:
         """Initialize class instance.
 
         :param ts: creation timestamp
         """
-        self.timestamp = ts
+        self.timestamp = ts if ts else datetime.now()
 
     def stamp(self) -> None:
         """Update the receiver's timestamp to current time."""
