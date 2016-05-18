@@ -9,7 +9,7 @@ from .typealiases import *
 # Local type aliases
 
 Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
-"""Instance value."""
+"""Instance node value."""
 
 class StructuredValue:
     """Abstract class for array and object values."""
@@ -17,20 +17,13 @@ class StructuredValue:
     def __init__(self, ts: datetime = None) -> None:
         """Initialize class instance.
 
-        :param ts: creation time stamp
+        :param ts: creation timestamp
         """
-        self.last_modified = ts
+        self.timestamp = ts
 
-    def time_stamp(self, ts: datetime = None) -> None:
-        """Update the receiver's last-modified time stamp.
-
-        :param ts: new last-modified time stamp (if it is ``None``,
-                   the time stamp is set to current time)
-        """
-        self.last_modified = ts if ts else datetime.now()
-
-    def copy(self):
-        return copy.copy(self)
+    def stamp(self, ts: datetime = None) -> None:
+        """Update the receiver's timestamp to current time."""
+        self.timestamp = datetime.now()
 
     def __eq__(self, val: "StructuredValue") -> bool:
         """Return ``True`` if the receiver equal to `val`.
@@ -41,10 +34,10 @@ class StructuredValue:
 
 class ArrayValue(StructuredValue, list):
     """Array values corresponding to YANG lists and leaf-lists."""
-    def __init__(self, ts: datetime=None, val: List[Value] = None):
+
+    def __init__(self, val: List[Value], ts: datetime=None):
         StructuredValue.__init__(self, ts)
-        if val is not None:
-            list.__init__(self, val)
+        list.__init__(self, val)
 
     def __hash__(self) -> int:
         """Return integer hash value for the receiver."""
@@ -52,144 +45,72 @@ class ArrayValue(StructuredValue, list):
 
 class ObjectValue(StructuredValue, dict):
     """Array values corresponding to YANG container."""
-    def __init__(self, ts: datetime=None, val: Dict[InstanceName, Value] = None):
+
+    def __init__(self, val: Dict[InstanceName, Value], ts: datetime = None):
         StructuredValue.__init__(self, ts)
-        if val is not None:
-            dict.__init__(self, val)
+        dict.__init__(self, val)
 
     def __hash__(self) -> int:
         """Return integer hash value for the receiver."""
         sks = sorted(self.keys())
         return tuple([ (k, self[k].__hash__()) for k in sks ]).__hash__()
 
-class Crumb:
-    """Class of crumb objects representing zipper context."""
+class JSONPointer(list):
+    """This class represents JSON Pointer [RFC 6901]."""
 
-    def __init__(self, parent: "Crumb", ts: datetime) -> None:
-        """Initialize the class instance.
+    def __str__(self) -> str:
+        """Return string representation of the receiver."""
+        return "/" + "/".join([ str(c) for c in self ])
 
-        :param parent: parent crumb
-        :param ts: receiver's time stamp
-        """
-        self.parent = parent
-        self._timestamp = ts
-
-    @property
-    def timestamp(self) -> datetime:
-        """Return receiver's timestamp (or parent's if ``None``)."""
-        return self._timestamp if self._timestamp else self.parent.timestamp
-
-    def _pointer(self) -> str:
-        return ("{}/{}".format(self.parent._pointer(), self.pointer_fragment())
-                if self.parent else "")
-
-class MemberCrumb(Crumb):
-    """Zipper context for an object member."""
-
-    def __init__(self, name: InstanceName, obj: Dict[InstanceName, Value],
-                 parent: Crumb, ts: datetime = None) -> None:
-        """Initialize the class instance.
-
-        :param name: name of an object member that's the current focus
-        :param obj: an object containing the remaining members
-        :param parent: parent crumb
-        :param ts: receiver's time stamp
-        """
-        super().__init__(parent, ts)
-        self.name = name
-        self.object = obj
-
-    def pointer_fragment(self) -> InstanceName:
-        """Return the JSON pointer fragment of the focused value."""
-        return self.name
-
-    def zip(self, value: Value) -> ObjectValue:
-        """Put focused value back to a copy of the object and return it.
-
-        :param value: value of the focused member
-        """
-        res = ObjectValue(self.timestamp)
-        res[self.name] = value
-        res.update(self.object)
-        return res
-
-    def _copy(self, ts: datetime) -> "MemberCrumb":
-        """Return a shallow copy of the receiver.
-
-        :param ts: timestamp of the copy
-        """
-        return MemberCrumb(self.name, self.object, self.parent, ts)
-
-class EntryCrumb(Crumb):
-    """Zipper contexts for an array entry."""
-
-    def __init__(self, before: List[Value], after: List[Value],
-                 parent: Crumb, ts: datetime = None) -> None:
-        """Initialize the class instance.
-
-        :param before: array entries before the focused entry
-        :param after: array entries after the focused entry
-        :param parent: parent crumb
-        :param ts: receiver's time stamp
-        """
-        super().__init__(parent, ts)
-        self.before = before
-        self.after = after
-
-    def pointer_fragment(self) -> int:
-        """Return the JSON pointer fragment of the focused value."""
-        return len(self.before)
-
-    def zip(self, value: Value) -> ArrayValue:
-        """Concatenate the receiver's parts with the focused entry.
-
-        :param value: value of the focused entry
-        """
-        res = ArrayValue(self.timestamp)
-        res.extend(self.before)
-        res.append(value)
-        res.extend(self.after)
-        return res
-
-    def _copy(self, ts: datetime) -> "EntryCrumb":
-        """Return a shallow copy of the receiver.
-
-        :param ts: timestamp of the copy
-        """
-        return EntryCrumb(self.before, self.after, self.parent, ts)
-
-class Instance:
+class InstanceNode:
     """YANG data node instance implemented as a zipper structure."""
 
-    def __init__(self, value: Value, crumb: Crumb) -> None:
+    def __init__(self, value: Value, parent: Optional["InstanceNode"],
+                 ts: datetime) -> None:
         """Initialize the class instance.
 
         :param value: instance value
-        :param crumb: receiver's crumb
         """
         self.value = value
-        self.crumb = crumb
+        self.parent = parent
+        self.timestamp = ts
+
+    def _copy(self, newval: Value = None,
+              newts: datetime = None) -> "InstanceNode":
+        return InstanceNode(newval if newval else self.value, self.parent,
+                          newts if newts else self._timestamp)
 
     @property
-    def name(self) -> Optional[InstanceName]:
-        """The name of the receiver."""
-        if isinstance(self.crumb, MemberCrumb):
-            return self.crumb.name
-        if self.crumb.parent:
-            return self.crumb.parent.name
+    def path(self) -> str:
+        """Return JSONPointer of the receiver."""
 
-    @property
-    def pointer(self) -> str:
-        """Return JSON pointer of the receiver."""
+        return ([] if self.is_top() else
+                self.parent.path.append(self.pointer_fragment()))
 
-        return "/" if self.is_top() else self.crumb._pointer()
+    def up(self) -> "InstanceNode":
+        """Ascend to the parent instance node."""
+        try:
+            ts = max(self.timestamp, self.parent.timestamp)
+            return self.parent._copy(self.zip(), ts)
+        except AttributeError:
+            raise NonexistentInstance(self, "up of top") from None
 
-    def goto(self, ii: "InstanceIdentifier") -> "Instance":
+    def is_top(self) -> bool:
+        """Is the receiver the top-level instance?"""
+        return self.parent is None
+
+    def top(self) -> "InstanceNode":
+        inst = self
+        while inst.parent:
+            inst = inst.up()
+        return inst
+
+    def goto(self, ii: "InstanceIdentifier") -> "InstanceNode":
         """Return an instance in the receiver's subtree.
 
         :param ii: instance route (relative to the receiver)
         """
-        inst = self # type: "Instance"
+        inst = self # type: "InstanceNode"
         for sel in ii:
             inst = sel.goto_step(inst)
         return inst
@@ -204,109 +125,77 @@ class Instance:
             val = sel.peek_step(val)
         return val
 
-    def update(self, newval: Value) -> "Instance":
+    def update(self, newval: Value) -> "InstanceNode":
         """Return a copy of the receiver with a new value.
 
         :param newval: new value
         """
-        return Instance(newval, self.crumb._copy(datetime.now()))
+        return self._copy(newval, datetime.now())
 
-    def up(self) -> "Instance":
-        """Ascend to the parent instance."""
+    def member(self, name: InstanceName) -> "ObjectMember":
+        if not isinstance(self.value, ObjectValue):
+            raise InstanceTypeError(self, "member of non-object")
+        obj = self.value.copy()
         try:
-            if self.crumb._timestamp:
-                self.crumb.parent._timestamp = self.crumb._timestamp
-            return Instance(self.crumb.zip(self.value), self.crumb.parent)
-        except (AttributeError, IndexError):
-            raise NonexistentInstance(self, "up of top") from None
-
-    def is_top(self) -> bool:
-        """Is the receiver the top-level instance?"""
-        return self.crumb.parent is None
-
-    def top(self) -> "Instance":
-        inst = self
-        while inst.crumb.parent:
-            inst = inst.up()
-        return inst
-
-    def member(self, name: InstanceName) -> "Instance":
-        try:
-            obj = self.value.copy()
-            return Instance(obj.pop(name), MemberCrumb(name, obj, self.crumb))
-        except (TypeError, AttributeError):
-            raise InstanceTypeError(self, "member of non-object") from None
+            return ObjectMember(name, obj, obj.pop(name), self,
+                                self.value.timestamp)
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
 
-    def new_member(self, name: InstanceName, value: Value) -> "Instance":
+    def new_member(self, name: InstanceName, value: Value) -> "ObjectMember":
         if not isinstance(self.value, ObjectValue):
             raise InstanceTypeError(self, "member of non-object")
         if name in self.value:
             raise DuplicateMember(self, name)
-        return Instance(value, MemberCrumb(name, self.value, self.crumb,
-                                           datetime.now()))
+        return ObjectMember(name, self.value, value, self, datetime.now())
 
-    def remove_member(self, name: InstanceName) -> "Instance":
+    def remove_member(self, name: InstanceName) -> "InstanceNode":
+        if not isinstance(self.value, ObjectValue):
+            raise InstanceTypeError(self, "member of non-object")
+        res = self._copy(self.value.copy(), datetime.now())
         try:
-            val = self.value.copy()
-            del val[name]
-            return Instance(val, self.crumb)
-        except (TypeError, AttributeError):
-            raise InstanceTypeError(self, "member of non-object") from None
+            del res.value[name]
+            return res
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
 
-    def sibling(self, name: InstanceName) -> "Instance":
-        try:
-            obj = self.crumb.object.copy()
-            newval = obj.pop(name)
-            obj[self.crumb.name] = self.value
-            return Instance(newval, MemberCrumb(name, obj, self.crumb.parent))
-        except KeyError:
-            raise NonexistentInstance(self, "member " + name) from None
-        except IndexError:
-            raise InstanceTypeError(self, "sibling of non-member") from None
-
-    def entry(self, index: int) -> "Instance":
+    def entry(self, index: int) -> "ArrayEntry":
         val = self.value
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "entry of non-array")
         try:
-            return Instance(val[index],
-                            EntryCrumb(val[:index], val[index+1:], self.crumb))
+            return ArrayEntry(val[:index], val[index+1:], val[index], self,
+                              val.timestamp)
         except IndexError:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
-    def remove_entry(self, index: int) -> "Instance":
-        val = self.value
-        if not isinstance(val, ArrayValue):
-            raise InstanceTypeError(self, "entry of non-array")
-        try:
-            return Instance(ArrayValue(val = val[:index] + val[index+1:]),
-                            self.crumb)
-        except IndexError:
-            raise NonexistentInstance(self, "entry " + str(index)) from None
-
-    def first_entry(self):
-        val = self.value
-        if not isinstance(val, ArrayValue):
-            raise InstanceTypeError(self, "first entry of non-array")
-        try:
-            return Instance(val[0], EntryCrumb([], val[1:], self.crumb))
-        except IndexError:
-            raise NonexistentInstance(self, "first of empty") from None
-
-    def last_entry(self):
+    def last_entry(self) -> "ArrayEntry":
         val = self.value
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "last entry of non-array")
         try:
-            return Instance(val[-1], EntryCrumb(val[:-1], [], self.crumb))
+            return ArrayEntry(val[:-1], [], val[-1], self, val.timestamp)
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
-    def look_up(self, keys: Dict[InstanceName, ScalarValue]) -> "Instance":
+    def entries(self) -> List["ArrayEntry"]:
+        """Return all receiver's entries as a list of instances."""
+        val = self.value
+        if not isinstance(val, ArrayValue):
+            raise InstanceTypeError(self, "entries of non-array")
+        return [ self.entry(i) for i in range(len(val)) ]
+
+    def remove_entry(self, index: int) -> "InstanceNode":
+        val = self.value
+        if not isinstance(val, ArrayValue):
+            raise InstanceTypeError(self, "entry of non-array")
+        try:
+            return self._copy(ArrayValue(val[:index] + val[index+1:]),
+                              datetime.now())
+        except IndexError:
+            raise NonexistentInstance(self, "entry " + str(index)) from None
+
+    def look_up(self, keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
         """Return the entry with matching keys."""
         if not isinstance(self.value, ArrayValue):
             raise InstanceTypeError(self, "lookup on non-list")
@@ -325,45 +214,93 @@ class Instance:
         except TypeError:
             raise InstanceTypeError(self, "lookup on non-list") from None
 
-    def next(self) -> "Instance":
+class ObjectMember(InstanceNode):
+    """This class represents an object member."""
+
+    def __init__(self, name: InstanceName, siblings: Dict[InstanceName, Value],
+                 value: Value, parent: InstanceNode,
+                 ts: datetime ) -> None:
+        super().__init__(value, parent, ts)
+        self.name = name
+        self.siblings = siblings
+
+    def zip(self) -> ObjectValue:
+        """Zip the receiver into an object and return it."""
+        res = ObjectValue(self.siblings.copy(), self.timestamp)
+        res[self.name] = self.value
+        return res
+
+    def _pointer_fragment(self) -> str:
+        return self.name
+
+    def _copy(self, newval: Value = None,
+              newts: datetime = None) -> "ObjectMember":
+        return ObjectMember(self.name, self.siblings,
+                           newval if newval else self.value, self.parent,
+                           newts if newts else self._timestamp)
+
+    def sibling(self, name: InstanceName) -> "InstanceNode":
         try:
-            cr = self.crumb
-            return Instance(
-                cr.after[0],
-                EntryCrumb(cr.before + [self.value], cr.after[1:], cr.parent))
+            sib = self.siblings.copy()
+            newval = sib.pop(name)
+            sib[self.name] = self.value
+            return ObjectMember(name, sib, newval, self.parent, self.timestamp)
+        except KeyError:
+            raise NonexistentInstance(self, "member " + name) from None
+
+class ArrayEntry(InstanceNode):
+    """This class represents an array entry."""
+
+    def __init__(self, before: List[Value], after: List[Value], value: Value,
+                 parent: InstanceNode, ts: datetime = None) -> None:
+        super().__init__(value, parent, ts)
+        self.before = before
+        self.after = after
+
+    @property
+    def name(self) -> Optional[InstanceName]:
+        """Return the name of the receiver."""
+        return self.parent.name
+
+    def zip(self) -> ArrayValue:
+        """Zip the receiver into an array and return it."""
+        res = ArrayValue(self.before.copy(), self.timestamp)
+        res.append(self.value)
+        res.extend(self.after)
+        return res
+
+    def _pointer_fragment(self) -> int:
+        return len(self.before)
+
+    def _copy(self, newval: Value = None,
+              newts: datetime = None) -> "ArrayEntry":
+        return ArrayEntry(self.before, self.after,
+                          newval if newval else self.value, self.parent,
+                          newts if newts else self._timestamp)
+
+    def next(self) -> "ArrayEntry":
+        try:
+            newval = self.after[0]
         except IndexError:
             raise NonexistentInstance(self, "next of last") from None
-        except AttributeError:
-            raise InstanceTypeError(self, "next of non-entry") from None
+        return ArrayEntry(self.before + [self.value], self.after[1:],
+                          newval, self.parent, self.timestamp)
 
-    def previous(self) -> "Instance":
+    def previous(self) -> "ArrayEntry":
         try:
-            cr = self.crumb
-            return Instance(
-                cr.before[-1],
-                EntryCrumb(cr.before[:-1], [self.value] + cr.after, cr.parent))
+            newval = self.before[-1]
         except IndexError:
             raise NonexistentInstance(self, "previous of first") from None
-        except AttributeError:
-            raise InstanceTypeError(self, "previous of non-entry") from None
+        return ArrayEntry(self.before[:-1], [self.value] + self.after,
+                          newval, self.parent, self.timestamp)
 
     def insert_before(self, value: Value):
-        try:
-            cr = self.crumb
-            return Instance(value,
-                            EntryCrumb(cr.before, [self.value] + cr.after,
-                                       cr.parent, datetime.now()))
-        except (AttributeError, IndexError):
-            raise InstanceTypeError(self, "insert before non-entry") from None
+        return ArrayEntry(self.before, [self.value] + self.after, value,
+                          self.parent, datetime.now())
 
     def insert_after(self, value: Value):
-        try:
-            cr = self.crumb
-            return Instance(value,
-                            EntryCrumb(cr.before + [self.value], cr.after,
-                                       cr.parent, datetime.now()))
-        except (AttributeError, IndexError):
-            raise InstanceTypeError(self, "insert after non-entry") from None
+        return ArrayEntry(self.before + [self.value], self.after, value,
+                          self.parent, datetime.now())
 
 class InstanceIdentifier(list):
     """Instance route."""
@@ -400,7 +337,7 @@ class MemberName(InstanceSelector):
         """
         return obj.get(self.name)
 
-    def goto_step(self, inst: Instance) -> Instance:
+    def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.
 
         :param inst: current instance
@@ -434,7 +371,7 @@ class EntryIndex(InstanceSelector):
         except IndexError:
             return None
 
-    def goto_step(self, inst: Instance) -> Instance:
+    def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.
 
         :param inst: current instance
@@ -468,7 +405,7 @@ class EntryValue(InstanceSelector):
         except ValueError:
             return None
 
-    def goto_step(self, inst: Instance) -> Instance:
+    def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.
 
         :param inst: current instance
@@ -510,7 +447,7 @@ class EntryKeys(InstanceSelector):
                     break
             if flag: return en
 
-    def goto_step(self, inst: Instance) -> Instance:
+    def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.
 
         :param inst: current instance
@@ -522,16 +459,16 @@ class EntryKeys(InstanceSelector):
 class InstanceError(YangsonException):
     """Exceptions related to operations on the instance structure."""
 
-    def __init__(self, inst: Instance):
+    def __init__(self, inst: InstanceNode):
         self.instance = inst
 
     def __str__(self):
-        return "[" + self.instance.pointer + "] "
+        return "[" + str(self.instance.path) + "] "
 
 class NonexistentInstance(InstanceError):
     """Exception to raise when moving out of bounds."""
 
-    def __init__(self, inst: Instance, text: str) -> None:
+    def __init__(self, inst: InstanceNode, text: str) -> None:
         super().__init__(inst)
         self.text = text
 
@@ -541,7 +478,7 @@ class NonexistentInstance(InstanceError):
 class InstanceTypeError(InstanceError):
     """Exception to raise when calling a method for a wrong instance type."""
 
-    def __init__(self, inst: Instance, text: str) -> None:
+    def __init__(self, inst: InstanceNode, text: str) -> None:
         super().__init__(inst)
         self.text = text
 
@@ -551,7 +488,7 @@ class InstanceTypeError(InstanceError):
 class DuplicateMember(InstanceError):
     """Exception to raise on attempt to create a member that already exists."""
 
-    def __init__(self, inst: Instance, name: InstanceName) -> None:
+    def __init__(self, inst: InstanceNode, name: InstanceName) -> None:
         super().__init__(inst)
         self.name = name
 

@@ -302,14 +302,14 @@ class InternalNode(SchemaNode):
 
         :param val: raw dictionary
         """
-        res = ObjectValue()
+        res = ObjectValue({})
         for qn in val:
             cn = self.uniname(qn)
             ch = self.get_data_child(*cn)
             if ch is None:
                 raise NonexistentSchemaNode(cn[0], cn[1] if cn[1] else self.ns)
             res[ch.instance_name()] = ch.from_raw(val[qn])
-        res.time_stamp()
+        res.stamp()
         return res
 
     def _ascii_tree(self, indent: str) -> str:
@@ -438,10 +438,10 @@ class SequenceNode(DataNode):
 
         :param val: raw array
         """
-        res = ArrayValue()
+        res = ArrayValue([])
         for en in val:
             res.append(self._entry_from_raw(en))
-        res.time_stamp()
+        res.stamp()
         return res
 
     def _entry_from_raw(self, val: RawValue) -> Value:

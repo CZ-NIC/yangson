@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from urllib.parse import unquote
 from .constants import pname_re, YangsonException
 from .context import Context, BadYangLibraryData
-from .instance import (Crumb, EntryKeys, Instance, InstanceIdentifier,
+from .instance import (EntryKeys, InstanceNode, InstanceIdentifier,
                        MemberName)
 from .schema import (BadSchemaNodeType, DataNode, InternalNode,
                      NonexistentSchemaNode, RawObject, SchemaNode)
@@ -28,13 +28,13 @@ class DataModel:
             raise BadYangLibraryData() from None
         Context.from_yang_library(yl, mod_path)
 
-    def from_raw(self, robj: RawObject) -> Instance:
+    def from_raw(self, robj: RawObject) -> InstanceNode:
         """Return an instance created from a raw data tree.
 
         :param robj: a dictionary representing raw data tree
         """
         cooked = Context.schema.from_raw(robj)
-        return Instance(cooked, Crumb(None, cooked.last_modified))
+        return InstanceNode(cooked, None, cooked.timestamp)
 
     def get_schema_node(self, path: SchemaPath) -> Optional[SchemaNode]:
         """Return the schema node corresponding to `path`.
