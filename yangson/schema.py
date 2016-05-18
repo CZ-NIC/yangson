@@ -47,9 +47,18 @@ class SchemaNode:
         if s: return (loc, p)
         return (p, None)
 
+    def data_parent(self) -> Optional["SchemaNode"]:
+        """Return the closest ancestor data node."""
+        parent = self.parent
+        while parent:
+            if isinstance(parent, DataNode):
+                return parent
+            parent = parent.parent
+
     def instance_name(self) -> InstanceName:
         """Return the instance name corresponding to the receiver."""
-        return (self.name if self.ns == self.parent.ns
+        dp = self.data_parent()
+        return (self.name if dp and self.ns == dp.ns
                 else self.ns + ":" + self.name)
 
     def instance_route(self) -> InstanceRoute:
@@ -95,7 +104,7 @@ class SchemaNode:
     _stmt_callback = {
         "action": "_rpc_action_stmt",
         "anydata": "_anydata_stmt",
-        "anyxml": "_anyxml_stmt",
+        "anyxml": "_anydata_stmt",
         "case": "_case_stmt",
         "choice": "_choice_stmt",
         "config": "_config_stmt",
@@ -291,11 +300,6 @@ class InternalNode(SchemaNode):
         """Handle anydata statement."""
         if Context.if_features(stmt, mid):
             self._handle_child(AnydataNode(), stmt, mid)
-
-    def _anyxml_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle anyxml statement."""
-        if Context.if_features(stmt, mid):
-            self._handle_child(AnyxmlNode(), stmt, mid)
 
     def from_raw(self, val: RawObject) -> ObjectValue:
         """Transform a raw dictionary into object value.
@@ -683,16 +687,24 @@ class LeafListNode(SequenceNode, TerminalNode):
             self._tree_line_prefix(), self.instance_name())
 
 class AnydataNode(TerminalNode, DataNode):
-    """Anydata node."""
+    """Anydata or anyxml node."""
 
-    def _tree_line(self) -> str:
-        """Return the receiver's contribution to tree diagram."""
-        return "{} {}{}\n".format(
-            self._tree_line_prefix(), self.instance_name(),
-            "" if self.mandatory else "?")
+    def from_raw(self, val: RawValue) -> Value:
+        """Transform an anydata or anyxml value.
 
-class AnyxmlNode(TerminalNode, DataNode):
-    """Anyxml node."""
+        :param val: raw value
+        """
+        def convert(val):
+            if isinstance(val, list):
+                res = ArrayValue([convert(x) for x in val])
+                res.stamp()
+            elif isinstance(val, dict):
+                res = ArrayValue({ x:convert(x) for x in val })
+                res.stamp()
+            else:
+                res = val
+            return res
+        return convert(val)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
