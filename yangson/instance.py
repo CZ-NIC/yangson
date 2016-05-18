@@ -21,7 +21,7 @@ class StructuredValue:
         """
         self.timestamp = ts
 
-    def stamp(self, ts: datetime = None) -> None:
+    def stamp(self) -> None:
         """Update the receiver's timestamp to current time."""
         self.timestamp = datetime.now()
 
