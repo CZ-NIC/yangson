@@ -1,3 +1,4 @@
+import json
 import pytest
 from decimal import Decimal
 from yangson import DataModel
@@ -12,7 +13,37 @@ def data_model():
               encoding="utf-8") as ylfile:
         ylib = ylfile.read()
     return DataModel(ylib, tpath)
-        
+
+@pytest.fixture
+def instance(data_model):
+    data = """
+    {
+	    "test:contA": {
+		    "leafA": 22,
+		    "leafB": 55,
+		    "listA": [{
+			    "leafE": "C0FFEE",
+			    "leafF": "true",
+			    "contD": {
+				    "leafG": "foo1-bar",
+				    "contE": {
+					    "leafJ": [null],
+					    "leafP": 42
+				    }
+			    }
+		    }, {
+			    "leafE": "ABBA",
+			    "leafF": "true"
+		    }],
+		    "anydA": {
+			    "foo:bar": [1, 2, 3]
+		    },
+		    "testb:leafN": "hi!"
+	    }
+    }
+    """
+    return data_model.from_raw(json.loads(data))
+
 def test_context(data_model):
     assert len(Context.implement) == 3
     tid = Context._last_revision("test")
@@ -133,3 +164,16 @@ def test_types(data_model):
         b'UMWZw61sacWhIMW+bHXFpW91xI1rw70ga8' +
         b'WvxYggw7pwxJtsIMSPw6FiZWxza8OpIMOzZHku')
     assert bv.decode("utf-8") == "Příliš žluťoučký kůň úpěl ďábelské ódy."
+
+def test_instance(instance):
+    la1 = instance.member("test:contA").member("listA").last_entry()
+    tbln = instance.member("test:contA").member("testb:leafN")
+    inst1 = la1.remove_member("leafE").new_member("leafE", "ABBA").top()
+    inst2 = tbln.update("hello!").top()
+    assert instance.value == inst1.value
+    assert instance.value != inst2.value
+    assert instance.timestamp < inst1.timestamp < inst2.timestamp
+    assert inst1.path == inst2.path == []
+    assert str(la1.path) == "/test:contA/listA/1"
+    assert str(tbln.path) == "/test:contA/testb:leafN"
+    
