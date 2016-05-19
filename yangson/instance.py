@@ -85,7 +85,7 @@ class InstanceNode:
         """Return JSONPointer of the receiver."""
         parents = []
         inst = self
-        while not inst.is_top():
+        while inst.parent:
             parents.append(inst)
             inst = inst.parent
         return JSONPointer([ i._pointer_fragment() for i in parents[::-1] ])
@@ -97,10 +97,6 @@ class InstanceNode:
             return self.parent._copy(self.zip(), ts)
         except AttributeError:
             raise NonexistentInstance(self, "up of top") from None
-
-    def is_top(self) -> bool:
-        """Is the receiver the top-level instance?"""
-        return self.parent is None
 
     def top(self) -> "InstanceNode":
         inst = self
@@ -216,6 +212,12 @@ class InstanceNode:
             raise NonexistentInstance(self, "entry lookup failed") from None
         except TypeError:
             raise InstanceTypeError(self, "lookup on non-list") from None
+
+class RootNode(InstanceNode):
+    """This class represents the root of the instance tree."""
+
+    def __init__(self, value: Value, ts: datetime) -> None:
+        super().__init__(value, None, ts)
 
     def ancestors_or_self(self, name: InstanceName = None,
                           with_root: bool = False) -> List["InstanceNode"]:
