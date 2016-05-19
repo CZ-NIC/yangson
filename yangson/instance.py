@@ -219,11 +219,22 @@ class InstanceNode:
             return res
         return self.member(name).xpath_nodes() if name in self.value else []
 
+    def descendants(self, name: InstanceName = None,
+                    with_self: bool = False) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath descendants."""
+        res = ([self] if with_self and (name is None or self.name == name)
+               else [])
+        for c in self.children(name):
+            res.append(c)
+            res += c.descendants(name)
+        return res
+
 class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
     def __init__(self, value: Value, ts: datetime) -> None:
         super().__init__(value, None, ts)
+        self.name = None
 
     def _copy(self, newval: Value = None,
               newts: datetime = None) -> "InstanceNode":

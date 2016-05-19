@@ -193,3 +193,6 @@ def test_instance(instance):
                               "/test:contA/leafB", "/test:contA/listA/0",
                               "/test:contA/listA/1", "/test:contA/testb:leafN"])
     axtest(la1.children("leafF"), ["/test:contA/listA/1/leafF"])
+    assert len(instance.descendants(with_self=True)) == 20
+    axtest(conta.descendants("listA"),
+           ["/test:contA/listA/0", "/test:contA/listA/1"])
