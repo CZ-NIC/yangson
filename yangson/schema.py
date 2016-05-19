@@ -222,7 +222,7 @@ class InternalNode(SchemaNode):
             return [self]
         res = []
         for c in self.children:
-            res.extend(c._state_roots())
+            res += c._state_roots()
         return res
 
     def _handle_child(
@@ -697,7 +697,7 @@ class AnydataNode(TerminalNode, DataNode):
                 res = ArrayValue([convert(x) for x in val])
                 res.stamp()
             elif isinstance(val, dict):
-                res = ArrayValue({ x:convert(x) for x in val })
+                res = ObjectValue({ x:convert(val[x]) for x in val })
                 res.stamp()
             else:
                 res = val
