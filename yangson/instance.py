@@ -218,6 +218,16 @@ class InstanceNode:
         except TypeError:
             raise InstanceTypeError(self, "lookup on non-list") from None
 
+    def ancestors_or_self(self, name: InstanceName = None,
+                          with_root: bool = False) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath ancestors."""
+        return [self] if name is None and with_root else []
+
+    def ancestors(self, name: InstanceName = None,
+                  with_root: bool = False) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath ancestors."""
+        return []
+
 class ObjectMember(InstanceNode):
     """This class represents an object member."""
 
@@ -251,6 +261,19 @@ class ObjectMember(InstanceNode):
             return ObjectMember(name, sib, newval, self.parent, self.timestamp)
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
+
+    def ancestors_or_self(self, name: InstanceName = None,
+                          with_root: bool = False) -> List[InstanceNode]:
+        """Return the list of receiver's XPath ancestors-or-self."""
+        res = self.up().ancestors_or_self(name, with_root)
+        if name is None or self.name == name:
+            res.append(self)
+        return res
+
+    def ancestors(self, name: InstanceName = None,
+                  with_root: bool = False) -> List[InstanceNode]:
+        """Return the list of receiver's XPath ancestors."""
+        return self.up().ancestors_or_self(name, with_root)
 
 class ArrayEntry(InstanceNode):
     """This class represents an array entry."""
@@ -305,6 +328,19 @@ class ArrayEntry(InstanceNode):
     def insert_after(self, value: Value):
         return ArrayEntry(self.before + [self.value], self.after, value,
                           self.parent, datetime.now())
+
+    def ancestors_or_self(self, name: InstanceName = None,
+                          with_root: bool = False) -> List[InstanceNode]:
+        """Return the list of receiver's XPath ancestors-or-self."""
+        res = self.up().ancestors(name, with_root)
+        if name is None or name == self.name:
+            res.append(self)
+        return res
+
+    def ancestors(self, name: InstanceName = None,
+                  with_root: bool = False) -> List[InstanceNode]:
+        """Return the list of receiver's XPath ancestors."""
+        return self.up().ancestors(name, with_root)
 
 class InstanceIdentifier(list):
     """Instance route."""

@@ -176,4 +176,9 @@ def test_instance(instance):
     assert inst1.path == inst2.path == []
     assert str(la1.path) == "/test:contA/listA/1"
     assert str(tbln.path) == "/test:contA/testb:leafN"
-    
+    assert instance.ancestors() == []
+    assert ([ str(i.path) for i in la1.ancestors(with_root=True) ] ==
+            [ "/", "/test:contA" ])
+    assert ([ str(i.path) for i in la1.ancestors_or_self("listA") ] ==
+            [ "/test:contA/listA/1" ])
+
