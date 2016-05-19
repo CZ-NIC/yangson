@@ -75,11 +75,6 @@ class InstanceNode:
         self.parent = parent
         self.timestamp = ts
 
-    def _copy(self, newval: Value = None,
-              newts: datetime = None) -> "InstanceNode":
-        return InstanceNode(newval if newval else self.value, self.parent,
-                          newts if newts else self._timestamp)
-
     @property
     def path(self) -> str:
         """Return JSONPointer of the receiver."""
@@ -213,11 +208,27 @@ class InstanceNode:
         except TypeError:
             raise InstanceTypeError(self, "lookup on non-list") from None
 
+    def children(self, name: InstanceName = None) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath children."""
+        if not isinstance(self.value, ObjectValue): return []
+        if name is None:
+            names = sorted(self.value.keys())
+            res = []
+            for n in sorted(self.value.keys()):
+                res += self.member(n).xpath_nodes()
+            return res
+        return self.member(name).xpath_nodes() if name in self.value else []
+
 class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
     def __init__(self, value: Value, ts: datetime) -> None:
         super().__init__(value, None, ts)
+
+    def _copy(self, newval: Value = None,
+              newts: datetime = None) -> "InstanceNode":
+        return RootNode(newval if newval else self.value,
+                          newts if newts else self._timestamp)
 
     def ancestors_or_self(self, name: InstanceName = None,
                           with_root: bool = False) -> List["InstanceNode"]:

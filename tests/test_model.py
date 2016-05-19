@@ -168,8 +168,9 @@ def test_types(data_model):
 def test_instance(instance):
     def axtest(expr, res):
         assert [ str(i.path) for i in expr ] == res
-    la1 = instance.member("test:contA").member("listA").last_entry()
-    tbln = instance.member("test:contA").member("testb:leafN")
+    conta = instance.member("test:contA")
+    la1 = conta.member("listA").last_entry()
+    tbln = conta.member("testb:leafN")
     inst1 = la1.remove_member("leafE").new_member("leafE", "ABBA").top()
     inst2 = tbln.update("hello!").top()
     assert instance.value == inst1.value
@@ -188,3 +189,7 @@ def test_instance(instance):
     axtest(la1.preceding_siblings("leafB"), [ "/test:contA/leafB" ])
     axtest(la1.preceding_siblings("leafB"), [ "/test:contA/leafB" ])
     axtest(la1.following_siblings(), [ "/test:contA/testb:leafN" ])
+    axtest(conta.children(), ["/test:contA/anydA", "/test:contA/leafA",
+                              "/test:contA/leafB", "/test:contA/listA/0",
+                              "/test:contA/listA/1", "/test:contA/testb:leafN"])
+    axtest(la1.children("leafF"), ["/test:contA/listA/1/leafF"])
