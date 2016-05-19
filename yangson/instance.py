@@ -182,12 +182,11 @@ class InstanceNode:
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
-    def entries(self) -> List["ArrayEntry"]:
-        """Return all receiver's entries as a list of instances."""
+    def xpath_nodes(self) -> List["ArrayEntry"]:
+        """Return the list of all receiver's instances."""
         val = self.value
-        if not isinstance(val, ArrayValue):
-            raise InstanceTypeError(self, "entries of non-array")
-        return [ self.entry(i) for i in range(len(val)) ]
+        return ([ self.entry(i) for i in range(len(val)) ] if
+                isinstance(val, ArrayValue) else [self])
 
     def remove_entry(self, index: int) -> "InstanceNode":
         val = self.value
@@ -226,6 +225,16 @@ class InstanceNode:
     def ancestors(self, name: InstanceName = None,
                   with_root: bool = False) -> List["InstanceNode"]:
         """Return the list of receiver's XPath ancestors."""
+        return []
+
+    def preceding_siblings(self,
+                           name: InstanceName = None) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath preceding-siblings."""
+        return []
+
+    def following_siblings(self,
+                           name: InstanceName = None) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath following-siblings."""
         return []
 
 class ObjectMember(InstanceNode):
@@ -275,6 +284,31 @@ class ObjectMember(InstanceNode):
         """Return the list of receiver's XPath ancestors."""
         return self.up().ancestors_or_self(name, with_root)
 
+    def preceding_siblings(self,
+                           name: InstanceName = None) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath preceding-siblings."""
+        if name is None:
+            prec = sorted([ n for n in self.siblings if n < self.name ],
+                          reverse=True)
+            res = []
+            for n in prec:
+                res += self.sibling(n).xpath_nodes()
+            return res
+        return (self.sibling(name).xpath_nodes() if
+                name < self.name and name in self.siblings else [])
+
+    def following_siblings(self,
+                           name: InstanceName = None) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath following-siblings."""
+        if name is None:
+            foll = sorted([ n for n in self.siblings if n > self.name ])
+            res = []
+            for n in foll:
+                res += self.sibling(n).xpath_nodes()
+            return res
+        return (self.sibling(name).xpath_nodes() if
+                name > self.name and name in self.siblings else [])
+
 class ArrayEntry(InstanceNode):
     """This class represents an array entry."""
 
@@ -293,7 +327,7 @@ class ArrayEntry(InstanceNode):
         """Zip the receiver into an array and return it."""
         res = ArrayValue(self.before.copy(), self.timestamp)
         res.append(self.value)
-        res.extend(self.after)
+        res += self.after
         return res
 
     def _pointer_fragment(self) -> int:
@@ -341,6 +375,40 @@ class ArrayEntry(InstanceNode):
                   with_root: bool = False) -> List[InstanceNode]:
         """Return the list of receiver's XPath ancestors."""
         return self.up().ancestors(name, with_root)
+
+    def preceding_entries(self) -> List["ArrayEntry"]:
+        """Return the list of instances preceding in the array."""
+        res = []
+        ent = self
+        for i in range(len(self.before)):
+            ent = ent.previous()
+            res.append(ent)
+        return res
+
+    def following_entries(self) -> List["ArrayEntry"]:
+        """Return the list of instances following in the array."""
+        res = []
+        ent = self
+        for i in range(len(self.after)):
+            ent = ent.next()
+            res.append(ent)
+        return res
+
+    def preceding_siblings(self,
+                           name: InstanceName = None) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath preceding-siblings."""
+        if name is None:
+            return self.preceding_entries() + self.up().preceding_siblings()
+        return (self.preceding_entries() if name == self.name
+                else self.up().preceding_siblings(name))
+
+    def following_siblings(self,
+                           name: InstanceName = None) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath following-siblings."""
+        if name is None:
+            return self.following_entries() + self.up().following_siblings()
+        return (self.following_entries() if name == self.name
+                else self.up().following_siblings(name))
 
 class InstanceIdentifier(list):
     """Instance route."""

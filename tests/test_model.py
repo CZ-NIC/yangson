@@ -166,6 +166,8 @@ def test_types(data_model):
     assert bv.decode("utf-8") == "Příliš žluťoučký kůň úpěl ďábelské ódy."
 
 def test_instance(instance):
+    def axtest(expr, res):
+        assert [ str(i.path) for i in expr ] == res
     la1 = instance.member("test:contA").member("listA").last_entry()
     tbln = instance.member("test:contA").member("testb:leafN")
     inst1 = la1.remove_member("leafE").new_member("leafE", "ABBA").top()
@@ -176,9 +178,13 @@ def test_instance(instance):
     assert inst1.path == inst2.path == []
     assert str(la1.path) == "/test:contA/listA/1"
     assert str(tbln.path) == "/test:contA/testb:leafN"
-    assert instance.ancestors() == []
-    assert ([ str(i.path) for i in la1.ancestors(with_root=True) ] ==
-            [ "/", "/test:contA" ])
-    assert ([ str(i.path) for i in la1.ancestors_or_self("listA") ] ==
-            [ "/test:contA/listA/1" ])
-
+    assert (instance.ancestors() == instance.preceding_siblings() ==
+            instance.following_siblings() == [])
+    axtest(instance.ancestors_or_self(with_root=True), ["/"])
+    axtest(la1.ancestors(with_root=True), ["/", "/test:contA"])
+    axtest(la1.ancestors_or_self("listA"), ["/test:contA/listA/1" ])
+    axtest(la1.preceding_siblings(), ["/test:contA/listA/0", "/test:contA/leafB",
+                                     "/test:contA/leafA", "/test:contA/anydA" ])
+    axtest(la1.preceding_siblings("leafB"), [ "/test:contA/leafB" ])
+    axtest(la1.preceding_siblings("leafB"), [ "/test:contA/leafB" ])
+    axtest(la1.following_siblings(), [ "/test:contA/testb:leafN" ])
