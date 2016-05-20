@@ -55,7 +55,7 @@ class ObjectValue(StructuredValue, dict):
         sks = sorted(self.keys())
         return tuple([ (k, self[k].__hash__()) for k in sks ]).__hash__()
 
-class JSONPointer(list):
+class JSONPointer(tuple):
     """This class represents JSON Pointer [RFC 6901]."""
 
     def __str__(self) -> str:
@@ -75,7 +75,6 @@ class InstanceNode:
         self.parent = parent
         self.timestamp = ts
 
-    @property
     def path(self) -> str:
         """Return JSONPointer of the receiver."""
         parents = []
@@ -595,7 +594,7 @@ class InstanceError(YangsonException):
         self.instance = inst
 
     def __str__(self):
-        return "[" + str(self.instance.path) + "] "
+        return "[" + str(self.instance.path()) + "] "
 
 class NonexistentInstance(InstanceError):
     """Exception to raise when moving out of bounds."""

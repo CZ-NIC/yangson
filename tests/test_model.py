@@ -167,7 +167,7 @@ def test_types(data_model):
 
 def test_instance(instance):
     def axtest(expr, res):
-        assert [ str(i.path) for i in expr ] == res
+        assert [ str(i.path()) for i in expr ] == res
     conta = instance.member("test:contA")
     la1 = conta.member("listA").last_entry()
     tbln = conta.member("testb:leafN")
@@ -176,9 +176,9 @@ def test_instance(instance):
     assert instance.value == inst1.value
     assert instance.value != inst2.value
     assert instance.timestamp < inst1.timestamp < inst2.timestamp
-    assert inst1.path == inst2.path == []
-    assert str(la1.path) == "/test:contA/listA/1"
-    assert str(tbln.path) == "/test:contA/testb:leafN"
+    assert inst1.path() == inst2.path() == ()
+    assert str(la1.path()) == "/test:contA/listA/1"
+    assert str(tbln.path()) == "/test:contA/testb:leafN"
     assert (instance.ancestors() == instance.preceding_siblings() ==
             instance.following_siblings() == [])
     axtest(instance.ancestors_or_self(with_root=True), ["/"])
