@@ -185,17 +185,17 @@ def test_instance(instance):
     assert (instance.ancestors() == instance.preceding_siblings() ==
             instance.following_siblings() == [])
     axtest(instance.ancestors_or_self(with_root=True), ["/"])
-    axtest(la1.ancestors(with_root=True), ["/", "/test:contA"])
-    axtest(la1.ancestors_or_self("listA"), ["/test:contA/listA/1" ])
+    axtest(la1.ancestors(with_root=True), ["/test:contA", "/"])
+    axtest(la1.ancestors_or_self(("listA", "test")), ["/test:contA/listA/1" ])
     axtest(la1.preceding_siblings(), ["/test:contA/listA/0", "/test:contA/leafB",
                                      "/test:contA/leafA", "/test:contA/anydA" ])
-    axtest(la1.preceding_siblings("leafB"), [ "/test:contA/leafB" ])
-    axtest(la1.preceding_siblings("leafB"), [ "/test:contA/leafB" ])
+    axtest(la1.preceding_siblings(("leafB", "test")), [ "/test:contA/leafB" ])
     axtest(la1.following_siblings(), [ "/test:contA/testb:leafN" ])
     axtest(conta.children(), ["/test:contA/anydA", "/test:contA/leafA",
                               "/test:contA/leafB", "/test:contA/listA/0",
                               "/test:contA/listA/1", "/test:contA/testb:leafN"])
-    axtest(la1.children("leafF"), ["/test:contA/listA/1/leafF"])
+    axtest(la1.children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
     assert len(instance.descendants(with_self=True)) == 20
-    axtest(conta.descendants("listA"),
+    axtest(conta.descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
+    axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
