@@ -75,6 +75,11 @@ class InstanceNode:
         self.parent = parent
         self.timestamp = ts
 
+    @property
+    def namespace(self) -> Optional[YangIdentifier]:
+        """Return the receiver's namespace."""
+        return None
+
     def path(self) -> str:
         """Return JSONPointer of the receiver."""
         parents = []
@@ -270,6 +275,12 @@ class ObjectMember(InstanceNode):
         self.name = name
         self.siblings = siblings
 
+    @property
+    def namespace(self) -> Optional[YangIdentifier]:
+        """Return the receiver's namespace."""
+        p, s, loc = self.name.partition(":")
+        return p if s else self.parent.namespace
+
     def zip(self) -> ObjectValue:
         """Zip the receiver into an object and return it."""
         res = ObjectValue(self.siblings.copy(), self.timestamp)
@@ -345,6 +356,11 @@ class ArrayEntry(InstanceNode):
     def name(self) -> Optional[InstanceName]:
         """Return the name of the receiver."""
         return self.parent.name
+
+    @property
+    def namespace(self) -> Optional[YangIdentifier]:
+        """Return the receiver's namespace."""
+        return self.parent.namespace
 
     def zip(self) -> ArrayValue:
         """Zip the receiver into an array and return it."""

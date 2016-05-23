@@ -177,7 +177,10 @@ def test_instance(instance):
     assert instance.value != inst2.value
     assert instance.timestamp < inst1.timestamp < inst2.timestamp
     assert inst1.path() == inst2.path() == ()
+    assert la1.namespace == "test"
+    assert la1.member("leafE").namespace == "test"
     assert str(la1.path()) == "/test:contA/listA/1"
+    assert tbln.namespace == "testb"
     assert str(tbln.path()) == "/test:contA/testb:leafN"
     assert (instance.ancestors() == instance.preceding_siblings() ==
             instance.following_siblings() == [])
