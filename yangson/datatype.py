@@ -10,7 +10,6 @@ from .typealiases import *
 
 # Local type aliases
 Range = List[List[Union[int, decimal.Decimal]]]
-RawScalar = Union[int, str]
 
 class DataType:
     """Abstract class for YANG data types."""

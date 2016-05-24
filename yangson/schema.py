@@ -4,18 +4,13 @@ from typing import Dict, List, Optional, Tuple, Union
 from .constants import DefaultDeny, pred_re, YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
-from .instance import (ArrayValue, EntryIndex, EntryValue,
-                       EntryKeys, InstanceIdentifier, MemberName,
-                       ObjectValue, Value)
+from .instvalue import ArrayValue, ObjectValue, Value
+from .instance import (EntryIndex, EntryValue,
+                       EntryKeys, InstanceIdentifier, MemberName)
 from .statement import Statement
 from .typealiases import *
 
 # Local type aliases
-RawObject = Dict[InstanceName, "RawValue"]
-RawList = List["RawObject"]
-RawLeafList = List[RawScalar]
-RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
-
 class SchemaNode:
     """Abstract superclass for schema nodes."""
 
