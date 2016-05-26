@@ -115,14 +115,15 @@ class ModuleParser(Parser):
                 else chop[0] + cls.unescape_map[chop[1][0]] +
                 cls.unescape(chop[1][1:]))
 
-    def opt_separator(self) -> None:
-        """Parse an optional separator.
+    def opt_separator(self) -> bool:
+        """Parse an optional separator and return ``True`` if found.
 
         :raises EndOfInput: if past the end of `self.input`
         """
         def back_break(c):
             self.offset -= 1
             return -1
+        start = self.offset
         self.scan(
             [(lambda c: -1, { " ": lambda: 0,
                               "\t": lambda: 0,
@@ -136,6 +137,7 @@ class ModuleParser(Parser):
              (lambda c: 4, { "*": lambda: 5 }),
              (lambda c: 4, { "/": lambda: 0,
                              "*": lambda: 5 })])
+        return start < self.offset
 
     def separator(self) -> None:
         """Parse a mandatory separator.
@@ -143,9 +145,8 @@ class ModuleParser(Parser):
         :raises EndOfInput: if past the end of `self.input`
         :raises UnexpectedInput: if no separator is found
         """
-        start = self.offset
-        self.opt_separator()
-        if start == self.offset: raise UnexpectedInput(self, "separator")
+        present = self.opt_separator()
+        if not present: raise UnexpectedInput(self, "separator")
 
     def keyword(self) -> Tuple[Optional[str], str]:
         """Parse a YANG statement keyword.
@@ -167,7 +168,7 @@ class ModuleParser(Parser):
         :raises UnexpectedInput: if no syntactically correct statement is found
         """
         pref,kw = self.keyword()
-        self.opt_separator()
+        pres = self.opt_separator()
         next = self.peek()
         if next == ";":
             arg = None
@@ -175,6 +176,8 @@ class ModuleParser(Parser):
         elif next == "{":
             arg = None
             sub = True
+        elif not pres:
+            raise UnexpectedInput(self, "separator")
         else:
             self._arg = ""
             sub = self.argument()
