@@ -125,6 +125,17 @@ class Parser:
         """
         return self.match_regex(ident_re, True, "YANG identifier")
 
+    def instance_name(self) -> QualName:
+        """Parse instance name."""
+        i1 = self.yang_identifier()
+        try:
+            next = self.peek()
+        except EndOfInput:
+            return (i1, None)
+        if next != ":": return (i1, None)
+        self.offset += 1
+        return (self.yang_identifier(), i1)
+
     def skip_ws(self) -> None:
         """Skip optional whitespace."""
         self.match_regex(ws_re)
