@@ -1,36 +1,46 @@
 """Parsers of strings identifying instances."""
 
+from typing import Tuple
 from urllib.parse import unquote
 from .constants import YangsonException
 from .context import Context
 from .instvalue import ArrayValue, ObjectValue, Value
 from .instance import EntryKeys, EntryValue, InstancePath, MemberName
 from .parser import Parser, ParserException, EndOfInput, UnexpectedInput
-from .schema import (BadSchemaNodeType, LeafListNode,
+from .schema import (BadSchemaNodeType, DataNode, InternalNode, LeafListNode,
                      NonexistentSchemaNode, SequenceNode)
+from .typealiases import *
 
-class ResourceIdParser(Parser):
+class InstancePathParser(Parser):
+    """Abstract class for parsers of strings identifying instances."""
+
+    def member_name(self, sn: InternalNode) -> Tuple[MemberName, DataNode]:
+        """Parser object member name."""
+        i1 = self.yang_identifier()
+        if self.at_end() or self.peek() != ":":
+            ns = sn.ns
+            name = i1
+        else:
+            self.offset += 1
+            ns = i1
+            name = self.yang_identifier()
+        cn = sn.get_data_child(name, ns)
+        if cn is None:
+            raise NonexistentSchemaNode(name, ns)
+        return (MemberName(cn.instance_name()), cn)
+
+class ResourceIdParser(InstancePathParser):
     """Parser for RESTCONF resource identifiers."""
 
-    def parse(self, rid):
+    def parse(self, rid: ResourceIdentifier) -> InstancePath:
         """Parse resource identifier."""
         super().parse(rid)
         if self.peek() == "/": self.offset += 1
         res = InstancePath()
         sn = Context.schema
         while True:
-            i1 = self.yang_identifier()
-            if self.at_end() or self.peek() != ":":
-                ns = sn.ns
-                name = i1
-            else:
-                self.offset += 1
-                ns = i1
-                name = self.yang_identifier()
-            cn = sn.get_data_child(name, ns)
-            if cn is None:
-                raise NonexistentSchemaNode(name, ns)
-            res.append(MemberName(cn.instance_name()))
+            mnam, cn = self.member_name(sn)
+            res.append(mnam)
             try:
                 next = self.one_of("/=")
             except EndOfInput:
@@ -41,7 +51,7 @@ class ResourceIdParser(Parser):
                     return res
             sn = cn
 
-    def key_values(self, sn: SequenceNode):
+    def key_values(self, sn: SequenceNode) -> EntryKeys:
         """Parse leaf-list value or list keys."""
         try:
             keys = self.up_to("/")
