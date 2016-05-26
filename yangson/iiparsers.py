@@ -4,7 +4,7 @@ from urllib.parse import unquote
 from .constants import YangsonException
 from .context import Context
 from .instvalue import ArrayValue, ObjectValue, Value
-from .instance import EntryKeys, EntryValue, InstanceIdentifier, MemberName
+from .instance import EntryKeys, EntryValue, InstancePath, MemberName
 from .parser import Parser, ParserException, EndOfInput, UnexpectedInput
 from .schema import (BadSchemaNodeType, LeafListNode,
                      NonexistentSchemaNode, SequenceNode)
@@ -16,7 +16,7 @@ class ResourceIdParser(Parser):
         """Parse resource identifier."""
         super().parse(rid)
         if self.peek() == "/": self.offset += 1
-        res = InstanceIdentifier()
+        res = InstancePath()
         sn = Context.schema
         while True:
             i1 = self.yang_identifier()

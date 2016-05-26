@@ -6,7 +6,7 @@ from .context import Context
 from .datatype import DataType, RawScalar
 from .instvalue import ArrayValue, ObjectValue, Value
 from .instance import (EntryIndex, EntryValue,
-                       EntryKeys, InstanceIdentifier, MemberName)
+                       EntryKeys, InstancePath, MemberName)
 from .statement import Statement
 from .typealiases import *
 
@@ -196,7 +196,7 @@ class InternalNode(SchemaNode):
                 if res: return res
 
     def get_data_descendant(
-            self, ii: InstanceIdentifier) -> Optional["DataNode"]:
+            self, ii: InstancePath) -> Optional["DataNode"]:
         """Return descendant data node in the schema.
 
         :param ii: instance identifier (relative to the receiver)

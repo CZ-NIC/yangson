@@ -4,7 +4,7 @@ from urllib.parse import unquote
 from .constants import pname_re, YangsonException
 from .context import Context, BadYangLibraryData
 from .iiparsers import ResourceIdParser
-from .instance import (EntryKeys, RootNode, InstanceIdentifier,
+from .instance import (EntryKeys, RootNode, InstancePath,
                        MemberName)
 from .schema import (BadSchemaNodeType, DataNode, InternalNode,
                      NonexistentSchemaNode, RawObject, SchemaNode)
@@ -59,7 +59,7 @@ class DataModel:
             if node is None: return None
         return node
 
-    def parse_instance_id(self, iid: str) -> InstanceIdentifier:
+    def parse_instance_id(self, iid: str) -> InstancePath:
         """Parse instance identifier.
 
         :param iid: instance identifier string
@@ -69,7 +69,7 @@ class DataModel:
         """
         end = len(iid)
         offset = 0
-        res = InstanceIdentifier()
+        res = InstancePath()
         sn = Context.schema
         while True:
             if iid[offset] != "/":
@@ -90,7 +90,7 @@ class DataModel:
                 res.append(sel)
             if offset >= end: return res
 
-    def parse_resource_id(self, rid: str) -> InstanceIdentifier:
+    def parse_resource_id(self, rid: str) -> InstancePath:
         """Parse RESTCONF data resource identifier.
 
         :param rid: data resource identifier

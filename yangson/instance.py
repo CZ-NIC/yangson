@@ -59,7 +59,7 @@ class InstanceNode:
             inst = inst.up()
         return inst
 
-    def goto(self, ii: "InstanceIdentifier") -> "InstanceNode":
+    def goto(self, ii: "InstancePath") -> "InstanceNode":
         """Return an instance in the receiver's subtree.
 
         :param ii: instance route (relative to the receiver)
@@ -69,7 +69,7 @@ class InstanceNode:
             inst = sel.goto_step(inst)
         return inst
 
-    def peek(self, ii: "InstanceIdentifier") -> Optional[Value]:
+    def peek(self, ii: "InstancePath") -> Optional[Value]:
         """Return a value in the receiver's subtree.
 
         :param ii: instance route (relative to the receiver)
@@ -418,7 +418,7 @@ class ArrayEntry(InstanceNode):
         return (self.following_entries() if self.qualName == qname
                 else self.up().following_siblings(name))
 
-class InstanceIdentifier(list):
+class InstancePath(list):
     """Instance route."""
 
     def __str__(self):
