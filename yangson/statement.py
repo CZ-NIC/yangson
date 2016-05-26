@@ -280,12 +280,14 @@ class ModuleParser(Parser):
         self.offset += 1
         return res
 
-    def parse_module(self) -> Statement:
+    def parse(self, mtext) -> Statement:
         """Parse a complete YANG module or submodule.
 
+        :param mtext: YANG module text
         :raises EndOfInput: if past the end of `self.input`
         :raises UnexpectedInput: if top-level statement isn't ``(sub)module``
         """
+        super().parse(mtext)
         self.opt_separator()
         start = self.offset
         res = self.statement()

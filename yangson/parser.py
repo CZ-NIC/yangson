@@ -1,6 +1,6 @@
 """Simple parser class."""
 
-from typing import Callable, List, Mapping, Optional, Tuple
+from typing import Any, Callable, List, Mapping, Optional, Tuple
 from .constants import ident_re, ws_re, YangsonException
 from .typealiases import *
 
@@ -23,7 +23,7 @@ class Parser:
     * offset: current position in the input string
     """
 
-    def __init__(self, inp: str) -> None:
+    def parse(self, inp: str) -> Any:
         """Initialize the class instance.
 
         :param inp: input string
