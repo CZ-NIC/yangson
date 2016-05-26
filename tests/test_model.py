@@ -4,6 +4,7 @@ from decimal import Decimal
 from yangson import DataModel
 from yangson.schema import NonexistentSchemaNode
 from yangson.datatype import YangTypeError
+from yangson.instance import NonexistentInstance
 from yangson.context import Context, BadPath, BadPrefName
 
 @pytest.fixture
@@ -180,6 +181,8 @@ def test_instance(instance):
     assert la1.namespace == "test"
     assert la1.member("leafE").namespace == "test"
     assert la1.member("leafF").value is True
+    with pytest.raises(NonexistentInstance):
+        la1.member("contD")
     assert str(la1.path()) == "/test:contA/listA/1"
     assert tbln.namespace == "testb"
     assert str(tbln.path()) == "/test:contA/testb:leafN"
