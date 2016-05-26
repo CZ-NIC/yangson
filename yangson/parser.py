@@ -93,7 +93,7 @@ class Parser:
             self.offset += 1
 
     def line_column(self) -> Tuple[int, int]:
-        """Return line and column coordinates corresponding to `self.offset`."""
+        """Return line and column coordinates."""
         l = self.input.count("\n", 0, self.offset)
         c = (self.offset if l == 0 else
              self.offset - self.input.rfind("\n", 0, self.offset) - 1)
@@ -138,7 +138,9 @@ class ParserException(YangsonException):
     def __str__(self) -> str:
         """Print line and column number.
         """
-        return "line {0}, column {1}".format(*self.parser.line_column())
+        if "\n" in self.parser.input:
+            return "line {0}, column {1}".format(*self.parser.line_column())
+        return "position " + str(self.parser.offset)
 
 class EndOfInput(ParserException):
     """End of input."""
