@@ -2,6 +2,7 @@
 
 from typing import Callable, List, Mapping, Optional, Tuple
 from .constants import ident_re, ws_re, YangsonException
+from .typealiases import *
 
 # Local type aliases
 State = int
@@ -32,11 +33,14 @@ class Parser:
 
     def remaining(self) -> str:
         """Return the remaining part of the input string."""
-        return self.input[self.offset:]
+        res = self.input[self.offset:]
+        self.offset = len(self.input)
+        return res
+
 
     def at_end(self) -> bool:
         """Return ``True`` if at end of input."""
-        self.offset >= len(self.input)
+        return self.offset >= len(self.input)
 
     def peek(self) -> str:
         """Peek at the next character.
@@ -47,6 +51,30 @@ class Parser:
             return self.input[self.offset]
         except IndexError:
             raise EndOfInput(self)
+
+    def char(self, c: str) -> None:
+        """Parse the specified character."""
+        if self.peek() == c:
+            self.offset += 1
+        else:
+            raise UnexpectedInput(self, "char " + c)
+
+    def one_of(self, chset: str) -> str:
+        """Parse one character form the specified set."""
+        res = self.peek()
+        if res in chset:
+            self.offset += 1
+            return res
+        raise UnexpectedInput(self, "one of " + chset)
+
+    def up_to(self, c: str) -> str:
+        """Return segment terminated by a character."""
+        end = self.input.find(c, self.offset)
+        if end < 0:
+            raise EndOfInput(self)
+        res = self.input[self.offset:end]
+        self.offset = end + 1
+        return res
 
     def scan(self, ptab: ParseTable, init: State = 0) -> State:
         """Simple stateful scanner.
@@ -90,7 +118,7 @@ class Parser:
         if required:
             raise UnexpectedInput(self, meaning)
         
-    def yang_identifier(self) -> str:
+    def yang_identifier(self) -> YangIdentifier:
         """Parse YANG identifier.
 
         :raises UnexpectedInput: if no syntactically correct keyword is found
