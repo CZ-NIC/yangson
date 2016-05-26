@@ -203,3 +203,22 @@ def test_instance(instance):
     axtest(conta.descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
+
+def test_instance_paths(data_model, instance):
+    rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
+    rid2 = data_model.parse_resource_id(
+        "/test:contA/listA=C0FFEE,true/contD/contE")
+    iid1 = data_model.parse_instance_id("/test:contA/testb:leafN")
+    iid2 = data_model.parse_instance_id(
+        "/test:contA/listA[leafE='C0FFEE'][leafF = 'true']/contD/contE")
+    bad_pth = "/test:contA/listA=ABBA,true/contD/contE"
+    assert instance.peek(rid1) == instance.peek(iid1) == "hi!"
+    assert (instance.goto(rid2).member("leafP").value ==
+            instance.goto(iid2).member("leafP").value == 42)
+    with pytest.raises(NonexistentSchemaNode):
+        data_model.parse_resource_id("/test:contA/leafX")
+    with pytest.raises(NonexistentSchemaNode):
+        data_model.parse_instance_id("/test:contA/llX[. = 'foo']")
+    assert instance.peek(data_model.parse_resource_id(bad_pth)) == None
+    with pytest.raises(NonexistentInstance):
+        instance.goto(data_model.parse_resource_id(bad_pth))

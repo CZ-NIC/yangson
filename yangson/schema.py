@@ -330,10 +330,6 @@ class DataNode(SchemaNode):
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + ("rw" if self.config else "ro")
 
-    def _parse_entry_selector(self, iid: str, offset: int) -> Any:
-        """This method is applicable only to a list or leaf-list."""
-        raise BadSchemaNodeType(self, "list or leaf-list")
-
     def _nacm_default_deny_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Set NACM default access."""
         if stmt.keyword == "default-deny-all":
@@ -474,38 +470,6 @@ class ListNode(SequenceNode, InternalNode):
         self._handle_child(node, stmt, mid)
         if (node.name, node.ns) in self.keys:
             node.mandatory = True
-
-    def _parse_entry_selector(self, iid: str, offset: int) -> Tuple[
-            Union[EntryIndex, EntryKeys], int]:
-        """Parse selector for a list entry.
-
-        :param iid: instance identifier string
-        :param offset:
-        """
-        res = {}
-        key_expr = False
-        while offset < len(iid) and iid[offset] == "[":
-            mo = pred_re.match(iid, offset)
-            if mo is None:
-                raise BadInstanceIdentifier(iid)
-            pos = mo.group("pos")
-            if pos:
-                if key_expr:
-                    raise BadEntrySelector(self, iid)
-                return (EntryIndex(int(pos) - 1), mo.end())
-            key_expr = True
-            name = mo.group("loc")
-            ns = mo.group("prf")
-            kn = self.get_data_child(name, ns)
-            if kn is None:
-                raise NonexistentSchemaNode(name, ns)
-            drhs = mo.group("drhs")
-            val = kn.type.parse_value(drhs if drhs else mo.group("srhs"))
-            res[kn.instance_name()] = val
-            offset = mo.end()
-        if res:
-            return (EntryKeys(res), mo.end())
-        raise BadEntrySelector(self, iid)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -652,28 +616,6 @@ class LeafListNode(SequenceNode, TerminalNode):
         else:
             self._default.append(val)
 
-    def _parse_entry_selector(self, iid: str, offset: int) -> Tuple[
-            Union[EntryIndex, EntryValue], int]:
-        """Parse selector for a leaf-list entry.
-
-        :param iid: instance identifier string
-        :param offset:
-        """
-        if iid[offset] != "[":
-            raise BadEntrySelector(self, iid)
-        mo = pred_re.match(iid, offset)
-        if mo is None:
-            raise BadEntrySelector(self, iid)
-        pos = mo.group("pos")
-        if pos:
-            return (EntryIndex(int(pos) - 1), mo.end())
-        else:
-            if mo.group("loc"):
-                raise BadEntrySelector(self, iid)
-            drhs = mo.group("drhs")
-            val = self.type.parse_value(drhs if drhs else mo.group("srhs"))
-            return (EntryValue(val), mo.end())
-
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} {}*\n".format(
@@ -735,13 +677,3 @@ class BadSchemaNodeType(SchemaNodeError):
 
     def __str__(self) -> str:
         return super().__str__() + " is not a " + self.expected
-
-class BadEntrySelector(SchemaNodeError):
-    """Exception to be raised when a schema node is of a wrong type."""
-
-    def __init__(self, sn: SchemaNode, iid: str) -> None:
-        super().__init__(sn)
-        self.iid = iid
-
-    def __str__(self) -> str:
-        return "in '" + self.iid + "' for " + super().__str__()

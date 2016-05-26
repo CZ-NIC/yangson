@@ -3,7 +3,7 @@ from typing import Dict, List, Optional
 from urllib.parse import unquote
 from .constants import pname_re, YangsonException
 from .context import Context, BadYangLibraryData
-from .iiparsers import ResourceIdParser
+from .iiparsers import InstanceIdParser, ResourceIdParser
 from .instance import (EntryKeys, RootNode, InstancePath,
                        MemberName)
 from .schema import (BadSchemaNodeType, DataNode, InternalNode,
@@ -24,6 +24,7 @@ class DataModel:
         """
         Context.schema = InternalNode()
         self.rid_parser = ResourceIdParser()
+        self.iid_parser = InstanceIdParser()
         try:
             yl = json.loads(yltxt)
         except json.JSONDecodeError:
@@ -67,28 +68,7 @@ class DataModel:
         :raises NonexistentSchemaNode: if the instance identifier refers to
                                        a data node that doesn't exist
         """
-        end = len(iid)
-        offset = 0
-        res = InstancePath()
-        sn = Context.schema
-        while True:
-            if iid[offset] != "/":
-                raise BadInstanceIdentifier(iid)
-            mo = pname_re.match(iid, offset+1)
-            if mo is None:
-                raise BadInstanceIdentifier(iid)
-            ns = mo.group("prf")
-            name = mo.group("loc")
-            cn = sn.get_data_child(name, ns)
-            if cn is None:
-                raise NonexistentSchemaNode(name, ns if ns else sn.ns)
-            sn = cn
-            res.append(MemberName(sn.instance_name()))
-            offset = mo.end()
-            if offset < end and iid[offset] != "/":
-                sel, offset = sn._parse_entry_selector(iid, offset)
-                res.append(sel)
-            if offset >= end: return res
+        return self.iid_parser.parse(iid)
 
     def parse_resource_id(self, rid: str) -> InstancePath:
         """Parse RESTCONF data resource identifier.
