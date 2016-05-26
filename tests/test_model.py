@@ -23,7 +23,7 @@ def instance(data_model):
 		    "leafB": 55,
 		    "listA": [{
 			    "leafE": "C0FFEE",
-			    "leafF": "true",
+			    "leafF": true,
 			    "contD": {
 				    "leafG": "foo1-bar",
 				    "contE": {
@@ -33,7 +33,7 @@ def instance(data_model):
 			    }
 		    }, {
 			    "leafE": "ABBA",
-			    "leafF": "true"
+			    "leafF": true
 		    }],
 		    "anydA": {
 			    "foo:bar": [1, 2, 3]
@@ -179,6 +179,7 @@ def test_instance(instance):
     assert inst1.path() == inst2.path() == ()
     assert la1.namespace == "test"
     assert la1.member("leafE").namespace == "test"
+    assert la1.member("leafF").value is True
     assert str(la1.path()) == "/test:contA/listA/1"
     assert tbln.namespace == "testb"
     assert str(tbln.path()) == "/test:contA/testb:leafN"
