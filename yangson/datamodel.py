@@ -3,6 +3,7 @@ from typing import Dict, List, Optional
 from urllib.parse import unquote
 from .constants import pname_re, YangsonException
 from .context import Context, BadYangLibraryData
+from .iiparsers import ResourceIdParser
 from .instance import (EntryKeys, RootNode, InstanceIdentifier,
                        MemberName)
 from .schema import (BadSchemaNodeType, DataNode, InternalNode,
@@ -21,7 +22,8 @@ class DataModel:
                          YANG modules listed in YANG library
                          can be retrieved.
         """
-        Context.schema = InternalNode() # type: InternalNode
+        Context.schema = InternalNode()
+        self.rid_parser = ResourceIdParser()
         try:
             yl = json.loads(yltxt)
         except json.JSONDecodeError:
@@ -98,35 +100,7 @@ class DataModel:
         :raises BadSchemaNodeType: if keys are specified for a schema node that
                                    is not a list
         """
-        inp = rid[1:] if rid[0] == "/" else rid
-        res = InstanceIdentifier()
-        sn = Context.schema
-        for p in inp.split("/"):
-            apiid, eq, keys = p.partition("=")
-            mo = pname_re.match(unquote(apiid))
-            if mo is None:
-                raise BadResourceIdentifier(rid)
-            ns = mo.group("prf")
-            name = mo.group("loc")
-            cn = sn.get_data_child(name, ns)
-            if cn is None:
-                raise NonexistentSchemaNode(name, ns if ns else sn.ns)
-            sn = cn
-            res.append(MemberName(sn.instance_name()))
-            if eq:                        # list instance
-                ks = keys.split(",")
-                try:
-                    if len(ks) != len(sn.keys):
-                        raise BadResourceIdentifier(rid)
-                except AttributeError:
-                    raise BadSchemaNodeType(sn, "list") from None
-                sel = {}
-                for i in range(len(ks)):
-                    klf = sn.get_child(*sn.keys[i])
-                    val = klf.type.parse_value(unquote(ks[i]))
-                    sel[klf.instance_name()] = val
-                res.append(EntryKeys(sel))
-        return res
+        return self.rid_parser.parse(rid)
 
     def ascii_tree(self) -> str:
         """Return ascii-art representation of the main data tree."""
