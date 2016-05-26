@@ -69,7 +69,7 @@ class InstanceNode:
             inst = sel.goto_step(inst)
         return inst
 
-    def peek(self, ii: "InstanceIdentifier") -> Value:
+    def peek(self, ii: "InstanceIdentifier") -> Optional[Value]:
         """Return a value in the receiver's subtree.
 
         :param ii: instance route (relative to the receiver)
@@ -77,6 +77,7 @@ class InstanceNode:
         val = self.value
         for sel in ii:
             val = sel.peek_step(val)
+            if val is None: return None
         return val
 
     def update(self, newval: Value) -> "InstanceNode":
