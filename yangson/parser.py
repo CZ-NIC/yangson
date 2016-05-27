@@ -125,7 +125,7 @@ class Parser:
         """
         return self.match_regex(ident_re, True, "YANG identifier")
 
-    def instance_name(self) -> QualName:
+    def instance_name(self) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
         """Parse instance name."""
         i1 = self.yang_identifier()
         try:

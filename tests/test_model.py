@@ -59,20 +59,20 @@ def test_context(data_model):
 
 def test_schema(data_model):
     ca = data_model.get_data_node("/test:contA")
-    la = ca.get_child("leafA")
+    la = ca.get_child("leafA", "test")
     lb = data_model.get_data_node("/test:contA/leafB")
     lsta = data_model.get_data_node("/test:contA/listA")
-    ada = ca.get_child("anydA")
-    axa = ca.get_child("anyxA")
+    ada = ca.get_child("anydA", "test")
+    axa = ca.get_child("anyxA", "test")
     cha = data_model.get_schema_node("/test:choiA")
-    cc = cha.get_data_child("contC")
+    cc = cha.get_data_child("contC", "test")
     ld = data_model.get_data_node("/test:contC/leafD")
-    lla = cc.get_child("llistA")
+    lla = cc.get_child("llistA", "test")
     chb = data_model.get_schema_node("/test:contA/testb:choiB")
-    cb = chb.get_data_child("contB")
+    cb = chb.get_data_child("contB", "testb")
     ln = chb.get_schema_descendant(Context.path2route(
         "/testb:leafN/leafN"))
-    lc = cb.get_data_child("leafC")
+    lc = cb.get_data_child("leafC", "testb")
     llb = data_model.get_schema_node("/test:choiA/llistB/llistB")
     lj = data_model.get_data_node("/test:contA/listA/contD/contE/leafJ")
     llc = data_model.get_schema_node("/testb:rpcA/output/llistC")
@@ -114,53 +114,53 @@ def test_schema(data_model):
 
 def test_types(data_model):
     ct = data_model.get_data_node("/test:contT")
-    i8 = ct.get_child("int8").type
+    i8 = ct.get_child("int8", "test").type
     assert i8.contains(100) == (not i8.contains(-101)) == True
-    i16 = ct.get_child("int16").type
+    i16 = ct.get_child("int16", "test").type
     assert i16.contains(-32768) == (not i16.contains(32768)) == True
-    i32 = ct.get_child("int32").type
+    i32 = ct.get_child("int32", "test").type
     assert i32.contains(-2147483648) == (not i32.contains(2147483648)) == True
-    i64 = ct.get_child("int64").type
+    i64 = ct.get_child("int64", "test").type
     assert (i64.contains(-9223372036854775808) ==
             (not i64.contains(9223372036854775808)) == True)
     assert i64.from_raw("-6378") == -6378
-    ui8 = ct.get_child("uint8").type
+    ui8 = ct.get_child("uint8", "test").type
     assert ui8.contains(150) == (not ui8.contains(99)) == True
-    ui16 = ct.get_child("uint16").type
+    ui16 = ct.get_child("uint16", "test").type
     assert ui16.contains(65535) == (not ui16.contains(-1)) == True
-    ui32 = ct.get_child("uint32").type
+    ui32 = ct.get_child("uint32", "test").type
     assert ui32.contains(4294967295) == (not ui32.contains(-1)) == True
-    ui64 = ct.get_child("uint64").type
+    ui64 = ct.get_child("uint64", "test").type
     assert (ui64.contains(18446744073709551615) ==
             (not ui64.contains(-1)) == True)
     assert ui64.from_raw("6378") == 6378
     with pytest.raises(YangTypeError):
         ui64.from_raw("-6378")
-    d64 = ct.get_child("decimal64").type
+    d64 = ct.get_child("decimal64", "test").type
     pi = Decimal("3.141592653589793238")
     assert d64.contains(pi)
     assert not d64.contains(10)
     assert d64.from_raw("3.14159265358979323846264338327950288") == pi
-    st = ct.get_child("string").type
+    st = ct.get_child("string", "test").type
     assert st.contains("hello world")
     assert not st.contains("hello-world")
     assert not st.contains("h")
     assert st.contains("9 \tx")
     assert not st.contains("xx xabcdefg")
-    boo = ct.get_child("boolean").type
+    boo = ct.get_child("boolean", "test").type
     assert boo.parse_value("true")
     assert boo.contains(False)
     with pytest.raises(YangTypeError):
         boo.parse_value("boo")
-    en = ct.get_child("enumeration").type
+    en = ct.get_child("enumeration", "test").type
     assert not en.contains("Mars")
     assert not en.contains("Deimos")
     assert en.enum["Phobos"] == 101
-    bits = ct.get_child("bits").type
+    bits = ct.get_child("bits", "test").type
     assert not bits.contains("un")
     assert not bits.contains("tres")
     assert bits.bit["dos"] == 1
-    bin = ct.get_child("binary").type
+    bin = ct.get_child("binary", "test").type
     bv = bin.parse_value(
         b'UMWZw61sacWhIMW+bHXFpW91xI1rw70ga8' +
         b'WvxYggw7pwxJtsIMSPw6FiZWxza8OpIMOzZHku')

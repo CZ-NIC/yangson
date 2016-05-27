@@ -21,7 +21,7 @@ class InstancePathParser(Parser):
         cn = sn.get_data_child(name, ns if ns else sn.ns)
         if cn is None:
             raise NonexistentSchemaNode(name, ns)
-        return (MemberName(cn.instance_name()), cn)
+        return (MemberName(cn.iname()), cn)
 
 class ResourceIdParser(InstancePathParser):
     """Parser for RESTCONF resource identifiers."""
@@ -65,7 +65,7 @@ class ResourceIdParser(InstancePathParser):
         for j in range(len(ks)):
             knod = sn.get_child(*sn.keys[j])
             val = knod.type.parse_value(unquote(ks[j]))
-            sel[knod.instance_name()] = val
+            sel[knod.iname()] = val
         return EntryKeys(sel)
 
 class InstanceIdParser(InstancePathParser):
@@ -87,7 +87,7 @@ class InstanceIdParser(InstancePathParser):
             if next == "[":
                 self.offset += 1
                 self.skip_ws()
-                if isinstance(sn, LeafListNode):
+                if isinstance(cn, LeafListNode):
                     self.char(".")
                     res.append(EntryValue(self.get_value(cn)))
                     return res
@@ -109,10 +109,10 @@ class InstanceIdParser(InstancePathParser):
         "Parse one or more key predicates."""
         sel = {}
         while True:
-            key = self.instance_name()
-            knod = sn.get_child(*key)
+            name, ns = self.instance_name()
+            knod = sn.get_child(name, ns if ns else sn.ns)
             val = self.get_value(knod)
-            sel[knod.instance_name()] = val
+            sel[knod.iname()] = val
             try:
                 next = self.peek()
             except EndOfInput:
@@ -143,5 +143,5 @@ class InstanceIdParser(InstancePathParser):
         for j in range(len(ks)):
             knod = sn.get_child(*sn.keys[j])
             val = knod.type.parse_value(unquote(ks[j]))
-            sel[knod.instance_name()] = val
+            sel[knod.iname()] = val
         return EntryKeys(sel)

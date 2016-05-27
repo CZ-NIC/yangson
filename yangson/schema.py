@@ -26,19 +26,13 @@ class SchemaNode:
         except AttributeError:
             return self.parent.config
 
-    @staticmethod
-    def uniname(iname: InstanceName) -> Tuple[YangIdentifier,
-                                       Optional[YangIdentifier]]:
+    def iname2qname(self, iname: InstanceName) -> QualName:
         """Translate instance name to a qualified name.
-
-        If `iname` isn't prefixed with module name, the second
-        component of the returned tuple is ``None``.
 
         :param iname: instance name
         """
         p, s, loc = iname.partition(":")
-        if s: return (loc, p)
-        return (p, None)
+        return (loc, p) if s else (p, self.ns)
 
     def data_parent(self) -> Optional["SchemaNode"]:
         """Return the closest ancestor data node."""
@@ -48,7 +42,7 @@ class SchemaNode:
                 return parent
             parent = parent.parent
 
-    def instance_name(self) -> InstanceName:
+    def iname(self) -> InstanceName:
         """Return the instance name corresponding to the receiver."""
         dp = self.data_parent()
         return (self.name if dp and self.ns == dp.ns
@@ -56,7 +50,7 @@ class SchemaNode:
 
     def instance_route(self) -> InstanceRoute:
         """Return the instance route corresponding to the receiver."""
-        return (self.parent.instance_route() + [self.instance_name()]
+        return (self.parent.instance_route() + [self.iname()]
                 if self.parent else [])
 
     def state_roots(self) -> List[InstanceRoute]:
@@ -145,13 +139,12 @@ class InternalNode(SchemaNode):
         self.children.append(node)
 
     def get_child(self, name: YangIdentifier,
-                  ns: YangIdentifier = None) -> Optional["SchemaNode"]:
+                  ns: YangIdentifier) -> Optional["SchemaNode"]:
         """Return receiver's child.
 
         :param name: child's name
         :param ns: child's namespace (= `self.ns` if absent)
         """
-        ns = ns if ns else self.ns
         for c in self.children:
             if c.name == name and c.ns == ns: return c
 
@@ -168,9 +161,8 @@ class InternalNode(SchemaNode):
             if node is None: return None
         return node
 
-    def get_data_child(
-            self, name: YangIdentifier,
-            ns: YangIdentifier = None) -> Optional["DataNode"]:
+    def get_data_child(self, name: YangIdentifier,
+                       ns: YangIdentifier) -> Optional["DataNode"]:
         """Return data node directly under receiver.
 
         Compared to :meth:`get_schema_descendant`, this method
@@ -179,7 +171,6 @@ class InternalNode(SchemaNode):
         :param name: data node name
         :param ns: data node namespace (= `self.ns` if absent)
         """
-        ns = ns if ns else self.ns
         cands = []
         for c in self.children:
             if c.name ==name and c.ns == ns:
@@ -195,7 +186,7 @@ class InternalNode(SchemaNode):
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
-        return "{} {}\n".format(self._tree_line_prefix(), self.instance_name())
+        return "{} {}\n".format(self._tree_line_prefix(), self.iname())
 
     def _state_roots(self) -> List[SchemaNode]:
         if hasattr(self,"_config") and not self._config:
@@ -288,11 +279,11 @@ class InternalNode(SchemaNode):
         """
         res = ObjectValue({})
         for qn in val:
-            cn = self.uniname(qn)
+            cn = self.iname2qname(qn)
             ch = self.get_data_child(*cn)
             if ch is None:
                 raise NonexistentSchemaNode(cn[0], cn[1] if cn[1] else self.ns)
-            res[ch.instance_name()] = ch.from_raw(val[qn])
+            res[ch.iname()] = ch.from_raw(val[qn])
         return res
 
     def _ascii_tree(self, indent: str) -> str:
@@ -384,7 +375,7 @@ class ContainerNode(InternalNode, DataNode):
         else:
             suff = "?"
         return "{} {}{}\n".format(
-            self._tree_line_prefix(), self.instance_name(), suff)
+            self._tree_line_prefix(), self.iname(), suff)
 
 class SequenceNode(DataNode):
     """Abstract class for data nodes that represent a sequence."""
@@ -461,7 +452,7 @@ class ListNode(SequenceNode, InternalNode):
         keys = (" [" + " ".join([ k[0] for k in self.keys ]) + "]"
                 if self.keys else "")
         return "{} {}*{}\n".format(
-            self._tree_line_prefix(), self.instance_name(), keys)
+            self._tree_line_prefix(), self.iname(), keys)
 
 class ChoiceNode(InternalNode):
     """Choice node."""
@@ -492,7 +483,7 @@ class ChoiceNode(InternalNode):
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} ({}){}\n".format(
-            self._tree_line_prefix(), self.instance_name(),
+            self._tree_line_prefix(), self.iname(),
             "" if self.mandatory else "?")
 
 class CaseNode(InternalNode):
@@ -501,7 +492,7 @@ class CaseNode(InternalNode):
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{}:({})\n".format(
-            self._tree_line_prefix(), self.instance_name())
+            self._tree_line_prefix(), self.iname())
 
 class RpcActionNode(InternalNode):
     """RPC or action node."""
@@ -573,7 +564,7 @@ class LeafNode(TerminalNode, DataNode):
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} {}{}\n".format(
-            self._tree_line_prefix(), self.instance_name(),
+            self._tree_line_prefix(), self.iname(),
             "" if self.mandatory else "?")
 
 class LeafListNode(SequenceNode, TerminalNode):
@@ -604,7 +595,7 @@ class LeafListNode(SequenceNode, TerminalNode):
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} {}*\n".format(
-            self._tree_line_prefix(), self.instance_name())
+            self._tree_line_prefix(), self.iname())
 
 class AnydataNode(TerminalNode, DataNode):
     """Anydata or anyxml node."""
@@ -629,7 +620,7 @@ class AnydataNode(TerminalNode, DataNode):
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} {}{}\n".format(
-            self._tree_line_prefix(), self.instance_name(),
+            self._tree_line_prefix(), self.iname(),
             "" if self.mandatory else "?")
 
 class NonexistentSchemaNode(YangsonException):
