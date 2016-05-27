@@ -5,8 +5,6 @@ from .constants import DefaultDeny, pred_re, YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
 from .instvalue import ArrayValue, ObjectValue, Value
-from .instance import (EntryIndex, EntryValue,
-                       EntryKeys, InstancePath, MemberName)
 from .statement import Statement
 from .typealiases import *
 
@@ -194,19 +192,6 @@ class InternalNode(SchemaNode):
             for c in cands:
                 res = c.get_data_child(name, ns)
                 if res: return res
-
-    def get_data_descendant(
-            self, ii: InstancePath) -> Optional["DataNode"]:
-        """Return descendant data node in the schema.
-
-        :param ii: instance identifier (relative to the receiver)
-        """
-        node = self
-        for sel in ii:
-            if not isinstance(sel, MemberName): continue
-            node = node.get_child(*self.uniname(sel.name))
-            if node is None: return None
-        return node
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
