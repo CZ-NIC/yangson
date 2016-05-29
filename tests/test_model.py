@@ -7,6 +7,64 @@ from yangson.datatype import YangTypeError
 from yangson.instance import NonexistentInstance
 from yangson.context import Context, BadPath, BadPrefName
 
+tree = """+--rw test:contA
+|  +--rw leafA?
+|  +--ro leafB
+|  +--rw listA* [leafE leafF]
+|  |  +--rw leafE
+|  |  +--rw leafF
+|  |  +--rw contD?
+|  |     +--rw leafG?
+|  |     +--rw contE?
+|  |     |  +--rw leafJ?
+|  |     |  +--rw leafP?
+|  |     +---x acA
+|  |        +--ro output
+|  |           +--ro leafL
+|  +--rw anydA
+|  +--rw anyxA?
+|  +--rw (testb:choiB)
+|     +--:(testb:contB)
+|     |  +--rw testb:contB!
+|     |     +--rw leafC
+|     +--:(testb:leafI)
+|     |  +--rw testb:leafI?
+|     +--:(testb:leafN)
+|        +--rw testb:leafN?
++--rw test:contT?
+|  +--rw int8?
+|  +--rw int16?
+|  +--rw int32?
+|  +--rw int64?
+|  +--rw uint8?
+|  +--rw uint16?
+|  +--rw uint32?
+|  +--rw uint64?
+|  +--rw decimal64?
+|  +--rw string?
+|  +--rw boolean?
+|  +--rw enumeration?
+|  +--rw bits?
+|  +--rw binary?
++---x testb:rpcA
+|  +--ro testb:input
+|  |  +--ro testb:leafK?
+|  +--ro testb:output
+|     +--ro testb:llistC*
++---n testb:noA
+|  +--rw testb:leafO?
++--rw (test:choiA)?
+   +--:(test:llistB)
+   |  +--rw test:llistB*
+   +--:(test:caseA)
+   |  +--rw test:contC?
+   |  |  +--rw leafD?
+   |  |  +--rw llistA*
+   |  +--rw test:leafH?
+   +--:(testb:leafQ)
+      +--rw testb:leafQ?
+"""
+
 @pytest.fixture
 def data_model():
     tpath = ["examples/test", "examples/ietf"]
@@ -111,6 +169,9 @@ def test_schema(data_model):
     assert lsta.get_schema_descendant(lsta.unique[0][0]).name == "leafG"
     assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
     assert data_model.get_data_node("/testb:noA/leafO") is None
+
+def test_tree(data_model):
+    assert data_model.ascii_tree() == tree
 
 def test_types(data_model):
     ct = data_model.get_data_node("/test:contT")
