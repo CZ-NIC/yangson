@@ -36,6 +36,14 @@ module testb {
     }
   }
 
+  augment "/t:choiA" {
+    leaf leafQ {
+      type leafref {
+	path "../t:listA/t:leafE";
+      }
+    }
+  }
+
   rpc rpcA {
     input {
       leaf leafK {
