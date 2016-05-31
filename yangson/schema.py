@@ -1,7 +1,7 @@
 """Classes for schema nodes."""
 
 from typing import Dict, List, Optional, Tuple, Union
-from .constants import DefaultDeny, pred_re, YangsonException
+from .constants import DefaultDeny, YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
 from .instvalue import ArrayValue, ObjectValue, Value

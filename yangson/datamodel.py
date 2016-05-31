@@ -1,7 +1,7 @@
 import json
 from typing import Dict, List, Optional
 from urllib.parse import unquote
-from .constants import pname_re, YangsonException
+from .constants import YangsonException
 from .context import Context, BadYangLibraryData
 from .iiparsers import InstanceIdParser, ResourceIdParser
 from .instance import (EntryKeys, RootNode, InstancePath,
