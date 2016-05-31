@@ -272,10 +272,12 @@ def test_instance_paths(data_model, instance):
     iid1 = data_model.parse_instance_id("/test:contA/testb:leafN")
     iid2 = data_model.parse_instance_id(
         "/test:contA/listA[leafE='C0FFEE'][leafF = 'true']/contD/contE")
+    iid3 = data_model.parse_instance_id("/test:contA/listA[1]/contD/contE")
     bad_pth = "/test:contA/listA=ABBA,true/contD/contE"
     assert instance.peek(rid1) == instance.peek(iid1) == "hi!"
     assert (instance.goto(rid2).member("leafP").value ==
-            instance.goto(iid2).member("leafP").value == 42)
+            instance.goto(iid2).member("leafP").value ==
+            instance.goto(iid3).member("leafP").value == 42)
     with pytest.raises(NonexistentSchemaNode):
         data_model.parse_resource_id("/test:contA/leafX")
     with pytest.raises(NonexistentSchemaNode):

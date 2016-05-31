@@ -5,7 +5,8 @@ from urllib.parse import unquote
 from .constants import YangsonException
 from .context import Context
 from .instvalue import ArrayValue, ObjectValue, Value
-from .instance import EntryKeys, EntryValue, InstancePath, MemberName
+from .instance import (EntryIndex, EntryKeys, EntryValue,
+                       InstancePath, MemberName)
 from .parser import Parser, ParserException, EndOfInput, UnexpectedInput
 from .schema import (BadSchemaNodeType, DataNode, InternalNode, LeafListNode,
                      ListNode, NonexistentSchemaNode, SequenceNode,
@@ -87,11 +88,18 @@ class InstanceIdParser(InstancePathParser):
             if next == "[":
                 self.offset += 1
                 self.skip_ws()
-                if isinstance(cn, LeafListNode):
+                if self.peek() in "0123456789":
+                    ind = self.integer() - 1
+                    if ind < 0:
+                        raise UnexpectedInput(self, "positive index")
+                    self.skip_ws()
+                    self.char("]")
+                    res.append(EntryIndex(ind))
+                elif isinstance(cn, LeafListNode):
                     self.char(".")
                     res.append(EntryValue(self.get_value(cn)))
-                    return res
-                res.append(self.key_predicates(cn))
+                else:
+                    res.append(self.key_predicates(cn))
                 if self.at_end(): return res
             sn = cn
 
