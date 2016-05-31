@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Any, Callable, List, Tuple
 from .constants import YangsonException
 from .instvalue import ArrayValue, ObjectValue, Value
-from .schema import CaseNode, DataNode, NonexistentSchemaNode
+from .schema import CaseNode, DataNode, NonexistentSchemaNode, TerminalNode
 from .typealiases import *
 
 class JSONPointer(tuple):
@@ -36,7 +36,7 @@ class InstanceNode:
     @property
     def namespace(self) -> Optional[YangIdentifier]:
         """Return the receiver's namespace."""
-        return None
+        return self.schema_node.ns
 
     def path(self) -> str:
         """Return JSONPointer of the receiver."""
@@ -115,10 +115,11 @@ class InstanceNode:
         newval[name] = value
         sn = csn
         while sn is not self.schema_node:
-            if not isinstance(sn, CaseNode): continue
-            for case in [ c for c in sn.parent.children if c is not sn ]:
-                for x in c.data_children():
-                    newval.pop(x.iname(), None)
+            if isinstance(sn, CaseNode):
+                for case in [ c for c in sn.parent.children if c is not sn ]:
+                    for x in case.data_children():
+                        newval.pop(x.iname(), None)
+            sn = sn.parent
         ts = datetime.now()
         return self._copy(ObjectValue(newval, ts) , ts)
 
@@ -190,7 +191,7 @@ class InstanceNode:
 
     def children(self, qname: QualName = None) -> List["InstanceNode"]:
         """Return the list of receiver's XPath children."""
-        if not isinstance(self.value, ObjectValue): return []
+        if isinstance(self.schema_node, TerminalNode): return []
         if qname is None:
             names = sorted(self.value.keys())
             res = []
@@ -204,7 +205,8 @@ class InstanceNode:
     def descendants(self, qname: QualName = None,
                     with_self: bool = False) -> List["InstanceNode"]:
         """Return the list of receiver's XPath descendants."""
-        res = [self] if with_self and self.qualName == qname else []
+        res = ([self] if with_self and (qname is None or self.qualName == qname)
+               else [])
         for c in self.children(qname):
             res.append(c)
             res += c.descendants(qname)
@@ -258,12 +260,6 @@ class ObjectMember(InstanceNode):
         """Return the receiver's qualified name."""
         p, s, loc = self.name.partition(":")
         return (loc, p) if s else (p, self.parent.namespace)
-
-    @property
-    def namespace(self) -> Optional[YangIdentifier]:
-        """Return the receiver's namespace."""
-        p, s, loc = self.name.partition(":")
-        return p if s else self.parent.namespace
 
     def zip(self) -> ObjectValue:
         """Zip the receiver into an object and return it."""
@@ -351,11 +347,6 @@ class ArrayEntry(InstanceNode):
     def qualName(self) -> Optional[QualName]:
         """Return the receiver's qualified name."""
         return self.parent.qualName
-
-    @property
-    def namespace(self) -> Optional[YangIdentifier]:
-        """Return the receiver's namespace."""
-        return self.parent.namespace
 
     def update_from_raw(self, value: RawValue) -> Value:
         """Update the receiver's value from a raw value.
