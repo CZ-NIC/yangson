@@ -157,6 +157,7 @@ module test {
         bit tres {
           if-feature "feB";
         }
+	bit cuatro;
       }
     }
     leaf binary {

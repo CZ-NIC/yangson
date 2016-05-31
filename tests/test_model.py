@@ -219,6 +219,7 @@ def test_types(data_model):
     assert not en.contains("Deimos")
     assert en.enum["Phobos"] == 101
     bits = ct.get_child("bits", "test").type
+    assert bits.as_int(bits._convert_raw("dos cuatro")) == 10
     assert not bits.contains("un")
     assert not bits.contains("tres")
     assert bits.bit["dos"] == 1

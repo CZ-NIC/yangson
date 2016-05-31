@@ -37,6 +37,7 @@ module defs {
       bit un;
       bit dos;
       bit tres;
+      bit cuatro;
     }
   }
 
