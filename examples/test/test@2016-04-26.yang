@@ -42,6 +42,7 @@ module test {
     list listA {
       key "leafE leafF";
       unique "contD/leafG";
+      min-elements 2;
       grouping grA {
         uses d:grB {
           augment "contE" {
