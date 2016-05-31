@@ -103,14 +103,14 @@ class DataType:
         """
         return self._constraints(val)
 
-    def parse_value(self, input: str) -> int:
+    def parse_value(self, input: str) -> ScalarValue:
         """Parse value of a data type.
 
         :param input: string representation of the value
         """
         res = self._parse(input)
         if self._constraints(res): return res
-        raise YangTypeError(res)
+        raise YangTypeError(input)
 
     def _parse(self, input: str) -> ScalarValue:
         """The most generic parsing method is to return `input`.
@@ -128,8 +128,8 @@ class DataType:
             res = self._convert_raw(raw)
             if self._constraints(res): return res
         except TypeError:
-            raise YangTypeError(res) from None
-        raise YangTypeError(res)
+            raise YangTypeError(raw) from None
+        raise YangTypeError(raw)
 
     def _convert_raw(self, raw: RawScalar) -> ScalarValue:
         """Return a cooked value."""
@@ -162,24 +162,23 @@ class UnionType(DataType):
         super().__init__()
         self.types = [] # type: List[DataType]
 
-    def _parse(self, input: str) -> Any:
+    def from_raw(self, raw: RawScalar) -> ScalarValue:
         for t in self.types:
             try:
-                val = t._parse(input)
+                res = t.from_raw(raw)
+                return res
             except YangTypeError:
                 continue
-            if self._constraints(val):
-                return val
-        raise YangTypeError(input)
+        raise YangTypeError(raw)
 
-    def _constraints(self, val: ScalarValue) -> bool:
-        """Return ``True`` if the value satisfies constraints of a member type.
-
-        :param val: value to test
-        """
+    def parse_value(self, input: str) -> ScalarValue:
         for t in self.types:
-            if t._constraints(val): return True
-        return False
+            try:
+                res = t.parse_value(input)
+                return res
+            except YangTypeError:
+                continue
+        raise YangTypeError(input)
 
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
@@ -205,7 +204,7 @@ class EmptyType(DataType):
         return val == (None,)
 
     def _parse(self, input: str) -> Tuple[None]:
-        if input: raise YangTypeError(raw)
+        if input: raise YangTypeError(input)
         return (None,)
 
     def _convert_raw(self, raw: List[None]) -> Tuple[None]:
@@ -222,7 +221,7 @@ class BitsType(DataType):
         super().__init__()
         self.bit = {}
 
-    def _convert_raw(self, raw: str) -> List[str]:
+    def _convert_raw(self, raw: str) -> Tuple[str]:
         return tuple(raw.split())
 
     def _constraints(self, val: List[str]) -> bool:
