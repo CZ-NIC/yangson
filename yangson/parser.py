@@ -1,7 +1,7 @@
 """Simple parser class."""
 
 from typing import Any, Callable, List, Mapping, Optional, Tuple
-from .constants import ident_re, ws_re, YangsonException
+from .constants import ident_re, integer_re, ws_re, YangsonException
 from .typealiases import *
 
 # Local type aliases
@@ -117,7 +117,11 @@ class Parser:
             return mo.group()
         if required:
             raise UnexpectedInput(self, meaning)
-        
+
+    def integer(self) -> int:
+        """Parse an integer."""
+        return int(self.match_regex(integer_re, True, "integer value"))
+
     def yang_identifier(self) -> YangIdentifier:
         """Parse YANG identifier.
 
