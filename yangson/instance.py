@@ -47,7 +47,7 @@ class InstanceNode:
             inst = inst.parent
         return JSONPointer([ i._pointer_fragment() for i in parents[::-1] ])
 
-    def update_from_raw(self, value: RawValue) -> Value:
+    def update_from_raw(self, value: RawValue) -> "InstanceNode":
         """Update the receiver's value from a raw value."""
         return self.update(self.schema_node.from_raw(value))
 
@@ -348,7 +348,7 @@ class ArrayEntry(InstanceNode):
         """Return the receiver's qualified name."""
         return self.parent.qualName
 
-    def update_from_raw(self, value: RawValue) -> Value:
+    def update_from_raw(self, value: RawValue) -> "ArrayEntry":
         """Update the receiver's value from a raw value.
 
         This method overrides the superclass method.
