@@ -4,7 +4,7 @@ from decimal import Decimal
 from yangson import DataModel
 from yangson.schema import NonexistentSchemaNode
 from yangson.datatype import YangTypeError
-from yangson.instance import NonexistentInstance
+from yangson.instance import MinElements, NonexistentInstance
 from yangson.context import Context, BadPath, BadPrefName
 
 tree = """+--rw test:contA
@@ -77,6 +77,7 @@ def data_model():
 def instance(data_model):
     data = """
     {
+        "test:llistB": ["::1", "127.0.0.1"],
 	    "test:contA": {
 		    "leafA": 22,
 		    "leafB": 55,
@@ -233,7 +234,7 @@ def test_instance(instance):
     conta = instance.member("test:contA")
     la1 = conta.member("listA").last_entry()
     tbln = conta.member("testb:leafN")
-    inst1 = la1.remove_member("leafE").new_member("leafE", "ABBA").top()
+    inst1 = la1.put_member("leafE", "ABBA").top()
     inst2 = tbln.update("hello!").top()
     assert instance.value == inst1.value
     assert instance.value != inst2.value
@@ -260,7 +261,7 @@ def test_instance(instance):
                               "/test:contA/leafB", "/test:contA/listA/0",
                               "/test:contA/listA/1", "/test:contA/testb:leafN"])
     axtest(la1.children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance.descendants(with_self=True)) == 20
+    assert len(instance.descendants(with_self=True)) == 19
     axtest(conta.descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
@@ -287,8 +288,14 @@ def test_instance_paths(data_model, instance):
         instance.goto(data_model.parse_resource_id(bad_pth))
 
 def test_edits(data_model, instance):
-    iid = data_model.parse_instance_id("/test:contA/listA[1]")
-    la1 = instance.goto(iid)
-    modinst = la1.update_from_raw({"leafE": "B00F", "leafF": False}).top()
-    assert instance.peek(iid)["leafE"] == "ABBA"
-    assert instance.peek(iid)["leafE"] == "B00F"
+    iid = data_model.parse_instance_id("/test:contA/listA")
+    la = instance.goto(iid)
+    inst1 = la.entry(1).update_from_raw(
+        {"leafE": "B00F", "leafF": False}).top()
+    assert instance.peek(iid)[1]["leafE"] == "ABBA"
+    assert inst1.peek(iid)[1]["leafE"] == "B00F"
+    inst2 = instance.put_member("testb:leafQ", "ABBA").top()
+    with pytest.raises(NonexistentInstance):
+        inst2.member("test:llistB")
+    with pytest.raises(MinElements):
+        la.delete_entry(1)
