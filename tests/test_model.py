@@ -285,3 +285,10 @@ def test_instance_paths(data_model, instance):
     assert instance.peek(data_model.parse_resource_id(bad_pth)) == None
     with pytest.raises(NonexistentInstance):
         instance.goto(data_model.parse_resource_id(bad_pth))
+
+def test_edits(data_model, instance):
+    iid = data_model.parse_instance_id("/test:contA/listA[1]")
+    la1 = instance.goto(iid)
+    modinst = la1.update_from_raw({"leafE": "B00F", "leafF": False}).top()
+    assert instance.peek(iid)["leafE"] == "ABBA"
+    assert instance.peek(iid)["leafE"] == "B00F"

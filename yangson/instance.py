@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any, Callable, List, Tuple
 from .constants import YangsonException
 from .instvalue import ArrayValue, ObjectValue, Value
+from .schema import CaseNode, DataNode, NonexistentSchemaNode
 from .typealiases import *
 
 class JSONPointer(tuple):
@@ -17,13 +18,14 @@ class InstanceNode:
     """YANG data node instance implemented as a zipper structure."""
 
     def __init__(self, value: Value, parent: Optional["InstanceNode"],
-                 ts: datetime) -> None:
+                 schema_node: DataNode, ts: datetime) -> None:
         """Initialize the class instance.
 
         :param value: instance value
         """
         self.value = value
         self.parent = parent
+        self.schema_node = schema_node
         self.timestamp = ts
 
     @property
@@ -44,6 +46,10 @@ class InstanceNode:
             parents.append(inst)
             inst = inst.parent
         return JSONPointer([ i._pointer_fragment() for i in parents[::-1] ])
+
+    def update_from_raw(self, value: RawValue) -> Value:
+        """Update the receiver's value from a raw value."""
+        return self.update(self.schema_node.from_raw(value))
 
     def up(self) -> "InstanceNode":
         """Ascend to the parent instance node."""
@@ -87,33 +93,44 @@ class InstanceNode:
         """
         return self._copy(newval, datetime.now())
 
+    def _member_schema_node(self, name: InstanceName) -> DataNode:
+        qname = self.schema_node.iname2qname(name)
+        res = self.schema_node.get_data_child(*qname)
+        if res is None:
+            raise NonexistentSchemaNode(qname)
+        return res
+
     def member(self, name: InstanceName) -> "ObjectMember":
-        if not isinstance(self.value, ObjectValue):
-            raise InstanceTypeError(self, "member of non-object")
-        obj = self.value.copy()
+        csn = self._member_schema_node(name)
+        sibs = self.value.copy()
         try:
-            return ObjectMember(name, obj, obj.pop(name), self,
-                                self.value.timestamp)
+            return ObjectMember(name, sibs, sibs.pop(name), self,
+                                csn, self.value.timestamp)
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
 
-    def new_member(self, name: InstanceName, value: Value) -> "ObjectMember":
-        if not isinstance(self.value, ObjectValue):
-            raise InstanceTypeError(self, "member of non-object")
-        if name in self.value:
-            raise DuplicateMember(self, name)
-        return ObjectMember(name, self.value, value, self, datetime.now())
-
-    def remove_member(self, name: InstanceName) -> "InstanceNode":
-        if not isinstance(self.value, ObjectValue):
-            raise InstanceTypeError(self, "member of non-object")
-        val = self.value.copy()
-        try:
-            del val[name]
-        except KeyError:
-            raise NonexistentInstance(self, "member " + name) from None
+    def put_member(self, name: InstanceName, value: Value) -> "InstanceNode":
+        csn = self._member_schema_node(name)
+        newval = self.value.copy()
+        newval[name] = value
+        sn = csn
+        while sn is not self.schema_node:
+            if not isinstance(sn, CaseNode): continue
+            for case in [ c for c in sn.parent.children if c is not sn ]:
+                for x in c.data_children():
+                    newval.pop(x.iname(), None)
         ts = datetime.now()
-        return self._copy(ObjectValue(val, ts), ts)
+        return self._copy(ObjectValue(newval, ts) , ts)
+
+    def delete_member(self, name: InstanceName) -> "InstanceNode":
+        if name not in self.value:
+            raise NonexistentInstance(self, "member " + name) from None
+        csn = self._member_schema_node(name)
+        if csn.mandatory: raise MandatoryMember(self, name)
+        newval = self.value.copy()
+        del newval[name]
+        ts = datetime.now()
+        return self._copy(ObjectValue(newval, ts), ts)
 
     def entry(self, index: int) -> "ArrayEntry":
         val = self.value
@@ -121,7 +138,7 @@ class InstanceNode:
             raise InstanceTypeError(self, "entry of non-array")
         try:
             return ArrayEntry(val[:index], val[index+1:], val[index], self,
-                              val.timestamp)
+                              self.schema_node, val.timestamp)
         except IndexError:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
@@ -130,7 +147,8 @@ class InstanceNode:
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "last entry of non-array")
         try:
-            return ArrayEntry(val[:-1], [], val[-1], self, val.timestamp)
+            return ArrayEntry(val[:-1], [], val[-1], self,
+                              self.schema_node, val.timestamp)
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
@@ -140,15 +158,16 @@ class InstanceNode:
         return ([ self.entry(i) for i in range(len(val)) ] if
                 isinstance(val, ArrayValue) else [self])
 
-    def remove_entry(self, index: int) -> "InstanceNode":
+    def delete_entry(self, index: int) -> "InstanceNode":
         val = self.value
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "entry of non-array")
-        ts = datetime.now()
-        try:
-            return self._copy(ArrayValue(val[:index] + val[index+1:], ts), ts)
-        except IndexError:
+        if index >= len(val):
             raise NonexistentInstance(self, "entry " + str(index)) from None
+        if self.schema_node.min_elements == len(val):
+            raise MinElements(self)
+        ts = datetime.now()
+        return self._copy(ArrayValue(val[:index] + val[index+1:], ts), ts)
 
     def look_up(self, keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
         """Return the entry with matching keys."""
@@ -194,13 +213,14 @@ class InstanceNode:
 class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
-    def __init__(self, value: Value, ts: datetime) -> None:
-        super().__init__(value, None, ts)
+    def __init__(self, value: Value, schema_node: DataNode,
+                 ts: datetime) -> None:
+        super().__init__(value, None, schema_node, ts)
         self.name = None
 
     def _copy(self, newval: Value = None,
               newts: datetime = None) -> "InstanceNode":
-        return RootNode(newval if newval else self.value,
+        return RootNode(newval if newval else self.value, self.schema_node,
                           newts if newts else self._timestamp)
 
     def ancestors_or_self(self, qname: QualName = None,
@@ -228,8 +248,8 @@ class ObjectMember(InstanceNode):
 
     def __init__(self, name: InstanceName, siblings: Dict[InstanceName, Value],
                  value: Value, parent: InstanceNode,
-                 ts: datetime ) -> None:
-        super().__init__(value, parent, ts)
+                 schema_node: DataNode, ts: datetime ) -> None:
+        super().__init__(value, parent, schema_node, ts)
         self.name = name
         self.siblings = siblings
 
@@ -257,15 +277,18 @@ class ObjectMember(InstanceNode):
     def _copy(self, newval: Value = None,
               newts: datetime = None) -> "ObjectMember":
         return ObjectMember(self.name, self.siblings,
-                           newval if newval else self.value, self.parent,
+                           newval if newval else self.value,
+                           self.parent, self.schema_node,
                            newts if newts else self._timestamp)
 
     def sibling(self, name: InstanceName) -> "InstanceNode":
+        ssn = self.parent._member_schema_node(name)
         try:
-            sib = self.siblings.copy()
-            newval = sib.pop(name)
-            sib[self.name] = self.value
-            return ObjectMember(name, sib, newval, self.parent, self.timestamp)
+            sibs = self.siblings.copy()
+            newval = sibs.pop(name)
+            sibs[self.name] = self.value
+            return ObjectMember(name, sibs, newval, self.parent,
+                                ssn, self.timestamp)
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
 
@@ -312,9 +335,10 @@ class ObjectMember(InstanceNode):
 class ArrayEntry(InstanceNode):
     """This class represents an array entry."""
 
-    def __init__(self, before: List[Value], after: List[Value], value: Value,
-                 parent: InstanceNode, ts: datetime = None) -> None:
-        super().__init__(value, parent, ts)
+    def __init__(self, before: List[Value], after: List[Value],
+                 value: Value, parent: InstanceNode,
+                 schema_node: DataNode, ts: datetime = None) -> None:
+        super().__init__(value, parent, schema_node, ts)
         self.before = before
         self.after = after
 
@@ -333,6 +357,13 @@ class ArrayEntry(InstanceNode):
         """Return the receiver's namespace."""
         return self.parent.namespace
 
+    def update_from_raw(self, value: RawValue) -> Value:
+        """Update the receiver's value from a raw value.
+
+        This method overrides the superclass method.
+        """
+        return self.update(self.schema_node._entry_from_raw(value))
+
     def zip(self) -> ArrayValue:
         """Zip the receiver into an array and return it."""
         res = ArrayValue(self.before.copy(), self.timestamp)
@@ -346,7 +377,8 @@ class ArrayEntry(InstanceNode):
     def _copy(self, newval: Value = None,
               newts: datetime = None) -> "ArrayEntry":
         return ArrayEntry(self.before, self.after,
-                          newval if newval else self.value, self.parent,
+                          newval if newval else self.value,
+                          self.parent, self.schema_node,
                           newts if newts else self._timestamp)
 
     def next(self) -> "ArrayEntry":
@@ -354,24 +386,30 @@ class ArrayEntry(InstanceNode):
             newval = self.after[0]
         except IndexError:
             raise NonexistentInstance(self, "next of last") from None
-        return ArrayEntry(self.before + [self.value], self.after[1:],
-                          newval, self.parent, self.timestamp)
+        return ArrayEntry(self.before + [self.value], self.after[1:], newval,
+                          self.parent, self.schema_node, self.timestamp)
 
     def previous(self) -> "ArrayEntry":
         try:
             newval = self.before[-1]
         except IndexError:
             raise NonexistentInstance(self, "previous of first") from None
-        return ArrayEntry(self.before[:-1], [self.value] + self.after,
-                          newval, self.parent, self.timestamp)
+        return ArrayEntry(self.before[:-1], [self.value] + self.after, newval,
+                          self.parent, self.schema_node, self.timestamp)
 
     def insert_before(self, value: Value):
+        if (self.schema_node.max_elements ==
+            len(self.before) + len(self.after) + 1):
+            raise MaxElements(self)
         return ArrayEntry(self.before, [self.value] + self.after, value,
-                          self.parent, datetime.now())
+                          self.parent, self.schema_node, datetime.now())
 
     def insert_after(self, value: Value):
+        if (self.schema_node.max_elements ==
+            len(self.before) + len(self.after) + 1):
+            raise MaxElements(self)
         return ArrayEntry(self.before + [self.value], self.after, value,
-                          self.parent, datetime.now())
+                          self.parent, self.schema_node, datetime.now())
 
     def ancestors_or_self(self, qname: QualName = None,
                           with_root: bool = False) -> List[InstanceNode]:
@@ -579,7 +617,7 @@ class InstanceError(YangsonException):
         self.instance = inst
 
     def __str__(self):
-        return "[" + str(self.instance.path()) + "] "
+        return "[" + str(self.instance.path()) + "]"
 
 class NonexistentInstance(InstanceError):
     """Exception to raise when moving out of bounds."""
@@ -609,4 +647,28 @@ class DuplicateMember(InstanceError):
         self.name = name
 
     def __str__(self):
-        return "{} member {}".format(super().__str__(), self.name)
+        return "{} duplicate member {}".format(super().__str__(), self.name)
+
+class MandatoryMember(InstanceError):
+    """Exception to raise on attempt to remove a mandatory member."""
+
+    def __init__(self, inst: InstanceNode, name: InstanceName) -> None:
+        super().__init__(inst)
+        self.name = name
+
+    def __str__(self):
+        return "{} mandatory member {}".format(super().__str__(), self.name)
+
+class MinElements(InstanceError):
+    """Exception to raise if an array becomes shorter than min-elements."""
+
+    def __str__(self):
+        return "{} less than {} entries".format(
+            super().__str__(), self.instance.schema_node.min_elements)
+
+class MaxElements(InstanceError):
+    """Exception to raise if an array becomes longer than max-elements."""
+
+    def __str__(self):
+        return "{} more than {} entries".format(
+            super().__str__(), self.instance.schema_node.max_elements)

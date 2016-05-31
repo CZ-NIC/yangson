@@ -37,7 +37,7 @@ class DataModel:
         :param robj: a dictionary representing raw data tree
         """
         cooked = Context.schema.from_raw(robj)
-        return RootNode(cooked, cooked.timestamp)
+        return RootNode(cooked, Context.schema, cooked.timestamp)
 
     def get_schema_node(self, path: SchemaPath) -> Optional[SchemaNode]:
         """Return the schema node corresponding to `path`.
