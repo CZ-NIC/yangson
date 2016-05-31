@@ -172,13 +172,13 @@ class UnionType(DataType):
                 return val
         raise YangTypeError(input)
 
-    def contains(self, val: Any) -> bool:
-        """Return ``True`` if the receiver type contains `val`.
+    def _constraints(self, val: ScalarValue) -> bool:
+        """Return ``True`` if the value satisfies constraints of a member type.
 
         :param val: value to test
         """
         for t in self.types:
-            if t.contains(val): return True
+            if t._constraints(val): return True
         return False
 
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
