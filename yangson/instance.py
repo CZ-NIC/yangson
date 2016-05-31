@@ -123,11 +123,12 @@ class InstanceNode:
         ts = datetime.now()
         return self._copy(ObjectValue(newval, ts) , ts)
 
-    def delete_member(self, name: InstanceName) -> "InstanceNode":
+    def delete_member(self, name: InstanceName,
+                      validate: bool = True) -> "InstanceNode":
         if name not in self.value:
             raise NonexistentInstance(self, "member " + name) from None
         csn = self._member_schema_node(name)
-        if csn.mandatory: raise MandatoryMember(self, name)
+        if validate and csn.mandatory: raise MandatoryMember(self, name)
         newval = self.value.copy()
         del newval[name]
         ts = datetime.now()
@@ -159,13 +160,14 @@ class InstanceNode:
         return ([ self.entry(i) for i in range(len(val)) ] if
                 isinstance(val, ArrayValue) else [self])
 
-    def delete_entry(self, index: int) -> "InstanceNode":
+    def delete_entry(self, index: int,
+                     validate: bool = True) -> "InstanceNode":
         val = self.value
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "entry of non-array")
         if index >= len(val):
             raise NonexistentInstance(self, "entry " + str(index)) from None
-        if self.schema_node.min_elements == len(val):
+        if validate and self.schema_node.min_elements >= len(val):
             raise MinElements(self)
         ts = datetime.now()
         return self._copy(ArrayValue(val[:index] + val[index+1:], ts), ts)
@@ -388,15 +390,16 @@ class ArrayEntry(InstanceNode):
         return ArrayEntry(self.before[:-1], [self.value] + self.after, newval,
                           self.parent, self.schema_node, self.timestamp)
 
-    def insert_before(self, value: Value):
-        if (self.schema_node.max_elements ==
+    def insert_before(self, value: Value,
+                      validate: bool = True) -> "ArrayEntry":
+        if validate and (self.schema_node.max_elements <=
             len(self.before) + len(self.after) + 1):
             raise MaxElements(self)
         return ArrayEntry(self.before, [self.value] + self.after, value,
                           self.parent, self.schema_node, datetime.now())
 
-    def insert_after(self, value: Value):
-        if (self.schema_node.max_elements ==
+    def insert_after(self, value: Value, validate: bool = True) -> "ArrayEntry":
+        if validate and (self.schema_node.max_elements <=
             len(self.before) + len(self.after) + 1):
             raise MaxElements(self)
         return ArrayEntry(self.before + [self.value], self.after, value,

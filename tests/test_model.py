@@ -297,5 +297,7 @@ def test_edits(data_model, instance):
     inst2 = instance.put_member("testb:leafQ", "ABBA").top()
     with pytest.raises(NonexistentInstance):
         inst2.member("test:llistB")
+    modla = la.delete_entry(1, validate=False)
+    assert len(modla.value) == 1
     with pytest.raises(MinElements):
         la.delete_entry(1)
