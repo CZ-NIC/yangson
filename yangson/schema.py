@@ -53,6 +53,18 @@ class SchemaNode:
         return (self.parent.instance_route() + [self.iname()]
                 if self.parent else [])
 
+    def get_data_child(self, name: YangIdentifier,
+                       ns: YangIdentifier) -> Optional["DataNode"]:
+        """Return data node directly under the receiver.
+
+        Compared to :meth:`get_schema_descendant`, this method
+        bypasses **choice** and **case** nodes.
+
+        :param name: data node name
+        :param ns: data node namespace (= `self.ns` if absent)
+        """
+        return None
+
     def state_roots(self) -> List[InstanceRoute]:
         """Return a list of instance routes to descendant state data roots.
 
@@ -163,26 +175,31 @@ class InternalNode(SchemaNode):
 
     def get_data_child(self, name: YangIdentifier,
                        ns: YangIdentifier) -> Optional["DataNode"]:
-        """Return data node directly under receiver.
+        """Return data node directly under the receiver.
 
-        Compared to :meth:`get_schema_descendant`, this method
-        bypasses **choice** and **case** nodes.
-
-        :param name: data node name
-        :param ns: data node namespace (= `self.ns` if absent)
+        This method overrides the superclass method.
         """
-        cands = []
+        todo = []
         for c in self.children:
             if c.name ==name and c.ns == ns:
                 if isinstance(c, DataNode):
                     return c
-                cands.insert(0,c)
+                todo.insert(0,c)
             elif isinstance(c, (ChoiceNode, CaseNode)):
-                cands.append(c)
-        if cands:
-            for c in cands:
-                res = c.get_data_child(name, ns)
-                if res: return res
+                todo.append(c)
+        for c in todo:
+            res = c.get_data_child(name, ns)
+            if res: return res
+
+    def data_children(self) -> List["DataNode"]:
+        """Return the list of all data nodes directly under the receiver."""
+        res = []
+        for c in self.children:
+            if isinstance(c, DataNode):
+                res.append(c)
+            else:
+                res.extend(c.data_children())
+        return res
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -282,7 +299,7 @@ class InternalNode(SchemaNode):
             cn = self.iname2qname(qn)
             ch = self.get_data_child(*cn)
             if ch is None:
-                raise NonexistentSchemaNode(cn[0], cn[1] if cn[1] else self.ns)
+                raise NonexistentSchemaNode(*cn)
             res[ch.iname()] = ch.from_raw(val[qn])
         return res
 
