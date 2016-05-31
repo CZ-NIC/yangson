@@ -18,6 +18,10 @@ class StructuredValue:
         """
         self.timestamp = ts if ts else datetime.now()
 
+    def copy(self) -> "StructuredValue":
+        """Return a shallow copy of the receiver."""
+        return self.__class__(super().copy(), datetime.now())
+
     def stamp(self) -> None:
         """Update the receiver's timestamp to current time."""
         self.timestamp = datetime.now()
