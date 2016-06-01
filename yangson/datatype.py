@@ -32,25 +32,23 @@ class DataType:
         :param mid: id of the context module
         """
         tchain = []
-        tctx = (stmt, mid)
+        s = stmt
+        m = mid
         while True:
-            tdef = Context.get_definition(*tctx)
-            tchain.append(tdef)
-            tst = tdef[0].find1("type", required=True)
-            if tst.argument in cls.dtypes: break
-            tctx = (tst, tdef[1])
-        res = cls.dtypes[tst.argument]()
-        res.handle_properties(tst, tdef[1])
+            tdef, m = Context.get_definition(s, m)
+            s = tdef.find1("type", required=True)
+            tchain.append((tdef, s, m))
+            if s.argument in cls.dtypes: break
+        res = cls.dtypes[s.argument]()
+        res.handle_properties(s, m)
         while tchain:
-            tdst, tid = tchain.pop()
-            typst = tdst.find1("type", required=True)
+            tdef, typst, tid = tchain.pop()
             res.handle_restrictions(typst, tid)
-            dfst = tdst.find1("default")
+            dfst = tdef.find1("default")
             if dfst:
                 res.default = res.parse_value(dfst.argument)
         res.handle_restrictions(stmt, mid)
         return res
-
 
     @staticmethod
     def _in_range(num: Union[int, decimal.Decimal], rng: Range) -> bool:
