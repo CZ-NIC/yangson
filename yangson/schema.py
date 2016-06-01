@@ -260,18 +260,22 @@ class InternalNode(SchemaNode):
         if Context.if_features(stmt, mid):
             self._handle_child(CaseNode(), stmt, mid)
 
-    def _leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _leaf_stmt(self, stmt: Statement,
+                   mid: ModuleId) -> Optional["LeafNode"]:
         """Handle leaf statement."""
         if Context.if_features(stmt, mid):
             node = LeafNode()
-            node._type_stmt(stmt, mid)
+            node.type = DataType.resolve_type(
+                stmt.find1("type", required=True), mid)
             self._handle_child(node, stmt, mid)
+            return node
 
     def _leaf_list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf-list statement."""
         if Context.if_features(stmt, mid):
             node = LeafListNode()
-            node._type_stmt(stmt, mid)
+            node.type = DataType.resolve_type(
+                stmt.find1("type", required=True), mid)
             self._handle_child(node, stmt, mid)
 
     def _rpc_action_stmt(self, stmt: Statement, mid: ModuleId) -> None:
@@ -339,15 +343,6 @@ class TerminalNode(SchemaNode):
         self._default = None
         self.mandatory = False # type: bool
         self.type = None # type: DataType
-
-    def _type_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        """Assign data type to the terminal node defined by `stmt`.
-
-        :param stmt: YANG ``leaf`` or ``leaf-list`` statement
-        :param mid: id of the context module
-        """
-        self.type = DataType.resolve_type(
-            stmt.find1("type", required=True), mid)
 
     def from_raw(self, val: RawScalar) -> ScalarValue:
         """Transform a scalar value.
@@ -458,10 +453,8 @@ class ListNode(SequenceNode, InternalNode):
 
     def _leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf statement."""
-        node = LeafNode()
-        node._type_stmt(stmt, mid)
-        self._handle_child(node, stmt, mid)
-        if (node.name, node.ns) in self.keys:
+        node = super()._leaf_stmt(stmt, mid)
+        if node and (node.name, node.ns) in self.keys:
             node.mandatory = True
 
     def _tree_line(self) -> str:
