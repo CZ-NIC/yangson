@@ -5,6 +5,7 @@ from yangson import DataModel
 from yangson.schema import NonexistentSchemaNode
 from yangson.datatype import YangTypeError
 from yangson.instance import MinElements, NonexistentInstance
+from yangson.instvalue import ArrayValue
 from yangson.context import Context, BadPath, BadPrefName
 
 tree = """+--rw test:contA
@@ -298,12 +299,12 @@ def test_instance_paths(data_model, instance):
         instance.goto(data_model.parse_resource_id(bad_pth))
 
 def test_edits(data_model, instance):
-    iid = data_model.parse_instance_id("/test:contA/listA")
-    la = instance.goto(iid)
+    laii = data_model.parse_instance_id("/test:contA/listA")
+    la = instance.goto(laii)
     inst1 = la.entry(1).update_from_raw(
         {"leafE": "B00F", "leafF": False}).top()
-    assert instance.peek(iid)[1]["leafE"] == "ABBA"
-    assert inst1.peek(iid)[1]["leafE"] == "B00F"
+    assert instance.peek(laii)[1]["leafE"] == "ABBA"
+    assert inst1.peek(laii)[1]["leafE"] == "B00F"
     inst2 = instance.put_member("testb:leafQ", "ABBA").top()
     with pytest.raises(NonexistentInstance):
         inst2.member("test:llistB")
@@ -311,3 +312,8 @@ def test_edits(data_model, instance):
     assert len(modla.value) == 1
     with pytest.raises(MinElements):
         la.delete_entry(1)
+    llb1 = instance.member("test:llistB").entry(1)
+    modllb = llb1.update_from_raw("2001:db8:0:2::1").up()
+    assert modllb.value == ArrayValue(["::1", "2001:db8:0:2::1"])
+    with pytest.raises(YangTypeError):
+        llb1.update_from_raw("2001::2::1")
