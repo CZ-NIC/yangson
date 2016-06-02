@@ -177,7 +177,13 @@ def test_tree(data_model):
 def test_types(data_model):
     llb = data_model.get_data_node("/test:llistB").type
     assert llb.contains("192.168.1.254")
-    #assert not llb.contains("1.2.3.4.5")
+    assert not llb.contains("300.1.1.1")
+    assert not llb.contains("127.0.1")
+    with pytest.raises(YangTypeError):
+        llb.parse_value("1.2.3.4.5")
+    assert llb.contains("2001:db8:0:2::1")
+    assert llb.contains("::1")
+    assert not llb.contains("2001::db8:0:2::1")
     ct = data_model.get_data_node("/test:contT")
     i8 = ct.get_child("int8", "test").type
     assert i8.contains(100) == (not i8.contains(-101)) == True
