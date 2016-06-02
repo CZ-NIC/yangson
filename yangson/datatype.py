@@ -94,23 +94,16 @@ class DataType:
         """String representation of the receiver type."""
         return self.__class__.__name__.lower()
 
-    def contains(self, val: Any) -> bool:
-        """Return ``True`` if the receiver type contains `val`.
-
-        :param val: value to test
-        """
-        return self._constraints(val)
-
     def parse_value(self, input: str) -> ScalarValue:
         """Parse value of a data type.
 
         :param input: string representation of the value
         """
         res = self._parse(input)
-        if self._constraints(res): return res
+        if res is not None and self._constraints(res): return res
         raise YangTypeError(input)
 
-    def _parse(self, input: str) -> ScalarValue:
+    def _parse(self, input: str) -> Optional[ScalarValue]:
         """The most generic parsing method is to return `input`.
 
         :param input: string representation of the value
@@ -124,7 +117,7 @@ class DataType:
         """
         try:
             res = self._convert_raw(raw)
-            if self._constraints(res): return res
+            if res is not None and self._constraints(res): return res
         except TypeError:
             raise YangTypeError(raw) from None
         raise YangTypeError(raw)
@@ -132,6 +125,13 @@ class DataType:
     def _convert_raw(self, raw: RawScalar) -> ScalarValue:
         """Return a cooked value."""
         return raw
+
+    def contains(self, val: Any) -> bool:
+        """Return ``True`` if the receiver type contains `val`."""
+        try:
+            return self._constraints(val)
+        except TypeError:
+            return False
 
     def _constraints(self, val: Any) -> bool:
         return True
@@ -160,23 +160,25 @@ class UnionType(DataType):
         super().__init__()
         self.types = [] # type: List[DataType]
 
-    def from_raw(self, raw: RawScalar) -> ScalarValue:
+    def _parse(self, input: str) -> Optional[ScalarValue]:
         for t in self.types:
-            try:
-                res = t.from_raw(raw)
-                return res
-            except YangTypeError:
-                continue
-        raise YangTypeError(raw)
+            val = t._parse(input)
+            if val is not None and t._constraints(val): return val
+        return None
 
-    def parse_value(self, input: str) -> ScalarValue:
+    def _convert_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
+        for t in self.types:
+            val = t._convert_raw(raw)
+            if val is not None and t._constraints(val): return val
+        return None
+
+    def _constraints(self, val: Any) -> bool:
         for t in self.types:
             try:
-                res = t.parse_value(input)
-                return res
-            except YangTypeError:
+                if t._constraints(val): return True
+            except TypeError:
                 continue
-        raise YangTypeError(input)
+        return False
 
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
@@ -202,14 +204,13 @@ class EmptyType(DataType):
         return val == (None,)
 
     def _parse(self, input: str) -> Tuple[None]:
-        if input: raise YangTypeError(input)
-        return (None,)
+        return None if input else (None,)
 
     def _convert_raw(self, raw: List[None]) -> Tuple[None]:
         try:
             return tuple(raw)
         except TypeError:
-            raise YangTypeError(raw) from None
+            return None
 
 class BitsType(DataType):
     """Class representing YANG "bits" type."""
@@ -220,7 +221,10 @@ class BitsType(DataType):
         self.bit = {}
 
     def _convert_raw(self, raw: str) -> Tuple[str]:
-        return tuple(raw.split())
+        try:
+            return tuple(raw.split())
+        except AttributeError:
+            return None
 
     def _constraints(self, val: List[str]) -> bool:
         for b in val:
@@ -278,7 +282,6 @@ class BooleanType(DataType):
         """
         if input == "true": return True
         if input == "false": return False
-        raise YangTypeError(input)
 
 class StringType(DataType):
     """Class representing YANG "string" type."""
@@ -328,7 +331,10 @@ class BinaryType(StringType):
     """Class representing YANG "binary" type."""
 
     def _convert_raw(self, raw: str) -> bytes:
-        return base64.b64decode(raw, validate=True)
+        try:
+            return base64.b64decode(raw, validate=True)
+        except TypeError:
+            return None
 
 class EnumerationType(DataType):
     """Class representing YANG "enumeration" type."""
@@ -462,7 +468,7 @@ class Decimal64Type(NumericType):
         try:
             return decimal.Decimal(raw).quantize(self._epsilon)
         except decimal.InvalidOperation:
-            raise YangTypeError(raw) from None
+            return None
 
     def contains(self, val: decimal.Decimal) -> bool:
         """Return ``True`` if the receiver type contains `val`.
@@ -485,7 +491,7 @@ class IntegralType(NumericType):
         try:
             return (int(input, 16) if self.hexa_re.match(input) else int(input))
         except ValueError:
-            raise YangTypeError(input) from None
+            return None
 
     def contains(self, val: int) -> bool:
         """Return ``True`` if the receiver type contains `val`.
@@ -518,7 +524,7 @@ class Int64Type(IntegralType):
         try:
             return int(raw)
         except ValueError:
-            raise YangTypeError(raw) from None
+            return None
 
 class Uint8Type(IntegralType):
     """Class representing YANG "uint8" type."""
@@ -544,7 +550,7 @@ class Uint64Type(IntegralType):
         try:
             return int(raw)
         except ValueError:
-            raise YangTypeError(raw) from None
+            return None
 
 class YangTypeError(YangsonException):
     """Exception to be raised if a value doesn't match its type."""
