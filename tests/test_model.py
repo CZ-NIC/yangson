@@ -244,6 +244,7 @@ def test_instance(instance):
         assert [ str(i.path()) for i in expr ] == res
     conta = instance.member("test:contA")
     la1 = conta.member("listA").last_entry()
+    assert la1.index == 1
     tbln = conta.member("testb:leafN")
     inst1 = la1.put_member("leafE", "ABBA").top()
     inst2 = tbln.update("hello!").top()

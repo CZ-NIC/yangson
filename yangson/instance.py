@@ -351,6 +351,11 @@ class ArrayEntry(InstanceNode):
         """Return the receiver's qualified name."""
         return self.parent.qualName
 
+    @property
+    def index(self) -> int:
+        """Return the receiver's index."""
+        return len(self.before)
+
     def update_from_raw(self, value: RawValue) -> "ArrayEntry":
         """Update the receiver's value from a raw value.
 
