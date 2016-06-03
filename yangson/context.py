@@ -168,6 +168,11 @@ class Context:
                     cls.derived_identities.setdefault(bn, set()).add(idn)
 
     @classmethod
+    def prefix2ns(cls, prefix: YangIdentifier, mid: ModuleId) -> YangIdentifier:
+        """Return the namespace corresponding to the prefix."""
+        return cls.prefix_map[mid][prefix][0]
+
+    @classmethod
     def resolve_pname(cls, pname: PrefName,
                       mid: ModuleId) -> Tuple[YangIdentifier, ModuleId]:
         """Return the name and module identifier in which the name is defined.
