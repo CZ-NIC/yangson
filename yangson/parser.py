@@ -142,7 +142,7 @@ class Parser:
 
     def skip_ws(self) -> None:
         """Skip optional whitespace."""
-        self.match_regex(ws_re)
+        return len(self.match_regex(ws_re)) > 0
 
 class ParserException(YangsonException):
     """Base exception class for the parser of YANG modules."""
