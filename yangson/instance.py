@@ -262,7 +262,7 @@ class ObjectMember(InstanceNode):
     def qualName(self) -> Optional[QualName]:
         """Return the receiver's qualified name."""
         p, s, loc = self.name.partition(":")
-        return (loc, p) if s else (p, self.parent.namespace)
+        return (loc, p) if s else (p, self.namespace)
 
     def zip(self) -> ObjectValue:
         """Zip the receiver into an object and return it."""
