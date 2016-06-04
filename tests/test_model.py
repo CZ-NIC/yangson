@@ -262,8 +262,8 @@ def test_instance(instance):
     assert str(tbln.path()) == "/test:contA/testb:leafN"
     assert (instance.ancestors() == instance.preceding_siblings() ==
             instance.following_siblings() == [])
-    axtest(instance.ancestors_or_self(), ["/"])
-    axtest(la1.ancestors(), ["/test:contA", "/"])
+    axtest(instance.ancestors_or_self(with_root=True), ["/"])
+    axtest(la1.ancestors(with_root=True), ["/test:contA", "/"])
     axtest(la1.ancestors_or_self(("listA", "test")), ["/test:contA/listA/1" ])
     axtest(la1.preceding_siblings(), ["/test:contA/listA/0", "/test:contA/leafB",
                                      "/test:contA/leafA", "/test:contA/anydA" ])
