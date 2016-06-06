@@ -210,8 +210,9 @@ class InstanceNode:
         """Return the list of receiver's XPath descendants."""
         res = ([self] if with_self and (qname is None or self.qualName == qname)
                else [])
-        for c in self.children(qname):
-            res.append(c)
+        for c in self.children():
+            if qname is None or c.qualName == qname:
+                res.append(c)
             res += c.descendants(qname)
         return res
 
