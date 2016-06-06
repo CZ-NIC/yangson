@@ -59,6 +59,13 @@ class Parser:
         else:
             raise UnexpectedInput(self, "char " + c)
 
+    def test_string(self, string: str) -> bool:
+        """Test whether `string` comes next."""
+        if self.input.startswith(string, self.offset):
+            self.offset += len(string)
+            return True
+        return False
+
     def one_of(self, chset: str) -> str:
         """Parse one character form the specified set."""
         res = self.peek()
@@ -141,7 +148,7 @@ class Parser:
         return (self.yang_identifier(), i1)
 
     def skip_ws(self) -> None:
-        """Skip optional whitespace."""
+        """Skip optional whitespace and return ``True`` if some was really skipped."""
         return len(self.match_regex(ws_re)) > 0
 
 class ParserException(YangsonException):
