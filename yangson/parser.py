@@ -1,7 +1,7 @@
 """Simple parser class."""
 
 from typing import Any, Callable, List, Mapping, Optional, Tuple
-from .constants import ident_re, integer_re, ws_re, YangsonException
+from .constants import decimal_re, ident_re, integer_re, ws_re, YangsonException
 from .typealiases import *
 
 # Local type aliases
@@ -127,7 +127,11 @@ class Parser:
 
     def integer(self) -> int:
         """Parse an integer."""
-        return int(self.match_regex(integer_re, True, "integer value"))
+        return int(self.match_regex(integer_re, True, "integer"))
+
+    def float(self) -> float:
+        """Parse a number into float."""
+        return float(self.match_regex(decimal_re, True, "number"))
 
     def yang_identifier(self) -> YangIdentifier:
         """Parse YANG identifier.
@@ -150,6 +154,11 @@ class Parser:
     def skip_ws(self) -> None:
         """Skip optional whitespace and return ``True`` if some was really skipped."""
         return len(self.match_regex(ws_re)) > 0
+
+    def adv_skip_ws(self) -> None:
+        """Advance offset and skip optional whitespace."""
+        self.offset += 1
+        return self.skip_ws()
 
 class ParserException(YangsonException):
     """Base exception class for the parser of YANG modules."""
