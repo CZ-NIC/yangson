@@ -17,7 +17,9 @@ _rhs = """("(?P<drhs>[^"]*)"|'(?P<srhs>[^']*)')"""
 pred_re = re.compile(
     r"\[\s*(({}|\.)\s*=\s*{}|(?P<pos>\d*))\s*\]".format(_pname, _rhs))
 ws_re = re.compile(r"[ \n\t\r]*")
-integer_re = re.compile("[0-9]+")
+_integer = "[0-9]+"
+integer_re = re.compile(_integer)
+decimal_re = re.compile(r"{}(\.{})?|\.{}".format(_integer, _integer, _integer))
 
 # Enumeration classes
 
