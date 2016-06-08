@@ -9,11 +9,16 @@ from .typealiases import *
 NodeExpr = Callable[[InstanceNode], List[InstanceNode]]
 XPathExpr = Callable[[InstanceNode, InstanceNode], bool]
 
-class NodeSet(list):
+def comparison(meth):
+    def wrap(self, arg):
+        if isinstance(arg, NodeSet):
+            for n in arg:
+                if meth(self, str(n.value)): return True
+            return False
+        return meth(self, arg)
+    return wrap
 
-    @classmethod
-    def pure(cls, node: InstanceNode) -> "NodeSet":
-        return cls([node])
+class NodeSet(list):
 
     @staticmethod
     def union(nss: List[List[InstanceNode]]) -> List[InstanceNode]:
@@ -38,11 +43,78 @@ class NodeSet(list):
     def as_float(self) -> float:
         return float(self[0].value)
 
-    def as_str(self) -> str:
-        return str(self[0].value)
+    def __str__(self) -> str:
+        return str(self[0].value) if self else ""
 
-    def as_bool(self) -> bool:
-        return len(self) > 0
+    @comparison
+    def __eq__(self, val) -> bool:
+        for n in self:
+            if (str(n.value) if isinstance(val, str) else n.value) == val:
+                return True
+        return False
+
+    @comparison
+    def __ne__(self, val) -> bool:
+        for n in self:
+            if (str(n.value) if isinstance(val, str) else n.value) != val:
+                return True
+        return False
+
+    @comparison
+    def __gt__(self, val) -> bool:
+        try:
+            val = float(val)
+        except (ValueError, TypeError):
+            return False
+        for n in self:
+            try:
+                if float(n.value) > val:
+                    return True
+            except (ValueError, TypeError):
+                continue
+        return False
+
+    @comparison
+    def __lt__(self, val) -> bool:
+        try:
+            val = float(val)
+        except (ValueError, TypeError):
+            return False
+        for n in self:
+            try:
+                if float(n.value) < val:
+                    return True
+            except (ValueError, TypeError):
+                continue
+        return False
+
+    @comparison
+    def __ge__(self, val) -> bool:
+        try:
+            val = float(val)
+        except (ValueError, TypeError):
+            return False
+        for n in self:
+            try:
+                if float(n.value) >= val:
+                    return True
+            except (ValueError, TypeError):
+                continue
+        return False
+
+    @comparison
+    def __le__(self, val) -> bool:
+        try:
+            val = float(val)
+        except (ValueError, TypeError):
+            return False
+        for n in self:
+            try:
+                if float(n.value) <= val:
+                    return True
+            except (ValueError, TypeError):
+                continue
+        return False
 
 class XPathParser(Parser):
     """Parser for XPath expressions."""
@@ -65,7 +137,7 @@ class XPathParser(Parser):
         while self.test_string("or"):
             self.skip_ws()
             op2 = self._and_expr(cnode, origin)
-            op1 = op1 or op2
+            op1 = bool(op1) or bool(op2)
         return op1
 
     def _and_expr(self, cnode: InstanceNode, origin: InstanceNode):
@@ -73,7 +145,7 @@ class XPathParser(Parser):
         while self.test_string("and"):
             self.skip_ws()
             op2 = self._equality_expr(cnode, origin)
-            op1 = op1 and op2
+            op1 = bool(op1) and bool(op2)
         return op1
 
     def _equality_expr(self, cnode: InstanceNode, origin: InstanceNode):
@@ -193,11 +265,21 @@ class XPathParser(Parser):
         except KeyError:
             raise InvalidXPath(self, "AxisName")
 
-    def relative_location_path(self, cnode: InstanceNode, origin: InstanceNode):
+    def relative_location_path(self, cnode: InstanceNode, origin: InstanceNode,
+                               token: str = None) -> NodeSet:
         """Parse ``RelativeLocationPath `` (production rule 3)."""
-        ns = NodeSet.pure(cnode)
+        if token is None:
+            try:
+                token = self.peek()
+            except EndOfInput:
+                return NodeSet([cnode])
+            if token in "*/":
+                self.adv_skip_ws()
+            else:
+                token = self.yang_identifier()
+        ns = NodeSet([cnode])
         while True:
-            ns = ns.bind(self.step())
+            ns = ns.bind(self.step(token))
             self.skip_ws()
             try:
                 next = self.peek()
@@ -207,28 +289,25 @@ class XPathParser(Parser):
             self.adv_skip_ws()
         return ns
 
-    def step(self) -> NodeExpr:
+    def step(self, token: str) -> NodeExpr:
         """Parse ``Step`` (production rule 4)."""
-        next = self.peek()
-        if next == "*":
-            self.offset += 1
-            return self._resolve_step("child", None)
-        ident = self.yang_identifier()
+        if token == "*": return lambda n: n.children()
+        if token == "/": return lambda n: n.descendants(with_self=True)
         ws = self.skip_ws()
         try:
             next = self.peek()
         except EndOfInput:
-            return self._resolve_step("child", (ident, self.mid[0]))
+            return self._resolve_step("child", (token, self.mid[0]))
         if next == ":":
             self.offset += 1
             next = self.peek()
             if next == ":":
                 self.adv_skip_ws()
-                return self._resolve_step(ident, self.qname())
+                return self._resolve_step(token, self.qname())
             if ws:
                 raise InvalidXPath(self, "Step")
-            return self._resolve_step("child", (self.yang_identifier(), ident))
-        return self._resolve_step("child", (ident, self.mid[0]))
+            return self._resolve_step("child", (self.yang_identifier(), token))
+        return self._resolve_step("child", (token, self.mid[0]))
 
     def qname(self) -> Optional[QualName]:
         """Parse XML QName."""
