@@ -23,20 +23,23 @@ class Parser:
     * offset: current position in the input string
     """
 
-    def parse(self, inp: str) -> Any:
+    def __init__(self, text: str):
         """Initialize the class instance.
 
-        :param inp: input string
+        :param text: input text
         """
-        self.input = inp # type: str
+        self.input = text
         self.offset = 0 # type: int
+
+    def __str__(self):
+        """Return string representation of the parser state."""
+        return self.input[:self.offset] + "•" + self.input[self.offset:]
 
     def remaining(self) -> str:
         """Return the remaining part of the input string."""
         res = self.input[self.offset:]
         self.offset = len(self.input)
         return res
-
 
     def at_end(self) -> bool:
         """Return ``True`` if at end of input."""
@@ -151,11 +154,11 @@ class Parser:
         self.offset += 1
         return (self.yang_identifier(), i1)
 
-    def skip_ws(self) -> None:
-        """Skip optional whitespace and return ``True`` if some was really skipped."""
+    def skip_ws(self) -> bool:
+        """Skip optional whitespace."""
         return len(self.match_regex(ws_re)) > 0
 
-    def adv_skip_ws(self) -> None:
+    def adv_skip_ws(self) -> bool:
         """Advance offset and skip optional whitespace."""
         self.offset += 1
         return self.skip_ws()

@@ -23,8 +23,6 @@ class DataModel:
                          can be retrieved.
         """
         Context.schema = InternalNode()
-        self.rid_parser = ResourceIdParser()
-        self.iid_parser = InstanceIdParser()
         try:
             yl = json.loads(yltxt)
         except json.JSONDecodeError:
@@ -68,7 +66,7 @@ class DataModel:
         :raises NonexistentSchemaNode: if the instance identifier refers to
                                        a data node that doesn't exist
         """
-        return self.iid_parser.parse(iid)
+        return InstanceIdParser(iid).parse()
 
     def parse_resource_id(self, rid: str) -> InstancePath:
         """Parse RESTCONF data resource identifier.
@@ -80,7 +78,7 @@ class DataModel:
         :raises BadSchemaNodeType: if keys are specified for a schema node that
                                    is not a list
         """
-        return self.rid_parser.parse(rid)
+        return ResourceIdParser(rid).parse()
 
     def ascii_tree(self) -> str:
         """Return ascii-art representation of the main data tree."""

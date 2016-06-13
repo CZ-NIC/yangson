@@ -17,7 +17,6 @@ class Context:
     @classmethod
     def initialize(cls) -> None:
         """Initialize the context variables."""
-        cls.module_parser = ModuleParser()
         cls.module_search_path = [] # type: List[str]
         cls.modules = {} # type: Dict[ModuleId, Statement]
         cls.implement = [] # type: List[YangIdentifier]
@@ -104,7 +103,7 @@ class Context:
             fn += ".yang"
             try:
                 with open(fn, encoding='utf-8') as infile:
-                    res = cls.module_parser.parse(infile.read())
+                    res = ModuleParser(infile.read()).parse()
             except FileNotFoundError:
                 continue
             cls.modules[(name, rev)] = res

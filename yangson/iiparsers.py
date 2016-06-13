@@ -27,9 +27,8 @@ class InstancePathParser(Parser):
 class ResourceIdParser(InstancePathParser):
     """Parser for RESTCONF resource identifiers."""
 
-    def parse(self, rid: ResourceIdentifier) -> InstancePath:
+    def parse(self) -> InstancePath:
         """Parse resource identifier."""
-        super().parse(rid)
         if self.peek() == "/": self.offset += 1
         res = InstancePath()
         sn = Context.schema
@@ -72,9 +71,8 @@ class ResourceIdParser(InstancePathParser):
 class InstanceIdParser(InstancePathParser):
     """Parser for YANG instance identifiers."""
 
-    def parse(self, iid: ResourceIdentifier) -> InstancePath:
+    def parse(self) -> InstancePath:
         """Parse instance identifier."""
-        super().parse(iid)
         res = InstancePath()
         sn = Context.schema
         while True:
