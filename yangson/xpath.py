@@ -1,4 +1,4 @@
-from typing import Any, Callable, List, Optional, Tuple
+from typing import Any, Callable, List, Optional, Tuple, Union
 from .constants import Axis, MultiplicativeOp
 from .context import Context
 from .instance import InstanceNode
@@ -9,6 +9,7 @@ from .typealiases import *
 
 NodeExpr = Callable[[InstanceNode], List[InstanceNode]]
 XPathExpr = Callable[[InstanceNode, InstanceNode], bool]
+XPathValue = Union["NodeSet", str, float, bool]
 
 def comparison(meth):
     def wrap(self, arg):
@@ -119,26 +120,50 @@ class Expr:
     def __str__(self):
         return self._tree()
 
+    def evaluate(self, node: InstanceNode):
+        return self._eval(node, node)
+
+    @staticmethod
+    def _as_float(val) -> float:
+        return val.as_float() if isinstance(val, NodeSet) else float(val)
+
     def _tree(self, indent: int = 0):
         node_name = self.__class__.__name__
-        attr = self._attribs()
+        attr = self._properties()
         attr_str  = " (" + attr + ")\n" if attr else "\n"
         return (" " * indent + node_name + attr_str +
                 self._children(indent + self.indent))
 
-    def _attribs(self):
+    def _properties(self):
         return ""
 
     def _children(self, indent):
         return ""
 
-    def _predicates(self, indent):
+    def _predicates_str(self, indent):
         if not self.predicates: return ""
         res = " " * indent + "-- Predicates:\n"
         newi = indent + 3
         for p in self.predicates:
             res += p._tree(newi)
         return res
+
+    def _apply_predicates(self, ns: XPathValue, origin: InstanceNode) -> XPathValue:
+        for p in self.predicates:
+            res = NodeSet([])
+            for n in ns:
+                pval = p._eval(n, origin)
+                try:
+                    if isinstance(pval, float):
+                        i = int(pval) - 1
+                        res.append(ns[i])
+                        break
+                except IndexError:
+                    return res
+                if pval:
+                    res.append(n)
+            ns = res
+        return ns
 
 class DyadicExpr(Expr):
     """Abstract superclass of dyadic expressions."""
@@ -150,11 +175,22 @@ class DyadicExpr(Expr):
     def _children(self, indent: int):
         return self.left._tree(indent) + self.right._tree(indent)
 
+    def _eval_ops(self, node: InstanceNode,
+                  origin: InstanceNode) -> Tuple[XPathValue, XPathValue]:
+        return (self.left._eval(node, origin),
+                self.right._eval(node, origin))
+
 class OrExpr(DyadicExpr):
-    pass
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        lres, rres = self._eval_ops(node, origin)
+        return lres or rres
 
 class AndExpr(DyadicExpr):
-    pass
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        lres, rres = self._eval_ops(node, origin)
+        return lres and rres
 
 class EqualityExpr(DyadicExpr):
 
@@ -162,8 +198,12 @@ class EqualityExpr(DyadicExpr):
         super().__init__(left, right)
         self.negate = negate
 
-    def _attribs(self):
+    def _properties(self):
         return "!=" if self.negate else "="
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        lres, rres = self._eval_ops(node, origin)
+        return lres != rres if self.negate else lres == rres
 
 class RelationalExpr(DyadicExpr):
 
@@ -173,10 +213,16 @@ class RelationalExpr(DyadicExpr):
         self.less = less
         self.equal = equal
 
-    def _attribs(self):
+    def _properties(self):
         res = "<" if self.less else ">"
         if self.equal: res += "="
         return res
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        lres, rres = self._eval_ops(node, origin)
+        if self.less:
+            return lres <= rres if self.equal else lres < rres
+        return lres >= rres if self.equal else lres > rres
 
 class AdditiveExpr(DyadicExpr):
 
@@ -184,8 +230,13 @@ class AdditiveExpr(DyadicExpr):
         super().__init__(left, right)
         self.plus = plus
 
-    def _attribs(self):
+    def _properties(self):
         return "+" if self.plus else "-"
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        lres, rres = self._eval_ops(node, origin)
+        return (self._as_float(lres) + self._as_float(rres) if self.plus
+                else self._as_float(lres) - self._as_float(rres))
 
 class MultiplicativeExpr(DyadicExpr):
 
@@ -194,28 +245,47 @@ class MultiplicativeExpr(DyadicExpr):
         super().__init__(left, right)
         self.operator = operator
 
-    def _attribs(self):
+    def _properties(self):
         if self.operator == Axis.multiply: return "*"
         if self.operator == Axis.divide: return "/"
         if self.operator == Axis.modulo: return "mod"
 
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        lres, rres = self._eval_ops(node, origin)
+        if self.operator == Axis.multiply:
+            return self._as_float(lres) * self._as_float(rres)
+        if self.operator == Axis.divide:
+            return self._as_float(lres) / self._as_float(rres)
+        return self._as_float(lres) % self._as_float(rres)
+
 class UnaryExpr(Expr):
 
     def __init__(self, expr: Expr, negate: bool):
+        self.expr = expr
         self.negate = negate
 
-    def _attribs(self):
+    def _properties(self):
         return "-" if self.negate else "+"
 
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        res = self._as_float(self.expr._eval(node, origin))
+        return -res if self.negate else res
+
 class UnionExpr(DyadicExpr):
-    pass
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        lres, rres = self._eval_ops(node, origin)
+        return lres.union(rres)
 
 class Literal(Expr):
 
     def __init__(self, value: str) -> None:
         self.value = value
 
-    def _attribs(self):
+    def _properties(self):
+        return self.value
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
         return self.value
 
 class Number(Expr):
@@ -223,8 +293,11 @@ class Number(Expr):
     def __init__(self, value: float) -> None:
         self.value = value
 
-    def _attribs(self):
+    def _properties(self):
         return str(self.value)
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        return self.value
 
 class PathExpr(Expr):
 
@@ -235,6 +308,10 @@ class PathExpr(Expr):
     def _children(self, indent: int):
         return self.filter._tree(indent) + self.path._tree(indent)
 
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        res = self.filter._eval(node, origin)
+        return self.path._eval(res, origin)
+
 class FilterExpr(Expr):
 
     def __init__(self, primary: Expr, predicates: List[Expr]) -> None:
@@ -242,16 +319,27 @@ class FilterExpr(Expr):
         self.predicates = predicates
 
     def _children(self, indent):
-        return self.primary._tree(indent) + self._predicates(indent)
+        return self.primary._tree(indent) + self._predicates_str(indent)
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        res = self.primary._eval(node, origin)
+        return self._apply_predicates(res, origin)
 
 class LocationPath(DyadicExpr):
 
-    def __init__(self, left: Expr, right: Expr, absolute: bool) -> None:
+    def __init__(self, left: Expr, right: Expr, absolute: bool = False) -> None:
         super().__init__(left, right)
         self.absolute = absolute
 
-    def _attribs(self):
+    def _properties(self):
         return "ABS" if self.absolute else "REL"
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        lres = self.left._eval(node.top() if self.absolute else node, origin)
+        ns = lres.bind(self.right._node_trans())
+        for p in self.right.predicates:
+            ns = [n for n in ns if p.eval(n, origin)]
+        return NodeSet(ns)
 
 class Step(Expr):
 
@@ -261,17 +349,38 @@ class Step(Expr):
         self.qname = qname
         self.predicates = predicates
 
-    def _attribs(self):
+    def _properties(self):
         return "{} {}".format(self.axis.name, self.qname)
 
     def _children(self, indent):
-        return self._predicates(indent)
+        return self._predicates_str(indent)
+
+    def _node_trans(self) -> NodeExpr:
+        if self.axis == Axis.child:
+            return lambda n: n.children(self.qname)
+        if self.axis == Axis.ancestor_or_self:
+            return lambda n: n.ancestors_or_self(self.qname)
+        if self.axis == Axis.descendant:
+            return lambda n: n.descendants(self.qname)
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        ns = NodeSet(self._node_trans()(node))
+        return self._apply_predicates(ns, origin)
 
 class FuncTrue(Expr):
-    pass
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        return True
 
 class FuncFalse(Expr):
-    pass
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        return False
+
+class FuncLast(Expr):
+
+    def _eval(self, node: InstanceNode, origin: InstanceNode):
+        return 0.0
 
 class XPathParser(Parser):
     """Parser for XPath expressions."""
@@ -319,10 +428,10 @@ class XPathParser(Parser):
                 try:
                     next = self.peek()
                 except EndOfInput:
-                    raise InvalidXPath(self, "EqualityExpr")
+                    raise InvalidXPath(self)
             if next != "=":
                 if negate:
-                    raise InvalidXPath(self, "EqualityExpr")
+                    raise InvalidXPath(self)
                 return op1
             self.adv_skip_ws()
             op2 = self._relational_expr()
@@ -430,9 +539,7 @@ class XPathParser(Parser):
     def _predicates(self) -> List[Expr]:
         res = []
         while self.test_string("["):
-            print(self)
             res.append(self.parse())
-            print(self)
             self.char("]")
             self.skip_ws()
         return res
@@ -468,7 +575,10 @@ class XPathParser(Parser):
             res = (Axis.parent if self.test_string(".") else Axis.self, None)
             self.skip_ws()
             return res
-        yid = self.yang_identifier()
+        try:
+            yid = self.yang_identifier()
+        except UnexpectedInput:
+            raise InvalidXPath(self) from None
         ws = self.skip_ws()
         try:
             next = self.peek()
@@ -481,7 +591,7 @@ class XPathParser(Parser):
                 self.adv_skip_ws()
                 return (Axis[yid.replace("-", "_")], self._qname())
             if ws:
-                raise InvalidXPath(self, "QName")
+                raise InvalidXPath(self)
             nsp = Context.prefix2ns(yid, self.mid)
             loc = self.yang_identifier()
             self.skip_ws()
@@ -504,6 +614,8 @@ class XPathParser(Parser):
             res = FuncTrue()
         elif name == "false":
             res = FuncFalse()
+        elif name == "last":
+            res = FuncLast()
         return res
 
 class InvalidXPath(ParserException):
@@ -514,4 +626,4 @@ class InvalidXPath(ParserException):
         self.rule = rule
 
     def __str__(self) -> str:
-        return super().__str__() + ": production rule " + self.rule
+        return str(self.parser)
