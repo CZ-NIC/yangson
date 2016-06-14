@@ -15,7 +15,9 @@ def comparison(meth):
     def wrap(self, arg):
         if isinstance(arg, NodeSet):
             for n in arg:
-                if meth(self, str(n.value)): return True
+                if n.is_structured(): continue
+                if meth(self, n.schema_node.type.canonical_string(n.value)):
+                    return True
             return False
         return meth(self, arg)
     return wrap
@@ -44,15 +46,25 @@ class NodeSet(list):
 
     @comparison
     def __eq__(self, val) -> bool:
+        is_str = isinstance(val, str)
         for n in self:
-            if (str(n.value) if isinstance(val, str) else n.value) == val:
+            if n.is_structured(): continue
+            if is_str:
+                if n.schema_node.type.canonical_string(n.value) == val:
+                    return True
+            elif n.value == val:
                 return True
         return False
 
     @comparison
     def __ne__(self, val) -> bool:
+        is_str = isinstance(val, str)
         for n in self:
-            if (str(n.value) if isinstance(val, str) else n.value) != val:
+            if n.is_structured(): continue
+            if is_str:
+                if n.schema_node.type.canonical_string(n.value) != val:
+                    return True
+            elif n.value != val:
                 return True
         return False
 
@@ -620,10 +632,6 @@ class XPathParser(Parser):
 
 class InvalidXPath(ParserException):
     """Exception to be raised for an invalid XPath expression."""
-
-    def __init__(self, p: XPathParser, rule: str) -> None:
-        super().__init__(p)
-        self.rule = rule
 
     def __str__(self) -> str:
         return str(self.parser)
