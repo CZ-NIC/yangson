@@ -33,7 +33,7 @@ class Parser:
 
     def __str__(self):
         """Return string representation of the parser state."""
-        return self.input[:self.offset] + "•" + self.input[self.offset:]
+        return self.input[:self.offset] + "§" + self.input[self.offset:]
 
     def remaining(self) -> str:
         """Return the remaining part of the input string."""
