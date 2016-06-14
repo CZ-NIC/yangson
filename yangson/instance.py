@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Callable, List, Tuple
 from .constants import YangsonException
-from .instvalue import ArrayValue, ObjectValue, Value
+from .instvalue import ArrayValue, ObjectValue, StructuredValue, Value
 from .schema import CaseNode, DataNode, NonexistentSchemaNode, TerminalNode
 from .typealiases import *
 
@@ -37,6 +37,10 @@ class InstanceNode:
     def namespace(self) -> Optional[YangIdentifier]:
         """Return the receiver's namespace."""
         return self.schema_node.ns
+
+    def is_structured(self):
+        """Return ``True`` if the receiver has a structured value."""
+        return isinstance(self.value, StructuredValue)
 
     def path(self) -> str:
         """Return JSONPointer of the receiver."""
