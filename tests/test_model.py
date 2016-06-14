@@ -213,6 +213,7 @@ def test_types(data_model):
     assert d64.contains(pi)
     assert not d64.contains(10)
     assert d64.from_raw("3.14159265358979323846264338327950288") == pi
+    assert d64.canonical_string(Decimal("0")) == "0.0"
     st = ct.get_child("string", "test").type
     assert st.contains("hello world")
     assert not st.contains("hello-world")
@@ -222,6 +223,7 @@ def test_types(data_model):
     boo = ct.get_child("boolean", "test").type
     assert boo.parse_value("true")
     assert boo.contains(False)
+    assert boo.canonical_string(True) == "true"
     with pytest.raises(YangTypeError):
         boo.parse_value("boo")
     en = ct.get_child("enumeration", "test").type
@@ -230,14 +232,23 @@ def test_types(data_model):
     assert en.enum["Phobos"] == 101
     bits = ct.get_child("bits", "test").type
     assert bits.as_int(bits._convert_raw("dos cuatro")) == 10
+    with pytest.raises(YangTypeError):
+        bits.parse_value("un dos")
+    assert bits.canonical_string(("cuatro", "dos")) == "dos cuatro"
+    with pytest.raises(YangTypeError):
+        bits.canonical_string("un dos")
     assert not bits.contains("un")
     assert not bits.contains("tres")
     assert bits.bit["dos"] == 1
     bin = ct.get_child("binary", "test").type
+    kun = "Příliš žluťoučký kůň úpěl ďábelské ódy."
     bv = bin.parse_value(
         b'UMWZw61sacWhIMW+bHXFpW91xI1rw70ga8' +
         b'WvxYggw7pwxJtsIMSPw6FiZWxza8OpIMOzZHku')
-    assert bv.decode("utf-8") == "Příliš žluťoučký kůň úpěl ďábelské ódy."
+    assert bv.decode("utf-8") == kun
+    assert bin.canonical_string(kun.encode("utf-8")) == (
+        "UMWZw61sacWhIMW+bHXFpW91xI1rw70ga8" +
+        "WvxYggw7pwxJtsIMSPw6FiZWxza8OpIMOzZHku")
 
 def test_instance(instance):
     def axtest(expr, res):

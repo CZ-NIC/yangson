@@ -126,6 +126,10 @@ class DataType:
         """Return a cooked value."""
         return raw
 
+    def canonical_string(self, val: ScalarValue) -> str:
+        """Return canonical form of a value."""
+        return str(val)
+
     def contains(self, val: Any) -> bool:
         """Return ``True`` if the receiver type contains `val`."""
         try:
@@ -264,6 +268,14 @@ class BitsType(DataType):
         new = set([ b.argument for b in bst if Context.if_features(b, mid) ])
         for bit in set(self.bit) - new:
             del self.bit[bit]
+
+    def canonical_string(self, val: List[str]) -> str:
+        try:
+            items = [(self.bit[b], b) for b in val]
+        except KeyError:
+            raise YangTypeError(val) from None
+        items.sort()
+        return " ".join([x[1] for x in items])
         
 class BooleanType(DataType):
     """Class representing YANG "boolean" type."""
@@ -282,6 +294,11 @@ class BooleanType(DataType):
         """
         if input == "true": return True
         if input == "false": return False
+
+    def canonical_string(self, val: bool) -> str:
+        if val is True: return "true"
+        if val is False: return "false"
+        raise YangTypeError(val)
 
 class StringType(DataType):
     """Class representing YANG "string" type."""
@@ -335,6 +352,9 @@ class BinaryType(StringType):
             return base64.b64decode(raw, validate=True)
         except TypeError:
             return None
+
+    def canonical_string(self, val: bytes) -> str:
+        return base64.b64encode(val).decode("ascii")
 
 class EnumerationType(DataType):
     """Class representing YANG "enumeration" type."""
@@ -469,6 +489,9 @@ class Decimal64Type(NumericType):
             return decimal.Decimal(raw).quantize(self._epsilon)
         except decimal.InvalidOperation:
             return None
+
+    def canonical_string(self, val: decimal.Decimal) -> str:
+        return "0.0" if val == 0 else str(val).rstrip("0")
 
     def contains(self, val: decimal.Decimal) -> bool:
         """Return ``True`` if the receiver type contains `val`.
