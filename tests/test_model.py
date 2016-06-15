@@ -7,6 +7,7 @@ from yangson.datatype import YangTypeError
 from yangson.instance import MinElements, NonexistentInstance
 from yangson.instvalue import ArrayValue
 from yangson.context import Context, BadPath, BadPrefName
+from yangson.xpath import XPathParser
 
 tree = """+--rw test:contA
 |  +--rw leafA?
@@ -288,6 +289,26 @@ def test_instance(instance):
     axtest(conta.descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
+
+def test_xpath(instance):
+    def xptest(expr, res=True, node=instance, module="test"):
+        mid = (module, Context.revisions[module][0])
+        assert XPathParser(expr, mid).parse().evaluate(node) == res
+    conta = instance.member("test:contA")
+    xptest("true()")
+    xptest("false()", False)
+    xptest("count(t:llistB)", 2)
+    xptest("count(*)", 6, conta)
+    xptest("count(*[. > 30])", 1, conta)
+    xptest("llistB[1]", "::1")
+    xptest("llistB[last()]", "127.0.0.1")
+    xptest("leafA <= leafB", node=conta)
+    xptest("leafB mod leafA", 11, node=conta)
+    xptest("""listA[leafE='C0FFEE' ][ leafF = 'true']
+           /contD/contE/leafP = 42""", node=conta)
+    xptest("listA/contD/contE/leafP < leafA | leafB", node=conta)
+    xptest("listA/contD/contE/leafP > leafA | leafB", node=conta)
+    xptest("listA/contD/contE/leafP = leafA | leafB", False, conta)
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
