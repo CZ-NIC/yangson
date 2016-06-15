@@ -34,13 +34,16 @@ module testb {
         type string;
       }
     }
+    leaf leafR {
+      type leafref {
+	path "../t:listA/t:leafE";
+      }
+    }
   }
 
   augment "/t:choiA" {
     leaf leafQ {
-      type leafref {
-	path "../t:listA/t:leafE";
-      }
+      type empty;
     }
   }
 
