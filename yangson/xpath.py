@@ -29,9 +29,6 @@ class NodeSet(list):
         elems.update({n.path():n for n in ns})
         return self.__class__(elems.values())
 
-    def sort(self, reverse: bool = False):
-        super().sort(key=InstanceNode.path, reverse=reverse)
-
     def bind(self, trans: NodeExpr) -> "NodeSet":
         res = self.__class__([])
         for n in self:
@@ -420,6 +417,26 @@ class FuncLast(Expr):
     def _eval(self, xctx: XPathContext) -> int:
         return xctx.size
 
+class FuncLocalName(Expr):
+
+    def __init__(self, expr: Optional[Expr]):
+        self.expr = expr
+
+    def _eval(self, xctx: XPathContext) -> str:
+        if self.expr is None:
+            node = xctx.cnode
+        else:
+            ns = self.expr._eval(xctx)
+            try:
+                node = ns[0]
+            except TypeError:
+                raise XPathTypeError(ns)
+            except IndexError:
+                return ""
+        if node.name is None: return ""
+        p, s, loc = node.name.partition(":")
+        return loc if s else p
+
 class FuncNot(Expr):
 
     def __init__(self, expr: Expr) -> None:
@@ -681,6 +698,9 @@ class XPathParser(Parser):
     def _func_last(self):
         return FuncLast()
 
+    def _func_local_name(self):
+        return FuncLocalName(None if self.peek() == ")" else self.parse())
+
     def _func_not(self):
         return FuncNot(self.parse())
 
@@ -695,6 +715,7 @@ class XPathParser(Parser):
                  "current": self._func_current,
                  "false": self._func_false,
                  "last": self._func_last,
+                 "local-name": self._func_local_name,
                  "not": self._func_not,
                  "position": self._func_position,
                  "true": self._func_true,
@@ -705,3 +726,12 @@ class InvalidXPath(ParserException):
 
     def __str__(self) -> str:
         return str(self.parser)
+
+class XPathTypeError(ParserException):
+    """Exception to be raised for type errors in XPath evaluation."""
+
+    def __init__(self, value: XPathValue) -> None:
+        self.value = value
+
+    def __str__(self) -> str:
+        return str(self.value)

@@ -317,6 +317,9 @@ def test_xpath(instance):
     xptest("/t:contA/t:listA[t:leafE = current()]/t:contD/t:leafG = 'foo1-bar'",
            node=lr, module="testb")
     xptest("../leafN = 'hi!'", node=lr, module="testb")
+    xptest("local-name()", "")
+    xptest("local-name()", "leafR", lr)
+    xptest("local-name(*)", "contA")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
