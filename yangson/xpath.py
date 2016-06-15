@@ -270,16 +270,16 @@ class MultiplicativeExpr(DyadicExpr):
         self.operator = operator
 
     def _properties_str(self):
-        if self.operator == Axis.multiply: return "*"
-        if self.operator == Axis.divide: return "/"
-        if self.operator == Axis.modulo: return "mod"
+        if self.operator == MultiplicativeOp.multiply: return "*"
+        if self.operator == MultiplicativeOp.divide: return "/"
+        if self.operator == MultiplicativeOp.modulo: return "mod"
 
     def _eval(self, xctx: XPathContext) -> float:
         ops = self._eval_ops(xctx)
         lres = self._as_float(ops[0])
         rres = self._as_float(ops[1])
-        if self.operator == Axis.multiply: return lres * rres
-        if self.operator == Axis.divide: return lres / rres
+        if self.operator == MultiplicativeOp.multiply: return lres * rres
+        if self.operator == MultiplicativeOp.divide: return lres / rres
         return lres % rres
 
 class UnaryExpr(Expr):
@@ -379,12 +379,13 @@ class Step(Expr):
         return self._predicates_str(indent)
 
     def _node_trans(self) -> NodeExpr:
-        if self.axis == Axis.child:
-            return lambda n: n.children(self.qname)
-        if self.axis == Axis.ancestor_or_self:
-            return lambda n: n.ancestors_or_self(self.qname)
-        if self.axis == Axis.descendant:
-            return lambda n: n.descendants(self.qname)
+        return {
+            Axis.ancestor_or_self: lambda n: n.ancestors_or_self(self.qname),
+            Axis.child: lambda n: n.children(self.qname),
+            Axis.descendant: lambda n: n.descendants(self.qname),
+            Axis.self: (lambda n: [n] if self.qname is None or
+                        self.qname == n.qualName else []),
+                        }[self.axis]
 
     def _eval(self, xctx: XPathContext):
         ns = NodeSet(self._node_trans()(xctx.cnode))
@@ -395,9 +396,12 @@ class FuncCount(Expr):
     def __init__(self, expr: Expr):
         self.expr = expr
 
+    def _children_str(self, indent: int):
+        return self.expr._tree(indent)
+
     def _eval(self, xctx: XPathContext) -> int:
         ns = self.expr._eval(xctx)
-        return len(ns)
+        return float(len(ns))
 
 class FuncFalse(Expr):
 
@@ -413,6 +417,9 @@ class FuncNot(Expr):
 
     def __init__(self, expr: Expr) -> None:
         self.expr = expr
+
+    def _children_str(self, indent: int):
+        return self.expr._tree(indent)
 
     def _eval(self, xctx: XPathContext) -> bool:
         return not(self.expr._eval(xctx))
@@ -655,8 +662,8 @@ class XPathParser(Parser):
         return res
 
     def _func_count(self):
-        arg = self.parse()
-        return FuncCount(arg)
+        expr = self.parse()
+        return FuncCount(expr)
 
     def _func_false(self):
         return FuncFalse()
