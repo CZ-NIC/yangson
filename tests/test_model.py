@@ -26,13 +26,14 @@ tree = """+--rw test:contA
 |  +--rw anydA
 |  +--rw anyxA?
 |  +--rw (testb:choiB)
-|     +--:(testb:contB)
-|     |  +--rw testb:contB!
-|     |     +--rw leafC
-|     +--:(testb:leafI)
-|     |  +--rw testb:leafI?
-|     +--:(testb:leafN)
-|        +--rw testb:leafN?
+|  |  +--:(testb:contB)
+|  |  |  +--rw testb:contB!
+|  |  |     +--rw leafC
+|  |  +--:(testb:leafI)
+|  |  |  +--rw testb:leafI?
+|  |  +--:(testb:leafN)
+|  |     +--rw testb:leafN?
+|  +--rw testb:leafR?
 +--rw test:contT?
 |  +--rw int8?
 |  +--rw int16?
@@ -97,6 +98,7 @@ def instance(data_model):
 			    "leafE": "ABBA",
 			    "leafF": true
 		    }],
+            "testb:leafR": "C0FFEE",
 		    "anydA": {
 			    "foo:bar": [1, 2, 3]
 		    },
@@ -280,12 +282,14 @@ def test_instance(instance):
     axtest(la1.preceding_siblings(), ["/test:contA/listA/0", "/test:contA/leafB",
                                      "/test:contA/leafA", "/test:contA/anydA" ])
     axtest(la1.preceding_siblings(("leafB", "test")), [ "/test:contA/leafB" ])
-    axtest(la1.following_siblings(), [ "/test:contA/testb:leafN" ])
+    axtest(la1.following_siblings(), [ "/test:contA/testb:leafN",
+                                       "/test:contA/testb:leafR"])
     axtest(conta.children(), ["/test:contA/anydA", "/test:contA/leafA",
                               "/test:contA/leafB", "/test:contA/listA/0",
-                              "/test:contA/listA/1", "/test:contA/testb:leafN"])
+                              "/test:contA/listA/1", "/test:contA/testb:leafN",
+                              "/test:contA/testb:leafR"])
     axtest(la1.children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance.descendants(with_self=True)) == 19
+    assert len(instance.descendants(with_self=True)) == 20
     axtest(conta.descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
@@ -295,10 +299,11 @@ def test_xpath(instance):
         mid = (module, Context.revisions[module][0])
         assert XPathParser(expr, mid).parse().evaluate(node) == res
     conta = instance.member("test:contA")
+    lr = conta.member("testb:leafR")
     xptest("true()")
     xptest("false()", False)
     xptest("count(t:llistB)", 2)
-    xptest("count(*)", 6, conta)
+    xptest("count(*)", 7, conta)
     xptest("count(*[. > 30])", 1, conta)
     xptest("llistB[1]", "::1")
     xptest("llistB[last()]", "127.0.0.1")
@@ -308,7 +313,9 @@ def test_xpath(instance):
            /contD/contE/leafP = 42""", node=conta)
     xptest("listA/contD/contE/leafP < leafA | leafB", node=conta)
     xptest("listA/contD/contE/leafP > leafA | leafB", node=conta)
-    xptest("listA/contD/contE/leafP = leafA | leafB", False, conta)
+    xptest("listA/contD/contE/leafP = leafA | /contA/leafB", False, conta)
+    xptest("/t:contA/t:listA[t:leafE = current()]/t:contD/t:leafG = 'foo1-bar'",
+           node=lr, module="testb")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")

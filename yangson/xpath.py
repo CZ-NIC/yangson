@@ -403,6 +403,11 @@ class FuncCount(Expr):
         ns = self.expr._eval(xctx)
         return float(len(ns))
 
+class FuncCurrent(Expr):
+
+    def _eval(self, xctx: XPathContext) -> NodeSet:
+        return NodeSet([xctx.origin])
+
 class FuncFalse(Expr):
 
     def _eval(self, xctx: XPathContext) -> bool:
@@ -665,6 +670,9 @@ class XPathParser(Parser):
         expr = self.parse()
         return FuncCount(expr)
 
+    def _func_current(self):
+        return FuncCurrent()
+
     def _func_false(self):
         return FuncFalse()
 
@@ -682,6 +690,7 @@ class XPathParser(Parser):
 
     def _function_call(self, fname: str):
         return { "count": self._func_count,
+                 "current": self._func_current,
                  "false": self._func_false,
                  "last": self._func_last,
                  "not": self._func_not,
