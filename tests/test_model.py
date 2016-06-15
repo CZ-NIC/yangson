@@ -316,6 +316,7 @@ def test_xpath(instance):
     xptest("listA/contD/contE/leafP = leafA | /contA/leafB", False, conta)
     xptest("/t:contA/t:listA[t:leafE = current()]/t:contD/t:leafG = 'foo1-bar'",
            node=lr, module="testb")
+    xptest("../leafN = 'hi!'", node=lr, module="testb")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")

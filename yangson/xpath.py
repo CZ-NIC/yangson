@@ -383,6 +383,8 @@ class Step(Expr):
             Axis.ancestor_or_self: lambda n: n.ancestors_or_self(self.qname),
             Axis.child: lambda n: n.children(self.qname),
             Axis.descendant: lambda n: n.descendants(self.qname),
+            Axis.parent: (lambda n: [n.up()] if self.qname is None or
+                          self.qname == n.parent.qualName else []),
             Axis.self: (lambda n: [n] if self.qname is None or
                         self.qname == n.qualName else []),
                         }[self.axis]
