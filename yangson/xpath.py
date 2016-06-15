@@ -392,18 +392,26 @@ class Step(Expr):
 
 class FuncTrue(Expr):
 
-    def _eval(self, xctx: XPathContext):
+    def _eval(self, xctx: XPathContext) -> bool:
         return True
 
 class FuncFalse(Expr):
 
-    def _eval(self, xctx: XPathContext):
+    def _eval(self, xctx: XPathContext) -> bool:
         return False
 
 class FuncLast(Expr):
 
-    def _eval(self, xctx: XPathContext):
+    def _eval(self, xctx: XPathContext) -> int:
         return xctx.size
+
+class FuncNot(Expr):
+
+    def __init__(self, expr: Expr) -> None:
+        self.expr = expr
+
+    def _eval(self, xctx: XPathContext) -> bool:
+        return not(self.expr)
 
 class FuncPosition(Expr):
 
@@ -643,6 +651,9 @@ class XPathParser(Parser):
     def _func_last(self):
         return FuncLast()
 
+    def _func_not(self):
+        return FuncNot(self.parse())
+
     def _func_position(self):
         return FuncPosition()
 
@@ -652,17 +663,10 @@ class XPathParser(Parser):
     def _function_call(self, fname: str):
         return { "false": self._func_false,
                  "last": self._func_last,
+                 "not": self._func_not,
                  "position": self._func_position,
                  "true": self._func_true,
                  }[fname]()
-
-        if name == "true":
-            res = FuncTrue()
-        elif name == "false":
-            res = FuncFalse()
-        elif name == "last":
-            res = FuncLast()
-        return res
 
 class InvalidXPath(ParserException):
     """Exception to be raised for an invalid XPath expression."""
