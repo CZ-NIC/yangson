@@ -390,10 +390,14 @@ class Step(Expr):
         ns = NodeSet(self._node_trans()(xctx.cnode))
         return self._apply_predicates(ns, xctx)
 
-class FuncTrue(Expr):
+class FuncCount(Expr):
 
-    def _eval(self, xctx: XPathContext) -> bool:
-        return True
+    def __init__(self, expr: Expr):
+        self.expr = expr
+
+    def _eval(self, xctx: XPathContext) -> int:
+        ns = self.expr._eval(xctx)
+        return len(ns)
 
 class FuncFalse(Expr):
 
@@ -411,12 +415,17 @@ class FuncNot(Expr):
         self.expr = expr
 
     def _eval(self, xctx: XPathContext) -> bool:
-        return not(self.expr)
+        return not(self.expr._eval(xctx))
 
 class FuncPosition(Expr):
 
     def _eval(self, xctx: XPathContext):
         return xctx.position
+
+class FuncTrue(Expr):
+
+    def _eval(self, xctx: XPathContext) -> bool:
+        return True
 
 class XPathParser(Parser):
     """Parser for XPath expressions."""
@@ -645,6 +654,10 @@ class XPathParser(Parser):
         self.skip_ws()
         return res
 
+    def _func_count(self):
+        arg = self.parse()
+        return FuncCount(arg)
+
     def _func_false(self):
         return FuncFalse()
 
@@ -661,7 +674,8 @@ class XPathParser(Parser):
         return FuncTrue()
 
     def _function_call(self, fname: str):
-        return { "false": self._func_false,
+        return { "count": self._func_count,
+                 "false": self._func_false,
                  "last": self._func_last,
                  "not": self._func_not,
                  "position": self._func_position,
