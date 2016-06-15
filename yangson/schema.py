@@ -17,6 +17,8 @@ class SchemaNode:
         self.name = None # type: YangIdentifier
         self.ns = None # type: YangIdentifier
         self.parent = None # type: "InternalNode"
+        self.must = None # type: "Expr"
+        self.when = None # type: "Expr"
 
     @property
     def config(self) -> bool:
@@ -92,6 +94,12 @@ class SchemaNode:
     def _config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         if stmt.argument == "false": self._config = False
 
+    def _must_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        self.must = XPathParser(stmt.argument, mid).parse()
+
+    def _when_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        self.when = XPathParser(stmt.argument, mid).parse()
+
     def _mandatory_stmt(self, stmt, mid: ModuleId) -> None:
         if stmt.argument == "true":
             self.mandatory = True
@@ -118,6 +126,7 @@ class SchemaNode:
         "mandatory": "_mandatory_stmt",
         "max-elements": "_max_elements_stmt",
         "min-elements": "_min_elements_stmt",
+        "must": "_must_stmt",
         "notification": "_notification_stmt",
         "output": "_output_stmt",
         "ordered-by": "_ordered_by_stmt",
@@ -125,6 +134,7 @@ class SchemaNode:
         "rpc": "_rpc_action_stmt",
         "unique": "_unique_stmt",
         "uses": "_uses_stmt",
+        "when": "_when_stmt",
         }
     """Map of statement keywords to callback methods."""
 
@@ -663,3 +673,5 @@ class BadSchemaNodeType(SchemaNodeError):
 
     def __str__(self) -> str:
         return super().__str__() + " is not a " + self.expected
+
+from .xpath import Expr, XPathParser

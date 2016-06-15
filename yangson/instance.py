@@ -4,7 +4,6 @@ from datetime import datetime
 from typing import Any, Callable, List, Tuple
 from .constants import YangsonException
 from .instvalue import ArrayValue, ObjectValue, StructuredValue, Value
-from .schema import CaseNode, DataNode, NonexistentSchemaNode, TerminalNode
 from .typealiases import *
 
 class JSONPointer(tuple):
@@ -18,7 +17,7 @@ class InstanceNode:
     """YANG data node instance implemented as a zipper structure."""
 
     def __init__(self, value: Value, parent: Optional["InstanceNode"],
-                 schema_node: DataNode, ts: datetime) -> None:
+                 schema_node: "DataNode", ts: datetime) -> None:
         """Initialize the class instance.
 
         :param value: instance value
@@ -98,7 +97,7 @@ class InstanceNode:
         """
         return self._copy(newval, datetime.now())
 
-    def _member_schema_node(self, name: InstanceName) -> DataNode:
+    def _member_schema_node(self, name: InstanceName) -> "DataNode":
         qname = self.schema_node.iname2qname(name)
         res = self.schema_node.get_data_child(*qname)
         if res is None:
@@ -223,7 +222,7 @@ class InstanceNode:
 class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
-    def __init__(self, value: Value, schema_node: DataNode,
+    def __init__(self, value: Value, schema_node: "DataNode",
                  ts: datetime) -> None:
         super().__init__(value, None, schema_node, ts)
         self.name = None
@@ -258,7 +257,7 @@ class ObjectMember(InstanceNode):
 
     def __init__(self, name: InstanceName, siblings: Dict[InstanceName, Value],
                  value: Value, parent: InstanceNode,
-                 schema_node: DataNode, ts: datetime ) -> None:
+                 schema_node: "DataNode", ts: datetime ) -> None:
         super().__init__(value, parent, schema_node, ts)
         self.name = name
         self.siblings = siblings
@@ -341,7 +340,7 @@ class ArrayEntry(InstanceNode):
 
     def __init__(self, before: List[Value], after: List[Value],
                  value: Value, parent: InstanceNode,
-                 schema_node: DataNode, ts: datetime = None) -> None:
+                 schema_node: "DataNode", ts: datetime = None) -> None:
         super().__init__(value, parent, schema_node, ts)
         self.before = before
         self.after = after
@@ -677,3 +676,5 @@ class MaxElements(InstanceError):
     def __str__(self):
         return "{} more than {} entries".format(
             super().__str__(), self.instance.schema_node.max_elements)
+
+from .schema import CaseNode, DataNode, NonexistentSchemaNode, TerminalNode

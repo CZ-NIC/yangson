@@ -31,6 +31,7 @@ module test {
         pattern "[0-9A-Fa-f]*";
       }
     }
+    must "not(leafA <= leafB)";
     leaf leafA {
       type d:typA;
     }
