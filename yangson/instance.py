@@ -219,6 +219,16 @@ class InstanceNode:
             res += c.descendants(qname)
         return res
 
+    def preceding_siblings(self,
+                           qname: QualName = None) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath preceding-siblings."""
+        return []
+
+    def following_siblings(self,
+                           qname: QualName = None) -> List["InstanceNode"]:
+        """Return the list of receiver's XPath following-siblings."""
+        return []
+
 class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
@@ -240,16 +250,6 @@ class RootNode(InstanceNode):
     def ancestors(self, qname: QualName = None,
                   with_root: bool = False) -> List["InstanceNode"]:
         """Return the list of receiver's XPath ancestors."""
-        return []
-
-    def preceding_siblings(self,
-                           qname: QualName = None) -> List["InstanceNode"]:
-        """Return the list of receiver's XPath preceding-siblings."""
-        return []
-
-    def following_siblings(self,
-                           qname: QualName = None) -> List["InstanceNode"]:
-        """Return the list of receiver's XPath following-siblings."""
         return []
 
 class ObjectMember(InstanceNode):
@@ -305,35 +305,6 @@ class ObjectMember(InstanceNode):
                   with_root: bool = False) -> List[InstanceNode]:
         """Return the list of receiver's XPath ancestors."""
         return self.up().ancestors_or_self(qname, with_root)
-
-    def preceding_siblings(self,
-                           qname: QualName = None) -> List["InstanceNode"]:
-        """Return the list of receiver's XPath preceding-siblings."""
-        if qname is None:
-            prec = sorted([ n for n in self.siblings if n < self.name ],
-                          reverse=True)
-            res = []
-            for n in prec:
-                res += self.sibling(n).xpath_nodes()
-            return res
-        iname = (qname[0] if self.parent.namespace == qname[1]
-                 else qname[1] + ":" + qname[0])
-        return (self.sibling(iname).xpath_nodes() if
-                iname < self.name and iname in self.siblings else [])
-
-    def following_siblings(self,
-                           qname: QualName = None) -> List["InstanceNode"]:
-        """Return the list of receiver's XPath following-siblings."""
-        if qname is None:
-            foll = sorted([ n for n in self.siblings if n > self.name ])
-            res = []
-            for n in foll:
-                res += self.sibling(n).xpath_nodes()
-            return res
-        iname = (qname[0] if self.parent.namespace == qname[1]
-                 else qname[1] + ":" + qname[0])
-        return (self.sibling(iname).xpath_nodes() if
-                iname > self.name and iname in self.siblings else [])
 
 class ArrayEntry(InstanceNode):
     """This class represents an array entry."""
@@ -445,20 +416,16 @@ class ArrayEntry(InstanceNode):
         return res
 
     def preceding_siblings(self,
-                           qname: QualName = None) -> List["InstanceNode"]:
+                           qname: QualName = None) -> List["ArrayEntry"]:
         """Return the list of receiver's XPath preceding-siblings."""
-        if qname is None:
-            return self.preceding_entries() + self.up().preceding_siblings()
-        return (self.preceding_entries() if self.qualName == qname
-                else self.up().preceding_siblings(qname))
+        return (self.preceding_entries()
+                if qname is None or self.qualName == qname else [])
 
     def following_siblings(self,
-                           qname: QualName = None) -> List["InstanceNode"]:
+                           qname: QualName = None) -> List["ArrayEntry"]:
         """Return the list of receiver's XPath following-siblings."""
-        if qname is None:
-            return self.following_entries() + self.up().following_siblings()
-        return (self.following_entries() if self.qualName == qname
-                else self.up().following_siblings(qname))
+        return (self.following_entries()
+                if qname is None or self.qualName == qname else [])
 
 class InstancePath(list):
     """Instance route."""
