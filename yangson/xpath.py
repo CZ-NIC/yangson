@@ -665,7 +665,13 @@ class XPathParser(Parser):
             next = self.peek()
             if next == ":":
                 self.adv_skip_ws()
-                return (Axis[yid.replace("-", "_")], self._qname())
+                try:
+                    axis = Axis[yid.replace("-", "_")]
+                except KeyError:
+                    if yid in ("preceding", "following"):
+                        raise NotImplemented("axis '{}::'".format(yid)) from None
+                    raise InvalidXPath(self) from None
+                return (axis, self._qname())
             if ws:
                 raise InvalidXPath(self)
             nsp = Context.prefix2ns(yid, self.mid)
@@ -711,15 +717,20 @@ class XPathParser(Parser):
         return FuncTrue()
 
     def _function_call(self, fname: str):
-        return { "count": self._func_count,
-                 "current": self._func_current,
-                 "false": self._func_false,
-                 "last": self._func_last,
-                 "local-name": self._func_local_name,
-                 "not": self._func_not,
-                 "position": self._func_position,
-                 "true": self._func_true,
-                 }[fname]()
+        try:
+            return { "count": self._func_count,
+                     "current": self._func_current,
+                     "false": self._func_false,
+                     "last": self._func_last,
+                     "local-name": self._func_local_name,
+                     "not": self._func_not,
+                     "position": self._func_position,
+                     "true": self._func_true,
+                     }[fname]()
+        except KeyError:
+            if fname in ("id",):
+                raise NotImplemented("function '{}()'".format(fname)) from None
+            raise InvalidXPath(self) from None
 
 class InvalidXPath(ParserException):
     """Exception to be raised for an invalid XPath expression."""
@@ -735,3 +746,12 @@ class XPathTypeError(ParserException):
 
     def __str__(self) -> str:
         return str(self.value)
+
+class NotImplemented(ParserException):
+    """Exception to be raised for unimplemented XPath features."""
+
+    def __init__(self, feature: str) -> None:
+        self.feature = feature
+
+    def __str__(self) -> str:
+        return str(self.feature)

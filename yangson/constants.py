@@ -30,7 +30,7 @@ class DefaultDeny(Enum):
     all = 3
 
 class Axis(Enum):
-    """Enumeration of XPath axes."""
+    """Enumeration of implemented XPath axes."""
     ancestor = 1
     ancestor_or_self = 2
     attribute = 3
