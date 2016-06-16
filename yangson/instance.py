@@ -458,7 +458,7 @@ class ArrayEntry(InstanceNode):
         if qname is None:
             return self.following_entries() + self.up().following_siblings()
         return (self.following_entries() if self.qualName == qname
-                else self.up().following_siblings(name))
+                else self.up().following_siblings(qname))
 
 class InstancePath(list):
     """Instance route."""
