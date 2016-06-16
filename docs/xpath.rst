@@ -8,11 +8,11 @@ XPath Expressions
                        : | `AbbreviatedAbsoluteLocationPath`
    RelativeLocationPath: `Step`
                        : | `RelativeLocationPath` "/" `Step`
-		       : `AbbreviatedRelativeLocationPath`
+		       : | `AbbreviatedRelativeLocationPath`
    Step: `AxisSpecifier` `NodeTest` `Predicate`*
        : | `AbbreviatedStep`
    AxisSpecifier: `AxisName` "::"
-                : `AbbreviatedAxisSpecifier`
+                : | `AbbreviatedAxisSpecifier`
    AxisName: "ancestor"
            : | "ancestor-or-self"
 	   : | "attribute"
@@ -64,8 +64,8 @@ XPath Expressions
                  : | `RelationalExpr` "<=" `AdditiveExpr`
                  : | `RelationalExpr` ">=" `AdditiveExpr`
    AdditiveExpr: `MultiplicativeExpr`
-               : `AdditiveExpr` "+" `MultiplicativeExpr`
-               : `AdditiveExpr` "-" `MultiplicativeExpr`
+               : | `AdditiveExpr` "+" `MultiplicativeExpr`
+               : | `AdditiveExpr` "-" `MultiplicativeExpr`
    MultiplicativeExpr: `UnaryExpr`
                      : | `MultiplicativeExpr` `MultiplyOperator` `UnaryExpr`
                      : | `MultiplicativeExpr` "div" `UnaryExpr`
