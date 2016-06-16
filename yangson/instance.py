@@ -195,37 +195,37 @@ class InstanceNode:
         except TypeError:
             raise InstanceTypeError(self, "lookup on non-list") from None
 
-    def children(self, qname: QualName = None) -> List["InstanceNode"]:
+    def children(self,
+                 qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
         """Return the list of receiver's XPath children."""
         if isinstance(self.schema_node, TerminalNode): return []
-        if qname is None:
-            names = sorted(self.value.keys())
-            res = []
-            for n in sorted(self.value.keys()):
-                res += self.member(n).xpath_nodes()
-            return res
-        iname = (qname[0] if self.namespace == qname[1]
-                 else qname[1] + ":" + qname[0])
-        return self.member(iname).xpath_nodes() if iname in self.value else []
+        if qname:
+            iname = (qname[0] if self.namespace == qname[1]
+                     else qname[1] + ":" + qname[0])
+            return self.member(iname).xpath_nodes() if iname in self.value else []
+        res = []
+        for n in self.value:
+            res += self.member(n).xpath_nodes()
+        return res
 
-    def descendants(self, qname: QualName = None,
+    def descendants(self, qname: Union[QualName, bool] = None,
                     with_self: bool = False) -> List["InstanceNode"]:
         """Return the list of receiver's XPath descendants."""
-        res = ([self] if with_self and (qname is None or self.qualName == qname)
-               else [])
+        res = ([] if not with_self or (qname and self.qualName != qname)
+               else [self])
         for c in self.children():
-            if qname is None or c.qualName == qname:
+            if not qname or c.qualName == qname:
                 res.append(c)
             res += c.descendants(qname)
         return res
 
-    def preceding_siblings(self,
-                           qname: QualName = None) -> List["InstanceNode"]:
+    def preceding_siblings(
+            self, qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
         """Return the list of receiver's XPath preceding-siblings."""
         return []
 
-    def following_siblings(self,
-                           qname: QualName = None) -> List["InstanceNode"]:
+    def following_siblings(
+            self, qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
         """Return the list of receiver's XPath following-siblings."""
         return []
 
@@ -242,13 +242,13 @@ class RootNode(InstanceNode):
         return RootNode(newval if newval else self.value, self.schema_node,
                           newts if newts else self._timestamp)
 
-    def ancestors_or_self(self, qname: QualName = None,
-                          with_root: bool = False) -> List["InstanceNode"]:
+    def ancestors_or_self(
+            self, qname: Union[QualName, bool] = None) -> List["RootNode"]:
         """Return the list of receiver's XPath ancestors."""
-        return [self] if qname is None and with_root else []
+        return [self] if qname is None else []
 
-    def ancestors(self, qname: QualName = None,
-                  with_root: bool = False) -> List["InstanceNode"]:
+    def ancestors(
+            self, qname: Union[QualName, bool] = None) -> List["RootNode"]:
         """Return the list of receiver's XPath ancestors."""
         return []
 
@@ -295,16 +295,16 @@ class ObjectMember(InstanceNode):
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
 
-    def ancestors_or_self(self, qname: QualName = None,
-                          with_root: bool = False) -> List[InstanceNode]:
+    def ancestors_or_self(
+            self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """Return the list of receiver's XPath ancestors-or-self."""
         res = [] if qname and self.qualName != qname else [self]
-        return res + self.up().ancestors_or_self(qname, with_root)
+        return res + self.up().ancestors_or_self(qname)
 
-    def ancestors(self, qname: QualName = None,
-                  with_root: bool = False) -> List[InstanceNode]:
+    def ancestors(
+            self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """Return the list of receiver's XPath ancestors."""
-        return self.up().ancestors_or_self(qname, with_root)
+        return self.up().ancestors_or_self(qname)
 
 class ArrayEntry(InstanceNode):
     """This class represents an array entry."""
@@ -386,16 +386,16 @@ class ArrayEntry(InstanceNode):
         return ArrayEntry(self.before + [self.value], self.after, value,
                           self.parent, self.schema_node, datetime.now())
 
-    def ancestors_or_self(self, qname: QualName = None,
-                          with_root: bool = False) -> List[InstanceNode]:
+    def ancestors_or_self(
+            self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """Return the list of receiver's XPath ancestors-or-self."""
         res = [] if qname and self.qualName != qname else [self]
-        return res + self.up().ancestors(qname, with_root)
+        return res + self.up().ancestors(qname)
 
-    def ancestors(self, qname: QualName = None,
-                  with_root: bool = False) -> List[InstanceNode]:
+    def ancestors(
+            self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """Return the list of receiver's XPath ancestors."""
-        return self.up().ancestors(qname, with_root)
+        return self.up().ancestors(qname)
 
     def preceding_entries(self) -> List["ArrayEntry"]:
         """Return the list of instances preceding in the array."""
@@ -415,17 +415,17 @@ class ArrayEntry(InstanceNode):
             res.append(ent)
         return res
 
-    def preceding_siblings(self,
-                           qname: QualName = None) -> List["ArrayEntry"]:
+    def preceding_siblings(
+            self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """Return the list of receiver's XPath preceding-siblings."""
-        return (self.preceding_entries()
-                if qname is None or self.qualName == qname else [])
+        return ([] if qname and self.qualName != qname
+                else self.preceding_entries())
 
-    def following_siblings(self,
-                           qname: QualName = None) -> List["ArrayEntry"]:
+    def following_siblings(
+            self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """Return the list of receiver's XPath following-siblings."""
-        return (self.following_entries()
-                if qname is None or self.qualName == qname else [])
+        return ([] if qname and self.qualName != qname
+                else self.following_entries())
 
 class InstancePath(list):
     """Instance route."""
