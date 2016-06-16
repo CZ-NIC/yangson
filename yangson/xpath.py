@@ -42,7 +42,7 @@ class NodeSet(list):
         return str(self[0].value) if self else ""
 
     @comparison
-    def __eq__(self, val) -> bool:
+    def __eq__(self, val: XPathValue) -> bool:
         is_str = isinstance(val, str)
         for n in self:
             if n.is_structured(): continue
@@ -377,14 +377,23 @@ class Step(Expr):
 
     def _node_trans(self) -> NodeExpr:
         return {
-            Axis.ancestor_or_self: lambda n: n.ancestors_or_self(self.qname),
-            Axis.child: lambda n: n.children(self.qname),
-            Axis.descendant: lambda n: n.descendants(self.qname),
-            Axis.parent: (lambda n: [n.up()] if self.qname is None or
-                          self.qname == n.parent.qualName else []),
-            Axis.self: (lambda n: [n] if self.qname is None or
-                        self.qname == n.qualName else []),
-                        }[self.axis]
+            Axis.ancestor: lambda n, qn=self.qname: n.ancestors(qn),
+            Axis.ancestor_or_self:
+                lambda n, qn=self.qname: n.ancestors_or_self(qn),
+            Axis.child: lambda n, qn=self.qname: n.children(qn),
+            Axis.descendant: lambda n, qn=self.qname: n.descendants(qn),
+            Axis.descendant_or_self:
+                lambda n, qn=self.qname: n.descendants(qn, True),
+            Axis.following_sibling:
+                lambda n, qn=self.qname: n.following_siblings(qn),
+            Axis.parent: (
+                lambda n, qn=self.qname: [] if qn and qn != n.parent.qualName
+                else [n.up()]),
+            Axis.preceding_sibling:
+                lambda n, qn=self.qname: n.preceding_siblings(qn),
+            Axis.self:
+                lambda n, qn=self.qname: [] if qn and qn != n.qualName else [n],
+                }[self.axis]
 
     def _eval(self, xctx: XPathContext):
         ns = NodeSet(self._node_trans()(xctx.cnode))
@@ -638,13 +647,13 @@ class XPathParser(Parser):
     def _step(self) -> Step:
         return Step(*self._axis_qname(), self._predicates())
 
-    def _axis_qname(self) -> Tuple[Axis, Optional[QualName]]:
+    def _axis_qname(self) -> Tuple[Axis, Union[QualName, bool]]:
         next = self.peek()
         if next == "*":
             self.adv_skip_ws()
-            return (Axis.child, None)
+            return (Axis.child, False)
         if next == "/":
-            self.adv_skip_ws()
+            self.skip_ws()
             return (Axis.descendant_or_self, None)
         if next == ".":
             self.offset += 1
@@ -660,6 +669,8 @@ class XPathParser(Parser):
             next = self.peek()
         except EndOfInput:
             return (Axis.child, (yid, self.mid[0]))
+        if next == "(":
+            return (Axis.child, _node_type(yid))
         if next == ":":
             self.offset += 1
             next = self.peek()
@@ -668,7 +679,8 @@ class XPathParser(Parser):
                 try:
                     axis = Axis[yid.replace("-", "_")]
                 except KeyError:
-                    if yid in ("preceding", "following"):
+                    if yid in ("attribute", "following",
+                               "namespace", "preceding"):
                         raise NotImplemented("axis '{}::'".format(yid)) from None
                     raise InvalidXPath(self) from None
                 return (axis, self._qname())
@@ -680,14 +692,31 @@ class XPathParser(Parser):
             return (Axis.child, (loc, nsp))
         return (Axis.child, (yid, self.mid[0]))
 
+    def _node_type(self, typ):
+        if typ == "node":
+            self.adv_skip_ws()
+            self.char(")")
+            self.skip_ws()
+            return None
+        elif typ in ("comment", "processing-instruction", "text"):
+            raise NotImplemented("node type '{}()'".format(typ))
+        raise InvalidXPath(self)
+
     def _qname(self) -> Optional[QualName]:
         """Parse XML QName."""
         if self.test_string("*"):
             self.skip_ws()
-            return None
+            return False
         ident = self.yang_identifier()
+        ws = self.skip_ws()
+        try:
+            next = self.peek()
+        except EndOfInput:
+            return (ident, self.mid[0])
+        if next == "(":
+            return self._node_type(ident)
         res = ((self.yang_identifier(), Context.prefix2ns(ident, self.mid))
-               if self.test_string(":") else (ident, self.mid[0]))
+               if not ws and self.test_string(":") else (ident, self.mid[0]))
         self.skip_ws()
         return res
 

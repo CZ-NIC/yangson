@@ -276,18 +276,12 @@ def test_instance(instance):
     assert str(tbln.path()) == "/test:contA/testb:leafN"
     assert (instance.ancestors() == instance.preceding_siblings() ==
             instance.following_siblings() == [])
-    axtest(instance.ancestors_or_self(with_root=True), ["/"])
-    axtest(la1.ancestors(with_root=True), ["/test:contA", "/"])
+    axtest(instance.ancestors_or_self(), ["/"])
+    axtest(la1.ancestors(False), ["/test:contA"])
     axtest(la1.ancestors_or_self(("listA", "test")), ["/test:contA/listA/1" ])
-    axtest(la1.preceding_siblings(), ["/test:contA/listA/0", "/test:contA/leafB",
-                                     "/test:contA/leafA", "/test:contA/anydA" ])
-    axtest(la1.preceding_siblings(("leafB", "test")), [ "/test:contA/leafB" ])
-    axtest(la1.following_siblings(), [ "/test:contA/testb:leafN",
-                                       "/test:contA/testb:leafR"])
-    axtest(conta.children(), ["/test:contA/anydA", "/test:contA/leafA",
-                              "/test:contA/leafB", "/test:contA/listA/0",
-                              "/test:contA/listA/1", "/test:contA/testb:leafN",
-                              "/test:contA/testb:leafR"])
+    axtest(la1.preceding_siblings(), ["/test:contA/listA/0"])
+    axtest(la1.following_siblings(), [])
+    assert len(conta.children()) == 7
     axtest(la1.children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
     assert len(instance.descendants(with_self=True)) == 20
     axtest(conta.descendants(("listA", "test")),
@@ -306,7 +300,8 @@ def test_xpath(instance):
     xptest("count(*)", 7, conta)
     xptest("count(*[. > 30])", 1, conta)
     xptest("llistB[1]", "::1")
-    xptest("llistB[last()]", "127.0.0.1")
+    xptest("llistB[position() = 2]", "127.0.0.1")
+    xptest("count(child::llistB/following-sibling::*)", 1)
     xptest("leafA <= leafB", node=conta)
     xptest("leafB mod leafA", 11, node=conta)
     xptest("""listA[leafE='C0FFEE' ][ leafF = 'true']
@@ -319,7 +314,19 @@ def test_xpath(instance):
     xptest("../leafN = 'hi!'", node=lr, module="testb")
     xptest("local-name()", "")
     xptest("local-name()", "leafR", lr)
-    xptest("local-name(*)", "contA")
+    xptest("count(descendant-or-self::*)", 20)
+    xptest("count(descendant::leafE)", 2)
+    xptest("count(preceding-sibling::*)", 0, lr, "testb")
+    xptest("count(following-sibling::*)", 0, lr, "testb")
+    xptest("""count(descendant-or-self::contD/descendant-or-self::contD) -
+              count(descendant-or-self::contD/descendant::contD)""", 1)
+    xptest("listA[last()-1]/following-sibling::*/leafE = 'ABBA'", node=conta)
+    xptest("count(//contD/parent::*/following-sibling::*/*)", 2)
+    xptest("//leafP = 42")
+    xptest("""count(listA[leafE = 'C0FFEE' and leafF = true()]//
+           leafP/ancestor::node())""", 5, conta)
+    xptest("../* > 50", node=lr, module="testb")
+    xptest("local-name(ancestor-or-self::contA)", "contA", conta)
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
