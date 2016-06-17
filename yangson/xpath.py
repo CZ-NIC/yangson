@@ -401,16 +401,18 @@ class Step(Expr):
         ns = NodeSet(self._node_trans()(xctx.cnode))
         return self._apply_predicates(ns, xctx)
 
-class FuncCount(Expr):
+class FuncWithArg(Expr):
 
-    def __init__(self, expr: Expr) -> None:
-        self.expr = expr
+    def __init__(self, arg: Expr) -> None:
+        self.arg = arg
 
-    def _children_str(self, indent: int):
-        return self.expr._tree(indent)
+    def _children_str(self, indent: int) -> str:
+        return self.arg._tree(indent) if self.arg else ""
+
+class FuncCount(FuncWithArg):
 
     def _eval(self, xctx: XPathContext) -> int:
-        ns = self.expr._eval(xctx)
+        ns = self.arg._eval(xctx)
         return float(len(ns))
 
 class FuncCurrent(Expr):
@@ -428,23 +430,20 @@ class FuncLast(Expr):
     def _eval(self, xctx: XPathContext) -> int:
         return xctx.size
 
-class FuncName(Expr):
+class FuncName(FuncWithArg):
 
-    def __init__(self, expr: Optional[Expr], local: bool) -> None:
-        self.expr = expr
+    def __init__(self, arg: Optional[Expr], local: bool) -> None:
+        super().__init__(arg)
         self.local = local
 
     def _properties_str(self):
         return "LOC" if self.local else ""
 
-    def _children_str(self, indent: int):
-        return self.expr._tree(indent) if self.expr else ""
-
     def _eval(self, xctx: XPathContext) -> str:
-        if self.expr is None:
+        if self.arg is None:
             node = xctx.cnode
         else:
-            ns = self.expr._eval(xctx)
+            ns = self.arg._eval(xctx)
             try:
                 node = ns[0]
             except TypeError:
@@ -457,30 +456,22 @@ class FuncName(Expr):
             return loc if s else p
         return node.name
 
-class FuncNot(Expr):
-
-    def __init__(self, expr: Expr) -> None:
-        self.expr = expr
-
-    def _children_str(self, indent: int):
-        return self.expr._tree(indent)
+class FuncNot(FuncWithArg):
 
     def _eval(self, xctx: XPathContext) -> bool:
-        return not(self.expr._eval(xctx))
+        return not(self.arg._eval(xctx))
 
 class FuncPosition(Expr):
 
     def _eval(self, xctx: XPathContext):
         return xctx.position
 
-class FuncString(Expr):
-
-    def __init__(self, expr: Expr) -> None:
-        self.expr = expr
+class FuncString(FuncWithArg):
 
     def _eval(self, xctx: XPathContext):
-        if self.expr is None: return str(xctx.cnode)
-        arg = self.expr._eval(xctx)
+        if self.arg is None:
+            return xctx.cnode.schema_node.type.canonical_string(xctx.cnode.value)
+        arg = self.arg._eval(xctx)
         if isinstance(arg, float) and int(arg) == arg: return str(int(arg))
         if isinstance(arg, bool): return str(arg).lower()
         return str(arg)
