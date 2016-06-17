@@ -353,6 +353,9 @@ def test_xpath(instance):
     xptest("not(contains(../leafN, '!!'))", True, lr, "testb")
     xptest("substring-before(//decimal64, '.')", "4")
     xptest("substring-after(//decimal64, '.')", "5")
+    xptest("substring('12345', 1.5, 2.6)", "234")
+    xptest("substring('12345', 0, 3)", "12")
+    xptest("substring(//listA[last()]/leafE, 3)", "BA")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")

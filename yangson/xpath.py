@@ -498,6 +498,21 @@ class FuncString(UnaryExpr):
             return xctx.cnode.schema_node.type.canonical_string(xctx.cnode.value)
         return self.expr._eval_string(xctx)
 
+class FuncSubstring(BinaryExpr):
+
+    def __init__(self, string: Expr, start: Expr,
+                 length: Optional[Expr]) -> None:
+        super().__init__(string, start)
+        self.length = length
+
+    def _eval(self, xctx: XPathContext) -> str:
+        string = self.left._eval_string(xctx)
+        start = round(self.right._eval_float(xctx)) - 1
+        if self.length is None:
+            return string[max(start, 0):]
+        end = round(self.length._eval_float(xctx)) + start
+        return string[max(start, 0):end]
+
 class FuncSubstringAfter(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> str:
@@ -821,6 +836,15 @@ class XPathParser(Parser):
     def _func_string(self) -> FuncString:
         return FuncString(self._opt_arg())
 
+    def _func_substring(self) -> FuncSubstring:
+        string, start = self._two_args()
+        if self.test_string(","):
+            self.skip_ws()
+            length = self.parse()
+        else:
+            length = None
+        return FuncSubstring(string, start, length)
+
     def _func_substring_after(self) -> FuncSubstringAfter:
         return FuncSubstringAfter(*self._two_args())
 
@@ -844,6 +868,7 @@ class XPathParser(Parser):
                      "position": self._func_position,
                      "starts-with": self._func_starts_with,
                      "string": self._func_string,
+                     "substring": self._func_substring,
                      "substring-after": self._func_substring_after,
                      "substring-before": self._func_substring_before,
                      "true": self._func_true,
