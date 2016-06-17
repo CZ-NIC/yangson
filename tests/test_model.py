@@ -103,7 +103,10 @@ def instance(data_model):
 			    "foo:bar": [1, 2, 3]
 		    },
 		    "testb:leafN": "hi!"
-	    }
+	    },
+        "test:contT": {
+            "decimal64": 4.50
+        }
     }
     """
     return data_model.from_raw(json.loads(data))
@@ -283,7 +286,7 @@ def test_instance(instance):
     axtest(la1.following_siblings(), [])
     assert len(conta.children()) == 7
     axtest(la1.children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance.descendants(with_self=True)) == 20
+    assert len(instance.descendants(with_self=True)) == 22
     axtest(conta.descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
@@ -299,7 +302,9 @@ def test_xpath(instance):
     xptest("count(t:llistB)", 2)
     xptest("count(*)", 7, conta)
     xptest("count(*[. > 30])", 1, conta)
-    xptest("llistB[1]", "::1")
+    xptest("llistB = '::1'")
+    xptest("llistB != '::1'")
+    xptest("not(llistB = '::1')", False)
     xptest("llistB[position() = 2]", "127.0.0.1")
     xptest("count(child::llistB/following-sibling::*)", 1)
     xptest("leafA <= leafB", node=conta)
@@ -319,7 +324,7 @@ def test_xpath(instance):
     xptest("local-name()", "leafR", lr)
     xptest("name()", "testb:leafR", lr)
     xptest("name(../t:listA)", "listA", lr, "testb")
-    xptest("count(descendant-or-self::*)", 20)
+    xptest("count(descendant-or-self::*)", 22)
     xptest("count(descendant::leafE)", 2)
     xptest("count(preceding-sibling::*)", 0, lr, "testb")
     xptest("count(following-sibling::*)", 0, lr, "testb")
@@ -332,6 +337,11 @@ def test_xpath(instance):
            leafP/ancestor::node())""", 5, conta)
     xptest("../* > 50", node=lr, module="testb")
     xptest("local-name(ancestor-or-self::contA)", "contA", conta)
+    xptest("string(1.0)", "1")
+    xptest("string(true())", "true")
+    xptest("string(1 = 2)", "false")
+    xptest("string(contT/decimal64)", "4.5")
+    xptest("string()", "C0FFEE", lr)
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")

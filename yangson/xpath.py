@@ -39,7 +39,9 @@ class NodeSet(list):
         return float(self[0].value)
 
     def __str__(self) -> str:
-        return str(self[0].value) if self else ""
+        if not self: return ""
+        head = self[0]
+        return head.schema_node.type.canonical_string(head.value)
 
     @comparison
     def __eq__(self, val: XPathValue) -> bool:
@@ -471,6 +473,18 @@ class FuncPosition(Expr):
     def _eval(self, xctx: XPathContext):
         return xctx.position
 
+class FuncString(Expr):
+
+    def __init__(self, expr: Expr) -> None:
+        self.expr = expr
+
+    def _eval(self, xctx: XPathContext):
+        if self.expr is None: return str(xctx.cnode)
+        arg = self.expr._eval(xctx)
+        if isinstance(arg, float) and int(arg) == arg: return str(int(arg))
+        if isinstance(arg, bool): return str(arg).lower()
+        return str(arg)
+
 class FuncTrue(Expr):
 
     def _eval(self, xctx: XPathContext) -> bool:
@@ -729,34 +743,37 @@ class XPathParser(Parser):
         self.skip_ws()
         return res
 
-    def _func_count(self):
-        expr = self.parse()
-        return FuncCount(expr)
+    def _opt_arg(self) -> Optional[Expr]:
+        return None if self.peek() == ")" else self.parse()
 
-    def _func_current(self):
+    def _func_count(self) -> FuncCount:
+        return FuncCount(self.parse())
+
+    def _func_current(self) -> FuncCurrent:
         return FuncCurrent()
 
-    def _func_false(self):
+    def _func_false(self) -> FuncFalse:
         return FuncFalse()
 
-    def _func_last(self):
+    def _func_last(self) -> FuncLast:
         return FuncLast()
 
-    def _func_local_name(self):
-        arg = None if self.peek() == ")" else self.parse()
-        return FuncName(arg, local=True)
+    def _func_local_name(self) -> FuncName:
+        return FuncName(self._opt_arg(), local=True)
 
-    def _func_name(self):
-        arg = None if self.peek() == ")" else self.parse()
-        return FuncName(arg, local=False)
+    def _func_name(self) -> FuncName:
+        return FuncName(self._opt_arg(), local=False)
 
-    def _func_not(self):
+    def _func_not(self) -> FuncNot:
         return FuncNot(self.parse())
 
-    def _func_position(self):
+    def _func_position(self) -> FuncPosition:
         return FuncPosition()
 
-    def _func_true(self):
+    def _func_string(self) -> FuncString:
+        return FuncString(self._opt_arg())
+
+    def _func_true(self) -> FuncTrue:
         return FuncTrue()
 
     def _function_call(self, fname: str):
@@ -769,6 +786,7 @@ class XPathParser(Parser):
                      "name": self._func_name,
                      "not": self._func_not,
                      "position": self._func_position,
+                     "string": self._func_string,
                      "true": self._func_true,
                      }[fname]()
         except KeyError:
