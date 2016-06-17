@@ -347,6 +347,8 @@ def test_xpath(instance):
     xptest("concat(../t:leafA, 'foo', ., true())", "22fooC0FFEEtrue", lr, "testb")
     with pytest.raises(InvalidXPath):
         xptest("concat()")
+    xptest("starts-with(., 'C0F')", True, lr, "testb")
+    xptest("starts-with(//listA//leafP, 4)")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")

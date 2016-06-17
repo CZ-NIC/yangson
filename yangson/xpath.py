@@ -476,12 +476,18 @@ class FuncNot(UnaryExpr):
 
 class FuncPosition(Expr):
 
-    def _eval(self, xctx: XPathContext):
+    def _eval(self, xctx: XPathContext) -> int:
         return xctx.position
+
+class FuncStartsWith(BinaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> bool:
+        lres, rres = self._eval_ops_string(xctx)
+        return lres.startswith(rres)
 
 class FuncString(UnaryExpr):
 
-    def _eval(self, xctx: XPathContext):
+    def _eval(self, xctx: XPathContext) -> str:
         if self.expr is None:
             return xctx.cnode.schema_node.type.canonical_string(xctx.cnode.value)
         return self.expr._eval_string(xctx)
@@ -747,6 +753,12 @@ class XPathParser(Parser):
     def _opt_arg(self) -> Optional[Expr]:
         return None if self.peek() == ")" else self.parse()
 
+    def _two_args(self) -> Tuple[Expr]:
+        fst = self.parse()
+        self.char(",")
+        self.skip_ws()
+        return (fst, self.parse())
+
     def _func_concat(self) -> FuncConcat:
         res = [self.parse()]
         while self.test_string(","):
@@ -780,6 +792,9 @@ class XPathParser(Parser):
     def _func_position(self) -> FuncPosition:
         return FuncPosition()
 
+    def _func_starts_with(self) -> FuncStartsWith:
+        return FuncStartsWith(*self._two_args())
+
     def _func_string(self) -> FuncString:
         return FuncString(self._opt_arg())
 
@@ -797,6 +812,7 @@ class XPathParser(Parser):
                      "name": self._func_name,
                      "not": self._func_not,
                      "position": self._func_position,
+                     "starts-with": self._func_starts_with,
                      "string": self._func_string,
                      "true": self._func_true,
                      }[fname]()
