@@ -195,10 +195,19 @@ class Expr:
             ns = res
         return ns
 
-class DyadicExpr(Expr):
-    """Abstract superclass of dyadic expressions."""
+class UnaryExpr(Expr):
+    """Abstract superclass for unary expressions."""
 
-    def __init__(self, left: "Expr", right: "Expr") -> None:
+    def __init__(self, expr: Optional[Expr]) -> None:
+        self.expr = expr
+
+    def _children_str(self, indent: int):
+        return self.expr._tree(indent) if self.expr else ""
+
+class BinaryExpr(Expr):
+    """Abstract superclass of binary expressions."""
+
+    def __init__(self, left: Expr, right: Expr) -> None:
         self.left = left
         self.right = right
 
@@ -211,19 +220,22 @@ class DyadicExpr(Expr):
     def _eval_ops_float(self, xctx: XPathContext) -> Tuple[float, float]:
         return (self.left._eval_float(xctx), self.right._eval_float(xctx))
 
-class OrExpr(DyadicExpr):
+    def _eval_ops_string(self, xctx: XPathContext) -> Tuple[str, str]:
+        return (self.left._eval_string(xctx), self.right._eval_string(xctx))
+
+class OrExpr(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         lres, rres = self._eval_ops(xctx)
         return lres or rres
 
-class AndExpr(DyadicExpr):
+class AndExpr(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         lres, rres = self._eval_ops(xctx)
         return lres and rres
 
-class EqualityExpr(DyadicExpr):
+class EqualityExpr(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr, negate: bool) -> None:
         super().__init__(left, right)
@@ -236,7 +248,7 @@ class EqualityExpr(DyadicExpr):
         lres, rres = self._eval_ops(xctx)
         return lres != rres if self.negate else lres == rres
 
-class RelationalExpr(DyadicExpr):
+class RelationalExpr(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr, less: bool,
                  equal: bool) -> None:
@@ -255,7 +267,7 @@ class RelationalExpr(DyadicExpr):
             return lres <= rres if self.equal else lres < rres
         return lres >= rres if self.equal else lres > rres
 
-class AdditiveExpr(DyadicExpr):
+class AdditiveExpr(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr, plus: bool) -> None:
         super().__init__(left, right)
@@ -268,7 +280,7 @@ class AdditiveExpr(DyadicExpr):
         lres, rres = self._eval_ops_float(xctx)
         return lres + rres if self.plus else lres - rres
 
-class MultiplicativeExpr(DyadicExpr):
+class MultiplicativeExpr(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr,
                  operator: MultiplicativeOp) -> None:
@@ -286,10 +298,10 @@ class MultiplicativeExpr(DyadicExpr):
         if self.operator == MultiplicativeOp.divide: return lres / rres
         return lres % rres
 
-class UnaryExpr(Expr):
+class UnaryMinusExpr(UnaryExpr):
 
     def __init__(self, expr: Expr, negate: bool):
-        self.expr = expr
+        super().__init__(expr)
         self.negate = negate
 
     def _properties_str(self):
@@ -299,7 +311,7 @@ class UnaryExpr(Expr):
         res = self.expr._eval_float(xctx)
         return -res if self.negate else res
 
-class UnionExpr(DyadicExpr):
+class UnionExpr(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> NodeSet:
         lres, rres = self._eval_ops(xctx)
@@ -327,18 +339,11 @@ class Number(Expr):
     def _eval(self, xctx: XPathContext):
         return self.value
 
-class PathExpr(Expr):
-
-    def __init__(self, filter: Expr, path: Expr) -> None:
-        self.filter = filter
-        self.path = path
-
-    def _children_str(self, indent: int):
-        return self.filter._tree(indent) + self.path._tree(indent)
+class PathExpr(BinaryExpr):
 
     def _eval(self, xctx: XPathContext):
-        res = self.filter._eval(xctx)
-        return self.path._eval(xctx.update_cnode(res))
+        res = self.left._eval(xctx)
+        return self.right._eval(xctx.update_cnode(res))
 
 class FilterExpr(Expr):
 
@@ -353,7 +358,7 @@ class FilterExpr(Expr):
         res = self.primary._eval(xctx)
         return self._apply_predicates(res, xctx)
 
-class LocationPath(DyadicExpr):
+class LocationPath(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr, absolute: bool = False) -> None:
         super().__init__(left, right)
@@ -406,36 +411,21 @@ class Step(Expr):
         ns = NodeSet(self._node_trans()(xctx.cnode))
         return self._apply_predicates(ns, xctx)
 
-class FuncWithArg(Expr):
+class FuncConcat(Expr):
 
-    def __init__(self, arg: Expr) -> None:
-        self.arg = arg
-
-    def _children_str(self, indent: int) -> str:
-        return self.arg._tree(indent) if self.arg else ""
-
-class FuncConcat(FuncWithArg):
-
-    def __init__(self, arg, subseq) -> None:
-        super().__init__(arg)
-        self.subseq = subseq
+    def __init__(self, parts: List[Expr]) -> None:
+        self.parts = parts
 
     def _children_str(self, indent: int) -> str:
-        res = super()._children_str(indent)
-        for ex in self.subseq:
-            res += ex._tree(indent)
-        return res
+        return "".join([ex._tree(indent) for ex in self.parts])
 
     def _eval(self, xctx: XPathContext) -> str:
-        res = self.arg._eval_string(xctx)
-        for ex in self.subseq:
-            res += ex._eval_string(xctx)
-        return res
+        return "".join([ex._eval_string(xctx) for ex in self.parts])
 
-class FuncCount(FuncWithArg):
+class FuncCount(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> int:
-        ns = self.arg._eval(xctx)
+        ns = self.expr._eval(xctx)
         return float(len(ns))
 
 class FuncCurrent(Expr):
@@ -453,20 +443,20 @@ class FuncLast(Expr):
     def _eval(self, xctx: XPathContext) -> int:
         return xctx.size
 
-class FuncName(FuncWithArg):
+class FuncName(UnaryExpr):
 
-    def __init__(self, arg: Optional[Expr], local: bool) -> None:
-        super().__init__(arg)
+    def __init__(self, expr: Optional[Expr], local: bool) -> None:
+        super().__init__(expr)
         self.local = local
 
     def _properties_str(self):
         return "LOC" if self.local else ""
 
     def _eval(self, xctx: XPathContext) -> str:
-        if self.arg is None:
+        if self.expr is None:
             node = xctx.cnode
         else:
-            ns = self.arg._eval(xctx)
+            ns = self.expr._eval(xctx)
             try:
                 node = ns[0]
             except TypeError:
@@ -479,22 +469,22 @@ class FuncName(FuncWithArg):
             return loc if s else p
         return node.name
 
-class FuncNot(FuncWithArg):
+class FuncNot(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
-        return not(self.arg._eval(xctx))
+        return not(self.expr._eval(xctx))
 
 class FuncPosition(Expr):
 
     def _eval(self, xctx: XPathContext):
         return xctx.position
 
-class FuncString(FuncWithArg):
+class FuncString(UnaryExpr):
 
     def _eval(self, xctx: XPathContext):
-        if self.arg is None:
+        if self.expr is None:
             return xctx.cnode.schema_node.type.canonical_string(xctx.cnode.value)
-        return self.arg._eval_string(xctx)
+        return self.expr._eval_string(xctx)
 
 class FuncTrue(Expr):
 
@@ -583,7 +573,7 @@ class XPathParser(Parser):
             op1 = AdditiveExpr(op1, op2, pm == "+")
 
     def _multiplicative_expr(self) -> Expr:
-        op1 = self._unary_expr()
+        op1 = self._unary_minus_expr()
         while True:
             if self.test_string("*"):
                 mulop = MultiplicativeOp.multiply
@@ -594,16 +584,16 @@ class XPathParser(Parser):
             else:
                 return op1
             self.skip_ws()
-            op2 = self._unary_expr()
+            op2 = self._unary_minus_expr()
             op1 = MultiplicativeExpr(op1, op2, mulop)
 
-    def _unary_expr(self) -> Expr:
+    def _unary_minus_expr(self) -> Expr:
         negate = None
         while self.test_string("-"):
             negate = not negate
             self.skip_ws()
         expr = self._union_expr()
-        return expr if negate is None else UnaryExpr(expr, negate)
+        return expr if negate is None else UnaryMinusExpr(expr, negate)
 
     def _union_expr(self) -> Expr:
         op1 = self._lit_num_path()
@@ -758,14 +748,13 @@ class XPathParser(Parser):
         return None if self.peek() == ")" else self.parse()
 
     def _func_concat(self) -> FuncConcat:
-        fst = self.parse()
-        subseq = []
+        res = [self.parse()]
         while self.test_string(","):
             self.skip_ws()
-            subseq.append(self.parse())
-        if subseq:
-            return FuncConcat(fst, subseq)
-        raise InvalidXPath(self)
+            res.append(self.parse())
+        if len(res) < 2:
+            raise InvalidXPath(self)
+        return FuncConcat(res)
 
     def _func_count(self) -> FuncCount:
         return FuncCount(self.parse())
