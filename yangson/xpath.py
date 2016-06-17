@@ -422,6 +422,12 @@ class FuncConcat(Expr):
     def _eval(self, xctx: XPathContext) -> str:
         return "".join([ex._eval_string(xctx) for ex in self.parts])
 
+class FuncContains(BinaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> bool:
+        lres, rres = self._eval_ops_string(xctx)
+        return lres.find(rres) >= 0
+
 class FuncCount(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> int:
@@ -768,6 +774,9 @@ class XPathParser(Parser):
             raise InvalidXPath(self)
         return FuncConcat(res)
 
+    def _func_contains(self) -> FuncContains:
+        return FuncContains(*self._two_args())
+
     def _func_count(self) -> FuncCount:
         return FuncCount(self.parse())
 
@@ -804,6 +813,7 @@ class XPathParser(Parser):
     def _function_call(self, fname: str):
         try:
             return { "concat": self._func_concat,
+                     "contains": self._func_contains,
                      "count": self._func_count,
                      "current": self._func_current,
                      "false": self._func_false,
