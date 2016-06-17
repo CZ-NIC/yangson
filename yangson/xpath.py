@@ -401,7 +401,7 @@ class Step(Expr):
 
 class FuncCount(Expr):
 
-    def __init__(self, expr: Expr):
+    def __init__(self, expr: Expr) -> None:
         self.expr = expr
 
     def _children_str(self, indent: int):
@@ -426,10 +426,17 @@ class FuncLast(Expr):
     def _eval(self, xctx: XPathContext) -> int:
         return xctx.size
 
-class FuncLocalName(Expr):
+class FuncName(Expr):
 
-    def __init__(self, expr: Optional[Expr]):
+    def __init__(self, expr: Optional[Expr], local: bool) -> None:
         self.expr = expr
+        self.local = local
+
+    def _properties_str(self):
+        return "LOC" if self.local else ""
+
+    def _children_str(self, indent: int):
+        return self.expr._tree(indent) if self.expr else ""
 
     def _eval(self, xctx: XPathContext) -> str:
         if self.expr is None:
@@ -443,8 +450,10 @@ class FuncLocalName(Expr):
             except IndexError:
                 return ""
         if node.name is None: return ""
-        p, s, loc = node.name.partition(":")
-        return loc if s else p
+        if self.local:
+            p, s, loc = node.name.partition(":")
+            return loc if s else p
+        return node.name
 
 class FuncNot(Expr):
 
@@ -734,7 +743,12 @@ class XPathParser(Parser):
         return FuncLast()
 
     def _func_local_name(self):
-        return FuncLocalName(None if self.peek() == ")" else self.parse())
+        arg = None if self.peek() == ")" else self.parse()
+        return FuncName(arg, local=True)
+
+    def _func_name(self):
+        arg = None if self.peek() == ")" else self.parse()
+        return FuncName(arg, local=False)
 
     def _func_not(self):
         return FuncNot(self.parse())
@@ -752,12 +766,13 @@ class XPathParser(Parser):
                      "false": self._func_false,
                      "last": self._func_last,
                      "local-name": self._func_local_name,
+                     "name": self._func_name,
                      "not": self._func_not,
                      "position": self._func_position,
                      "true": self._func_true,
                      }[fname]()
         except KeyError:
-            if fname in ("id",):
+            if fname in ("id", "namespace-uri"):
                 raise NotImplemented("function '{}()'".format(fname)) from None
             raise InvalidXPath(self) from None
 
