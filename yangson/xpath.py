@@ -498,6 +498,20 @@ class FuncString(UnaryExpr):
             return xctx.cnode.schema_node.type.canonical_string(xctx.cnode.value)
         return self.expr._eval_string(xctx)
 
+class FuncSubstringAfter(BinaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> str:
+        lres, rres = self._eval_ops_string(xctx)
+        ind = lres.find(rres)
+        return lres[ind + len(rres):] if ind >= 0 else ""
+
+class FuncSubstringBefore(BinaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> str:
+        lres, rres = self._eval_ops_string(xctx)
+        ind = lres.find(rres)
+        return lres[:ind] if ind >= 0 else ""
+
 class FuncTrue(Expr):
 
     def _eval(self, xctx: XPathContext) -> bool:
@@ -807,6 +821,12 @@ class XPathParser(Parser):
     def _func_string(self) -> FuncString:
         return FuncString(self._opt_arg())
 
+    def _func_substring_after(self) -> FuncSubstringAfter:
+        return FuncSubstringAfter(*self._two_args())
+
+    def _func_substring_before(self) -> FuncSubstringBefore:
+        return FuncSubstringBefore(*self._two_args())
+
     def _func_true(self) -> FuncTrue:
         return FuncTrue()
 
@@ -824,6 +844,8 @@ class XPathParser(Parser):
                      "position": self._func_position,
                      "starts-with": self._func_starts_with,
                      "string": self._func_string,
+                     "substring-after": self._func_substring_after,
+                     "substring-before": self._func_substring_before,
                      "true": self._func_true,
                      }[fname]()
         except KeyError:
