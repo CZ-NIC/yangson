@@ -414,6 +414,24 @@ class FuncWithArg(Expr):
     def _children_str(self, indent: int) -> str:
         return self.arg._tree(indent) if self.arg else ""
 
+class FuncConcat(FuncWithArg):
+
+    def __init__(self, arg, subseq) -> None:
+        super().__init__(arg)
+        self.subseq = subseq
+
+    def _children_str(self, indent: int) -> str:
+        res = super()._children_str(indent)
+        for ex in self.subseq:
+            res += ex._tree(indent)
+        return res
+
+    def _eval(self, xctx: XPathContext) -> str:
+        res = self.arg._eval_string(xctx)
+        for ex in self.subseq:
+            res += ex._eval_string(xctx)
+        return res
+
 class FuncCount(FuncWithArg):
 
     def _eval(self, xctx: XPathContext) -> int:
@@ -739,6 +757,16 @@ class XPathParser(Parser):
     def _opt_arg(self) -> Optional[Expr]:
         return None if self.peek() == ")" else self.parse()
 
+    def _func_concat(self) -> FuncConcat:
+        fst = self.parse()
+        subseq = []
+        while self.test_string(","):
+            self.skip_ws()
+            subseq.append(self.parse())
+        if subseq:
+            return FuncConcat(fst, subseq)
+        raise InvalidXPath(self)
+
     def _func_count(self) -> FuncCount:
         return FuncCount(self.parse())
 
@@ -771,7 +799,8 @@ class XPathParser(Parser):
 
     def _function_call(self, fname: str):
         try:
-            return { "count": self._func_count,
+            return { "concat": self._func_concat,
+                     "count": self._func_count,
                      "current": self._func_current,
                      "false": self._func_false,
                      "last": self._func_last,

@@ -7,7 +7,7 @@ from yangson.datatype import YangTypeError
 from yangson.instance import MinElements, NonexistentInstance
 from yangson.instvalue import ArrayValue
 from yangson.context import Context, BadPath, BadPrefName
-from yangson.xpath import XPathParser
+from yangson.xpath import InvalidXPath, XPathParser
 
 tree = """+--rw test:contA
 |  +--rw leafA?
@@ -344,6 +344,9 @@ def test_xpath(instance):
     xptest("string(1 = 2)", "false")
     xptest("string(contT/decimal64)", "4.5")
     xptest("string()", "C0FFEE", lr)
+    xptest("concat(../t:leafA, 'foo', ., true())", "22fooC0FFEEtrue", lr, "testb")
+    with pytest.raises(InvalidXPath):
+        xptest("concat()")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
