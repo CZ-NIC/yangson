@@ -146,9 +146,15 @@ class Expr:
     def evaluate(self, node: InstanceNode) -> XPathValue:
         return self._eval(XPathContext(node, node, 1, 1))
 
-    @staticmethod
-    def _as_float(val) -> float:
+    def _eval_float(self, xctx: XPathContext) -> float:
+        val = self._eval(xctx)
         return val.as_float() if isinstance(val, NodeSet) else float(val)
+
+    def _eval_string(self, xctx: XPathContext) -> str:
+        val = self._eval(xctx)
+        if isinstance(val, float) and int(val) == val: return str(int(val))
+        if isinstance(val, bool): return str(val).lower()
+        return str(val)
 
     def _tree(self, indent: int = 0):
         node_name = self.__class__.__name__
@@ -201,6 +207,9 @@ class DyadicExpr(Expr):
 
     def _eval_ops(self, xctx: XPathContext) -> Tuple[XPathValue, XPathValue]:
         return (self.left._eval(xctx), self.right._eval(xctx))
+
+    def _eval_ops_float(self, xctx: XPathContext) -> Tuple[float, float]:
+        return (self.left._eval_float(xctx), self.right._eval_float(xctx))
 
 class OrExpr(DyadicExpr):
 
@@ -256,9 +265,7 @@ class AdditiveExpr(DyadicExpr):
         return "+" if self.plus else "-"
 
     def _eval(self, xctx: XPathContext) -> float:
-        ops = self._eval_ops(xctx)
-        lres = self._as_float(ops[0])
-        rres = self._as_float(ops[1])
+        lres, rres = self._eval_ops_float(xctx)
         return lres + rres if self.plus else lres - rres
 
 class MultiplicativeExpr(DyadicExpr):
@@ -274,9 +281,7 @@ class MultiplicativeExpr(DyadicExpr):
         if self.operator == MultiplicativeOp.modulo: return "mod"
 
     def _eval(self, xctx: XPathContext) -> float:
-        ops = self._eval_ops(xctx)
-        lres = self._as_float(ops[0])
-        rres = self._as_float(ops[1])
+        lres, rres = self._eval_ops_float(xctx)
         if self.operator == MultiplicativeOp.multiply: return lres * rres
         if self.operator == MultiplicativeOp.divide: return lres / rres
         return lres % rres
@@ -291,7 +296,7 @@ class UnaryExpr(Expr):
         return "-" if self.negate else "+"
 
     def _eval(self, xctx: XPathContext) -> float:
-        res = self._as_float(self.expr._eval(xctx))
+        res = self.expr._eval_float(xctx)
         return -res if self.negate else res
 
 class UnionExpr(DyadicExpr):
@@ -471,10 +476,7 @@ class FuncString(FuncWithArg):
     def _eval(self, xctx: XPathContext):
         if self.arg is None:
             return xctx.cnode.schema_node.type.canonical_string(xctx.cnode.value)
-        arg = self.arg._eval(xctx)
-        if isinstance(arg, float) and int(arg) == arg: return str(int(arg))
-        if isinstance(arg, bool): return str(arg).lower()
-        return str(arg)
+        return self.arg._eval_string(xctx)
 
 class FuncTrue(Expr):
 

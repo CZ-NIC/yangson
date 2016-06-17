@@ -302,6 +302,8 @@ def test_xpath(instance):
     xptest("count(t:llistB)", 2)
     xptest("count(*)", 7, conta)
     xptest("count(*[. > 30])", 1, conta)
+    xptest("-leafA", -22, conta)
+    xptest(" - - leafA", 22, conta)
     xptest("llistB = '::1'")
     xptest("llistB != '::1'")
     xptest("not(llistB = '::1')", False)
