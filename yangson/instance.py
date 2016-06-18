@@ -161,8 +161,9 @@ class InstanceNode:
     def xpath_nodes(self) -> List["InstanceNode"]:
         """Return the list of all receiver's instances."""
         val = self.value
-        return ([ self.entry(i) for i in range(len(val)) ] if
-                isinstance(val, ArrayValue) else [self])
+        if isinstance(val, ArrayValue):
+            return [ self.entry(i) for i in range(len(val)) ]
+        return [self]
 
     def delete_entry(self, index: int,
                      validate: bool = True) -> "InstanceNode":

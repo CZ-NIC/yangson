@@ -1,3 +1,4 @@
+from math import copysign
 from typing import Any, Callable, List, Optional, Tuple, Union
 from .constants import Axis, MultiplicativeOp
 from .context import Context
@@ -25,9 +26,8 @@ def comparison(meth):
 class NodeSet(list):
 
     def union(self, ns: "NodeSet") -> "NodeSet":
-        elems = {n.path():n for n in self}
-        elems.update({n.path():n for n in ns})
-        return self.__class__(elems.values())
+        paths = set([n.path() for n in self])
+        return self.__class__(self + [n for n in ns if n.path() not in paths])
 
     def bind(self, trans: NodeExpr) -> "NodeSet":
         res = self.__class__([])
@@ -289,14 +289,20 @@ class MultiplicativeExpr(BinaryExpr):
 
     def _properties_str(self):
         if self.operator == MultiplicativeOp.multiply: return "*"
-        if self.operator == MultiplicativeOp.divide: return "/"
+        if self.operator == MultiplicativeOp.divide: return "div"
         if self.operator == MultiplicativeOp.modulo: return "mod"
 
     def _eval(self, xctx: XPathContext) -> float:
         lres, rres = self._eval_ops_float(xctx)
-        if self.operator == MultiplicativeOp.multiply: return lres * rres
-        if self.operator == MultiplicativeOp.divide: return lres / rres
-        return lres % rres
+        if self.operator == MultiplicativeOp.multiply:
+            return lres * rres
+        if self.operator == MultiplicativeOp.divide:
+            try:
+                return lres / rres
+            except ZeroDivisionError:
+                return (float("nan") if lres == 0.0
+                        else copysign(float('inf'), lres))
+        return copysign(lres % rres, lres)
 
 class UnaryMinusExpr(UnaryExpr):
 
@@ -337,7 +343,7 @@ class Number(Expr):
         return str(self.value)
 
     def _eval(self, xctx: XPathContext):
-        return self.value
+        return float(self.value)
 
 class PathExpr(BinaryExpr):
 
@@ -447,7 +453,7 @@ class FuncFalse(Expr):
 class FuncLast(Expr):
 
     def _eval(self, xctx: XPathContext) -> int:
-        return xctx.size
+        return float(xctx.size)
 
 class FuncName(UnaryExpr):
 
