@@ -488,6 +488,12 @@ class FuncName(UnaryExpr):
             return loc if s else p
         return node.name
 
+class FuncNormalizeSpace(UnaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> str:
+        string = self.expr._eval_string(xctx) if self.expr else str(xctx.cnode)
+        return " ".join(string.strip().split())
+
 class FuncNot(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
@@ -857,6 +863,9 @@ class XPathParser(Parser):
 
     def _func_name(self) -> FuncName:
         return FuncName(self._opt_arg(), local=False)
+
+    def _func_normalize_space(self) -> FuncNormalizeSpace:
+        return FuncNormalizeSpace(self._opt_arg())
 
     def _func_not(self) -> FuncNot:
         return FuncNot(self.parse())

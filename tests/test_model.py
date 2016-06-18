@@ -374,6 +374,8 @@ def test_xpath(instance):
     xptest("substring(//listA[last()]/leafE, 3)", "BA")
     xptest("string-length(llistB)", 3)
     xptest("string-length() = 6", node=lr)
+    xptest("""normalize-space('  \tfoo   bar
+           baz    ')""", "foo bar baz")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
