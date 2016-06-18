@@ -299,8 +299,9 @@ def test_xpath(instance):
     lr = conta.member("testb:leafR")
     xptest("true()")
     xptest("false()", False)
-    xptest("1.0 div 0.0", float('inf'))
-    xptest("-1.0 div 0.0", float('-inf'))
+    xptest("1 div 0", float('inf'))
+    xptest("-1 div 0", float('-inf'))
+    xptest("string(0 div 0)", "nan")
     xptest("5 mod 2", 1)
     xptest("5 mod -2", 1)
     xptest("- 5 mod 2", -1)
@@ -361,6 +362,11 @@ def test_xpath(instance):
     xptest("substring-after(//decimal64, '.')", "5")
     xptest("substring('12345', 1.5, 2.6)", "234")
     xptest("substring('12345', 0, 3)", "12")
+    xptest("substring('12345', 0 div 0, 3)", "")
+    xptest("substring('12345', 1, 0 div 0)", "")
+    xptest("substring('12345', -42, 1 div 0)", "12345")
+    xptest("substring('12345', -1 div 0, 1 div 0)", "")
+    xptest("substring('12345', -1 div 0)", "12345")
     xptest("substring(//listA[last()]/leafE, 3)", "BA")
 
 def test_instance_paths(data_model, instance):

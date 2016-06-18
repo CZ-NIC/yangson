@@ -302,7 +302,10 @@ class MultiplicativeExpr(BinaryExpr):
             except ZeroDivisionError:
                 return (float("nan") if lres == 0.0
                         else copysign(float('inf'), lres))
-        return copysign(lres % rres, lres)
+        try:
+            return copysign(lres % rres, lres)
+        except ZeroDivisionError:
+            return float('nan')
 
 class UnaryMinusExpr(UnaryExpr):
 
@@ -513,10 +516,18 @@ class FuncSubstring(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> str:
         string = self.left._eval_string(xctx)
-        start = round(self.right._eval_float(xctx)) - 1
+        rres = self.right._eval_float(xctx)
+        try:
+            start = round(rres) - 1
+        except (ValueError, OverflowError):
+            return "" if self.length or rres != float("-inf") else string
         if self.length is None:
             return string[max(start, 0):]
-        end = round(self.length._eval_float(xctx)) + start
+        length = self.length._eval_float(xctx)
+        try:
+            end = start + round(length)
+        except (ValueError, OverflowError):
+            return string[max(start, 0):] if length == float('inf') else ""
         return string[max(start, 0):end]
 
 class FuncSubstringAfter(BinaryExpr):
