@@ -424,6 +424,11 @@ class Step(Expr):
         ns = NodeSet(self._node_trans()(xctx.cnode))
         return self._apply_predicates(ns, xctx)
 
+class FuncBoolean(UnaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> bool:
+        return bool(self.expr._eval(xctx))
+
 class FuncConcat(Expr):
 
     def __init__(self, parts: List[Expr]) -> None:
@@ -730,7 +735,7 @@ class XPathParser(Parser):
             try:
                 prim = getattr(self, mname)()
             except AttributeError:
-                if fname in ("id", "namespace-uri"):
+                if fname in ("id", "lang", "namespace-uri"):
                     raise NotSupported(
                         "function '{}()'".format(fname)) from None
                 raise InvalidXPath(self) from None
@@ -845,6 +850,9 @@ class XPathParser(Parser):
         self.char(",")
         self.skip_ws()
         return (fst, self.parse())
+
+    def _func_boolean(self) -> FuncBoolean:
+        return FuncBoolean(self.parse())
 
     def _func_concat(self) -> FuncConcat:
         res = [self.parse()]

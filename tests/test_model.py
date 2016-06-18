@@ -378,6 +378,10 @@ def test_xpath(instance):
            baz    ')""", "foo bar baz")
     xptest("translate(., 'ABCDEF', 'abcdef')", "c0ffee", lr)
     xptest("translate('--abcd--', 'abc-', 'ABC')", "ABCd")
+    xptest("boolean(foo)", False)
+    xptest("boolean(descendant::leafE)")
+    xptest("boolean(10 mod 2)", False)
+    xptest("boolean(string(llistB))")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
