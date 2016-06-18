@@ -27,6 +27,13 @@ class InstanceNode:
         self.schema_node = schema_node
         self.timestamp = ts
 
+    def __str__(self):
+        """Return string representation of the receiver's value."""
+        sn = self.schema_node
+        if not self.is_structured():
+            return sn.type.canonical_string(self.value)
+        return str(self.value)
+
     @property
     def qualName(self) -> Optional[QualName]:
         """Return the receiver's qualified name."""

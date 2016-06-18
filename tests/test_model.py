@@ -301,7 +301,7 @@ def test_xpath(instance):
     xptest("false()", False)
     xptest("1 div 0", float('inf'))
     xptest("-1 div 0", float('-inf'))
-    xptest("string(0 div 0)", "nan")
+    xptest("string(0 div 0)", "NaN")
     xptest("5 mod 2", 1)
     xptest("5 mod -2", 1)
     xptest("- 5 mod 2", -1)

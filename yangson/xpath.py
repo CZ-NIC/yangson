@@ -39,9 +39,7 @@ class NodeSet(list):
         return float(self[0].value)
 
     def __str__(self) -> str:
-        if not self: return ""
-        head = self[0]
-        return head.schema_node.type.canonical_string(head.value)
+        return str(self[0]) if self else ""
 
     @comparison
     def __eq__(self, val: XPathValue) -> bool:
@@ -152,7 +150,13 @@ class Expr:
 
     def _eval_string(self, xctx: XPathContext) -> str:
         val = self._eval(xctx)
-        if isinstance(val, float) and int(val) == val: return str(int(val))
+        if isinstance(val, float):
+            try:
+                if int(val) == val: return str(int(val))
+            except OverflowError:
+                return "Infinity" if val > 0 else "-Infinity"
+            except ValueError:
+                return "NaN"
         if isinstance(val, bool): return str(val).lower()
         return str(val)
 
