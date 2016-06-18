@@ -376,6 +376,8 @@ def test_xpath(instance):
     xptest("string-length() = 6", node=lr)
     xptest("""normalize-space('  \tfoo   bar
            baz    ')""", "foo bar baz")
+    xptest("translate(., 'ABCDEF', 'abcdef')", "c0ffee", lr)
+    xptest("translate('--abcd--', 'abc-', 'ABC')", "ABCd")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
