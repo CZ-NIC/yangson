@@ -511,6 +511,12 @@ class FuncString(UnaryExpr):
             return xctx.cnode.schema_node.type.canonical_string(xctx.cnode.value)
         return self.expr._eval_string(xctx)
 
+class FuncStringLength(UnaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> str:
+        string = self.expr._eval_string(xctx) if self.expr else str(xctx.cnode)
+        return float(len(string))
+
 class FuncSubstring(BinaryExpr):
 
     def __init__(self, string: Expr, start: Expr,
@@ -863,6 +869,9 @@ class XPathParser(Parser):
 
     def _func_string(self) -> FuncString:
         return FuncString(self._opt_arg())
+
+    def _func_string_length(self) -> FuncStringLength:
+        return FuncStringLength(self._opt_arg())
 
     def _func_substring(self) -> FuncSubstring:
         string, start = self._two_args()
