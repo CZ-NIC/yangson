@@ -7,7 +7,7 @@ from yangson.datatype import YangTypeError
 from yangson.instance import MinElements, NonexistentInstance
 from yangson.instvalue import ArrayValue
 from yangson.context import Context, BadPath, BadPrefName
-from yangson.xpath import InvalidXPath, XPathParser
+from yangson.xpath import InvalidXPath, NotSupported, XPathParser
 
 tree = """+--rw test:contA
 |  +--rw leafA?
@@ -297,6 +297,10 @@ def test_xpath(instance):
         assert XPathParser(expr, mid).parse().evaluate(node) == res
     conta = instance.member("test:contA")
     lr = conta.member("testb:leafR")
+    with pytest.raises(InvalidXPath):
+        xptest("foo()")
+    with pytest.raises(NotSupported):
+        xptest("id()")
     xptest("true()")
     xptest("false()", False)
     xptest("1 div 0", float('inf'))

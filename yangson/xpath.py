@@ -702,7 +702,14 @@ class XPathParser(Parser):
         if fname is None:
             prim = self._or_expr()
         else:
-            prim = self._function_call(fname)
+            mname = "_func_" + fname.replace("-", "_")
+            try:
+                prim = getattr(self, mname)()
+            except AttributeError:
+                if fname in ("id", "namespace-uri"):
+                    raise NotSupported(
+                        "function '{}()'".format(fname)) from None
+                raise InvalidXPath(self) from None
         self.char(")")
         self.skip_ws()
         return FilterExpr(prim, self._predicates())
@@ -767,7 +774,7 @@ class XPathParser(Parser):
                 except KeyError:
                     if yid in ("attribute", "following",
                                "namespace", "preceding"):
-                        raise NotImplemented("axis '{}::'".format(yid)) from None
+                        raise NotSupported("axis '{}::'".format(yid)) from None
                     raise InvalidXPath(self) from None
                 return (axis, self._qname())
             if ws:
@@ -785,7 +792,7 @@ class XPathParser(Parser):
             self.skip_ws()
             return None
         elif typ in ("comment", "processing-instruction", "text"):
-            raise NotImplemented("node type '{}()'".format(typ))
+            raise NotSupported("node type '{}()'".format(typ))
         raise InvalidXPath(self)
 
     def _qname(self) -> Optional[QualName]:
@@ -875,30 +882,6 @@ class XPathParser(Parser):
     def _func_true(self) -> FuncTrue:
         return FuncTrue()
 
-    def _function_call(self, fname: str):
-        try:
-            return { "concat": self._func_concat,
-                     "contains": self._func_contains,
-                     "count": self._func_count,
-                     "current": self._func_current,
-                     "false": self._func_false,
-                     "last": self._func_last,
-                     "local-name": self._func_local_name,
-                     "name": self._func_name,
-                     "not": self._func_not,
-                     "position": self._func_position,
-                     "starts-with": self._func_starts_with,
-                     "string": self._func_string,
-                     "substring": self._func_substring,
-                     "substring-after": self._func_substring_after,
-                     "substring-before": self._func_substring_before,
-                     "true": self._func_true,
-                     }[fname]()
-        except KeyError:
-            if fname in ("id", "namespace-uri"):
-                raise NotImplemented("function '{}()'".format(fname)) from None
-            raise InvalidXPath(self) from None
-
 class InvalidXPath(ParserException):
     """Exception to be raised for an invalid XPath expression."""
 
@@ -914,7 +897,7 @@ class XPathTypeError(ParserException):
     def __str__(self) -> str:
         return str(self.value)
 
-class NotImplemented(ParserException):
+class NotSupported(ParserException):
     """Exception to be raised for unimplemented XPath features."""
 
     def __init__(self, feature: str) -> None:
