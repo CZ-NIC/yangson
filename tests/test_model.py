@@ -7,7 +7,7 @@ from yangson.datatype import YangTypeError
 from yangson.instance import MinElements, NonexistentInstance
 from yangson.instvalue import ArrayValue
 from yangson.context import Context, BadPath, BadPrefName
-from yangson.xpath import InvalidXPath, NotSupported, XPathParser
+from yangson.xpath import InvalidXPath, NotSupported, XPathParser, XPathTypeError
 
 tree = """+--rw test:contA
 |  +--rw leafA?
@@ -387,6 +387,11 @@ def test_xpath(instance):
     xptest("string(number('foo'))", "NaN")
     xptest("number(true()) = 1")
     xptest("number(false()) = 0")
+    xptest("sum(leafA | leafB)", 77, conta)
+    xptest("string(sum(//leafE))", "NaN")
+    xptest("sum(//leafF)", 2)
+    with pytest.raises(XPathTypeError):
+        xptest("sum(42)")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")

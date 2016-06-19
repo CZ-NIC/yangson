@@ -578,6 +578,17 @@ class FuncSubstringBefore(BinaryExpr):
         ind = lres.find(rres)
         return lres[:ind] if ind >= 0 else ""
 
+class FuncSum(UnaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> float:
+        ns = self.expr._eval(xctx)
+        if not isinstance(ns, NodeSet):
+            raise XPathTypeError(ns)
+        try:
+            return float(sum([n.value for n in ns]))
+        except TypeError:
+            return float('nan')
+
 class FuncTranslate(BinaryExpr):
 
     def __init__(self, s1: Expr, s2: Expr, s3: Expr) -> None:
@@ -932,6 +943,9 @@ class XPathParser(Parser):
 
     def _func_substring_before(self) -> FuncSubstringBefore:
         return FuncSubstringBefore(*self._two_args())
+
+    def _func_sum(self) -> FuncSum:
+        return FuncSum(self.parse())
 
     def _func_translate(self) -> FuncTranslate:
         s1, s2 = self._two_args()
