@@ -17,7 +17,7 @@ def comparison(meth):
         if isinstance(arg, NodeSet):
             for n in arg:
                 if n.is_structured(): continue
-                if meth(self, n.schema_node.type.canonical_string(n.value)):
+                if meth(self, str(n)):
                     return True
             return False
         return meth(self, arg)
@@ -47,7 +47,7 @@ class NodeSet(list):
         for n in self:
             if n.is_structured(): continue
             if is_str:
-                if n.schema_node.type.canonical_string(n.value) == val:
+                if str(n) == val:
                     return True
             elif n.value == val:
                 return True
@@ -59,7 +59,7 @@ class NodeSet(list):
         for n in self:
             if n.is_structured(): continue
             if is_str:
-                if n.schema_node.type.canonical_string(n.value) != val:
+                if str(n) != val:
                     return True
             elif n.value != val:
                 return True
@@ -146,7 +146,10 @@ class Expr:
 
     def _eval_float(self, xctx: XPathContext) -> float:
         val = self._eval(xctx)
-        return val.as_float() if isinstance(val, NodeSet) else float(val)
+        try:
+            return val.as_float() if isinstance(val, NodeSet) else float(val)
+        except:
+            return float('nan')
 
     def _eval_string(self, xctx: XPathContext) -> str:
         val = self._eval(xctx)
@@ -504,6 +507,16 @@ class FuncNot(UnaryExpr):
     def _eval(self, xctx: XPathContext) -> bool:
         return not(self.expr._eval(xctx))
 
+class FuncNumber(UnaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> float:
+        if self.expr is None:
+            try:
+                return float(xctx.cnode.value)
+            except ValueError:
+                return float('nan')
+        return self.expr._eval_float(xctx)
+
 class FuncPosition(Expr):
 
     def _eval(self, xctx: XPathContext) -> int:
@@ -519,7 +532,7 @@ class FuncString(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> str:
         if self.expr is None:
-            return xctx.cnode.schema_node.type.canonical_string(xctx.cnode.value)
+            return str(xctx.cnode)
         return self.expr._eval_string(xctx)
 
 class FuncStringLength(UnaryExpr):
@@ -889,6 +902,9 @@ class XPathParser(Parser):
 
     def _func_not(self) -> FuncNot:
         return FuncNot(self.parse())
+
+    def _func_number(self) -> FuncNumber:
+        return FuncNumber(self._opt_arg())
 
     def _func_position(self) -> FuncPosition:
         return FuncPosition()

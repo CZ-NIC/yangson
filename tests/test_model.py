@@ -382,6 +382,11 @@ def test_xpath(instance):
     xptest("boolean(descendant::leafE)")
     xptest("boolean(10 mod 2)", False)
     xptest("boolean(string(llistB))")
+    xptest("number(leafA)", 22, conta)
+    xptest("string(number())", "NaN", lr, "testb")
+    xptest("string(number('foo'))", "NaN")
+    xptest("number(true()) = 1")
+    xptest("number(false()) = 0")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
