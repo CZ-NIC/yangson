@@ -1,4 +1,5 @@
-from math import copysign
+import decimal
+from math import ceil, copysign, floor
 from typing import Any, Callable, List, Optional, Tuple, Union
 from .constants import Axis, MultiplicativeOp
 from .context import Context
@@ -432,6 +433,11 @@ class FuncBoolean(UnaryExpr):
     def _eval(self, xctx: XPathContext) -> bool:
         return bool(self.expr._eval(xctx))
 
+class FuncCeiling(UnaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> float:
+        return float(ceil(self.expr._eval_float(xctx)))
+
 class FuncConcat(Expr):
 
     def __init__(self, parts: List[Expr]) -> None:
@@ -464,6 +470,11 @@ class FuncFalse(Expr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         return False
+
+class FuncFloor(UnaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> float:
+        return float(floor(self.expr._eval_float(xctx)))
 
 class FuncLast(Expr):
 
@@ -521,6 +532,16 @@ class FuncPosition(Expr):
 
     def _eval(self, xctx: XPathContext) -> int:
         return xctx.position
+
+class FuncRound(UnaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> float:
+        dec = decimal.Decimal(self.expr._eval_float(xctx))
+        try:
+            return float(dec.to_integral_value(
+                decimal.ROUND_HALF_UP if dec > 0 else decimal.ROUND_HALF_DOWN))
+        except decimal.InvalidOperation:
+            return float('nan')
 
 class FuncStartsWith(BinaryExpr):
 
@@ -878,6 +899,9 @@ class XPathParser(Parser):
     def _func_boolean(self) -> FuncBoolean:
         return FuncBoolean(self.parse())
 
+    def _func_ceiling(self) -> FuncCeiling:
+        return FuncCeiling(self.parse())
+
     def _func_concat(self) -> FuncConcat:
         res = [self.parse()]
         while self.test_string(","):
@@ -899,6 +923,9 @@ class XPathParser(Parser):
     def _func_false(self) -> FuncFalse:
         return FuncFalse()
 
+    def _func_floor(self) -> FuncFloor:
+        return FuncFloor(self.parse())
+
     def _func_last(self) -> FuncLast:
         return FuncLast()
 
@@ -919,6 +946,9 @@ class XPathParser(Parser):
 
     def _func_position(self) -> FuncPosition:
         return FuncPosition()
+
+    def _func_round(self) -> FuncRound:
+        return FuncRound(self.parse())
 
     def _func_starts_with(self) -> FuncStartsWith:
         return FuncStartsWith(*self._two_args())

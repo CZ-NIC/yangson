@@ -392,6 +392,13 @@ def test_xpath(instance):
     xptest("sum(//leafF)", 2)
     with pytest.raises(XPathTypeError):
         xptest("sum(42)")
+    xptest("floor(contT/decimal64)", 4)
+    xptest("ceiling(contT/decimal64)", 5)
+    xptest("round(contT/decimal64)", 5)
+    xptest("round(- 6.5)", -6)
+    xptest("round(1 div 0)", float("inf"))
+    xptest("round(-1 div 0)", float("-inf"))
+    xptest("string(round(0 div 0))", "NaN")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
