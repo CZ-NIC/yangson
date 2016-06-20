@@ -8,7 +8,6 @@ from .instance import (EntryKeys, RootNode, InstancePath,
                        MemberName)
 from .schema import (BadSchemaNodeType, DataNode, InternalNode,
                      NonexistentSchemaNode, RawObject, SchemaNode)
-from .statement import Statement
 from .typealiases import *
 
 class DataModel:

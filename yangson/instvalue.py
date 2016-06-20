@@ -2,7 +2,6 @@
 
 from datetime import datetime
 from typing import List, Union
-from .datatype import *
 
 # Local type aliases
 
