@@ -36,7 +36,7 @@ class NodeSet(list):
             res = res.union(NodeSet(trans(n)))
         return res
 
-    def as_float(self) -> float:
+    def __float__(self) -> float:
         return float(self[0].value)
 
     def __str__(self) -> str:
@@ -148,8 +148,8 @@ class Expr:
     def _eval_float(self, xctx: XPathContext) -> float:
         val = self._eval(xctx)
         try:
-            return val.as_float() if isinstance(val, NodeSet) else float(val)
-        except:
+            return float(val)
+        except ValueError:
             return float('nan')
 
     def _eval_string(self, xctx: XPathContext) -> str:
