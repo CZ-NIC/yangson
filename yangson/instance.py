@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Callable, List, Tuple
 from .constants import YangsonException
-from .instvalue import ArrayValue, ObjectValue, StructuredValue, Value
+from .instvalue import ArrayValue, ObjectValue, Value
 from .typealiases import *
 
 class JSONPointer(tuple):
@@ -43,10 +43,6 @@ class InstanceNode:
     def namespace(self) -> Optional[YangIdentifier]:
         """Return the receiver's namespace."""
         return self.schema_node.ns
-
-    def is_structured(self):
-        """Return ``True`` if the receiver has a structured value."""
-        return isinstance(self.value, StructuredValue)
 
     def path(self) -> str:
         """Return JSONPointer of the receiver."""
@@ -250,6 +246,10 @@ class RootNode(InstanceNode):
         return RootNode(newval if newval else self.value, self.schema_node,
                           newts if newts else self._timestamp)
 
+    def is_structured(self):
+        """Return ``True`` if the receiver has a structured value."""
+        return True
+
     def ancestors_or_self(
             self, qname: Union[QualName, bool] = None) -> List["RootNode"]:
         """Return the list of receiver's XPath ancestors."""
@@ -281,6 +281,10 @@ class ObjectMember(InstanceNode):
         res = ObjectValue(self.siblings.copy(), self.timestamp)
         res[self.name] = self.value
         return res
+
+    def is_structured(self) -> bool:
+        """Return ``True`` if the receiver has a structured value."""
+        return not isinstance(self.schema_node, LeafNode)
 
     def _pointer_fragment(self) -> str:
         return self.name
@@ -352,6 +356,10 @@ class ArrayEntry(InstanceNode):
         res.append(self.value)
         res += self.after
         return res
+
+    def is_structured(self) -> bool:
+        """Return ``True`` if the receiver has a structured value."""
+        return not isinstance(self.schema_node, LeafListNode)
 
     def _pointer_fragment(self) -> int:
         return len(self.before)
@@ -652,4 +660,5 @@ class MaxElements(InstanceError):
         return "{} more than {} entries".format(
             super().__str__(), self.instance.schema_node.max_elements)
 
-from .schema import CaseNode, DataNode, NonexistentSchemaNode, TerminalNode
+from .schema import (CaseNode, DataNode, LeafNode, LeafListNode,
+                     NonexistentSchemaNode, TerminalNode)
