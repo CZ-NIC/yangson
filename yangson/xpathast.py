@@ -245,8 +245,13 @@ class Number(Expr):
 class PathExpr(BinaryExpr):
 
     def _eval(self, xctx: XPathContext):
-        res = self.left._eval(xctx)
-        return self.right._eval(xctx.update_cnode(res))
+        ns = self.left._eval(xctx)
+        if not isinstance(ns, NodeSet):
+            raise XPathTypeError(ns)
+        res = NodeSet([])
+        for n in ns:
+            res = res.union(self.right._eval(xctx.update_cnode(n)))
+        return res
 
 class FilterExpr(Expr):
 
@@ -351,6 +356,18 @@ class FuncCurrent(Expr):
 
     def _eval(self, xctx: XPathContext) -> NodeSet:
         return NodeSet([xctx.origin])
+
+class FuncDeref(UnaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> bool:
+        ns = self.expr._eval(xctx)
+        if not isinstance(ns, NodeSet):
+            raise XPathTypeError(ns)
+        ref = ns[0]
+        if ref.is_structured():
+            return NodeSet([])
+        tgt = ref.schema_node.type._deref(ref)
+        return NodeSet([n for n in tgt if str(n) == str(ref)])
 
 class FuncFalse(Expr):
 

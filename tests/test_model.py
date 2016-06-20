@@ -97,7 +97,7 @@ def instance(data_model):
 			    }
 		    }, {
 			    "leafE": "ABBA",
-			    "leafF": true
+			    "leafF": false
 		    }],
             "testb:leafR": "C0FFEE",
 		    "anydA": {
@@ -272,7 +272,7 @@ def test_instance(instance):
     assert inst1.path() == inst2.path() == ()
     assert la1.namespace == "test"
     assert la1.member("leafE").namespace == "test"
-    assert la1.member("leafF").value is True
+    assert la1.member("leafF").value is False
     with pytest.raises(NonexistentInstance):
         la1.member("contD")
     assert str(la1.path()) == "/test:contA/listA/1"
@@ -390,7 +390,7 @@ def test_xpath(instance):
     xptest("number(false()) = 0")
     xptest("sum(leafA | leafB)", 77, conta)
     xptest("string(sum(//leafE))", "NaN")
-    xptest("sum(//leafF)", 2)
+    xptest("sum(//leafF)", 1)
     with pytest.raises(XPathTypeError):
         xptest("sum(42)")
     xptest("floor(contT/decimal64)", 4)
@@ -406,6 +406,7 @@ def test_xpath(instance):
     xptest("re-match('aaax', 'a*')", False)
     xptest("re-match('a\nb', '.*')", False)
     xptest("re-match('a\nb', '[a-z\n]*')")
+    xptest("deref(.)/../t:leafF", True, lr, "testb")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")

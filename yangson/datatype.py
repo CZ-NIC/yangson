@@ -5,8 +5,11 @@ from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, List, Optional, Tuple, Union
 from .constants import YangsonException
 from .context import Context
+from .instance import InstanceNode
+from .nodeset import NodeSet
 from .statement import Statement
 from .typealiases import *
+from .xpathparser import XPathParser
 
 # Local type aliases
 Range = List[List[Union[int, decimal.Decimal]]]
@@ -93,6 +96,9 @@ class DataType:
     def __str__(self) -> str:
         """String representation of the receiver type."""
         return self.__class__.__name__.lower()
+
+    def _deref(self, node: InstanceNode) -> NodeSet:
+        return NodeSet([])
 
     def parse_value(self, input: str) -> ScalarValue:
         """Parse value of a data type.
@@ -422,7 +428,11 @@ class LeafrefType(LinkType):
         :param stmt: YANG ``type leafref`` statement
         :param mid: id of the context module
         """
-        self.path = stmt.find1("path", required=True).argument
+        self.path = XPathParser(
+            stmt.find1("path", required=True).argument, mid).parse()
+
+    def _deref(self, node: InstanceNode) -> NodeSet:
+        return self.path.evaluate(node)
 
 class InstanceIdentifierType(LinkType):
     """Class representing YANG "instance-identifier" type."""

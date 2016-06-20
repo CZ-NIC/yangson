@@ -300,6 +300,9 @@ class XPathParser(Parser):
     def _func_current(self) -> FuncCurrent:
         return FuncCurrent()
 
+    def _func_deref(self) -> FuncDeref:
+        return FuncDeref(self.parse())
+
     def _func_false(self) -> FuncFalse:
         return FuncFalse()
 
