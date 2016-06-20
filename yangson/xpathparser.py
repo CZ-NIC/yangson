@@ -327,6 +327,9 @@ class XPathParser(Parser):
     def _func_position(self) -> FuncPosition:
         return FuncPosition()
 
+    def _func_re_match(self) -> FuncReMatch:
+        return FuncReMatch(*self._two_args())
+
     def _func_round(self) -> FuncRound:
         return FuncRound(self.parse())
 

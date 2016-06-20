@@ -1,5 +1,7 @@
 import decimal
 from math import ceil, copysign, floor
+from pyxb.utils.xmlre import XMLToPython
+import re
 from typing import List, Optional, Tuple
 from .constants import Axis, MultiplicativeOp, YangsonException
 from .instance import InstanceNode
@@ -416,6 +418,12 @@ class FuncPosition(Expr):
 
     def _eval(self, xctx: XPathContext) -> int:
         return xctx.position
+
+class FuncReMatch(BinaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> bool:
+        lres, rres = self._eval_ops_string(xctx)
+        return re.match(XMLToPython(rres), lres) is not None
 
 class FuncRound(UnaryExpr):
 

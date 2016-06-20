@@ -400,6 +400,10 @@ def test_xpath(instance):
     xptest("round(1 div 0)", float("inf"))
     xptest("round(-1 div 0)", float("-inf"))
     xptest("string(round(0 div 0))", "NaN")
+    xptest("re-match(//leafE, '[0-9a-fA-F]*')")
+    xptest("re-match(count(//leafE), '[0-9]*')")
+    xptest("re-match('a\nb', '.*')", False)
+    xptest("re-match('a\nb', '[a-z\n]*')")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
