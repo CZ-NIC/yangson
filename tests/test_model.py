@@ -7,7 +7,8 @@ from yangson.datatype import YangTypeError
 from yangson.instance import MinElements, NonexistentInstance
 from yangson.instvalue import ArrayValue
 from yangson.context import Context, BadPath, BadPrefName
-from yangson.xpath import InvalidXPath, NotSupported, XPathParser, XPathTypeError
+from yangson.xpathast import XPathTypeError
+from yangson.xpathparser import InvalidXPath, NotSupported, XPathParser
 
 tree = """+--rw test:contA
 |  +--rw leafA?

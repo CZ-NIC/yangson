@@ -7,6 +7,7 @@ from .datatype import DataType, RawScalar
 from .instvalue import ArrayValue, ObjectValue, Value
 from .statement import Statement
 from .typealiases import *
+from .xpathparser import XPathParser
 
 # Local type aliases
 class SchemaNode:
@@ -674,4 +675,4 @@ class BadSchemaNodeType(SchemaNodeError):
     def __str__(self) -> str:
         return super().__str__() + " is not a " + self.expected
 
-from .xpath import Expr, XPathParser
+from .xpathast import Expr
