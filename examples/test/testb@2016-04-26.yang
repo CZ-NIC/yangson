@@ -39,6 +39,11 @@ module testb {
 	path "../t:listA/t:leafE";
       }
     }
+    leaf leafS {
+      type instance-identifier {
+	require-instance true;
+      }
+    }
   }
 
   augment "/t:choiA" {
