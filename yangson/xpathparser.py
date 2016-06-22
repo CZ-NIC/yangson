@@ -130,7 +130,7 @@ class XPathParser(Parser):
             self.skip_ws()
             return Literal(val)
         if ("0" <= next <= "9" or
-            next == "." and "0" <= self.input[self.offset + 1] <= 9):
+            next == "." and "0" <= self.input[self.offset + 1] <= "9"):
             val = self.float()
             self.skip_ws()
             return Number(val)
@@ -194,7 +194,7 @@ class XPathParser(Parser):
     def _step(self) -> Step:
         return Step(*self._axis_qname(), self._predicates())
 
-    def _axis_qname(self) -> Tuple[Axis, Union[QualName, bool]]:
+    def _axis_qname(self) -> Tuple[Axis, Union[QualName, bool, None]]:
         next = self.peek()
         if next == "*":
             self.adv_skip_ws()
