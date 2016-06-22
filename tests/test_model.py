@@ -104,7 +104,7 @@ def instance(data_model):
             "testb:leafS":
                 "/test:contA/listA[leafE='C0FFEE'][leafF='true']/contD/contE/leafP",
             "testb:leafR": "C0FFEE",
-            "testb:leafT": "test:CC-BY-NC",
+            "testb:leafT": "test:CC-BY",
 		    "anydA": {
 			    "foo:bar": [1, 2, 3]
 		    },

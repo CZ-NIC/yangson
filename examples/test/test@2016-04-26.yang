@@ -34,6 +34,11 @@ module test {
     base d:non-commercial;
   }
 
+  identity CC-BY-ND {
+    base d:no-derivatives;
+    base d:all-uses;
+  }
+
   container contA {
     typedef hex-number {
       type string {

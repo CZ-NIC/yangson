@@ -46,7 +46,8 @@ module testb {
     }
     leaf leafT {
       type identityref {
-	base d:licence-property;
+	base d:derivatives;
+	base d:all-uses;
       }
     }
   }
