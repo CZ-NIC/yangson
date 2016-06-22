@@ -44,6 +44,11 @@ module testb {
 	require-instance true;
       }
     }
+    leaf leafT {
+      type identityref {
+	base d:licence-property;
+      }
+    }
   }
 
   augment "/t:choiA" {

@@ -24,6 +24,16 @@ module test {
 
   feature feB;
 
+  identity CC-BY {
+    base d:derivatives;
+    base d:all-uses;
+  }
+
+  identity CC-BY-NC {
+    base d:derivatives;
+    base d:non-commercial;
+  }
+
   container contA {
     typedef hex-number {
       type string {

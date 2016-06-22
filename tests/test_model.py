@@ -36,6 +36,7 @@ tree = """+--rw test:contA
 |  |     +--rw testb:leafN?
 |  +--rw testb:leafR?
 |  +--rw testb:leafS?
+|  +--rw testb:leafT?
 +--rw test:contT?
 |  +--rw int8?
 |  +--rw int16?
@@ -103,6 +104,7 @@ def instance(data_model):
             "testb:leafS":
                 "/test:contA/listA[leafE='C0FFEE'][leafF='true']/contD/contE/leafP",
             "testb:leafR": "C0FFEE",
+            "testb:leafT": "test:CC-BY-NC",
 		    "anydA": {
 			    "foo:bar": [1, 2, 3]
 		    },
@@ -288,9 +290,9 @@ def test_instance(instance):
     axtest(la1.ancestors_or_self(("listA", "test")), ["/test:contA/listA/1" ])
     axtest(la1.preceding_siblings(), ["/test:contA/listA/0"])
     axtest(la1.following_siblings(), [])
-    assert len(conta.children()) == 8
+    assert len(conta.children()) == 9
     axtest(la1.children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance.descendants(with_self=True)) == 23
+    assert len(instance.descendants(with_self=True)) == 24
     axtest(conta.descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
@@ -315,7 +317,7 @@ def test_xpath(instance):
     xptest("- 5 mod 2", -1)
     xptest("- 5 mod - 2", -1)
     xptest("count(t:llistB)", 2)
-    xptest("count(*)", 8, conta)
+    xptest("count(*)", 9, conta)
     xptest("count(*[. > 30])", 1, conta)
     xptest("-leafA", -22, conta)
     xptest(" - - leafA", 22, conta)
@@ -341,7 +343,7 @@ def test_xpath(instance):
     xptest("local-name()", "leafR", lr)
     xptest("name()", "testb:leafR", lr)
     xptest("name(../t:listA)", "listA", lr, "testb")
-    xptest("count(descendant-or-self::*)", 23)
+    xptest("count(descendant-or-self::*)", 24)
     xptest("count(descendant::leafE)", 2)
     xptest("count(preceding-sibling::*)", 0, lr, "testb")
     xptest("count(following-sibling::*)", 0, lr, "testb")

@@ -8,6 +8,31 @@ module defs {
 
   revision 2016-04-26;
 
+  identity licence-property;
+
+  identity adaptation-sharing {
+    base licence-property;
+  }
+  identity derivatives {
+    base adaptation-sharing;
+  }
+  identity no-derivatives {
+    base adaptation-sharing;
+  }
+  identity share-alike {
+    base adaptation-sharing;
+  }
+
+  identity permitted-uses {
+    base licence-property;
+  }
+  identity all-uses {
+    base permitted-uses;
+  }
+  identity non-commercial {
+    base permitted-uses;
+  }
+
   typedef typA {
     type int16 {
       range "-6378..412";
