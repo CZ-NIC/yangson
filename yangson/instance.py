@@ -236,6 +236,15 @@ class InstanceNode:
         """Return the list of receiver's XPath following-siblings."""
         return []
 
+    def deref(self) -> "NodeSet":
+        """Return the node set that the receiver refers to.
+
+        The result is an empty node set unless the receiver is a leaf
+        with either "leafref" or "instance-identifier" type.
+        """
+        return (NodeSet([]) if self.is_structured()
+                else self.schema_node.type._deref(self))
+
 class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
@@ -805,3 +814,4 @@ class InstanceIdParser(InstancePathParser):
 from .schema import (CaseNode, DataNode, InternalNode,
                      LeafNode, LeafListNode, ListNode,
                      NonexistentSchemaNode, SequenceNode, TerminalNode)
+from .nodeset import NodeSet

@@ -3,10 +3,11 @@ import decimal
 import re
 from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, List, Optional, Tuple, Union
-from .constants import YangsonException
+from .constants import NonexistentSchemaNode, YangsonException
 from .context import Context
-from .instance import InstanceNode
+from .instance import InstanceNode, InstanceIdParser, InstancePath
 from .nodeset import NodeSet
+from .parser import ParserException
 from .statement import Statement
 from .typealiases import *
 from .xpathparser import XPathParser
@@ -432,11 +433,22 @@ class LeafrefType(LinkType):
             stmt.find1("path", required=True).argument, mid).parse()
 
     def _deref(self, node: InstanceNode) -> NodeSet:
-        return self.path.evaluate(node)
+        ns = self.path.evaluate(node)
+        return NodeSet([n for n in ns if str(n) == str(node)])
 
 class InstanceIdentifierType(LinkType):
     """Class representing YANG "instance-identifier" type."""
-    pass
+
+    def _constraints(self, val: str) -> bool:
+        try:
+            InstanceIdParser(val).parse()
+            return True
+        except (ParserException, NonexistentSchemaNode):
+            return False
+
+    def _deref(self, node: InstanceNode) -> NodeSet:
+        return NodeSet(
+            [node.top().goto(InstanceIdParser(node.value).parse())])
 
 class IdentityrefType(DataType):
     """Class representing YANG "identityref" type."""

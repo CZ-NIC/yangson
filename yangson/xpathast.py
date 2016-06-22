@@ -366,8 +366,7 @@ class FuncDeref(UnaryExpr):
         ref = ns[0]
         if ref.is_structured():
             return NodeSet([])
-        tgt = ref.schema_node.type._deref(ref)
-        return NodeSet([n for n in tgt if str(n) == str(ref)])
+        return ref.deref()
 
 class FuncFalse(Expr):
 

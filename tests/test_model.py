@@ -101,7 +101,7 @@ def instance(data_model):
 			    "leafF": false
 		    }],
             "testb:leafS":
-                "/test:contA/listA[leafE='C0FFEE'][leafF='true']/contE/leafP",
+                "/test:contA/listA[leafE='C0FFEE'][leafF='true']/contD/contE/leafP",
             "testb:leafR": "C0FFEE",
 		    "anydA": {
 			    "foo:bar": [1, 2, 3]
@@ -410,6 +410,7 @@ def test_xpath(instance):
     xptest("re-match('a\nb', '.*')", False)
     xptest("re-match('a\nb', '[a-z\n]*')")
     xptest("deref(.)/../t:leafF", True, lr, "testb")
+    xptest("deref(../leafS)", 42, lr, "testb")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
