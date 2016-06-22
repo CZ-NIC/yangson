@@ -1,11 +1,11 @@
-"""XPath node sets"""
+"""XPath node-set"""
 
 from typing import List, Callable, Union
 from .instance import InstanceNode
 
 # Type aliases
 
-NodeExpr = Callable[[InstanceNode], List[InstanceNode]]
+NodeExpr = Callable[[InstanceNode], "NodeSet"]
 XPathValue = Union["NodeSet", str, float, bool]
 
 def comparison(meth):
@@ -28,7 +28,7 @@ class NodeSet(list):
     def bind(self, trans: NodeExpr) -> "NodeSet":
         res = self.__class__([])
         for n in self:
-            res = res.union(NodeSet(trans(n)))
+            res = res.union(trans(n))
         return res
 
     def __float__(self) -> float:

@@ -164,8 +164,8 @@ class InstanceNode:
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
-    def xpath_nodes(self) -> List["InstanceNode"]:
-        """Return the list of all receiver's instances."""
+    def xpath_nodes(self) -> "NodeSet":
+        """Return the node-set of all receiver's instances."""
         val = self.value
         if isinstance(val, ArrayValue):
             return [ self.entry(i) for i in range(len(val)) ]
@@ -203,8 +203,8 @@ class InstanceNode:
             raise InstanceTypeError(self, "lookup on non-list") from None
 
     def children(self,
-                 qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
-        """Return the list of receiver's XPath children."""
+                 qname: Union[QualName, bool] = None) -> "NodeSet":
+        """Return the node-set of receiver's XPath children."""
         if isinstance(self.schema_node, TerminalNode): return []
         if qname:
             iname = (qname[0] if self.namespace == qname[1]
@@ -216,8 +216,8 @@ class InstanceNode:
         return res
 
     def descendants(self, qname: Union[QualName, bool] = None,
-                    with_self: bool = False) -> List["InstanceNode"]:
-        """Return the list of receiver's XPath descendants."""
+                    with_self: bool = False) -> "NodeSet":
+        """Return the node-set of receiver's XPath descendants."""
         res = ([] if not with_self or (qname and self.qualName != qname)
                else [self])
         for c in self.children():
@@ -227,19 +227,19 @@ class InstanceNode:
         return res
 
     def preceding_siblings(
-            self, qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
-        """Return the list of receiver's XPath preceding-siblings."""
+            self, qname: Union[QualName, bool] = None) -> "NodeSet":
+        """Return the node-set of receiver's XPath preceding-siblings."""
         return []
 
     def following_siblings(
-            self, qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
-        """Return the list of receiver's XPath following-siblings."""
+            self, qname: Union[QualName, bool] = None) -> "NodeSet":
+        """Return the node-set of receiver's XPath following-siblings."""
         return []
 
     def deref(self) -> "NodeSet":
-        """Return the node set that the receiver refers to.
+        """Return the node-set that the receiver refers to.
 
-        The result is an empty node set unless the receiver is a leaf
+        The result is an empty node-set unless the receiver is a leaf
         with either "leafref" or "instance-identifier" type.
         """
         return (NodeSet([]) if self.is_structured()
