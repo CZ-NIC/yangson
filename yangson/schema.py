@@ -1,7 +1,7 @@
 """Classes for schema nodes."""
 
 from typing import Dict, List, Optional, Tuple, Union
-from .constants import DefaultDeny, YangsonException
+from .constants import DefaultDeny, NonexistentSchemaNode, YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
 from .instvalue import ArrayValue, ObjectValue, Value
@@ -643,17 +643,6 @@ class AnydataNode(TerminalNode, DataNode):
         return "{} {}{}\n".format(
             self._tree_line_prefix(), self.iname(),
             "" if self.mandatory else "?")
-
-class NonexistentSchemaNode(YangsonException):
-    """Exception to be raised when a schema node doesn't exist."""
-
-    def __init__(self, name: YangIdentifier,
-                 ns: YangIdentifier = None) -> None:
-        self.name = name
-        self.ns = ns
-
-    def __str__(self) -> str:
-        return "{} in module {}".format(self.name, self.ns)
 
 class SchemaNodeError(YangsonException):
     """Abstract exception class for schema node errors."""
