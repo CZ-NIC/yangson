@@ -128,6 +128,11 @@ def test_context(data_model):
     with pytest.raises(BadPrefName):
         Context.translate_pname("d:foo", stid)
     assert Context.feature_expr("feA and not feB", tid) == True
+    assert not Context.is_derived_from(("all-uses", "test"), ("all-uses", "test"))
+    assert Context.is_derived_from(("all-uses", "test"), ("licence-property", "test"))
+    assert Context.is_derived_from(("CC-BY-SA", "testb"), ("share-alike", "test"))
+    assert not Context.is_derived_from(("CC-BY-SA", "testb"), ("derivatives", "test"))
+    assert Context.is_derived_from(("CC-BY-SA", "testb"), ("all-uses", "test"))
 
 def test_schema(data_model):
     ca = data_model.get_data_node("/test:contA")

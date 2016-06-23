@@ -23,7 +23,7 @@ class Context:
         cls.revisions = {} # type: Dict[YangIdentifier, List[str]]
         cls.prefix_map = {} # type: Dict[ModuleId, Dict[YangIdentifier, ModuleId]]
         cls.ns_map = {} # type: Dict[YangIdentifier, YangIdentifier]
-        cls.derived_identities = {} # type Dict[QualName, MutableSet[QualName]]
+        cls.identity_bases = {} # type: Dict[QualName, MutableSet[QualName]]
         cls.features = set() # type: MutableSet[QualName]
 
     # Regular expressions
@@ -85,7 +85,6 @@ class Context:
             cls.revisions[mod].sort(key=lambda r: "0" if r is None else r)
         cls._process_imports()
         cls._check_feature_dependences()
-        cls._identity_derivations()
         for mn in cls.implement:
             if len(cls.revisions[mn]) > 1:
                 raise MultipleImplementedRevisions(mn)
@@ -152,19 +151,6 @@ class Context:
             mod = cls.modules[mid]
             for aug in mod.find_all("augment"):
                 cls.schema._augment_refine(aug, mid, True)
-
-    @classmethod
-    def _identity_derivations(cls):
-        """Create the graph of identity derivations."""
-        for mid in cls.modules:
-            for idst in cls.modules[mid].find_all("identity"):
-                if not cls.if_features(idst, mid): continue
-                idn = cls.translate_pname(idst.argument, mid)
-                if idn not in cls.derived_identities:
-                    cls.derived_identities[idn] = set()
-                for bst in idst.find_all("base"):
-                    bn = cls.translate_pname(bst.argument, mid)
-                    cls.derived_identities.setdefault(bn, set()).add(idn)
 
     @classmethod
     def prefix2ns(cls, prefix: YangIdentifier, mid: ModuleId) -> YangIdentifier:
@@ -241,6 +227,18 @@ class Context:
         dstmt = (stmt.get_definition(loc, kw) if did == mid else
                  cls.modules[did].find1(kw, loc, required=True))
         return (dstmt, did)
+
+    @classmethod
+    def is_derived_from(cls, identity: QualName, base: QualName) -> bool:
+        """Return ``True`` if `identity` is derived from `base`."""
+        try:
+            bases = cls.identity_bases[identity]
+        except KeyError:
+            return False
+        if base in bases: return True
+        for ib in bases:
+            if cls.is_derived_from(ib, base): return True
+        return False
 
     # Feature handling
 

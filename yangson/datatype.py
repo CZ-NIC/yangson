@@ -463,6 +463,11 @@ class IdentityrefType(DataType):
         i1, s, i2 = raw.partition(":")
         return (i2, i1) if s else (i1, self.module_id[0])
 
+    def _constraints(self, val: QualName) -> bool:
+        for b in self.bases:
+            if not Context.is_derived_from(val, b): return False
+        return True
+
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 

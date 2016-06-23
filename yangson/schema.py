@@ -118,6 +118,7 @@ class SchemaNode:
         "config": "_config_stmt",
         "container": "_container_stmt",
         "default": "_default_stmt",
+        "identity": "_identity_stmt",
         "ietf-netconf-acm:default-deny-all": "_nacm_default_deny_stmt",
         "ietf-netconf-acm:default-deny-write": "_nacm_default_deny_stmt",
         "input": "_input_stmt",
@@ -253,6 +254,13 @@ class InternalNode(SchemaNode):
         """Handle container statement."""
         if Context.if_features(stmt, mid):
             self._handle_child(ContainerNode(), stmt, mid)
+
+    def _identity_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle identity statement."""
+        if Context.if_features(stmt, mid):
+            bases = stmt.find_all("base")
+            Context.identity_bases[(stmt.argument, mid[0])] = set(
+                [Context.translate_pname(ist.argument, mid) for ist in bases])
 
     def _list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle list statement."""
