@@ -111,6 +111,7 @@ def instance(data_model):
 		    "testb:leafN": "hi!"
 	    },
         "test:contT": {
+            "bits": "dos cuatro",
             "decimal64": 4.50,
             "enumeration": "Phobos"
         }
@@ -298,7 +299,7 @@ def test_instance(instance):
     axtest(la1.following_siblings(), [])
     assert len(conta.children()) == 9
     axtest(la1.children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance.descendants(with_self=True)) == 25
+    assert len(instance.descendants(with_self=True)) == 26
     axtest(conta.descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
@@ -349,7 +350,7 @@ def test_xpath(instance):
     xptest("local-name()", "leafR", lr)
     xptest("name()", "testb:leafR", lr)
     xptest("name(../t:listA)", "listA", lr, "testb")
-    xptest("count(descendant-or-self::*)", 25)
+    xptest("count(descendant-or-self::*)", 26)
     xptest("count(descendant::leafE)", 2)
     xptest("count(preceding-sibling::*)", 0, lr, "testb")
     xptest("count(following-sibling::*)", 0, lr, "testb")
@@ -430,6 +431,9 @@ def test_xpath(instance):
     xptest("string(enum-value(foo))", "NaN")
     xptest("string(enum-value(.))", "NaN", conta)
     xptest("string(enum-value(.))", "NaN", lr, "testb")
+    xptest("bit-is-set(//bits, 'dos') and bit-is-set(//bits, 'cuatro')")
+    xptest("not(bit-is-set(foo, bar))")
+    xptest("bit-is-set(., 'dos')", False, conta)
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")

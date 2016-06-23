@@ -320,6 +320,18 @@ class Step(Expr):
         ns = NodeSet(self._node_trans()(xctx.cnode))
         return self._apply_predicates(ns, xctx)
 
+class FuncBitIsSet(BinaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> bool:
+        ns = self.left._eval(xctx)
+        if not isinstance(ns, NodeSet):
+            raise XPathTypeError(ns)
+        bit = self.right._eval_string(xctx)
+        try:
+            return bit in ns[0].value
+        except (IndexError, TypeError):
+            return False
+
 class FuncBoolean(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:

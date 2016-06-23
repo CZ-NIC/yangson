@@ -276,6 +276,9 @@ class XPathParser(Parser):
         self.skip_ws()
         return (fst, self.parse())
 
+    def _func_bit_is_set(self) -> FuncBitIsSet:
+        return FuncBitIsSet(*self._two_args())
+
     def _func_boolean(self) -> FuncBoolean:
         return FuncBoolean(self.parse())
 

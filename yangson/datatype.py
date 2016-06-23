@@ -398,7 +398,7 @@ class EnumerationType(DataType):
         new = set([ e.argument for e in est if Context.if_features(e, mid) ])
         for en in set(self.enum) - new:
             del self.enum[en]
-        
+
 class LinkType(DataType):
     """Abstract class for instance-referencing types."""
 
