@@ -24,19 +24,44 @@ module test {
 
   feature feB;
 
+  identity licence-property;
+
+  identity adaptation-sharing {
+    base licence-property;
+  }
+  identity derivatives {
+    base adaptation-sharing;
+  }
+  identity no-derivatives {
+    base adaptation-sharing;
+  }
+  identity share-alike {
+    base adaptation-sharing;
+  }
+
+  identity permitted-uses {
+    base licence-property;
+  }
+  identity all-uses {
+    base permitted-uses;
+  }
+  identity non-commercial {
+    base permitted-uses;
+  }
+
   identity CC-BY {
-    base d:derivatives;
-    base d:all-uses;
+    base derivatives;
+    base all-uses;
   }
 
   identity CC-BY-NC {
-    base d:derivatives;
-    base d:non-commercial;
+    base derivatives;
+    base non-commercial;
   }
 
   identity CC-BY-ND {
-    base d:no-derivatives;
-    base d:all-uses;
+    base no-derivatives;
+    base all-uses;
   }
 
   container contA {

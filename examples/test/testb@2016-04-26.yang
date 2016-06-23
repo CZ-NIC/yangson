@@ -17,8 +17,8 @@ module testb {
   revision 2016-04-26;
 
   identity CC-BY-SA {
-    base d:share-alike;
-    base d:all-uses;
+    base t:share-alike;
+    base t:all-uses;
   }
 
   augment "/t:contA" {
@@ -51,8 +51,8 @@ module testb {
     }
     leaf leafT {
       type identityref {
-	base d:derivatives;
-	base d:all-uses;
+	base t:derivatives;
+	base t:all-uses;
       }
     }
   }
