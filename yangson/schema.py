@@ -5,7 +5,7 @@ from .constants import DefaultDeny, NonexistentSchemaNode, YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
 from .instvalue import ArrayValue, ObjectValue, Value
-from .statement import Statement
+from .statement import Statement, WrongArgument
 from .typealiases import *
 from .xpathparser import XPathParser
 
@@ -96,7 +96,10 @@ class SchemaNode:
         if stmt.argument == "false": self._config = False
 
     def _must_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self.must = XPathParser(stmt.argument, mid).parse()
+        xpp = XPathParser(stmt.argument, mid)
+        self.must = xpp.parse()
+        if not xpp.at_end():
+            raise WrongArgument(stmt)
 
     def _when_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.when = XPathParser(stmt.argument, mid).parse()
