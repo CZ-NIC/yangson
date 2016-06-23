@@ -300,6 +300,12 @@ class XPathParser(Parser):
     def _func_current(self) -> FuncCurrent:
         return FuncCurrent()
 
+    def _func_derived_from(self) -> FuncDerivedFrom:
+        return FuncDerivedFrom(*self._two_args(), False, self.mid)
+
+    def _func_derived_from_or_self(self) -> FuncDerivedFrom:
+        return FuncDerivedFrom(*self._two_args(), True, self.mid)
+
     def _func_deref(self) -> FuncDeref:
         return FuncDeref(self.parse())
 

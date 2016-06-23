@@ -418,6 +418,13 @@ def test_xpath(instance):
     xptest("re-match('a\nb', '[a-z\n]*')")
     xptest("deref(.)/../t:leafF", True, lr, "testb")
     xptest("deref(../leafS)", 42, lr, "testb")
+    xptest("derived-from-or-self(../leafT, 't:CC-BY')", True, lr, "testb")
+    xptest("derived-from(../leafT, 't:CC-BY')", False, lr, "testb")
+    xptest("derived-from(../leafT, 't:derivatives')", True, lr, "testb")
+    xptest("derived-from(../leafT, 't:share-alike')", False, lr, "testb")
+    xptest("derived-from(../leafT, 't:licence-property')", True, lr, "testb")
+    xptest("derived-from(., 't:CC-BY')", False, lr, "testb")
+    xptest("derived-from(., 'CC-BY')", False, conta)
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")

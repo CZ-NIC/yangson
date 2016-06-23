@@ -4,6 +4,7 @@ from pyxb.utils.xmlre import XMLToPython
 import re
 from typing import List, Optional, Tuple
 from .constants import Axis, MultiplicativeOp, YangsonException
+from .context import Context
 from .instance import InstanceNode
 from .nodeset import NodeExpr, NodeSet, XPathValue
 from .typealiases import *
@@ -359,7 +360,7 @@ class FuncCurrent(Expr):
 
 class FuncDeref(UnaryExpr):
 
-    def _eval(self, xctx: XPathContext) -> bool:
+    def _eval(self, xctx: XPathContext) -> NodeSet:
         ns = self.expr._eval(xctx)
         if not isinstance(ns, NodeSet):
             raise XPathTypeError(ns)
@@ -367,6 +368,24 @@ class FuncDeref(UnaryExpr):
         if ref.is_structured():
             return NodeSet([])
         return ref.deref()
+
+class FuncDerivedFrom(BinaryExpr):
+
+    def __init__(self, left: Expr, right: Expr, or_self: bool,
+                 mid: ModuleId) -> None:
+        super().__init__(left, right)
+        self.or_self = or_self
+        self.mid = mid
+
+    def _eval(self, xctx: XPathContext) -> bool:
+        ns = self.left._eval(xctx)
+        if not isinstance(ns, NodeSet):
+            raise XPathTypeError(ns)
+        i = Context.translate_pname(self.right._eval_string(xctx), self.mid)
+        for n in ns:
+            if self.or_self and n.value == i: return True
+            if Context.is_derived_from(n.value, i): return True
+        return False
 
 class FuncFalse(Expr):
 
