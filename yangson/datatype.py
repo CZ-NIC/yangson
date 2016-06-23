@@ -459,6 +459,10 @@ class IdentityrefType(DataType):
         super().__init__(mid)
         self.bases = [] # type: List[QualName]
 
+    def _convert_raw(self, raw: str) -> QualName:
+        i1, s, i2 = raw.partition(":")
+        return (i2, i1) if s else (i1, self.module_id[0])
+
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
