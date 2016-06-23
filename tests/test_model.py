@@ -111,7 +111,8 @@ def instance(data_model):
 		    "testb:leafN": "hi!"
 	    },
         "test:contT": {
-            "decimal64": 4.50
+            "decimal64": 4.50,
+            "enumeration": "Phobos"
         }
     }
     """
@@ -297,7 +298,7 @@ def test_instance(instance):
     axtest(la1.following_siblings(), [])
     assert len(conta.children()) == 9
     axtest(la1.children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance.descendants(with_self=True)) == 24
+    assert len(instance.descendants(with_self=True)) == 25
     axtest(conta.descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
@@ -348,7 +349,7 @@ def test_xpath(instance):
     xptest("local-name()", "leafR", lr)
     xptest("name()", "testb:leafR", lr)
     xptest("name(../t:listA)", "listA", lr, "testb")
-    xptest("count(descendant-or-self::*)", 24)
+    xptest("count(descendant-or-self::*)", 25)
     xptest("count(descendant::leafE)", 2)
     xptest("count(preceding-sibling::*)", 0, lr, "testb")
     xptest("count(following-sibling::*)", 0, lr, "testb")
@@ -425,6 +426,10 @@ def test_xpath(instance):
     xptest("derived-from(../leafT, 't:licence-property')", True, lr, "testb")
     xptest("derived-from(., 't:CC-BY')", False, lr, "testb")
     xptest("derived-from(., 'CC-BY')", False, conta)
+    xptest("enum-value(//enumeration)", 101)
+    xptest("string(enum-value(foo))", "NaN")
+    xptest("string(enum-value(.))", "NaN", conta)
+    xptest("string(enum-value(.))", "NaN", lr, "testb")
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")

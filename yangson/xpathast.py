@@ -387,6 +387,18 @@ class FuncDerivedFrom(BinaryExpr):
             if Context.is_derived_from(n.value, i): return True
         return False
 
+class FuncEnumValue(UnaryExpr):
+
+    def _eval(self, xctx: XPathContext) -> float:
+        ns = self.expr._eval(xctx)
+        if not isinstance(ns, NodeSet):
+            raise XPathTypeError(ns)
+        try:
+            node = ns[0]
+            return float(node.schema_node.type.enum[node.value])
+        except (AttributeError, IndexError, KeyError):
+            return float('nan')
+
 class FuncFalse(Expr):
 
     def _eval(self, xctx: XPathContext) -> bool:

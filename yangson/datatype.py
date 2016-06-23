@@ -370,7 +370,7 @@ class EnumerationType(DataType):
     def __init__(self, mid: ModuleId) -> None:
         """Initialize the class instance."""
         super().__init__(mid)
-        self.enum = {}
+        self.enum = {} # type: Dict[str, int]
 
     def _constraints(self, val: str) -> bool:
         return val in self.enum
