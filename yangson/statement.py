@@ -321,4 +321,13 @@ class DefinitionNotFound(YangsonException):
         self.name = name
 
     def __str__(self) -> str:
-        return "{} {} not found".format(self.keyword, self.name)
+        return "{} {}".format(self.keyword, self.name)
+
+class WrongArgument(YangsonException):
+    """Exception to be raised when a statement argument is invalid."""
+
+    def __init__(self, stmt: Statement) -> None:
+        self.stmt = stmt
+
+    def __str__(self) -> str:
+        return str(self.stmt)
