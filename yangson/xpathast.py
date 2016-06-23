@@ -389,6 +389,9 @@ class FuncDerivedFrom(BinaryExpr):
         self.or_self = or_self
         self.mid = mid
 
+    def _properties_str(self):
+        return ("OR-SELF, " if self.or_self else "") + str(self.mid[0])
+
     def _eval(self, xctx: XPathContext) -> bool:
         ns = self.left._eval(xctx)
         if not isinstance(ns, NodeSet):
@@ -433,7 +436,7 @@ class FuncName(UnaryExpr):
         self.local = local
 
     def _properties_str(self):
-        return "LOC" if self.local else ""
+        return "LOCAL" if self.local else ""
 
     def _eval(self, xctx: XPathContext) -> str:
         if self.expr is None:
@@ -520,6 +523,9 @@ class FuncSubstring(BinaryExpr):
         super().__init__(string, start)
         self.length = length
 
+    def _children_str(self, indent: int) -> str:
+        return super()._children_str(indent) + self.length._tree(indent)
+
     def _eval(self, xctx: XPathContext) -> str:
         string = self.left._eval_string(xctx)
         rres = self.right._eval_float(xctx)
@@ -566,6 +572,9 @@ class FuncTranslate(BinaryExpr):
     def __init__(self, s1: Expr, s2: Expr, s3: Expr) -> None:
         super().__init__(s1, s2)
         self.nchars = s3
+
+    def _children_str(self, indent: int) -> str:
+        return super()._children_str(indent) + self.nchars._tree(indent)
 
     def _eval(self, xctx: XPathContext) -> str:
         string, old = self._eval_ops_string(xctx)
