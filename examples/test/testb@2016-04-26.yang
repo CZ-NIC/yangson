@@ -16,6 +16,11 @@ module testb {
 
   revision 2016-04-26;
 
+  identity CC-BY-SA {
+    base d:share-alike;
+    base d:all-uses;
+  }
+
   augment "/t:contA" {
     choice choiB {
       mandatory "true";
