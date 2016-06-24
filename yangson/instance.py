@@ -360,7 +360,7 @@ class ArrayEntry(InstanceNode):
 
         This method overrides the superclass method.
         """
-        return self.update(self.schema_node._entry_from_raw(value))
+        return self.update(self.schema_node.entry_from_raw(value))
 
     def zip(self) -> ArrayValue:
         """Zip the receiver into an array and return it."""

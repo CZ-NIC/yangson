@@ -5,7 +5,7 @@ from yangson import DataModel
 from yangson.schema import NonexistentSchemaNode
 from yangson.datatype import YangTypeError
 from yangson.instance import MinElements, NonexistentInstance
-from yangson.instvalue import ArrayValue
+from yangson.instvalue import ArrayValue, ObjectValue
 from yangson.context import Context, BadPath, BadPrefName
 from yangson.xpathast import XPathTypeError
 from yangson.xpathparser import InvalidXPath, NotSupported, XPathParser
@@ -177,8 +177,8 @@ def test_schema(data_model):
     assert lla.type.default == 11
     assert lo.default_value() == True
     assert lp.default_value() == 42
-    assert ([c.qual_name for c in Context.schema.default_children] ==
-            [('contA', 'test'), ('contT', 'test'), ('contC', 'test')])
+    assert (lsta.default_value() ==
+            lsta.entry_from_raw({"contD": {"contE": {"leafP": 42}}}))
     assert la.type.parse_value("99") == 99
     with pytest.raises(YangTypeError):
         ld.type.parse_value("99")
