@@ -170,13 +170,15 @@ def test_schema(data_model):
     assert lb.config == ll.config == False
     assert la.ns == ld.ns
     assert lc.ns == "testb"
-    assert la.default == 11
-    assert ld.default == 199
+    assert la.default_value() == 11
+    assert ld.default_value() == 199
     assert ld.type.default == 111
-    assert lla.default == [42, 54]
+    assert lla.default_value() == [42, 54]
     assert lla.type.default == 11
-    assert lo.default == True
-    assert lp.default == 42
+    assert lo.default_value() == True
+    assert lp.default_value() == 42
+    assert ([c.qual_name for c in Context.schema.default_children] ==
+            [('contA', 'test'), ('contT', 'test'), ('contC', 'test')])
     assert la.type.parse_value("99") == 99
     with pytest.raises(YangTypeError):
         ld.type.parse_value("99")

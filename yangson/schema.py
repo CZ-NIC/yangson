@@ -20,6 +20,12 @@ class SchemaNode:
         self.parent = None # type: "InternalNode"
         self.must = None # type: "Expr"
         self.when = None # type: "Expr"
+        self.default_children = [] # type: List["SchemaNode"]
+
+    @property
+    def qual_name(self) -> QualName:
+        """Return qualified name of the receiver."""
+        return (self.name, self.ns)
 
     @property
     def config(self) -> bool:
@@ -77,6 +83,10 @@ class SchemaNode:
         if self.config:
             return [r.instance_route() for r in self._state_roots()]
         return [self.instance_route()]
+
+    def add_default_child(self, node: "SchemaNode") -> None:
+        """Add `node` to the list of default children."""
+        self.default_children.append(node)
 
     def _handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         """Dispatch actions for substatements of `stmt`."""
@@ -274,8 +284,12 @@ class InternalNode(SchemaNode):
 
     def _choice_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle choice statement."""
-        if Context.if_features(stmt, mid):
-            self._handle_child(ChoiceNode(), stmt, mid)
+        if not Context.if_features(stmt, mid): return
+        node = ChoiceNode()
+        defst = stmt.find1("default")
+        if defst:
+            node.default_case = Context.translate_pname(defst.argument, mid)
+        self._handle_child(node, stmt, mid)
 
     def _case_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle case statement."""
@@ -289,6 +303,8 @@ class InternalNode(SchemaNode):
             node = LeafNode()
             node.type = DataType.resolve_type(
                 stmt.find1("type", required=True), mid)
+            if node.type.default:
+                self.add_default_child(node)
             self._handle_child(node, stmt, mid)
             return node
 
@@ -298,6 +314,8 @@ class InternalNode(SchemaNode):
             node = LeafListNode()
             node.type = DataType.resolve_type(
                 stmt.find1("type", required=True), mid)
+            if node.type.default:
+                self.add_default_child(node)
             self._handle_child(node, stmt, mid)
 
     def _rpc_action_stmt(self, stmt: Statement, mid: ModuleId) -> None:
@@ -391,6 +409,12 @@ class ContainerNode(InternalNode, DataNode):
         self.presence = False # type: bool
         self.mandatory = False # type: bool
 
+    def add_default_child(self, node: SchemaNode) -> None:
+        """Extend the superclass method."""
+        if not (self.presence or self.default_children):
+            self.parent.add_default_child(self)
+        super().add_default_child(node)
+
     def _mandatory_child(self) -> None:
         """A child of the receiver is mandatory; perform necessary actions."""
         if self.presence: return
@@ -463,6 +487,11 @@ class ListNode(SequenceNode, InternalNode):
         self.keys = [] # type: List[QualName]
         self.unique = [] # type: List[List[SchemaRoute]]
 
+    def add_default_child(self, node: SchemaNode) -> None:
+        """Extend the superclass method."""
+        if node.qual_name not in self.keys:
+            super().add_default_child(node)
+
     def _key_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         kst = stmt.find1("key")
         if kst is None: return
@@ -492,7 +521,7 @@ class ChoiceNode(InternalNode):
     def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
-        self.default = None # type: QualName
+        self.default_case = None # type: QualName
         self.mandatory = False # type: bool
 
     def _tree_line_prefix(self) -> str:
@@ -510,7 +539,7 @@ class ChoiceNode(InternalNode):
             cn._handle_child(node, stmt, mid)
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self.default = Context.translate_pname(stmt.argument, mid)
+        pass
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -520,6 +549,11 @@ class ChoiceNode(InternalNode):
 
 class CaseNode(InternalNode):
     """Case node."""
+
+    def add_default_child(self, node: SchemaNode) -> None:
+        """Extend the superclass method."""
+        if self.qual_name == self.parent.default_case:
+            self.parent.parent.add_default_child(node)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -585,13 +619,14 @@ class NotificationNode(InternalNode):
 class LeafNode(TerminalNode, DataNode):
     """Leaf node."""
 
-    @property
-    def default(self):
+    def default_value(self):
         """Return the default value of the receiver or its type."""
         return self._default if self._default else self.type.default
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self._default = self.type.parse_value(stmt.argument)
+        if self.type.default is None:
+            self.parent.add_default_child(self)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -608,8 +643,7 @@ class LeafListNode(SequenceNode, TerminalNode):
         self.min_elements = 0 # type: int
         self.max_elements = None # type: Optional[int]
 
-    @property
-    def default(self):
+    def default_value(self):
         """Return the default value of the receiver or its type."""
         if self._default:
             return self._default
@@ -621,6 +655,8 @@ class LeafListNode(SequenceNode, TerminalNode):
         val = self.type.parse_value(stmt.argument)
         if self._default is None:
             self._default = [val]
+            if self.type.default is None:
+                self.parent.add_default_child(self)
         else:
             self._default.append(val)
 
