@@ -23,7 +23,6 @@ submodule subtest {
   revision 2016-04-26;
 
   choice choiA {
-    default "caseA";
     leaf-list llistB {
       type inet:ip-address-no-zone;
       min-elements "2";
@@ -46,5 +45,6 @@ submodule subtest {
         type oin:ip-address;
       }
     }
+    default "caseA";
   }
 }

@@ -70,6 +70,7 @@ module test {
         length "1..max";
         pattern "[0-9A-Fa-f]*";
       }
+      default "F00";
     }
     must "not(leafA <= leafB)";
     leaf leafA {
@@ -179,6 +180,7 @@ module test {
     }
     leaf boolean {
       type boolean;
+      default "true";
     }
     leaf enumeration {
       type d:typC {
@@ -200,6 +202,7 @@ module test {
         }
 	bit cuatro;
       }
+      default "cuatro";
     }
     leaf binary {
       type binary {
