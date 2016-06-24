@@ -180,7 +180,7 @@ class Context:
         :param mid: identifier of the context module
         """
         loc, nid = cls.resolve_pname(pname, mid)
-        return (loc, nid[0])
+        return (loc, cls.ns_map[nid[0]])
 
     @classmethod
     def sid2route(cls, sid: str, mid: ModuleId) -> SchemaRoute:
