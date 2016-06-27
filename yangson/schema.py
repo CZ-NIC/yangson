@@ -1,6 +1,6 @@
 """Classes for schema nodes."""
 
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Set, Tuple, Union
 from .constants import DefaultDeny, NonexistentSchemaNode, YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
@@ -82,10 +82,6 @@ class SchemaNode:
         if self.config:
             return [r.instance_route() for r in self._state_roots()]
         return [self.instance_route()]
-
-    def add_default_child(self, node: "SchemaNode") -> None:
-        """Add `node` to the list of default children."""
-        self.default_children.append(node)
 
     def _handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         """Dispatch actions for substatements of `stmt`."""
@@ -226,6 +222,10 @@ class InternalNode(SchemaNode):
                 res.extend(c.data_children())
         return res
 
+    def add_default_child(self, node: SchemaNode) -> None:
+        """Add `node` to the list of default children."""
+        self.default_children.append(node)
+
     def default_value(self) -> ObjectValue:
         """Return the receiver's default content."""
         res = ObjectValue(
@@ -291,12 +291,8 @@ class InternalNode(SchemaNode):
 
     def _choice_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle choice statement."""
-        if not Context.if_features(stmt, mid): return
-        node = ChoiceNode()
-        defst = stmt.find1("default")
-        if defst:
-            node.default_case = Context.translate_pname(defst.argument, mid)
-        self._handle_child(node, stmt, mid)
+        if Context.if_features(stmt, mid):
+            self._handle_child(ChoiceNode(), stmt, mid)
 
     def _case_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle case statement."""
@@ -305,7 +301,7 @@ class InternalNode(SchemaNode):
 
     def _terminal_stmt(self, stmt: Statement, mid: ModuleId,
                        constructor) -> Optional["TerminalNode"]:
-        if not Context.if_features(stmt, mid): return
+        if not Context.if_features(stmt, mid): return None
         node = constructor()
         node.type = DataType.resolve_type(
             stmt.find1("type", required=True), mid)
@@ -509,7 +505,6 @@ class ListNode(SequenceNode, InternalNode):
         if node is None: return
         if node.qual_name in self.keys:
             node.mandatory = True
-            node._default = None
         elif node.default_value() is not None:
             self.add_default_child(node)
 
@@ -529,6 +524,17 @@ class ChoiceNode(InternalNode):
         self.default_case = None # type: QualName
         self.mandatory = False # type: bool
 
+    def add_default_child(self, node: "CaseNode") -> None:
+        """Extend the superclass method."""
+        if not self.default_children:
+            self.parent.add_default_child(self)
+        super().add_default_child(node)
+
+    def default_value(self) -> ObjectValue:
+        """Return the receiver's default content."""
+        if self.default_case in [c.qual_name for c in self.default_children]:
+            return self.get_child(*self.default_case).default_value()
+
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + ("rw" if self.config else "ro")
 
@@ -544,7 +550,7 @@ class ChoiceNode(InternalNode):
             cn._handle_child(node, stmt, mid)
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        pass
+        self.default_case = Context.translate_pname(stmt.argument, mid)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -557,8 +563,14 @@ class CaseNode(InternalNode):
 
     def add_default_child(self, node: SchemaNode) -> None:
         """Extend the superclass method."""
-        if self.qual_name == self.parent.default_case:
-            self.parent.parent.add_default_child(node)
+        if not self.default_children:
+            self.parent.add_default_child(self)
+        super().add_default_child(node)
+
+    def competing_instances(self) -> Set[InstanceName]:
+        """Return set of names of all instances from sibling cases."""
+        return frozenset([x.iname() for c in self.parent.children
+                          for x in c.data_children() if c is not self])
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -629,9 +641,9 @@ class LeafNode(TerminalNode, DataNode):
         return self._default if self._default else self.type.default
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self._default = self.type.parse_value(stmt.argument)
-        if self.type.default is None:
+        if self.default_value() is None:
             self.parent.add_default_child(self)
+        self._default = self.type.parse_value(stmt.argument)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""

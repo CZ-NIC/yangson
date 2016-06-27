@@ -59,7 +59,7 @@ class InstanceNode:
     def update_from_raw(self, value: RawValue) -> "InstanceNode":
         """Update the receiver's value from a raw value."""
         newval = self.schema_node.from_raw(value)
-        return self._copy(newval, datetime.now())
+        return self.update(newval)
 
     def up(self) -> "InstanceNode":
         """Ascend to the parent instance node."""
