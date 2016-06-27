@@ -226,12 +226,28 @@ class InternalNode(SchemaNode):
         """Add `node` to the list of default children."""
         self.default_children.append(node)
 
-    def default_value(self) -> ObjectValue:
+    def default_value(self) -> Optional[ObjectValue]:
         """Return the receiver's default content."""
-        res = ObjectValue(
-            {c.iname(): c.default_value() for c in self.default_children})
-        res.stamp()
+        res = ObjectValue({})
+        for c in self.default_children:
+            dflt = c.default_value()
+            if dflt is not None:
+                res[c.iname()] = dflt
         return res
+
+    def _apply_defaults(self, value: ObjectValue) -> None:
+        """Return a copy of `value` with added default contents."""
+        for c in self.default_children:
+            if isinstance(c, ChoiceNode):
+                ac = c.active_case(value)
+                if ac:
+                    ac._apply_defaults(value)
+                elif c.default_case:
+                    value.update(c.get_child(*c.default_case).default_value())
+            else:
+                cn = c.iname()
+                if cn not in value:
+                    value[cn] = c.default_value()
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -534,6 +550,14 @@ class ChoiceNode(InternalNode):
         """Return the receiver's default content."""
         if self.default_case in [c.qual_name for c in self.default_children]:
             return self.get_child(*self.default_case).default_value()
+
+    def active_case(self, value: ObjectValue) -> Optional["CaseNode"]:
+        """Return receiver's case that's active in `value`."""
+        for case in self.children:
+            for cc in case.children:
+                if (isinstance(cc, ChoiceNode) and cc.active_case(value)
+                    or cc.iname() in value):
+                        return case
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + ("rw" if self.config else "ro")

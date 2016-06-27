@@ -245,6 +245,28 @@ class InstanceNode:
         return (NodeSet([]) if self.is_structured()
                 else self.schema_node.type._deref(self))
 
+    def add_defaults(self) -> "InstanceNode":
+        """Return a copy of the receiver with defaults added to its value."""
+        sn = self.schema_node
+        if isinstance(self.value, ArrayValue) and isinstance(sn, ListNode):
+            try:
+                inst = self.entry(0)
+                while True:
+                    ninst = inst.add_defaults()
+                    inst = ninst.next()
+            except NonexistentInstance:
+                return ninst.up()
+        if isinstance(sn, InternalNode):
+            res = self
+            if self.value:
+                for mn in self.value:
+                    m = res.member(mn) if res is self else res.sibling(mn)
+                    res = m.add_defaults()
+                res = res.up()
+            sn._apply_defaults(res.value)
+            return res
+        return self
+
 class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 

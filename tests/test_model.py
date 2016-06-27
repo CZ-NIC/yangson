@@ -85,8 +85,7 @@ def instance(data_model):
     {
         "test:llistB": ["::1", "127.0.0.1"],
 	    "test:contA": {
-		    "leafA": 22,
-		    "leafB": 55,
+		    "leafA": 56,
 		    "listA": [{
 			    "leafE": "C0FFEE",
 			    "leafF": true,
@@ -94,7 +93,7 @@ def instance(data_model):
 				    "leafG": "foo1-bar",
 				    "contE": {
 					    "leafJ": [null],
-					    "leafP": 42
+					    "leafP": 54
 				    }
 			    }
 		    }, {
@@ -139,7 +138,6 @@ def test_context(data_model):
 def test_schema(data_model):
     ca = data_model.get_data_node("/test:contA")
     la = ca.get_child("leafA", "test")
-    lb = data_model.get_data_node("/test:contA/leafB")
     lsta = data_model.get_data_node("/test:contA/listA")
     ada = ca.get_child("anydA", "test")
     axa = ca.get_child("anyxA", "test")
@@ -159,15 +157,15 @@ def test_schema(data_model):
         "test:contD/acA/output/leafL"))
     lo = data_model.get_schema_node("/testb:noA/leafO")
     lp = data_model.get_data_node("/test:contA/listA/contD/contE/leafP")
-    assert la.parent == lb.parent == chb.parent == ca
+    assert la.parent == chb.parent == ca
     assert ll.parent.name == "output"
     assert (axa.mandatory == la.mandatory == cb.mandatory == cc.mandatory ==
             ld.mandatory == lj.mandatory == ln.mandatory == cha.mandatory == False)
-    assert (ada.mandatory == lb.mandatory == ca.mandatory == lc.mandatory ==
+    assert (ada.mandatory == ca.mandatory == lc.mandatory ==
             chb.mandatory == True)
     assert (ada.config == axa.config == la.config == ca.config ==
             ld.config == lc.config == lj.config == ln.config == cha.config == True)
-    assert lb.config == ll.config == False
+    assert ll.config == False
     assert la.ns == ld.ns
     assert lc.ns == "testb"
     assert la.default_value() == 11
@@ -299,18 +297,19 @@ def test_instance(instance):
     axtest(la1.ancestors_or_self(("listA", "test")), ["/test:contA/listA/1" ])
     axtest(la1.preceding_siblings(), ["/test:contA/listA/0"])
     axtest(la1.following_siblings(), [])
-    assert len(conta.children()) == 9
+    assert len(conta.children()) == 8
     axtest(la1.children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance.descendants(with_self=True)) == 26
+    assert len(instance.descendants(with_self=True)) == 25
     axtest(conta.descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
 
 def test_xpath(instance):
-    def xptest(expr, res=True, node=instance, module="test"):
+    iwd = instance.add_defaults()
+    def xptest(expr, res=True, node=iwd, module="test"):
         mid = (module, Context.revisions[module][0])
         assert XPathParser(expr, mid).parse().evaluate(node) == res
-    conta = instance.member("test:contA")
+    conta = iwd.member("test:contA")
     lr = conta.member("testb:leafR")
     with pytest.raises(InvalidXPath):
         xptest("foo()")
@@ -328,17 +327,17 @@ def test_xpath(instance):
     xptest("count(t:llistB)", 2)
     xptest("count(*)", 9, conta)
     xptest("count(*[. > 30])", 1, conta)
-    xptest("-leafA", -22, conta)
-    xptest(" - - leafA", 22, conta)
+    xptest("-leafA", -56, conta)
+    xptest(" - - leafA", 56, conta)
     xptest("llistB = '::1'")
     xptest("llistB != '::1'")
     xptest("not(llistB = '::1')", False)
     xptest("llistB[position() = 2]", "127.0.0.1")
     xptest("count(child::llistB/following-sibling::*)", 1)
-    xptest("leafA <= leafB", node=conta)
-    xptest("leafB mod leafA", 11, node=conta)
+    xptest("leafA >= leafB", node=conta)
+    xptest("leafA mod leafB", 1, node=conta)
     xptest("""listA[leafE='C0FFEE' ][ leafF = 'true']
-           /contD/contE/leafP = 42""", node=conta)
+           /contD/contE/leafP = 54""", node=conta)
     xptest("listA/contD/contE/leafP < leafA | leafB", node=conta)
     xptest("listA/contD/contE/leafP > leafA | leafB", node=conta)
     xptest("listA/contD/contE/leafP = leafA | /contA/leafB", False, conta)
@@ -352,15 +351,15 @@ def test_xpath(instance):
     xptest("local-name()", "leafR", lr)
     xptest("name()", "testb:leafR", lr)
     xptest("name(../t:listA)", "listA", lr, "testb")
-    xptest("count(descendant-or-self::*)", 26)
+    xptest("count(descendant-or-self::*)", 30)
     xptest("count(descendant::leafE)", 2)
     xptest("count(preceding-sibling::*)", 0, lr, "testb")
     xptest("count(following-sibling::*)", 0, lr, "testb")
-    xptest("""count(descendant-or-self::contD/descendant-or-self::contD) -
-              count(descendant-or-self::contD/descendant::contD)""", 1)
+    xptest("count(descendant-or-self::contA/descendant-or-self::contA)", 1, conta)
+    xptest("count(descendant-or-self::contA/descendant::contA)", 0, conta)
     xptest("listA[last()-1]/following-sibling::*/leafE = 'ABBA'", node=conta)
-    xptest("count(//contD/parent::*/following-sibling::*/*)", 2)
-    xptest("//leafP = 42")
+    xptest("count(//contD/parent::*/following-sibling::*/*)", 3)
+    xptest("//leafP = 54")
     xptest("""count(listA[leafE = 'C0FFEE' and leafF = true()]//
            leafP/ancestor::node())""", 5, conta)
     xptest("../* > 50", node=lr, module="testb")
@@ -370,11 +369,11 @@ def test_xpath(instance):
     xptest("string(1 = 2)", "false")
     xptest("string(contT/decimal64)", "4.5")
     xptest("string()", "C0FFEE", lr)
-    xptest("concat(../t:leafA, 'foo', ., true())", "22fooC0FFEEtrue", lr, "testb")
+    xptest("concat(../t:leafA, 'foo', ., true())", "56fooC0FFEEtrue", lr, "testb")
     with pytest.raises(InvalidXPath):
         xptest("concat()")
     xptest("starts-with(., 'C0F')", True, lr, "testb")
-    xptest("starts-with(//listA//leafP, 4)")
+    xptest("starts-with(//listA//leafP, 5)")
     xptest("contains(., '0FF')", True, lr, "testb")
     xptest("not(contains(../leafN, '!!'))", True, lr, "testb")
     xptest("substring-before(//decimal64, '.')", "4")
@@ -397,12 +396,12 @@ def test_xpath(instance):
     xptest("boolean(descendant::leafE)")
     xptest("boolean(10 mod 2)", False)
     xptest("boolean(string(llistB))")
-    xptest("number(leafA)", 22, conta)
+    xptest("number(leafA)", 56, conta)
     xptest("string(number())", "NaN", lr, "testb")
     xptest("string(number('foo'))", "NaN")
     xptest("number(true()) = 1")
     xptest("number(false()) = 0")
-    xptest("sum(leafA | leafB)", 77, conta)
+    xptest("sum(leafA | leafB)", 67, conta)
     xptest("string(sum(//leafE))", "NaN")
     xptest("sum(//leafF)", 1)
     with pytest.raises(XPathTypeError):
@@ -421,7 +420,7 @@ def test_xpath(instance):
     xptest("re-match('a\nb', '.*')", False)
     xptest("re-match('a\nb', '[a-z\n]*')")
     xptest("deref(.)/../t:leafF", True, lr, "testb")
-    xptest("deref(../leafS)", 42, lr, "testb")
+    xptest("deref(../leafS)", 54, lr, "testb")
     xptest("derived-from-or-self(../leafT, 't:CC-BY')", True, lr, "testb")
     xptest("derived-from(../leafT, 't:CC-BY')", False, lr, "testb")
     xptest("derived-from(../leafT, 't:derivatives')", True, lr, "testb")
@@ -449,7 +448,7 @@ def test_instance_paths(data_model, instance):
     assert instance.peek(rid1) == instance.peek(iid1) == "hi!"
     assert (instance.goto(rid2).member("leafP").value ==
             instance.goto(iid2).member("leafP").value ==
-            instance.goto(iid3).member("leafP").value == 42)
+            instance.goto(iid3).member("leafP").value == 54)
     with pytest.raises(NonexistentSchemaNode):
         data_model.parse_resource_id("/test:contA/leafX")
     with pytest.raises(NonexistentSchemaNode):
