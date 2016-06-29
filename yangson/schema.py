@@ -315,25 +315,24 @@ class InternalNode(SchemaNode):
         if Context.if_features(stmt, mid):
             self._handle_child(CaseNode(), stmt, mid)
 
-    def _terminal_stmt(self, stmt: Statement, mid: ModuleId,
-                       constructor) -> Optional["TerminalNode"]:
+    def _leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle leaf statement."""
         if not Context.if_features(stmt, mid): return None
-        node = constructor()
+        node = LeafNode()
         node.type = DataType.resolve_type(
             stmt.find1("type", required=True), mid)
         self._handle_child(node, stmt, mid)
-        return node
-
-    def _leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle leaf statement."""
-        node = self._terminal_stmt(stmt, mid, LeafNode)
-        if node and node.default_value() is not None:
+        if not node.mandatory and node.default_value() is not None:
             self.add_default_child(node)
 
     def _leaf_list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf-list statement."""
-        node = self._terminal_stmt(stmt, mid, LeafListNode)
-        if node and node.default_value() is not None:
+        if not Context.if_features(stmt, mid): return None
+        node = LeafListNode()
+        node.type = DataType.resolve_type(
+            stmt.find1("type", required=True), mid)
+        self._handle_child(node, stmt, mid)
+        if node.default_value() is not None:
             self.add_default_child(node)
 
     def _rpc_action_stmt(self, stmt: Statement, mid: ModuleId) -> None:
@@ -517,11 +516,17 @@ class ListNode(SequenceNode, InternalNode):
 
     def _leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf statement."""
-        node = super()._terminal_stmt(stmt, mid, LeafNode)
-        if node is None: return
+        if not Context.if_features(stmt, mid): return None
+        node = LeafNode()
+        node.type = DataType.resolve_type(
+            stmt.find1("type", required=True), mid)
+        node.name = stmt.argument
+        node.ns = Context.ns_map[mid[0]] if self._nsswitch else self.ns
+        self.add_child(node)
         if node.qual_name in self.keys:
             node.mandatory = True
-        elif node.default_value() is not None:
+        node._handle_substatements(stmt, mid)
+        if not node.mandatory and node.default_value() is not None:
             self.add_default_child(node)
 
     def _tree_line(self) -> str:
@@ -665,6 +670,7 @@ class LeafNode(TerminalNode, DataNode):
         return self._default if self._default else self.type.default
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        if self.mandatory: return
         if self.default_value() is None:
             self.parent.add_default_child(self)
         self._default = self.type.parse_value(stmt.argument)

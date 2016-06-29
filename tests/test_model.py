@@ -85,7 +85,7 @@ def instance(data_model):
     {
         "test:llistB": ["::1", "127.0.0.1"],
 	    "test:contA": {
-		    "leafA": 56,
+		    "leafB": 56,
 		    "listA": [{
 			    "leafE": "C0FFEE",
 			    "leafF": true,
@@ -327,15 +327,15 @@ def test_xpath(instance):
     xptest("count(t:llistB)", 2)
     xptest("count(*)", 9, conta)
     xptest("count(*[. > 30])", 1, conta)
-    xptest("-leafA", -56, conta)
-    xptest(" - - leafA", 56, conta)
+    xptest("-leafA", -11, conta)
+    xptest(" - - leafA", 11, conta)
     xptest("llistB = '::1'")
     xptest("llistB != '::1'")
     xptest("not(llistB = '::1')", False)
     xptest("llistB[position() = 2]", "127.0.0.1")
     xptest("count(child::llistB/following-sibling::*)", 1)
-    xptest("leafA >= leafB", node=conta)
-    xptest("leafA mod leafB", 1, node=conta)
+    xptest("leafA <= leafB", node=conta)
+    xptest("leafB mod leafA", 1, node=conta)
     xptest("""listA[leafE='C0FFEE' ][ leafF = 'true']
            /contD/contE/leafP = 54""", node=conta)
     xptest("listA/contD/contE/leafP < leafA | leafB", node=conta)
@@ -369,7 +369,7 @@ def test_xpath(instance):
     xptest("string(1 = 2)", "false")
     xptest("string(contT/decimal64)", "4.5")
     xptest("string()", "C0FFEE", lr)
-    xptest("concat(../t:leafA, 'foo', ., true())", "56fooC0FFEEtrue", lr, "testb")
+    xptest("concat(../t:leafA, 'foo', ., true())", "11fooC0FFEEtrue", lr, "testb")
     with pytest.raises(InvalidXPath):
         xptest("concat()")
     xptest("starts-with(., 'C0F')", True, lr, "testb")
@@ -396,7 +396,7 @@ def test_xpath(instance):
     xptest("boolean(descendant::leafE)")
     xptest("boolean(10 mod 2)", False)
     xptest("boolean(string(llistB))")
-    xptest("number(leafA)", 56, conta)
+    xptest("number(leafA)", 11, conta)
     xptest("string(number())", "NaN", lr, "testb")
     xptest("string(number('foo'))", "NaN")
     xptest("number(true()) = 1")
