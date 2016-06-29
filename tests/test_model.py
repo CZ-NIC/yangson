@@ -2,7 +2,7 @@ import json
 import pytest
 from decimal import Decimal
 from yangson import DataModel
-from yangson.schema import NonexistentSchemaNode
+from yangson.schema import SequenceNode, NonexistentSchemaNode
 from yangson.datatype import YangTypeError
 from yangson.instance import MinElements, NonexistentInstance
 from yangson.instvalue import ArrayValue, ObjectValue
@@ -10,20 +10,17 @@ from yangson.context import Context, BadPath, BadPrefName
 from yangson.xpathast import XPathTypeError
 from yangson.xpathparser import InvalidXPath, NotSupported, XPathParser
 
-tree = """+--rw test:contA
-|  +--rw leafA?
-|  +--ro leafB
-|  +--rw listA* [leafE leafF]
-|  |  +--rw leafE
-|  |  +--rw leafF
-|  |  +--rw contD?
-|  |     +--rw leafG?
-|  |     +--rw contE?
-|  |     |  +--rw leafJ?
-|  |     |  +--rw leafP?
-|  |     +---x acA
-|  |        +--ro output
-|  |           +--ro leafL
+tree = """+--rw (test:choiA)?
+|  +--:(test:caseA)
+|  |  +--rw test:contC
+|  |  |  +--rw leafD?
+|  |  |  +--rw llistA*
+|  |  +--rw test:leafH?
+|  +--:(testb:leafQ)
+|  |  +--rw testb:leafQ?
+|  +--:(test:llistB)
+|     +--rw test:llistB*
++--rw test:contA
 |  +--rw anydA
 |  +--rw anyxA?
 |  +--rw (testb:choiB)
@@ -34,41 +31,44 @@ tree = """+--rw test:contA
 |  |  |  +--rw testb:leafI?
 |  |  +--:(testb:leafN)
 |  |     +--rw testb:leafN?
+|  +--rw leafA?
+|  +--ro leafB
 |  +--rw testb:leafR?
 |  +--rw testb:leafS?
 |  +--rw testb:leafT?
-+--rw test:contT?
-|  +--rw int8?
+|  +--rw listA* [leafE leafF]
+|     +--rw contD
+|     |  +---x acA
+|     |  |  +--ro output
+|     |  |     +--ro leafL
+|     |  +--rw contE
+|     |  |  +--rw leafJ?
+|     |  |  +--rw leafP?
+|     |  +--rw leafG?
+|     +--rw leafE
+|     +--rw leafF
++--rw test:contT
+|  +--rw binary?
+|  +--rw bits?
+|  +--rw boolean?
+|  +--rw decimal64?
+|  +--rw enumeration?
 |  +--rw int16?
 |  +--rw int32?
 |  +--rw int64?
-|  +--rw uint8?
+|  +--rw int8?
+|  +--rw string?
 |  +--rw uint16?
 |  +--rw uint32?
 |  +--rw uint64?
-|  +--rw decimal64?
-|  +--rw string?
-|  +--rw boolean?
-|  +--rw enumeration?
-|  +--rw bits?
-|  +--rw binary?
-+---x testb:rpcA
-|  +--ro testb:input
-|  |  +--ro testb:leafK?
-|  +--ro testb:output
-|     +--ro testb:llistC*
+|  +--rw uint8?
 +---n testb:noA
 |  +--rw testb:leafO?
-+--rw (test:choiA)?
-   +--:(test:llistB)
-   |  +--rw test:llistB*
-   +--:(test:caseA)
-   |  +--rw test:contC?
-   |  |  +--rw leafD?
-   |  |  +--rw llistA*
-   |  +--rw test:leafH?
-   +--:(testb:leafQ)
-      +--rw testb:leafQ?
++---x testb:rpcA
+   +--ro testb:input
+   |  +--ro testb:leafK?
+   +--ro testb:output
+      +--ro testb:llistC*
 """
 
 @pytest.fixture
@@ -137,7 +137,7 @@ def test_context(data_model):
 
 def test_schema(data_model):
     ca = data_model.get_data_node("/test:contA")
-    la = ca.get_child("leafA", "test")
+    la = ca.get_child("leafA")
     lsta = data_model.get_data_node("/test:contA/listA")
     ada = ca.get_child("anydA", "test")
     axa = ca.get_child("anyxA", "test")
@@ -159,10 +159,8 @@ def test_schema(data_model):
     lp = data_model.get_data_node("/test:contA/listA/contD/contE/leafP")
     assert la.parent == chb.parent == ca
     assert ll.parent.name == "output"
-    assert (axa.mandatory == la.mandatory == cb.mandatory == cc.mandatory ==
-            ld.mandatory == lj.mandatory == ln.mandatory == cha.mandatory == False)
-    assert (ada.mandatory == ca.mandatory == lc.mandatory ==
-            chb.mandatory == True)
+    assert chb in ca.mandatory_children
+    assert ada in ca.mandatory_children
     assert (ada.config == axa.config == la.config == ca.config ==
             ld.config == lc.config == lj.config == ln.config == cha.config == True)
     assert ll.config == False
@@ -176,7 +174,7 @@ def test_schema(data_model):
     assert lo.default_value() == True
     assert lp.default_value() == 42
     assert (lsta.default_value() ==
-            lsta.entry_from_raw({"contD": {"contE": {"leafP": 42}}}))
+            super(SequenceNode, lsta).from_raw({"contD": {"contE": {"leafP": 42}}}))
     assert la.type.parse_value("99") == 99
     with pytest.raises(YangTypeError):
         ld.type.parse_value("99")

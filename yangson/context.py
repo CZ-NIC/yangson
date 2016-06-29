@@ -91,6 +91,7 @@ class Context:
             mid = (mn, cls.revisions[mn][0])
             cls.schema._handle_substatements(cls.modules[mid], mid)
         cls._apply_augments()
+        cls.schema._post_process()
 
     @classmethod
     def _load_module(cls, name: YangIdentifier,
@@ -150,7 +151,7 @@ class Context:
             mid = (mn, cls.revisions[mn][0])
             mod = cls.modules[mid]
             for aug in mod.find_all("augment"):
-                cls.schema._augment_refine(aug, mid, True)
+                cls.schema._augment_stmt(aug, mid, True)
 
     @classmethod
     def prefix2ns(cls, prefix: YangIdentifier, mid: ModuleId) -> YangIdentifier:

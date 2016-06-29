@@ -126,9 +126,8 @@ class InstanceNode:
         sn = csn
         while sn is not self.schema_node:
             if isinstance(sn, CaseNode):
-                for case in [ c for c in sn.parent.children if c is not sn ]:
-                    for x in case.data_children():
-                        newval.pop(x.iname(), None)
+                for ci in sn.competing_instances():
+                    newval.pop(ci, None)
             sn = sn.parent
         ts = datetime.now()
         return self._copy(ObjectValue(newval, ts) , ts)
@@ -382,7 +381,7 @@ class ArrayEntry(InstanceNode):
 
         This method overrides the superclass method.
         """
-        return self.update(self.schema_node.entry_from_raw(value))
+        return self.update(super(SequenceNode, self.schema_node).from_raw(value))
 
     def zip(self) -> ArrayValue:
         """Zip the receiver into an array and return it."""
@@ -744,7 +743,7 @@ class ResourceIdParser(InstancePathParser):
             raise BadSchemaNodeType(sn, "list")
         sel = {}
         for j in range(len(ks)):
-            knod = sn.get_child(*sn.keys[j])
+            knod = sn.children.get(sn.keys[j])
             val = knod.type.parse_value(unquote(ks[j]))
             sel[knod.iname()] = val
         return EntryKeys(sel)
@@ -797,7 +796,7 @@ class InstanceIdParser(InstancePathParser):
         sel = {}
         while True:
             name, ns = self.instance_name()
-            knod = sn.get_child(name, ns if ns else sn.ns)
+            knod = sn.get_child(name, ns)
             val = self.get_value(knod)
             sel[knod.iname()] = val
             try:
@@ -828,7 +827,7 @@ class InstanceIdParser(InstancePathParser):
             raise BadSchemaNodeType(sn, "list")
         sel = {}
         for j in range(len(ks)):
-            knod = sn.get_child(*sn.keys[j])
+            knod = sn.children.get(sn.keys[j])
             val = knod.type.parse_value(unquote(ks[j]))
             sel[knod.iname()] = val
         return EntryKeys(sel)
