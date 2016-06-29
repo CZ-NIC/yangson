@@ -222,7 +222,7 @@ class InternalNode(SchemaNode):
                 res.extend(c.data_children())
         return res
 
-    def add_default_child(self, node: SchemaNode) -> None:
+    def _add_default_child(self, node: SchemaNode) -> None:
         """Add `node` to the list of default children."""
         self.default_children.append(node)
 
@@ -323,7 +323,7 @@ class InternalNode(SchemaNode):
             stmt.find1("type", required=True), mid)
         self._handle_child(node, stmt, mid)
         if not node.mandatory and node.default_value() is not None:
-            self.add_default_child(node)
+            self._add_default_child(node)
 
     def _leaf_list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf-list statement."""
@@ -333,7 +333,7 @@ class InternalNode(SchemaNode):
             stmt.find1("type", required=True), mid)
         self._handle_child(node, stmt, mid)
         if node.default_value() is not None:
-            self.add_default_child(node)
+            self._add_default_child(node)
 
     def _rpc_action_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle rpc or action statement."""
@@ -426,11 +426,11 @@ class ContainerNode(InternalNode, DataNode):
         self.presence = False # type: bool
         self.mandatory = False # type: bool
 
-    def add_default_child(self, node: SchemaNode) -> None:
+    def _add_default_child(self, node: SchemaNode) -> None:
         """Extend the superclass method."""
         if not (self.presence or self.default_children):
-            self.parent.add_default_child(self)
-        super().add_default_child(node)
+            self.parent._add_default_child(self)
+        super()._add_default_child(node)
 
     def _mandatory_child(self) -> None:
         """A child of the receiver is mandatory; perform necessary actions."""
@@ -527,7 +527,7 @@ class ListNode(SequenceNode, InternalNode):
             node.mandatory = True
         node._handle_substatements(stmt, mid)
         if not node.mandatory and node.default_value() is not None:
-            self.add_default_child(node)
+            self._add_default_child(node)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -545,11 +545,11 @@ class ChoiceNode(InternalNode):
         self.default_case = None # type: QualName
         self.mandatory = False # type: bool
 
-    def add_default_child(self, node: "CaseNode") -> None:
+    def _add_default_child(self, node: "CaseNode") -> None:
         """Extend the superclass method."""
         if not self.default_children:
-            self.parent.add_default_child(self)
-        super().add_default_child(node)
+            self.parent._add_default_child(self)
+        super()._add_default_child(node)
 
     def default_value(self) -> ObjectValue:
         """Return the receiver's default content."""
@@ -590,11 +590,11 @@ class ChoiceNode(InternalNode):
 class CaseNode(InternalNode):
     """Case node."""
 
-    def add_default_child(self, node: SchemaNode) -> None:
+    def _add_default_child(self, node: SchemaNode) -> None:
         """Extend the superclass method."""
         if not self.default_children:
-            self.parent.add_default_child(self)
-        super().add_default_child(node)
+            self.parent._add_default_child(self)
+        super()._add_default_child(node)
 
     def competing_instances(self) -> Set[InstanceName]:
         """Return set of names of all instances from sibling cases."""
@@ -672,7 +672,7 @@ class LeafNode(TerminalNode, DataNode):
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         if self.mandatory: return
         if self.default_value() is None:
-            self.parent.add_default_child(self)
+            self.parent._add_default_child(self)
         self._default = self.type.parse_value(stmt.argument)
 
     def _tree_line(self) -> str:
@@ -703,7 +703,7 @@ class LeafListNode(SequenceNode, TerminalNode):
         if self._default is None:
             self._default = [val]
             if self.type.default is None:
-                self.parent.add_default_child(self)
+                self.parent._add_default_child(self)
         else:
             self._default.append(val)
 
