@@ -228,7 +228,7 @@ class InternalNode(SchemaNode):
 
     def default_value(self) -> Optional[ObjectValue]:
         """Return the receiver's default content."""
-        res = ObjectValue({})
+        res = ObjectValue()
         for c in self.default_children:
             dflt = c.default_value()
             if dflt is not None:
@@ -355,7 +355,7 @@ class InternalNode(SchemaNode):
 
         :param val: raw dictionary
         """
-        res = ObjectValue({})
+        res = ObjectValue()
         for qn in val:
             cn = self.iname2qname(qn)
             ch = self.get_data_child(*cn)
@@ -483,7 +483,7 @@ class SequenceNode(DataNode):
 
         :param val: raw array
         """
-        res = ArrayValue([])
+        res = ArrayValue()
         for en in val:
             res.append(self.entry_from_raw(en))
         return res

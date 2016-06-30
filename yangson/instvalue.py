@@ -1,7 +1,7 @@
 """This module contains classes andtype aliases representing instance values."""
 
 from datetime import datetime
-from typing import List, Union
+from typing import Dict, List, Union
 from .typealiases import *
 
 # Local type aliases
@@ -36,7 +36,7 @@ class StructuredValue:
 class ArrayValue(StructuredValue, list):
     """Array values corresponding to YANG lists and leaf-lists."""
 
-    def __init__(self, val: List[Value], ts: datetime=None):
+    def __init__(self, val: List[Value] = [], ts: datetime=None):
         StructuredValue.__init__(self, ts)
         list.__init__(self, val)
 
@@ -47,7 +47,8 @@ class ArrayValue(StructuredValue, list):
 class ObjectValue(StructuredValue, dict):
     """Array values corresponding to YANG container."""
 
-    def __init__(self, val: Dict[InstanceName, Value], ts: datetime = None):
+    def __init__(self, val: Dict[InstanceName, Value] = {},
+                 ts: datetime = None):
         StructuredValue.__init__(self, ts)
         dict.__init__(self, val)
 
