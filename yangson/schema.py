@@ -263,6 +263,17 @@ class InternalNode(SchemaNode):
                 if cn not in value:
                     value[cn] = c.default_value()
 
+    def _check_mandatory(self, value: ObjectValue) -> bool:
+        """Does `value` contains all members required by the receiver?"""
+        for c in self.mandatory_children:
+            if isinstance(c, ChoiceNode):
+                ac = c.active_case(value)
+                if ac is None or not ac._check_mandatory(value):
+                    return False
+            else:
+                if c.iname() not in value: return False
+        return True
+
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} {}\n".format(self._tree_line_prefix(), self.iname())
