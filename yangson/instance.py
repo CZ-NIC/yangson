@@ -250,6 +250,9 @@ class InstanceNode:
         if isinstance(self.value, ArrayValue) and isinstance(sn, ListNode):
             try:
                 inst = self.entry(0)
+            except NonexistentInstance:
+                return self
+            try:
                 while True:
                     ninst = inst.add_defaults()
                     inst = ninst.next()
