@@ -55,7 +55,7 @@ class DataType:
             res.handle_restrictions(typst, tid)
             dfst = tdef.find1("default")
             if dfst:
-                res.default = res.parse_value(dfst.argument)
+                res.default = res.from_yang(dfst.argument, mid)
         res.handle_restrictions(stmt, mid)
         return res
 
@@ -133,6 +133,10 @@ class DataType:
     def _convert_raw(self, raw: RawScalar) -> ScalarValue:
         """Return a cooked value."""
         return raw
+
+    def from_yang(self, input: str, mid: ModuleId) -> ScalarValue:
+        """Parse value specified in a YANG module."""
+        return self.parse_value(input)
 
     def canonical_string(self, val: ScalarValue) -> str:
         """Return canonical form of a value."""
@@ -467,6 +471,10 @@ class IdentityrefType(DataType):
         for b in self.bases:
             if not Context.is_derived_from(val, b): return False
         return True
+
+    def from_yang(self, input:str, mid: ModuleId) -> QualName:
+        """Override the superclass method."""
+        return Context.translate_pname(input, mid)
 
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.

@@ -696,7 +696,7 @@ class LeafNode(TerminalNode, DataNode):
         return self.default if self.default else self.type.default
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self.default = self.type.parse_value(stmt.argument)
+        self.default = self.type.from_yang(stmt.argument, mid)
 
 class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
