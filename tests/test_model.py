@@ -160,8 +160,8 @@ def test_schema(data_model):
     lp = data_model.get_data_node("/test:contA/listA/contD/contE/leafP")
     assert la.parent == chb.parent == ca
     assert ll.parent.name == "output"
-    assert chb in ca.mandatory_children
-    assert ada in ca.mandatory_children
+    assert chb in ca._mandatory_children
+    assert ada in ca._mandatory_children
     assert (ada.config == axa.config == la.config == ca.config ==
             ld.config == lc.config == lj.config == ln.config == cha.config == True)
     assert ll.config == False

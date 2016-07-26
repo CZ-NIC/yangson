@@ -34,6 +34,11 @@ class SchemaNode:
         except AttributeError:
             return self.parent.config
 
+    @property
+    def mandatory(self) -> bool:
+        """Is the receiver a mandatory node?"""
+        return False
+
     def iname2qname(self, iname: InstanceName) -> QualName:
         """Translate instance name to a qualified name.
 
@@ -120,9 +125,9 @@ class SchemaNode:
 
     def _mandatory_stmt(self, stmt, mid: ModuleId) -> None:
         if stmt.argument == "true":
-            self.mandatory = True
+            self._mandatory = True
         elif stmt.argument == "false":
-            self.mandatory = False
+            self._mandatory = False
 
     def _post_process(self) -> None:
         pass
@@ -176,7 +181,12 @@ class InternalNode(SchemaNode):
         self.children = {} # type: Dict[QualName, SchemaNode]
         self._nsswitch = False # type: bool
         self.default_children = [] # type: List["SchemaNode"]
-        self.mandatory_children = [] # type: List["SchemaNode"]
+        self._mandatory_children = set() # type: MutableSet["SchemaNode"]
+
+    @property
+    def mandatory(self) -> bool:
+        """Is the receiver a mandatory node?"""
+        return len(self._mandatory_children) > 0
 
     def add_child(self, node: SchemaNode) -> None:
         """Add child node to the receiver.
@@ -250,7 +260,7 @@ class InternalNode(SchemaNode):
 
     def _add_mandatory_child(self, node: SchemaNode) -> None:
         """Add `node` to the set of mandatory children."""
-        self.mandatory_children.append(node)
+        self._mandatory_children.add(node)
 
     def default_value(self) -> Optional[ObjectValue]:
         """Return the receiver's default content."""
@@ -274,17 +284,6 @@ class InternalNode(SchemaNode):
                 cn = c.iname()
                 if cn not in value:
                     value[cn] = c.default_value()
-
-    def _check_mandatory(self, value: ObjectValue) -> bool:
-        """Does `value` contains all members required by the receiver?"""
-        for c in self.mandatory_children:
-            if isinstance(c, ChoiceNode):
-                ac = c.active_case(value)
-                if ac is None or not ac._check_mandatory(value):
-                    return False
-            else:
-                if c.iname() not in value: return False
-        return True
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -431,6 +430,11 @@ class TerminalNode(SchemaNode):
         self.default = None
         self.type = None # type: DataType
 
+    @property
+    def mandatory(self) -> bool:
+        """Is the receiver a mandatory node?"""
+        return self._mandatory
+
     def from_raw(self, val: RawScalar) -> ScalarValue:
         """Transform a scalar value.
 
@@ -459,7 +463,7 @@ class TerminalNode(SchemaNode):
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
         res = "{} {}".format(self._tree_line_prefix(), self.iname())
-        if not self.mandatory: res += "?"
+        if not self._mandatory: res += "?"
         return res + "\n"
 
     def _state_roots(self) -> List[SchemaNode]:
@@ -482,7 +486,7 @@ class ContainerNode(InternalNode, DataNode):
         super()._add_default_child(node)
 
     def _add_mandatory_child(self, node: SchemaNode):
-        if not (self.presence or self.mandatory_children):
+        if not (self.presence or self.mandatory):
             self.parent._add_mandatory_child(self)
         super()._add_mandatory_child(node)
 
@@ -513,6 +517,11 @@ class SequenceNode(DataNode):
         self.min_elements = 0 # type: int
         self.max_elements = None # type: Optional[int]
         self.user_ordered = False # type: bool
+
+    @property
+    def mandatory(self) -> bool:
+        """Is the receiver a mandatory node?"""
+        return self.min_elements > 0
 
     def _post_process(self) -> None:
         super()._post_process()
@@ -559,9 +568,9 @@ class ListNode(SequenceNode, InternalNode):
         super()._post_process()
         for k in self.keys:
             kn = self.children[k]
-            if not kn.mandatory:
-                kn.mandatory = True
-                self.mandatory_children.append(kn)
+            if not kn._mandatory:
+                kn._mandatory = True
+                self._mandatory_children.add(kn)
 
     def _key_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.keys = [
@@ -585,17 +594,22 @@ class ChoiceNode(InternalNode):
         """Initialize the class instance."""
         super().__init__()
         self.default_case = None # type: QualName
-        self.mandatory = False # type: bool
+        self._mandatory = False # type: bool
+
+    @property
+    def mandatory(self) -> bool:
+        """Is the receiver a mandatory node?"""
+        return self._mandatory
 
     def _add_default_child(self, node: "CaseNode") -> None:
         """Extend the superclass method."""
-        if not (self.mandatory or self.default_children):
+        if not (self._mandatory or self.default_children):
             self.parent._add_default_child(self)
         super()._add_default_child(node)
 
     def _post_process(self) -> None:
         super()._post_process()
-        if self.mandatory:
+        if self._mandatory:
             self.parent._add_mandatory_child(self)
 
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
@@ -639,7 +653,7 @@ class ChoiceNode(InternalNode):
         """Return the receiver's contribution to tree diagram."""
         return "{} ({}){}\n".format(
             self._tree_line_prefix(), self.iname(),
-            "" if self.mandatory else "?")
+            "" if self._mandatory else "?")
 
 class CaseNode(InternalNode):
     """Case node."""
@@ -725,10 +739,10 @@ class LeafNode(TerminalNode, DataNode):
     def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
-        self.mandatory = False # type: bool
+        self._mandatory = False # type: bool
 
     def _post_process(self) -> None:
-        if self.mandatory:
+        if self._mandatory:
             self.parent._add_mandatory_child(self)
         elif self.default_value() is not None:
             self.parent._add_default_child(self)
@@ -779,7 +793,7 @@ class AnydataNode(TerminalNode, DataNode):
     def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
-        self.mandatory = False # type: bool
+        self._mandatory = False # type: bool
 
     def from_raw(self, val: RawValue) -> Value:
         """Transform an anydata or anyxml value.
@@ -799,7 +813,7 @@ class AnydataNode(TerminalNode, DataNode):
         return convert(val)
 
     def _post_process(self) -> None:
-        if self.mandatory:
+        if self._mandatory:
             self.parent._add_mandatory_child(self)
 
 class SchemaNodeError(YangsonException):
