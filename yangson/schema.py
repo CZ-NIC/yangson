@@ -727,7 +727,7 @@ class LeafListNode(SequenceNode, TerminalNode):
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         val = self.type.parse_value(stmt.argument)
         if self.default is None:
-            self.default = [val]
+            self.default = ArrayValue([val])
         else:
             self.default.append(val)
 

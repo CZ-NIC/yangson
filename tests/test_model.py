@@ -169,7 +169,7 @@ def test_schema(data_model):
     assert la.default_value() == 11
     assert ld.default_value() == 199
     assert ld.type.default == 111
-    assert lla.default_value() == [42, 54]
+    assert lla.default_value() == ArrayValue([42, 54])
     assert lla.type.default == 11
     assert lo.default_value() == True
     assert lp.default_value() == 42
