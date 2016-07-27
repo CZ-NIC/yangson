@@ -334,6 +334,7 @@ def test_xpath(instance):
     xptest("count(child::llistB/following-sibling::*)", 1)
     xptest("leafA <= leafB", node=conta)
     xptest("leafB mod leafA", 1, node=conta)
+    xptest("listA/contD/contE/leafJ = ''", node=conta)
     xptest("""listA[leafE='C0FFEE' ][ leafF = 'true']
            /contD/contE/leafP = 54""", node=conta)
     xptest("listA/contD/contE/leafP < leafA | leafB", node=conta)

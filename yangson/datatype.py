@@ -215,6 +215,9 @@ class EmptyType(DataType):
             cls._instance = super(EmptyType, cls).__new__(cls)
         return cls._instance
 
+    def canonical_string(self, val: Tuple[None]) -> str:
+        return ""
+
     def _constraints(self, val: Tuple[None]) -> bool:
         return val == (None,)
 
