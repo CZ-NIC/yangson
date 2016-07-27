@@ -5,6 +5,7 @@ from .constants import DefaultDeny, NonexistentSchemaNode, YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
 from .instvalue import ArrayValue, ObjectValue, Value
+from .schpattern import *
 from .statement import Statement, WrongArgument
 from .typealiases import *
 from .xpathparser import XPathParser
@@ -87,6 +88,9 @@ class SchemaNode:
         if self.config:
             return [r.instance_route() for r in self._state_roots()]
         return [self.instance_route()]
+
+    def _pattern_entry(self) -> SchemaPattern:
+        return Empty()
 
     def _handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         """Dispatch actions for substatements of `stmt`."""
@@ -249,6 +253,26 @@ class InternalNode(SchemaNode):
         """Return the set of instance names under the receiver."""
         return frozenset([c.iname() for c in self.data_children()])
 
+    def _make_schema_patterns(self) -> None:
+        """Build schema pattern for the receiver and its data descendants."""
+        self.schema_pattern = self._schema_pattern()
+        for dc in self.data_children():
+            if isinstance(dc, TerminalNode): continue
+            dc._make_schema_patterns()
+
+    def _schema_pattern(self) -> SchemaPattern:
+        cs = self.children.values()
+        if not cs:
+            return Empty()
+        fst = True
+        for c in cs:
+            if fst:
+                prev = c._pattern_entry()
+                fst = False
+            else:
+                prev = Pair.combine(prev, c._pattern_entry())
+        return prev
+
     def _post_process(self) -> None:
         super()._post_process()
         for c in [x for x in self.children.values()]:
@@ -410,6 +434,10 @@ class DataNode(SchemaNode):
         """Initialize the class instance."""
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
+
+    def _pattern_entry(self) -> SchemaPattern:
+        m = Member(self.iname())
+        return m if self.mandatory else SchemaPattern.optional(m)
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + ("rw" if self.config else "ro")
@@ -600,6 +628,19 @@ class ChoiceNode(InternalNode):
     def mandatory(self) -> bool:
         """Is the receiver a mandatory node?"""
         return self._mandatory
+
+    def _pattern_entry(self) -> SchemaPattern:
+        cs = self.children.values()
+        if not cs:
+            return Empty()
+        fst = True
+        for c in cs:
+            if fst:
+                prev = c._schema_pattern()
+                fst = False
+            else:
+                prev = Alternative.combine(prev, c._schema_pattern())
+        return prev if self.mandatory else SchemaPattern.optional(prev)
 
     def _add_default_child(self, node: "CaseNode") -> None:
         """Extend the superclass method."""

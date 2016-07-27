@@ -92,6 +92,7 @@ class Context:
             cls.schema._handle_substatements(cls.modules[mid], mid)
         cls._apply_augments()
         cls.schema._post_process()
+        cls.schema._make_schema_patterns()
 
     @classmethod
     def _load_module(cls, name: YangIdentifier,
