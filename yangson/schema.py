@@ -127,6 +127,9 @@ class SchemaNode:
     def _post_process(self) -> None:
         pass
 
+    def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
+        return []
+
     def _tree_line_prefix(self) -> str:
         return "+--"
 
@@ -438,6 +441,16 @@ class TerminalNode(SchemaNode):
     def default_value(self) -> None:
         return None
 
+    def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
+        if self.default is None: return []
+        iname = self.iname()
+        ni = inst.put_member(iname, (None,))
+        res = ni.member(iname)
+        if self.when is None or self.when.evaluate(res):
+            res.value = self.default
+            return res.xpath_nodes()
+        return []
+
     def _ascii_tree(self, indent: str) -> str:
         """Return the receiver's ascii-art subtree."""
         return ""
@@ -471,6 +484,15 @@ class ContainerNode(InternalNode, DataNode):
         if not (self.presence or self.mandatory_children):
             self.parent._add_mandatory_child(self)
         super()._add_mandatory_child(node)
+
+    def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
+        if self.presence: return []
+        iname = self.iname()
+        ni = inst.put_member(iname, ObjectValue())
+        res = ni.member(iname)
+        if self.when is None or self.when.evaluate(res):
+            return [res]
+        return []
 
     def _presence_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.presence = True
@@ -793,3 +815,4 @@ class BadSchemaNodeType(SchemaNodeError):
         return super().__str__() + " is not a " + self.expected
 
 from .xpathast import Expr
+from .instance import InstanceNode

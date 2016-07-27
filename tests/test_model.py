@@ -303,11 +303,10 @@ def test_instance(instance):
     axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
 
 def test_xpath(instance):
-    iwd = instance.add_defaults()
-    def xptest(expr, res=True, node=iwd, module="test"):
+    def xptest(expr, res=True, node=instance, module="test"):
         mid = (module, Context.revisions[module][0])
         assert XPathParser(expr, mid).parse().evaluate(node) == res
-    conta = iwd.member("test:contA")
+    conta = instance.member("test:contA")
     lr = conta.member("testb:leafR")
     with pytest.raises(InvalidXPath):
         xptest("foo()")

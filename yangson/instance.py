@@ -204,11 +204,25 @@ class InstanceNode:
     def children(self,
                  qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
         """Return the node-set of receiver's XPath children."""
-        if isinstance(self.schema_node, TerminalNode): return []
+        sn = self.schema_node
+        if isinstance(sn, TerminalNode): return []
         if qname:
             iname = (qname[0] if self.namespace == qname[1]
                      else qname[1] + ":" + qname[0])
-            return self.member(iname).xpath_nodes() if iname in self.value else []
+            if iname in self.value:
+                return self.member(iname).xpath_nodes()
+            cn = sn.get_data_child(*qname)
+            if cn is None: return []
+            res = cn._default_nodes(self)
+            if not res: return res
+            while True:
+                cn = cn.parent
+                if cn is sn: return res
+                if ((cn.when is None or cn.when.evaluate(self)) and
+                    (not isinstance(cn, CaseNode) or
+                     cn.qual_name == cn.parent.default_case)):
+                    continue
+                return []
         res = []
         for n in self.value:
             res += self.member(n).xpath_nodes()

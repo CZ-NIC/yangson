@@ -43,8 +43,13 @@ module defs {
 
   grouping grB {
     container contE {
+      presence "explicit";
       leaf leafJ {
         type empty;
+      }
+      leaf leafU {
+	type boolean;
+	default true;
       }
     }
   }

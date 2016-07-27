@@ -89,6 +89,7 @@ module test {
         uses d:grB {
           augment "contE" {
             leaf leafP {
+	      when "../leafU != 'false'";
               type uint8;
             }
           }
