@@ -18,7 +18,7 @@ class SchemaNode:
         self.name = None # type: YangIdentifier
         self.ns = None # type: YangIdentifier
         self.parent = None # type: "InternalNode"
-        self.must = None # type: "Expr"
+        self.must = [] # type: List["Expr"]
         self.when = None # type: "Expr"
 
     @property
@@ -106,12 +106,17 @@ class SchemaNode:
 
     def _must_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         xpp = XPathParser(stmt.argument, mid)
-        self.must = xpp.parse()
+        mex = xpp.parse()
         if not xpp.at_end():
             raise WrongArgument(stmt)
+        self.must.append(mex)
 
     def _when_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self.when = XPathParser(stmt.argument, mid).parse()
+        xpp = XPathParser(stmt.argument, mid)
+        wex = xpp.parse()
+        if not xpp.at_end():
+            raise WrongArgument(stmt)
+        self.when = wex
 
     def _mandatory_stmt(self, stmt, mid: ModuleId) -> None:
         if stmt.argument == "true":
