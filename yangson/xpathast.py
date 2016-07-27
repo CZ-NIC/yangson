@@ -377,9 +377,7 @@ class FuncDeref(UnaryExpr):
         if not isinstance(ns, NodeSet):
             raise XPathTypeError(ns)
         ref = ns[0]
-        if ref.is_structured():
-            return NodeSet([])
-        return ref.deref()
+        return NodeSet(ref.deref())
 
 class FuncDerivedFrom(BinaryExpr):
 

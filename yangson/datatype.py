@@ -6,7 +6,6 @@ from typing import Any, Callable, List, Optional, Tuple, Union
 from .constants import NonexistentSchemaNode, YangsonException
 from .context import Context
 from .instance import InstanceNode, InstanceIdParser, InstancePath
-from .nodeset import NodeSet
 from .parser import ParserException
 from .statement import Statement
 from .typealiases import *
@@ -99,8 +98,8 @@ class DataType:
         """String representation of the receiver type."""
         return self.__class__.__name__.lower()
 
-    def _deref(self, node: InstanceNode) -> NodeSet:
-        return NodeSet([])
+    def _deref(self, node: InstanceNode) -> List[InstanceNode]:
+        return []
 
     def parse_value(self, input: str) -> ScalarValue:
         """Parse value of a data type.
@@ -437,9 +436,9 @@ class LeafrefType(LinkType):
         self.path = XPathParser(
             stmt.find1("path", required=True).argument, mid).parse()
 
-    def _deref(self, node: InstanceNode) -> NodeSet:
+    def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         ns = self.path.evaluate(node)
-        return NodeSet([n for n in ns if str(n) == str(node)])
+        return [n for n in ns if str(n) == str(node)]
 
 class InstanceIdentifierType(LinkType):
     """Class representing YANG "instance-identifier" type."""
@@ -451,9 +450,8 @@ class InstanceIdentifierType(LinkType):
         except (ParserException, NonexistentSchemaNode):
             return False
 
-    def _deref(self, node: InstanceNode) -> NodeSet:
-        return NodeSet(
-            [node.top().goto(InstanceIdParser(node.value).parse())])
+    def _deref(self, node: InstanceNode) -> List[InstanceNode]:
+        return [node.top().goto(InstanceIdParser(node.value).parse())]
 
 class IdentityrefType(DataType):
     """Class representing YANG "identityref" type."""

@@ -163,7 +163,7 @@ class InstanceNode:
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
-    def xpath_nodes(self) -> "NodeSet":
+    def xpath_nodes(self) -> List["InstanceNode"]:
         """Return the node-set of all receiver's instances."""
         val = self.value
         if isinstance(val, ArrayValue):
@@ -202,7 +202,7 @@ class InstanceNode:
             raise InstanceTypeError(self, "lookup on non-list") from None
 
     def children(self,
-                 qname: Union[QualName, bool] = None) -> "NodeSet":
+                 qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
         """Return the node-set of receiver's XPath children."""
         if isinstance(self.schema_node, TerminalNode): return []
         if qname:
@@ -215,7 +215,7 @@ class InstanceNode:
         return res
 
     def descendants(self, qname: Union[QualName, bool] = None,
-                    with_self: bool = False) -> "NodeSet":
+                    with_self: bool = False) -> List["InstanceNode"]:
         """Return the node-set of receiver's XPath descendants."""
         res = ([] if not with_self or (qname and self.qualName != qname)
                else [self])
@@ -226,23 +226,23 @@ class InstanceNode:
         return res
 
     def preceding_siblings(
-            self, qname: Union[QualName, bool] = None) -> "NodeSet":
+            self, qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
         """Return the node-set of receiver's XPath preceding-siblings."""
         return []
 
     def following_siblings(
-            self, qname: Union[QualName, bool] = None) -> "NodeSet":
+            self, qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
         """Return the node-set of receiver's XPath following-siblings."""
         return []
 
-    def deref(self) -> "NodeSet":
-        """Return the node-set that the receiver refers to.
+    def deref(self) -> List["InstanceNode"]:
+        """Return the list of nodes that the receiver refers to.
 
-        The result is an empty node-set unless the receiver is a leaf
+        The result is an empty list unless the receiver is a leaf
         with either "leafref" or "instance-identifier" type.
         """
-        return (NodeSet([]) if self.is_structured()
-                else self.schema_node.type._deref(self))
+        return ([] if self.is_structured() else
+                self.schema_node.type._deref(self))
 
     def add_defaults(self) -> "InstanceNode":
         """Return a copy of the receiver with defaults added to its value."""
@@ -278,7 +278,7 @@ class RootNode(InstanceNode):
         self.name = None
 
     def _copy(self, newval: Value = None,
-              newts: datetime = None) -> "InstanceNode":
+              newts: datetime = None) -> InstanceNode:
         return RootNode(newval if newval else self.value, self.schema_node,
                           newts if newts else self._timestamp)
 
@@ -332,7 +332,7 @@ class ObjectMember(InstanceNode):
                            self.parent, self.schema_node,
                            newts if newts else self._timestamp)
 
-    def sibling(self, name: InstanceName) -> "InstanceNode":
+    def sibling(self, name: InstanceName) -> InstanceNode:
         ssn = self.parent._member_schema_node(name)
         try:
             sibs = self.siblings.copy()
@@ -838,4 +838,3 @@ class InstanceIdParser(InstancePathParser):
 from .schema import (CaseNode, DataNode, InternalNode,
                      LeafNode, LeafListNode, ListNode,
                      NonexistentSchemaNode, SequenceNode, TerminalNode)
-from .nodeset import NodeSet

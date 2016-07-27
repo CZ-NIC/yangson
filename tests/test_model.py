@@ -419,6 +419,7 @@ def test_xpath(instance):
     xptest("re-match('a\nb', '[a-z\n]*')")
     xptest("deref(.)/../t:leafF", True, lr, "testb")
     xptest("deref(../leafS)", 54, lr, "testb")
+    xptest("count(deref(../leafS) | ../leafN)", 2, lr, "testb")
     xptest("derived-from-or-self(../leafT, 't:CC-BY')", True, lr, "testb")
     xptest("derived-from(../leafT, 't:CC-BY')", False, lr, "testb")
     xptest("derived-from(../leafT, 't:derivatives')", True, lr, "testb")
