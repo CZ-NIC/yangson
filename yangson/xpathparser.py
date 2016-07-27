@@ -140,7 +140,8 @@ class XPathParser(Parser):
         except UnexpectedInput:
             return self._location_path()
         self.skip_ws()
-        if self.test_string("("):
+        if self.test_string("(") and fname not in (
+                "node", "comment", "processing-instruction", "text"):
             self.skip_ws()
             return self._path_expr(fname)
         self.offset = start
@@ -217,7 +218,7 @@ class XPathParser(Parser):
         except EndOfInput:
             return (Axis.child, (yid, self.mid[0]))
         if next == "(":
-            return (Axis.child, _node_type(yid))
+            return (Axis.child, self._node_type(yid))
         if next == ":":
             self.offset += 1
             next = self.peek()
