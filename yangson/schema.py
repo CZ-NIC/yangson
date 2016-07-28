@@ -232,6 +232,10 @@ class InternalNode(SchemaNode):
                 res.update(c.data_children())
         return res
 
+    def child_inst_names(self) -> Set[InstanceName]:
+        """Return the set of instance names under the receiver."""
+        return frozenset([c.iname() for c in self.data_children()])
+
     def _post_process(self) -> None:
         super()._post_process()
         for c in [x for x in self.children.values()]:
