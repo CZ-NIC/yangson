@@ -222,14 +222,14 @@ class InternalNode(SchemaNode):
             res = c.get_data_child(name, ns)
             if res: return res
 
-    def data_children(self) -> List["DataNode"]:
-        """Return the list of all data nodes directly under the receiver."""
-        res = []
+    def data_children(self) -> MutableSet["DataNode"]:
+        """Return the set of all data nodes directly under the receiver."""
+        res = set()
         for c in self.children.values():
             if isinstance(c, DataNode):
-                res.append(c)
+                res.add(c)
             else:
-                res.extend(c.data_children())
+                res.update(c.data_children())
         return res
 
     def _post_process(self) -> None:
