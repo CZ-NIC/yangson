@@ -431,6 +431,9 @@ class TerminalNode(SchemaNode):
         """
         return self.type.from_raw(val)
 
+    def default_value(self) -> None:
+        return None
+
     def _ascii_tree(self, indent: str) -> str:
         """Return the receiver's ascii-art subtree."""
         return ""
