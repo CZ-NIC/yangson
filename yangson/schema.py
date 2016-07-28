@@ -442,12 +442,13 @@ class TerminalNode(SchemaNode):
         return None
 
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
-        if self.default is None: return []
+        dflt = self.default_value()
+        if dflt is None: return []
         iname = self.iname()
         ni = inst.put_member(iname, (None,))
         res = ni.member(iname)
         if self.when is None or self.when.evaluate(res):
-            res.value = self.default
+            res.value = dflt
             return res.xpath_nodes()
         return []
 
@@ -596,6 +597,13 @@ class ChoiceNode(InternalNode):
         super()._post_process()
         if self.mandatory:
             self.parent._add_mandatory_child(self)
+
+    def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
+        res = []
+        if self.default_case is None: return res
+        for cn in self.children[self.default_case].children.values():
+            res.extend(cn._default_nodes(inst))
+        return res
 
     def default_value(self) -> Optional[ObjectValue]:
         """Return the receiver's default content."""

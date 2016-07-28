@@ -174,8 +174,7 @@ def test_schema(data_model):
     assert lla.type.default == 11
     assert lo.default_value() == True
     assert lp.default_value() == 42
-    assert (lsta.default_value() ==
-            super(SequenceNode, lsta).from_raw({"contD": {"contE": {"leafP": 42}}}))
+    assert lsta.default_value() == ObjectValue()
     assert la.type.parse_value("99") == 99
     with pytest.raises(YangTypeError):
         ld.type.parse_value("99")
@@ -296,9 +295,9 @@ def test_instance(instance):
     axtest(la1.ancestors_or_self(("listA", "test")), ["/test:contA/listA/1" ])
     axtest(la1.preceding_siblings(), ["/test:contA/listA/0"])
     axtest(la1.following_siblings(), [])
-    assert len(conta.children()) == 8
+    assert len(conta.children()) == 9
     axtest(la1.children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance.descendants(with_self=True)) == 25
+    assert len(instance.descendants(with_self=True)) == 29
     axtest(conta.descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
@@ -350,7 +349,7 @@ def test_xpath(instance):
     xptest("local-name()", "leafR", lr)
     xptest("name()", "testb:leafR", lr)
     xptest("name(../t:listA)", "listA", lr, "testb")
-    xptest("count(descendant-or-self::*)", 30)
+    xptest("count(descendant-or-self::*)", 29)
     xptest("count(descendant::leafE)", 2)
     xptest("count(preceding-sibling::*)", 0, lr, "testb")
     xptest("count(following-sibling::*)", 0, lr, "testb")

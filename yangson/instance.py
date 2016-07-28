@@ -207,12 +207,11 @@ class InstanceNode:
         sn = self.schema_node
         if isinstance(sn, TerminalNode): return []
         if qname:
-            iname = (qname[0] if self.namespace == qname[1]
-                     else qname[1] + ":" + qname[0])
-            if iname in self.value:
-                return self.member(iname).xpath_nodes()
             cn = sn.get_data_child(*qname)
             if cn is None: return []
+            iname = cn.iname()
+            if iname in self.value:
+                return self.member(iname).xpath_nodes()
             res = cn._default_nodes(self)
             if not res: return res
             while True:
@@ -224,8 +223,20 @@ class InstanceNode:
                     continue
                 return []
         res = []
-        for n in self.value:
-            res += self.member(n).xpath_nodes()
+        for cn in sn.children.values():
+            if isinstance(cn, ChoiceNode):
+                cin = cn.child_inst_names().intersection(self.value)
+                if cin:
+                    for i in cin:
+                        res.extend(self.member(i).xpath_nodes())
+                else:
+                    res.extend(cn._default_nodes(inst))
+            else:
+                iname = cn.iname()
+                if iname in self.value:
+                    res.extend(self.member(iname).xpath_nodes())
+                else:
+                    res.extend(cn._default_nodes(self))
         return res
 
     def descendants(self, qname: Union[QualName, bool] = None,
@@ -849,6 +860,6 @@ class InstanceIdParser(InstancePathParser):
             sel[knod.iname()] = val
         return EntryKeys(sel)
 
-from .schema import (CaseNode, DataNode, InternalNode,
+from .schema import (CaseNode, ChoiceNode, DataNode, InternalNode,
                      LeafNode, LeafListNode, ListNode,
                      NonexistentSchemaNode, SequenceNode, TerminalNode)
