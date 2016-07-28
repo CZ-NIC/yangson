@@ -41,9 +41,10 @@ tree = """+--rw (test:choiA)?
 |     |  +---x acA
 |     |  |  +--ro output
 |     |  |     +--ro leafL
-|     |  +--rw contE
+|     |  +--rw contE!
 |     |  |  +--rw leafJ?
 |     |  |  +--rw leafP?
+|     |  |  +--rw leafU?
 |     |  +--rw leafG?
 |     +--rw leafE
 |     +--rw leafF

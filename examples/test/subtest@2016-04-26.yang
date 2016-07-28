@@ -43,6 +43,7 @@ submodule subtest {
       }
       leaf leafH {
         type oin:ip-address;
+	default "1.2.3.4";
       }
     }
     default "caseA";
