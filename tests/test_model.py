@@ -86,7 +86,7 @@ def instance(data_model):
     {
         "test:llistB": ["::1", "127.0.0.1"],
 	    "test:contA": {
-		    "leafB": 56,
+		    "leafB": 9,
 		    "listA": [{
 			    "leafE": "C0FFEE",
 			    "leafF": true,
@@ -94,7 +94,7 @@ def instance(data_model):
 				    "leafG": "foo1-bar",
 				    "contE": {
 					    "leafJ": [null],
-					    "leafP": 54
+					    "leafP": 10
 				    }
 			    }
 		    }, {
@@ -323,7 +323,7 @@ def test_xpath(instance):
     xptest("- 5 mod - 2", -1)
     xptest("count(t:llistB)", 2)
     xptest("count(*)", 9, conta)
-    xptest("count(*[. > 30])", 1, conta)
+    xptest("count(*[. > 10])", 1, conta)
     xptest("-leafA", -11, conta)
     xptest(" - - leafA", 11, conta)
     xptest("llistB = '::1'")
@@ -331,11 +331,11 @@ def test_xpath(instance):
     xptest("not(llistB = '::1')", False)
     xptest("llistB[position() = 2]", "127.0.0.1")
     xptest("count(child::llistB/following-sibling::*)", 1)
-    xptest("leafA <= leafB", node=conta)
-    xptest("leafB mod leafA", 1, node=conta)
+    xptest("leafA > leafB", node=conta)
+    xptest("leafA mod leafB", 2, node=conta)
     xptest("listA/contD/contE/leafJ = ''", node=conta)
     xptest("""listA[leafE='C0FFEE' ][ leafF = 'true']
-           /contD/contE/leafP = 54""", node=conta)
+           /contD/contE/leafP = 10""", node=conta)
     xptest("listA/contD/contE/leafP < leafA | leafB", node=conta)
     xptest("listA/contD/contE/leafP > leafA | leafB", node=conta)
     xptest("listA/contD/contE/leafP = leafA | /contA/leafB", False, conta)
@@ -357,10 +357,10 @@ def test_xpath(instance):
     xptest("count(descendant-or-self::contA/descendant::contA)", 0, conta)
     xptest("listA[last()-1]/following-sibling::*/leafE = 'ABBA'", node=conta)
     xptest("count(//contD/parent::*/following-sibling::*/*)", 3)
-    xptest("//leafP = 54")
+    xptest("//leafP = 10")
     xptest("""count(listA[leafE = 'C0FFEE' and leafF = true()]//
            leafP/ancestor::node())""", 5, conta)
-    xptest("../* > 50", node=lr, module="testb")
+    xptest("../* > 9", node=lr, module="testb")
     xptest("local-name(ancestor-or-self::contA)", "contA", conta)
     xptest("string(1.0)", "1")
     xptest("string(true())", "true")
@@ -371,7 +371,7 @@ def test_xpath(instance):
     with pytest.raises(InvalidXPath):
         xptest("concat()")
     xptest("starts-with(., 'C0F')", True, lr, "testb")
-    xptest("starts-with(//listA//leafP, 5)")
+    xptest("starts-with(//listA//leafP, 1)")
     xptest("contains(., '0FF')", True, lr, "testb")
     xptest("not(contains(../leafN, '!!'))", True, lr, "testb")
     xptest("substring-before(//decimal64, '.')", "4")
@@ -399,7 +399,7 @@ def test_xpath(instance):
     xptest("string(number('foo'))", "NaN")
     xptest("number(true()) = 1")
     xptest("number(false()) = 0")
-    xptest("sum(leafA | leafB)", 67, conta)
+    xptest("sum(leafA | leafB)", 20, conta)
     xptest("string(sum(//leafE))", "NaN")
     xptest("sum(//leafF)", 1)
     with pytest.raises(XPathTypeError):
@@ -418,7 +418,7 @@ def test_xpath(instance):
     xptest("re-match('a\nb', '.*')", False)
     xptest("re-match('a\nb', '[a-z\n]*')")
     xptest("deref(.)/../t:leafF", True, lr, "testb")
-    xptest("deref(../leafS)", 54, lr, "testb")
+    xptest("deref(../leafS)", 10, lr, "testb")
     xptest("count(deref(../leafS) | ../leafN)", 2, lr, "testb")
     xptest("derived-from-or-self(../leafT, 't:CC-BY')", True, lr, "testb")
     xptest("derived-from(../leafT, 't:CC-BY')", False, lr, "testb")
@@ -447,7 +447,7 @@ def test_instance_paths(data_model, instance):
     assert instance.peek(rid1) == instance.peek(iid1) == "hi!"
     assert (instance.goto(rid2).member("leafP").value ==
             instance.goto(iid2).member("leafP").value ==
-            instance.goto(iid3).member("leafP").value == 54)
+            instance.goto(iid3).member("leafP").value == 10)
     with pytest.raises(NonexistentSchemaNode):
         data_model.parse_resource_id("/test:contA/leafX")
     with pytest.raises(NonexistentSchemaNode):
@@ -475,3 +475,6 @@ def test_edits(data_model, instance):
     assert modllb.value == ArrayValue(["::1", "2001:db8:0:2::1"])
     with pytest.raises(YangTypeError):
         llb1.update_from_raw("2001::2::1")
+
+def test_validation(instance):
+    assert instance.validate() is None

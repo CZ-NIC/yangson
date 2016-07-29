@@ -40,6 +40,10 @@ class SchemaNode:
         """Is the receiver a mandatory node?"""
         return False
 
+    def validate(self, inst: "InstanceNode") -> None:
+        """Validate instance against the receiver."""
+        pass
+
     def iname2qname(self, iname: InstanceName) -> QualName:
         """Translate instance name to a qualified name.
 
@@ -253,6 +257,16 @@ class InternalNode(SchemaNode):
         """Return the set of instance names under the receiver."""
         return frozenset([c.iname() for c in self.data_children()])
 
+    def validate(self, inst: "InstanceNode") -> None:
+        """Extend the superclass method."""
+        super().validate(inst)
+        p = self.schema_pattern
+        for m in inst.value:
+            p = p.deriv(m)
+        if not p.nullable(inst):
+            print(p)
+            raise SchemaViolation(inst, str(p))
+
     def _make_schema_patterns(self) -> None:
         """Build schema pattern for the receiver and its data descendants."""
         self.schema_pattern = self._schema_pattern()
@@ -270,7 +284,7 @@ class InternalNode(SchemaNode):
                 prev = c._pattern_entry()
                 fst = False
             else:
-                prev = Pair.combine(prev, c._pattern_entry())
+                prev = Pair.combine(c._pattern_entry(), prev)
         return prev
 
     def _post_process(self) -> None:
@@ -435,9 +449,22 @@ class DataNode(SchemaNode):
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
+    def validate(self, inst: "InstanceNode") -> None:
+        """Extend the superclass method."""
+        super().validate(inst)
+        if self.when and not self.when.evaluate(inst):
+            raise SchemaViolation(inst, "'when' expression is false")
+        for mex in self.must:
+            if not mex.evaluate(inst):
+                raise SemanticError(inst, "'must' expression is false")
+
     def _pattern_entry(self) -> SchemaPattern:
         m = Member(self.iname())
-        return m if self.mandatory else SchemaPattern.optional(m)
+        if not self.mandatory:
+            return SchemaPattern.optional(m)
+        if self.when:
+            return SchemaPattern.conditional(m, self.when, self.iname())
+        return m
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + ("rw" if self.config else "ro")
@@ -551,6 +578,19 @@ class SequenceNode(DataNode):
         """Is the receiver a mandatory node?"""
         return self.min_elements > 0
 
+    def validate(self, inst: "InstanceNode") -> None:
+        """Extend the superclass method."""
+        if isinstance(inst, ArrayEntry):
+            super().validate(inst)
+        else:
+            if len(inst.value) < self.min_elements:
+                raise SchemaViolation(
+                    inst, "number of entries less than min-elements")
+            if (self.max_elements is not None and
+                len(inst.value) > self.max_elements):
+                raise SchemaViolation(
+                    inst, "number of entries greater than max-elements")
+
     def _post_process(self) -> None:
         super()._post_process()
         if self.min_elements > 0:
@@ -639,8 +679,11 @@ class ChoiceNode(InternalNode):
                 prev = c._schema_pattern()
                 fst = False
             else:
-                prev = Alternative.combine(prev, c._schema_pattern())
-        return prev if self.mandatory else SchemaPattern.optional(prev)
+                prev = Alternative.combine(c._schema_pattern(), prev,
+                                           self.mandatory)
+        if self.when:
+            return SchemaPattern.conditional(prev, self.when)
+        return prev
 
     def _add_default_child(self, node: "CaseNode") -> None:
         """Extend the superclass method."""
@@ -877,5 +920,23 @@ class BadSchemaNodeType(SchemaNodeError):
     def __str__(self) -> str:
         return super().__str__() + " is not a " + self.expected
 
+class ValidationError(YangsonException):
+    """Abstract exception class for instance validation errors."""
+
+    def __init__(self, inst: "InstanceNode", detail: str) -> None:
+        self.inst = inst
+        self.detail = detail
+
+    def __str__(self) -> str:
+        return "[{}] {}".format(self.inst.path(), self.detail)
+
+class SchemaViolation(ValidationError):
+    """Exception to be raised when an instance violates thes schema."""
+    pass
+
+class SemanticError(ValidationError):
+    """Exception to be raised when an instance violates thes schema."""
+    pass
+
 from .xpathast import Expr
-from .instance import InstanceNode
+from .instance import InstanceNode, ArrayEntry

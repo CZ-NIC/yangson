@@ -47,6 +47,24 @@ class InstanceNode:
         """Return the receiver's namespace."""
         return self.schema_node.ns
 
+    def validate(self) -> None:
+        """Validate the receiver."""
+        sn = self.schema_node
+        sn.validate(self)
+        if isinstance(sn, TerminalNode):
+            return
+        elif isinstance(self.value, ArrayValue):
+            e = self.entry(0)
+            while True:
+                e.validate()
+                try:
+                    e = e.next()
+                except NonexistentInstance:
+                    break
+        else:
+            for m in self.value:
+                self.member(m).validate()
+
     def path(self) -> str:
         """Return JSONPointer of the receiver."""
         parents = []
