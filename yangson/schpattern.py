@@ -1,6 +1,8 @@
 """This module defines classes for schema patterns."""
 
-from typing import List
+from typing import List, Optional
+from .typealiases import *
+from .xpathast import Expr
 
 class SchemaPattern:
     """Abstract class for schema patterns."""
@@ -9,9 +11,15 @@ class SchemaPattern:
     def optional(p: "SchemaPattern") -> "SchemaPattern":
         """Make `p` an optional pattern."""
         if isinstance(p, NotAllowed): return Empty()
-        return Alternative(Empty(), p)
+        return Alternative(Empty(), p, False)
 
-    def nullable(self) -> bool:
+    @staticmethod
+    def conditional(p: "SchemaPattern", when: Expr, dummy: InstanceName = None):
+        """Make `p` conditionally depend on a "when" expression."""
+        if isinstance(p, (Empty, NotAllowed)): return Empty()
+        return Alternative(EmptyUnless(when, cnode, dummy), p, False)
+
+    def nullable(self, cnode: "DataNode") -> bool:
         """Return ``True`` the receiver is nullable.
 
         By default, schema patterns are not nullable.
@@ -29,7 +37,7 @@ class Empty(SchemaPattern):
             cls._instance = super(Empty, cls).__new__(cls)
         return cls._instance
 
-    def nullable(self) -> bool:
+    def nullable(self, cnode: "DataNode") -> bool:
         """Override the superclass method.
 
         The empty pattern is nullable.
@@ -42,6 +50,31 @@ class Empty(SchemaPattern):
 
     def __str__(self) -> str:
         return "Empty"
+
+class EmptyUnless(SchemaPattern):
+    """Class representing conditionally empty pattern."""
+
+    def __init__(self, when: Expr, dummy: Optional[InstanceName]) -> None:
+        """Initialize the class instance."""
+        self.when = when
+        self.dummy = dummy
+
+    def nullable(self, cnode: "DataNode") -> bool:
+        """Override the superclass method.
+
+        The empty pattern is nullable.
+        """
+        if self.dummy is None:
+            return not self.when.evaluate(cnode)
+        ncn = cnode.put_member(self.dummy, (None,0))
+        return not self.when.evaluate(ncn.member(self.dummy))
+
+    def deriv(self, x: str) -> "SchemaPattern":
+        """Return derivative of the receiver."""
+        return NotAllowed("member '{}'".format(x))
+
+    def __str__(self) -> str:
+        return "EmptyUnless"
 
 class NotAllowed(SchemaPattern):
 
@@ -67,30 +100,34 @@ class Member(SchemaPattern):
         return NotAllowed("member '{}'".format(x))
 
     def __str__(self) -> str:
-        return "member '{}'".format(self.name)
+        return "missing mandatory member '{}'".format(self.name)
 
 class Alternative(SchemaPattern):
 
     @classmethod
-    def combine(cls, p: "SchemaPattern", q: "SchemaPattern"):
+    def combine(cls, p: "SchemaPattern", q: "SchemaPattern",
+                 mandatory: bool = False):
         if isinstance(p, NotAllowed): return q
         if isinstance(q, NotAllowed): return p
-        return cls(p, q)
+        return cls(p, q, mandatory)
 
-    def __init__(self, p: "SchemaPattern", q: "SchemaPattern") -> None:
+    def __init__(self, p: "SchemaPattern", q: "SchemaPattern",
+                 mandatory: bool) -> None:
         self.left = p
         self.right = q
+        self.mandatory = mandatory
 
-    def nullable(self) -> bool:
+    def nullable(self, cnode: "DataNode") -> bool:
         """Override the superclass method."""
-        return self.left.nullable() or self.right.nullable()
+        return (False if self.mandatory else
+                self.left.nullable(cnode) or self.right.nullable(cnode))
 
     def deriv(self, x: str) -> "SchemaPattern":
         """Return derivative of the receiver."""
         return Alternative.combine(self.left.deriv(x), self.right.deriv(x))
 
     def __str__(self) -> str:
-        return "({} or {})".format(self.left, self.right)
+        return "no instances of mandatory choice"
 
 class Pair(SchemaPattern):
 
@@ -108,9 +145,9 @@ class Pair(SchemaPattern):
         self.left = p
         self.right = q
 
-    def nullable(self) -> bool:
+    def nullable(self, cnode: "DataNode") -> bool:
         """Override the superclass method."""
-        return self.left.nullable() and self.right.nullable()
+        return self.left.nullable(cnode) and self.right.nullable(cnode)
 
     def deriv(self, x: str) -> "SchemaPattern":
         """Return derivative of the receiver."""
@@ -119,4 +156,4 @@ class Pair(SchemaPattern):
             Pair.combine(self.right.deriv(x), self.left))
 
     def __str__(self) -> str:
-        return "({} and {})".format(self.left, self.right)
+        return str(self.left)
