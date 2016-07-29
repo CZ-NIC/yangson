@@ -17,7 +17,7 @@ class SchemaPattern:
     def conditional(p: "SchemaPattern", when: Expr, dummy: InstanceName = None):
         """Make `p` conditionally depend on a "when" expression."""
         if isinstance(p, (Empty, NotAllowed)): return Empty()
-        return Alternative(EmptyUnless(when, cnode, dummy), p, False)
+        return Alternative(EmptyUnless(when, dummy), p, False)
 
     def nullable(self, cnode: "DataNode") -> bool:
         """Return ``True`` the receiver is nullable.
