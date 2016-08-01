@@ -1,7 +1,8 @@
 """Classes for schema nodes."""
 
 from typing import Dict, List, MutableSet, Optional, Set, Tuple, Union
-from .constants import DefaultDeny, NonexistentSchemaNode, YangsonException
+from .constants import (ContentType, DefaultDeny, NonexistentSchemaNode,
+                        YangsonException)
 from .context import Context
 from .datatype import DataType, RawScalar
 from .instvalue import ArrayValue, ObjectValue, Value
@@ -40,7 +41,7 @@ class SchemaNode:
         """Is the receiver a mandatory node?"""
         return False
 
-    def validate(self, inst: "InstanceNode") -> None:
+    def validate(self, inst: "InstanceNode", content: ContentType) -> None:
         """Validate instance against the receiver."""
         pass
 
@@ -257,15 +258,16 @@ class InternalNode(SchemaNode):
         """Return the set of instance names under the receiver."""
         return frozenset([c.iname() for c in self.data_children()])
 
-    def validate(self, inst: "InstanceNode") -> None:
+    def validate(self, inst: "InstanceNode", content: ContentType) -> None:
         """Extend the superclass method."""
-        super().validate(inst)
+        super().validate(inst, content)
         p = self.schema_pattern
         for m in inst.value:
-            p = p.deriv(m)
-        if not p.nullable(inst):
-            print(p)
+            p = p.deriv(m, inst, content)
+        if isinstance(p, NotAllowed):
             raise SchemaViolation(inst, str(p))
+        if not p.nullable(inst, content):
+            raise SchemaViolation(inst, "missing " + str(p))
 
     def _make_schema_patterns(self) -> None:
         """Build schema pattern for the receiver and its data descendants."""
@@ -449,22 +451,16 @@ class DataNode(SchemaNode):
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
-    def validate(self, inst: "InstanceNode") -> None:
+    def validate(self, inst: "InstanceNode", content: ContentType) -> None:
         """Extend the superclass method."""
-        super().validate(inst)
-        if self.when and not self.when.evaluate(inst):
-            raise SchemaViolation(inst, "'when' expression is false")
+        super().validate(inst, content)
         for mex in self.must:
             if not mex.evaluate(inst):
                 raise SemanticError(inst, "'must' expression is false")
 
     def _pattern_entry(self) -> SchemaPattern:
-        m = Member(self.iname())
-        if not self.mandatory:
-            return SchemaPattern.optional(m)
-        if self.when:
-            return SchemaPattern.conditional(m, self.when, self.iname())
-        return m
+        m = Member(self.iname(), self.config, self.when)
+        return m if self.mandatory else SchemaPattern.optional(m)
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + ("rw" if self.config else "ro")
@@ -578,10 +574,10 @@ class SequenceNode(DataNode):
         """Is the receiver a mandatory node?"""
         return self.min_elements > 0
 
-    def validate(self, inst: "InstanceNode") -> None:
+    def validate(self, inst: "InstanceNode", content: ContentType) -> None:
         """Extend the superclass method."""
         if isinstance(inst, ArrayEntry):
-            super().validate(inst)
+            super().validate(inst, content)
         else:
             if len(inst.value) < self.min_elements:
                 raise SchemaViolation(
@@ -677,12 +673,12 @@ class ChoiceNode(InternalNode):
         for c in cs:
             if fst:
                 prev = c._schema_pattern()
+                if not self.config or self.when:
+                    prev = Conditional(prev, self.config, self.when)
                 fst = False
             else:
                 prev = Alternative.combine(c._schema_pattern(), prev,
                                            self.mandatory)
-        if self.when:
-            return SchemaPattern.conditional(prev, self.when)
         return prev
 
     def _add_default_child(self, node: "CaseNode") -> None:
@@ -749,6 +745,21 @@ class CaseNode(InternalNode):
             if case is not self:
                 res.extend([c.iname() for c in case.data_children()])
         return res
+
+    def _pattern_entry(self) -> SchemaPattern:
+        cs = self.children.values()
+        if not cs:
+            return Empty()
+        fst = True
+        for c in cs:
+            if fst:
+                prev = c._schema_pattern()
+                if not self.when:
+                    prev = Conditional(prev, True, self.when)
+                fst = False
+            else:
+                prev = Pair.combine(c._schema_pattern(), prev)
+        return prev
 
     def _add_default_child(self, node: SchemaNode) -> None:
         """Extend the superclass method."""

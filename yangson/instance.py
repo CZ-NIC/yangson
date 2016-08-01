@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Callable, List, Tuple
 from urllib.parse import unquote
-from .constants import YangsonException
+from .constants import ContentType, YangsonException
 from .context import Context
 from .instvalue import ArrayValue, ObjectValue, Value
 from .parser import EndOfInput, Parser
@@ -47,23 +47,23 @@ class InstanceNode:
         """Return the receiver's namespace."""
         return self.schema_node.ns
 
-    def validate(self) -> None:
+    def validate(self, content: ContentType = ContentType.config) -> None:
         """Validate the receiver."""
         sn = self.schema_node
-        sn.validate(self)
+        sn.validate(self, content)
         if isinstance(sn, TerminalNode):
             return
         elif isinstance(self.value, ArrayValue):
             e = self.entry(0)
             while True:
-                e.validate()
+                e.validate(content)
                 try:
                     e = e.next()
                 except NonexistentInstance:
                     break
         else:
             for m in self.value:
-                self.member(m).validate()
+                self.member(m).validate(content)
 
     def path(self) -> str:
         """Return JSONPointer of the receiver."""
