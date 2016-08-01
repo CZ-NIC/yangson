@@ -59,3 +59,9 @@ class MultiplicativeOp(Enum):
     multiply = 1
     divide = 2
     modulo = 3
+
+class ContentType(Enum):
+    """Enumeration of data content types."""
+    config = 1
+    nonconfig = 2
+    all = 3
