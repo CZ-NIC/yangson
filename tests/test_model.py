@@ -2,11 +2,12 @@ import json
 import pytest
 from decimal import Decimal
 from yangson import DataModel
-from yangson.schema import SequenceNode, NonexistentSchemaNode
+from yangson.constants import ContentType
+from yangson.context import Context, BadPath, BadPrefName
 from yangson.datatype import YangTypeError
 from yangson.instance import MinElements, NonexistentInstance
 from yangson.instvalue import ArrayValue, ObjectValue
-from yangson.context import Context, BadPath, BadPrefName
+from yangson.schema import SequenceNode, NonexistentSchemaNode
 from yangson.xpathast import XPathTypeError
 from yangson.xpathparser import InvalidXPath, NotSupported, XPathParser
 
@@ -477,4 +478,4 @@ def test_edits(data_model, instance):
         llb1.update_from_raw("2001::2::1")
 
 def test_validation(instance):
-    assert instance.validate() is None
+    assert instance.validate(ContentType.all) is None
