@@ -117,12 +117,10 @@ class Context:
 
     @classmethod
     def _process_imports(cls) -> None:
+        deps = { mn: 0 for mn in cls.implement }
+        impby = { mn: [] for mn in cls.implement }
         for mid in cls.modules:
             mod = cls.modules[mid]
-            try:
-                pos = cls.implement.index(mid[0])
-            except ValueError:                # mod not implemented
-                pos = None
             for impst in mod.find_all("import"):
                 impn = impst.argument
                 prefix = impst.find1("prefix", required=True).argument
@@ -135,15 +133,20 @@ class Context:
                 else:
                     raise ModuleNotFound(impn, rev)
                 cls.prefix_map[mid][prefix] = imid
-                if pos is None: continue
-                i = pos
-                while i < len(cls.implement):
-                    if cls.implement[i] == impn:
-                        cls.implement[pos] = impn
-                        cls.implement[i] = mid[0]
-                        pos = i
-                        break
-                    i += 1
+                if mid[0] in deps and impn in deps:
+                    deps[mid[0]] += 1
+                    impby[impn].append(mid[0])
+        cls.implement = []
+        free = [mn for mn in deps if deps[mn] == 0]
+        if not free: raise CyclicImports()
+        while free:
+            n = free.pop()
+            cls.implement.append(n)
+            for m in impby[n]:
+                deps[m] -= 1
+                if deps[m] == 0:
+                    free.append(m)
+        if [mn for mn in deps if deps[mn] > 0]: raise CyclicImports()
 
     @classmethod
     def _apply_augments(cls) -> None:
@@ -400,3 +403,7 @@ class MultipleImplementedRevisions(YangsonException):
 
     def __str__(self) -> str:
         return self.module
+
+class CyclicImports(YangsonException):
+    """An implemented module has multiple revisions."""
+    pass
