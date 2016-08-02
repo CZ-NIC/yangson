@@ -44,6 +44,9 @@ class Empty(SchemaPattern):
         """Return derivative of the receiver."""
         return NotAllowed("member '{}'".format(x))
 
+    def _tree(self, indent: int = 0):
+        return " " * indent + "Empty"
+
     def __str__(self) -> str:
         return "Empty"
 
@@ -71,6 +74,10 @@ class Conditional(SchemaPattern):
             return self.pattern.deriv(x, cnode, content)
         return NotAllowed("config member '{}'".format(x))
 
+    def _tree(self, indent: int = 0):
+        return (" " * indent + "Conditional\n" +
+                self.pattern._tree(indent + 2))
+
     def __str__(self) -> str:
         return "Conditional"
 
@@ -84,6 +91,9 @@ class NotAllowed(SchemaPattern):
               content: ContentType) -> "SchemaPattern":
         """Return derivative of the receiver."""
         return self
+
+    def _tree(self, indent: int = 0):
+        return " " * indent + "NotAllowed: " + self.reason
 
     def __str__(self) -> str:
         return "not allowed: " + self.reason
@@ -112,6 +122,9 @@ class Member(SchemaPattern):
             (self.when is None or self.when.evaluate(cnode.member(self.name)))):
             return Empty()
         return NotAllowed("member '{}'".format(x))
+
+    def _tree(self, indent: int = 0):
+        return " " * indent + "Member " + self.name
 
     def __str__(self) -> str:
         return "member '{}'".format(self.name)
@@ -143,8 +156,13 @@ class Alternative(SchemaPattern):
         return Alternative.combine(self.left.deriv(x, cnode, content),
                                    self.right.deriv(x, cnode, content))
 
+    def _tree(self, indent: int = 0):
+        return (" " * indent + "Alternative\n" +
+                self.left._tree(indent + 2) + "\n" +
+                self.right._tree(indent + 2))
+
     def __str__(self) -> str:
-        return "mandatory choice"
+        return "alternative"
 
 class Pair(SchemaPattern):
 
@@ -173,6 +191,11 @@ class Pair(SchemaPattern):
         return Alternative.combine(
             Pair.combine(self.left.deriv(x, cnode, content), self.right),
             Pair.combine(self.right.deriv(x, cnode, content), self.left))
+
+    def _tree(self, indent: int = 0):
+        return (" " * indent + "Pair\n" +
+                self.left._tree(indent + 2) + "\n" +
+                self.right._tree(indent + 2))
 
     def __str__(self) -> str:
         return str(self.left)
