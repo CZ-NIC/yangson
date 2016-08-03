@@ -273,6 +273,7 @@ def test_instance(instance):
         assert [ str(i.path()) for i in expr ] == res
     conta = instance.member("test:contA")
     la1 = conta.member("listA").last_entry()
+    lt = conta.member("testb:leafT")
     assert la1.index == 1
     tbln = conta.member("testb:leafN")
     inst1 = la1.put_member("leafE", "ABBA").top()
@@ -287,6 +288,8 @@ def test_instance(instance):
     with pytest.raises(NonexistentInstance):
         la1.member("contD")
     assert str(la1.path()) == "/test:contA/listA/1"
+    assert lt.value == ("CC-BY", "test")
+    assert str(lt) == "test:CC-BY"
     assert tbln.namespace == "testb"
     assert str(tbln.path()) == "/test:contA/testb:leafN"
     assert (instance.ancestors() == instance.preceding_siblings() ==

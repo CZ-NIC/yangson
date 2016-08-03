@@ -486,6 +486,10 @@ class IdentityrefType(DataType):
         self.bases = [ Context.translate_pname(b.argument, mid)
                        for b in stmt.find_all("base") ]
 
+    def canonical_string(self, val: ScalarValue) -> str:
+        """Return canonical form of a value."""
+        return "{}:{}".format(val[1], val[0])
+
 class NumericType(DataType):
     """Abstract class for numeric data types."""
 
