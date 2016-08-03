@@ -69,17 +69,17 @@ class Conditional(SchemaPattern):
               content: ContentType) -> "SchemaPattern":
         """Return derivative of the receiver."""
         if not self.config and content == ContentType.config:
-            return NotAllowed("config member '{}'".format(x))
+            return NotAllowed("non-config member '{}'".format(x))
         if self.when is None or self.when.evaluate(cnode):
             return self.pattern.deriv(x, cnode, content)
-        return NotAllowed("config member '{}'".format(x))
+        return NotAllowed("conditional member '{}'".format(x))
 
     def _tree(self, indent: int = 0):
         return (" " * indent + "Conditional\n" +
                 self.pattern._tree(indent + 2))
 
     def __str__(self) -> str:
-        return "Conditional"
+        return str(self.pattern)
 
 class NotAllowed(SchemaPattern):
 

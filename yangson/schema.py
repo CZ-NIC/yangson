@@ -72,18 +72,6 @@ class SchemaNode:
         return (self.parent.instance_route() + [self.iname()]
                 if self.parent else [])
 
-    def get_data_child(self, name: YangIdentifier,
-                       ns: YangIdentifier) -> Optional["DataNode"]:
-        """Return data node directly under the receiver.
-
-        Compared to :meth:`get_schema_descendant`, this method
-        bypasses **choice** and **case** nodes.
-
-        :param name: data child's name
-        :param ns: data child's namespace
-        """
-        return None
-
     def state_roots(self) -> List[InstanceRoute]:
         """Return a list of instance routes to descendant state data roots.
 
@@ -93,9 +81,6 @@ class SchemaNode:
         if self.config:
             return [r.instance_route() for r in self._state_roots()]
         return [self.instance_route()]
-
-    def _pattern_entry(self) -> SchemaPattern:
-        return Empty()
 
     def _handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         """Dispatch actions for substatements of `stmt`."""
@@ -113,7 +98,7 @@ class SchemaNode:
 
     def _if_feature_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         if Context.translate_pname(stmt.argument, mid) not in Context.features:
-            del self.parent.children[self.qual_name]
+            self.parent.remove_child(self)
 
     def _config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         if stmt.argument == "false": self._config = False
@@ -187,7 +172,7 @@ class InternalNode(SchemaNode):
     def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
-        self.children = {} # type: Dict[QualName, SchemaNode]
+        self.children = [] # type: List[SchemaNode]
         self._nsswitch = False # type: bool
         self.default_children = [] # type: List["SchemaNode"]
         self._mandatory_children = set() # type: MutableSet["SchemaNode"]
@@ -203,16 +188,38 @@ class InternalNode(SchemaNode):
         :param node: child node
         """
         node.parent = self
-        self.children[node.qual_name] = node
+        self.children.append(node)
 
     def get_child(self, name: YangIdentifier,
                   ns: YangIdentifier = None) -> Optional["SchemaNode"]:
-        """Return receiver's child.
+        """Return receiver's schema child.
 
         :param name: child's name
         :param ns: child's namespace (= `self.ns` if absent)
         """
-        return self.children.get((name, ns if ns else self.ns))
+        ns = ns if ns else self.ns
+        todo = []
+        for child in self.children:
+            if child.name is None:
+                todo.append(child)
+            elif child.name == name and child.ns == ns:
+                return child
+        for c in todo:
+            return c.get_child(name, ns)
+
+    def remove_child(self, node: SchemaNode) -> None:
+        """Remove `sn` from receiver's children."""
+        self.children.remove(node)
+
+    def schema_children(self) -> List[SchemaNode]:
+        """Return the list of all named schema children of the receiver."""
+        res = []
+        for child in self.children:
+            if child.name is None:
+                res.extend(child.schema_children())
+            else:
+                res.append(child)
+        return res
 
     def get_schema_descendant(
             self, route: SchemaRoute) -> Optional["SchemaNode"]:
@@ -223,35 +230,33 @@ class InternalNode(SchemaNode):
         """
         node = self
         for p in route:
-            node = node.children.get(p)
+            node = node.get_child(*p)
             if node is None: return None
         return node
 
     def get_data_child(self, name: YangIdentifier,
-                       ns: YangIdentifier) -> Optional["DataNode"]:
-        """Return data node directly under the receiver.
-
-        This method overrides the superclass method.
-        """
+                       ns: Optional[YangIdentifier]) -> Optional["DataNode"]:
+        """Return data node directly under the receiver."""
+        ns = ns if ns else self.ns
         todo = []
-        for cn, child in self.children.items():
-            if cn == (name, ns):
+        for child in self.children:
+            if child.name == name and child.ns == ns:
                 if isinstance(child, DataNode): return child
                 todo.insert(0, child)
-            elif isinstance(child, (ChoiceNode, CaseNode)):
+            elif not isinstance(child, DataNode):
                 todo.append(child)
         for c in todo:
             res = c.get_data_child(name, ns)
             if res: return res
 
-    def data_children(self) -> MutableSet["DataNode"]:
+    def data_children(self) -> List["DataNode"]:
         """Return the set of all data nodes directly under the receiver."""
-        res = set()
-        for c in self.children.values():
-            if isinstance(c, DataNode):
-                res.add(c)
+        res = []
+        for child in self.children:
+            if isinstance(child, DataNode):
+                res.append(child)
             else:
-                res.update(c.data_children())
+                res.extend(child.data_children())
         return res
 
     def child_inst_names(self) -> Set[InstanceName]:
@@ -277,13 +282,16 @@ class InternalNode(SchemaNode):
             dc._make_schema_patterns()
 
     def _schema_pattern(self) -> SchemaPattern:
-        cs = self.children.values()
-        if not cs:
+        todo = [c for c in self.children
+                if not isinstance(c, (RpcActionNode, NotificationNode))]
+        if not todo:
             return Empty()
         fst = True
-        for c in cs:
+        for c in todo:
             if fst:
                 prev = c._pattern_entry()
+                if self.when is not None:
+                    prev = Conditional(prev, True, self.when)
                 fst = False
             else:
                 prev = Pair.combine(c._pattern_entry(), prev)
@@ -291,7 +299,7 @@ class InternalNode(SchemaNode):
 
     def _post_process(self) -> None:
         super()._post_process()
-        for c in [x for x in self.children.values()]:
+        for c in self.children:
             c._post_process()
 
     def _add_default_child(self, node: SchemaNode) -> None:
@@ -319,7 +327,7 @@ class InternalNode(SchemaNode):
                 if ac:
                     ac._apply_defaults(value)
                 elif c.default_case:
-                    value.update(c.children.get(c.default_case).default_value())
+                    value.update(c.get_child(*c.default_case).default_value())
             else:
                 cn = c.iname()
                 if cn not in value:
@@ -333,7 +341,7 @@ class InternalNode(SchemaNode):
         if hasattr(self,"_config") and not self._config:
             return [self]
         res = []
-        for c in self.children.values():
+        for c in self.children:
             res += c._state_roots()
         return res
 
@@ -348,11 +356,15 @@ class InternalNode(SchemaNode):
     def _augment_stmt(self, stmt: Statement, mid: ModuleId,
                       nsswitch: bool = False) -> None:
         """Handle **augment** statement."""
-        if Context.if_features(stmt, mid):
-            path = Context.sid2route(stmt.argument, mid)
-            target = self.get_schema_descendant(path)
-            target._nsswitch = nsswitch
-            target._handle_substatements(stmt, mid)
+        if not Context.if_features(stmt, mid): return
+        path = Context.sid2route(stmt.argument, mid)
+        target = self.get_schema_descendant(path)
+        if stmt.find1("when"):
+            gr = GroupNode()
+            target.add_child(gr)
+            target = gr
+        target._nsswitch = nsswitch
+        target._handle_substatements(stmt, mid)
 
     def _refine_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle **refine** statement."""
@@ -361,13 +373,18 @@ class InternalNode(SchemaNode):
 
     def _uses_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle uses statement."""
-        if Context.if_features(stmt, mid):
-            grp, gid = Context.get_definition(stmt, mid)
-            self._handle_substatements(grp, gid)
-            for augst in stmt.find_all("augment"):
-                self._augment_stmt(augst, mid, False)
-            for refst in stmt.find_all("refine"):
-                self._refine_stmt(refst, mid)
+        if not Context.if_features(stmt, mid): return
+        grp, gid = Context.get_definition(stmt, mid)
+        if stmt.find1("when"):
+            sn = GroupNode()
+            self.add_child(sn)
+        else:
+            sn = self
+        sn._handle_substatements(grp, gid)
+        for augst in stmt.find_all("augment"):
+            sn._augment_stmt(augst, mid, False)
+        for refst in stmt.find_all("refine"):
+            sn._refine_stmt(refst, mid)
 
     def _container_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle container statement."""
@@ -375,10 +392,10 @@ class InternalNode(SchemaNode):
 
     def _identity_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle identity statement."""
-        if Context.if_features(stmt, mid):
-            bases = stmt.find_all("base")
-            Context.identity_bases[(stmt.argument, mid[0])] = set(
-                [Context.translate_pname(ist.argument, mid) for ist in bases])
+        if not Context.if_features(stmt, mid): return
+        bases = stmt.find_all("base")
+        Context.identity_bases[(stmt.argument, mid[0])] = set(
+            [Context.translate_pname(ist.argument, mid) for ist in bases])
 
     def _list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle list statement."""
@@ -436,12 +453,16 @@ class InternalNode(SchemaNode):
         """Return the receiver's subtree as ASCII art."""
         res = ""
         if not self.children: return res
-        cns = sorted(self.children.keys())
-        for cn in cns[:-1]:
-            c = self.children[cn]
+        cn = sorted(self.children, key=lambda x: x.qual_name)
+        for c in cn[:-1]:
             res += indent + c._tree_line() + c._ascii_tree(indent + "|  ")
-        lc = self.children[cns[-1]]
-        return res + indent + lc._tree_line() + lc._ascii_tree(indent + "   ")
+        return res + indent + cn[-1]._tree_line() + cn[-1]._ascii_tree(indent + "   ")
+
+class GroupNode(InternalNode):
+    """Anonymous group of schema nodes."""
+
+    def _pattern_entry(self) -> SchemaPattern:
+        return super()._schema_pattern()
 
 class DataNode(SchemaNode):
     """Abstract superclass for data nodes."""
@@ -529,6 +550,11 @@ class ContainerNode(InternalNode, DataNode):
         """Initialize the class instance."""
         super().__init__()
         self.presence = False # type: bool
+
+    @property
+    def mandatory(self) -> bool:
+        """Is the receiver a mandatory node?"""
+        return not self.presence and super().mandatory
 
     def _add_default_child(self, node: SchemaNode) -> None:
         """Extend the superclass method."""
@@ -631,7 +657,7 @@ class ListNode(SequenceNode, InternalNode):
     def _post_process(self) -> None:
         super()._post_process()
         for k in self.keys:
-            kn = self.children[k]
+            kn = self.get_data_child(*k)
             if not kn._mandatory:
                 kn._mandatory = True
                 self._mandatory_children.add(kn)
@@ -666,11 +692,10 @@ class ChoiceNode(InternalNode):
         return self._mandatory
 
     def _pattern_entry(self) -> SchemaPattern:
-        cs = self.children.values()
-        if not cs:
+        if not self.children:
             return Empty()
         fst = True
-        for c in cs:
+        for c in self.children:
             if fst:
                 prev = c._schema_pattern()
                 if not self.config or self.when:
@@ -695,19 +720,19 @@ class ChoiceNode(InternalNode):
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
         res = []
         if self.default_case is None: return res
-        for cn in self.children[self.default_case].children.values():
+        for cn in self.get_child(*self.default_case).children:
             res.extend(cn._default_nodes(inst))
         return res
 
     def default_value(self) -> Optional[ObjectValue]:
         """Return the receiver's default content."""
         if self.default_case in [c.qual_name for c in self.default_children]:
-            return self.children.get(self.default_case).default_value()
+            return self.get_child(*self.default_case).default_value()
 
     def active_case(self, value: ObjectValue) -> Optional["CaseNode"]:
         """Return receiver's case that's active in `value`."""
-        for case in self.children.values():
-            for cc in case.children.values():
+        for case in self.children:
+            for cc in case.children:
                 if (isinstance(cc, ChoiceNode) and cc.active_case(value)
                     or cc.iname() in value):
                         return case
@@ -741,25 +766,10 @@ class CaseNode(InternalNode):
     def competing_instances(self) -> List[InstanceName]:
         """Return list of names of all instances from sibling cases."""
         res = []
-        for case in self.parent.children.values():
+        for case in self.parent.children:
             if case is not self:
                 res.extend([c.iname() for c in case.data_children()])
         return res
-
-    def _pattern_entry(self) -> SchemaPattern:
-        cs = self.children.values()
-        if not cs:
-            return Empty()
-        fst = True
-        for c in cs:
-            if fst:
-                prev = c._schema_pattern()
-                if not self.when:
-                    prev = Conditional(prev, True, self.when)
-                fst = False
-            else:
-                prev = Pair.combine(c._schema_pattern(), prev)
-        return prev
 
     def _add_default_child(self, node: SchemaNode) -> None:
         """Extend the superclass method."""

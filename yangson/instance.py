@@ -241,7 +241,7 @@ class InstanceNode:
                     continue
                 return []
         res = []
-        for cn in sn.children.values():
+        for cn in sn.children:
             if isinstance(cn, ChoiceNode):
                 cin = cn.child_inst_names().intersection(self.value)
                 if cin:
@@ -789,7 +789,7 @@ class ResourceIdParser(InstancePathParser):
             raise BadSchemaNodeType(sn, "list")
         sel = {}
         for j in range(len(ks)):
-            knod = sn.children.get(sn.keys[j])
+            knod = sn.get_data_child(*sn.keys[j])
             val = knod.type.parse_value(unquote(ks[j]))
             sel[knod.iname()] = val
         return EntryKeys(sel)
@@ -842,7 +842,7 @@ class InstanceIdParser(InstancePathParser):
         sel = {}
         while True:
             name, ns = self.instance_name()
-            knod = sn.get_child(name, ns)
+            knod = sn.get_data_child(name, ns)
             val = self.get_value(knod)
             sel[knod.iname()] = val
             try:
@@ -873,7 +873,7 @@ class InstanceIdParser(InstancePathParser):
             raise BadSchemaNodeType(sn, "list")
         sel = {}
         for j in range(len(ks)):
-            knod = sn.children.get(sn.keys[j])
+            knod = sn.get_data_child(*sn.keys[j])
             val = knod.type.parse_value(unquote(ks[j]))
             sel[knod.iname()] = val
         return EntryKeys(sel)

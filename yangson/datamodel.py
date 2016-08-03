@@ -4,7 +4,7 @@ from .constants import YangsonException
 from .context import Context, BadYangLibraryData
 from .instance import (EntryKeys, RootNode, InstancePath,
                        MemberName, InstanceIdParser, ResourceIdParser)
-from .schema import (BadSchemaNodeType, DataNode, InternalNode,
+from .schema import (BadSchemaNodeType, DataNode, GroupNode,
                      NonexistentSchemaNode, RawObject, SchemaNode)
 from .typealiases import *
 
@@ -19,7 +19,7 @@ class DataModel:
                          YANG modules listed in YANG library
                          can be retrieved.
         """
-        Context.schema = InternalNode()
+        Context.schema = GroupNode()
         try:
             yl = json.loads(yltxt)
         except json.JSONDecodeError:
