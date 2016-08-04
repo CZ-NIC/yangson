@@ -278,6 +278,9 @@ class InstanceNode:
         """Return the node-set of receiver's XPath following-siblings."""
         return []
 
+    def xpath_parent(self) -> List["InstanceNode"]:
+        return [self.up()]
+
     def deref(self) -> List["InstanceNode"]:
         """Return the list of nodes that the receiver refers to.
 
@@ -521,6 +524,9 @@ class ArrayEntry(InstanceNode):
         """Return the list of receiver's XPath following-siblings."""
         return ([] if qname and self.qualName != qname
                 else self.following_entries())
+
+    def xpath_parent(self) -> List["InstanceNode"]:
+        return [self.up().up()]
 
 class InstancePath(list):
     """Instance route."""
