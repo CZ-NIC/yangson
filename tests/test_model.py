@@ -271,6 +271,12 @@ def test_types(data_model):
 def test_instance(instance):
     def axtest(expr, res):
         assert [ str(i.path()) for i in expr ] == res
+    hi = hash(instance)
+    instd = instance.add_defaults()
+    hix = hash(instance)
+    hid = hash(instd)
+    assert hi == hix
+    assert hi != hid
     conta = instance.member("test:contA")
     la1 = conta.member("listA").last_entry()
     lt = conta.member("testb:leafT")
