@@ -122,6 +122,7 @@ def instance(data_model):
 
 def test_context(data_model):
     assert len(Context.implement) == 3
+    assert Context.module_set_id() == "b6d7e0614440c5ad8a7370fe46c777254d331983"
     tid = Context._last_revision("test")
     stid = Context._last_revision("subtest")
     tbid = Context._last_revision("testb")

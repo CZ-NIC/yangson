@@ -1,3 +1,4 @@
+import hashlib
 import re
 from typing import Dict, List, MutableSet
 from .constants import pname_re, YangsonException
@@ -93,6 +94,13 @@ class Context:
         cls._apply_augments()
         cls.schema._post_process()
         cls.schema._make_schema_patterns()
+
+    @classmethod
+    def module_set_id(cls):
+        """Return numeric id of the current set of modules."""
+        fnames = ["@".join(m) for m in cls.modules.keys()]
+        fnames.sort()
+        return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
 
     @classmethod
     def _load_module(cls, name: YangIdentifier,
