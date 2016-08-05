@@ -8,13 +8,7 @@ References
 
 __ https://tools.ietf.org/html/draft-ietf-netmod-rfc6087bis
 
-.. [BBW16] Bierman, A.; Bjorklund, M.; Watsen, K. *YANG Module
-	   Library.* `draft-ietf-netconf-yang-library`__, Internet
-	   Engineering Task Force, 2016.
-
-__ https://tools.ietf.org/html/draft-ietf-netconf-yang-library
-
-.. [BBW16a] Bierman, A.; Bjorklund, M.; Watsen, K. *RESTCONF
+.. [BBW16] Bierman, A.; Bjorklund, M.; Watsen, K. *RESTCONF
 	   Protocol.* `draft-ietf-netconf-restconf`__, Internet
 	   Engineering Task Force, 2016.
 
@@ -47,6 +41,11 @@ __ https://www.python.org/dev/peps/pep-0484
 	     Internet Engineering Task Force, 2005.
 
 __ https://tools.ietf.org/html/rfc3986
+
+.. [RFC7895] Bierman, A.; Bjorklund, M.; Watsen, K. *YANG Module
+	     Library.* `RFC 7895`__, IETF, 2016.
+
+__ https://tools.ietf.org/html/rfc7895
 
 .. [XPath] Clark, J.; DeRose S. *XML Path Language (XPath) Version
 	   1.0*. W3C Recommendation `REC-xpath-19991116`__, World Wide

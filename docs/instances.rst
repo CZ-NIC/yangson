@@ -305,7 +305,7 @@ Consider this very simple YANG module::
   }
 
 In order to use this YANG module with the *Yangson* library, we need to
-write a *YANG library* specification [BBW16]_::
+write a *YANG library* specification [RFC7895]_::
 
   {
     "ietf-yang-library:modules-state": {

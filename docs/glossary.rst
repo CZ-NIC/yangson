@@ -121,13 +121,13 @@ Glossary
 
        A string identifying an instance in the data tree that is
        suitable for use in URLs. The syntax of resource identifiers is
-       defined in [BBW16a]_, sec. `3.5.1`.
+       defined in [BBW16]_, sec. `3.5.1`.
 
    implemented module
 
        A YANG module that contributes data nodes to the data model. In
        YANG library, implemented modules have the *conformance-type*
-       parameter set to ``implement``. See [BBW16]_, sec. `2.2`_.
+       parameter set to ``implement``. See [RFC7895]_, sec. `2.2`_.
 
    imported-only module
 

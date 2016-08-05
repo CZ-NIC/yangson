@@ -9,7 +9,7 @@ Data Model Context
 The *Yangson* library requires two pieces of information in order to
 be able to construct the data model:
 
-* *YANG library* data [BBW16]_ with a list of YANG modules that
+* *YANG library* data [RFC7895]_ with a list of YANG modules that
   comprise the data model, and a few other details;
 
 * list of filesystem directories from which the YANG modules can be

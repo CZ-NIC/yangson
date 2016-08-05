@@ -19,7 +19,7 @@ The Yangson package comprises the following Python modules:
 :mod:`datamodel`
     This module defines the *DataModel* class that is designed as the
     main entry point to the library. It allows for composing a data
-    model based on YANG library [BBW16]_.
+    model based on YANG library [RFC7895]_.
 
 :mod:`schema`
     This module defines a class hierarchy representing YANG schema

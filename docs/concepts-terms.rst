@@ -53,7 +53,7 @@ YANG data models consist of *modules*. Each module defines the schema for some (
 
 YANG modules may also offload parts of their contents into *submodules*. One can then have one (main) module and any number of submodules that are included from the main module. The main module and all its submodules share the same namespace identified by the main module name.
 
-In order to create a particular data model, one has to decide which YANG modules will become part of it. The selection is recorded in *YANG library* data [BBW16]. And since YANG modules may exist in multiple revisions, a revision also needs to be specified for each module.
+In order to create a particular data model, one has to decide which YANG modules will become part of it. The selection is recorded in *YANG library* data [RFC7895]_. And since YANG modules may exist in multiple revisions, a revision also needs to be specified for each module.
 
 YANG also offers two mechanisms that allow for finer-grain control of data model content:
 

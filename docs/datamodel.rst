@@ -40,7 +40,7 @@ two main entry points to the *Yangson* library (class
    .. automethod:: parse_resource_id
 
       The syntax of a resource identifier is given by the production
-      rule “api-path” in `sec. 3.5.1.1`_ of [BBW16a]_.
+      rule “api-path” in `sec. 3.5.1.1`_ of [BBW16]_.
 
    .. automethod:: ascii_tree
 
