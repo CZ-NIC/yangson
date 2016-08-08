@@ -43,7 +43,7 @@ __ https://www.python.org/dev/peps/pep-0484
 __ https://tools.ietf.org/html/rfc3986
 
 .. [RFC7895] Bierman, A.; Bjorklund, M.; Watsen, K. *YANG Module
-	     Library.* `RFC 7895`__, IETF, 2016.
+	     Library.* `RFC 7895`__, IETF, 2016. 13 p. ISSN 2070-1721.
 
 __ https://tools.ietf.org/html/rfc7895
 

@@ -9,69 +9,109 @@ Data Model Context
 The *Yangson* library requires two pieces of information in order to
 be able to construct the data model:
 
-* *YANG library* data [RFC7895]_ with a list of YANG modules that
-  comprise the data model, and a few other details;
+* *YANG library* data [RFC7895]_ with a list of YANG modules and
+  submodules that comprise the data model, supported features, and a
+  few other details;
 
 * list of filesystem directories from which the YANG modules can be
   retrieved.
 
-*Yangson* reads the YANG library data and processes all the
- modules. This results in the data model schema plus a number of other
- data structures that are needed in other Python modules. To make them
- globally available, *Yangson* stores these data structures in the
- :class:`Context` class.
+*Yangson* reads the YANG library data and tries to locate all modules
+and submodules specified in YANG library data. Names of files in which
+(sub)modules are stored must be of the form specified in [Bjo16]_,
+sec. `5.2`__::
+
+    module-or-submodule-name ['@' revision-date] '.yang'
+
+*Yangson* is currently able to parse only the compact format of YANG
+files. The alternative XML format (YIN) may be supported in a future
+version.
+
+__ https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-14#section-5.2
+
+If a revision date is specified for a (sub)module in YANG library
+data, then it must also appear in the file name. 
+
+All modules and submodules are then processed into the data model
+schema plus a number of other data structures that are needed in other
+Python modules. To make them globally available, *Yangson* stores
+these data structures in the :class:`Context` class.
 
 .. class:: Context
 
-   This class stores several important data model structures as class
-   attributes, and also provides a number of generally useful class
-   methods. No instances of this class are expected to be created.
+   This class serves as a global storage of the data model schema and
+   several other important data model structures as class attributes.
+   This means that it is possible to work with only one data model at
+   a time.
+   
+   The :class:`Context` also provides a number of class methods for
+   retrieving and using this global data. 
+
+   No instances of this class are expected to be created.
 
    .. attribute:: module_search_path
 
-      A list of directories in which Yangson looks for YANG modules.
+      List of directories where to look for YANG modules.
+
+      All YANG modules and submodules listed in YANG library
+      data [RFC7895]_ have to be located in one of these
+      directories. Names of
 
    .. attribute:: modules
 
-      A dictionary mapping :term:`module identifier`\ s to the
-      corresponding **module** or **submodule** :class:`Statement`\ s.
+      Dictionary of modules and submodules comprising the data model.
+
+      The keys are :term:`module identifier`\ s, and the values are
+      corresponding **module** or **submodule** statements (see
+      :class:`Statement`).
 
    .. attribute:: implement
 
-      A list of names of :term:`implemented module`\ s. Note that the
-      revisions aren't specified because the data model cannot contain
+      List of modules with conformance type “implement”.
+
+      The revisions aren't specified because the data model cannot contain
       more than one revision of each implemented module.
 
    .. attribute:: revisions
 
-      A dictionary mapping module names to the list of module
-      revisions that are used in the data model. For each implemented
-      module, this list is a singleton.
+      Dictionary of module and submodule revisions.
+
+      The keys are module and submodule names, and each value is a list of
+      revisions that are used in the data model.
+      For an :term:`implemented module`, this list must be a
+      singleton, whereas :term:`imported-only module`\ s may be present
+      in multiple revisions.
 
    .. attribute:: prefix_map
 
-      A dictionary that provides, for each YANG module or submodule
-      that is included in the data model, the translation of prefixes
-      to :term:`module identifier`\ s. The keys of the
-      :attr:`prefix_map` dictionary are :term:`module identifier`\ s,
-      and values are dictionaries with prefixes as keys and
-      :term:`module identifier`\ s as values.
+      Dictionary of prefix mappings.
 
+      The keys are :term:`module identifier`\ s, and each value
+      contains a mapping of prefixes for the module. The keys of this
+      mapping are prefixes, and the values are :term:`module
+      identifier`\ s.
+      
    .. attribute:: ns_map
 
-      A dictionary mapping module and submodule names to the
-      corresponding :term:`namespace identifier`\ s.
+      Dictionary of module and submodule namespaces.
 
-   .. attribute:: derived_identities
+      The keys are module and submodule names, and the values are
+      :term:`namespace identifier`\ s.
 
-      A dictionary mapping :term:`qualified name`\ s of identities to
-      the set of :term:`qualified name`\ s of directly derived
-      identities.
+   .. attribute:: identity_bases
+
+      Dictionary of identity bases.
+
+      The keys are :term:`qualified name`\ s of identities, and each
+      value is a list of :term:`qualified name`\ s of identities that
+      are defined as bases for the key identity.
 
    .. attribute:: features
 
-      A set of qualified names of features that the data model
-      supports.
+      Set of supported features.
+
+      Each entry is the :term:`qualified name` of a feature that is
+      declared as supported in YANG library data.
 
    .. automethod:: from_yang_library
 
@@ -79,6 +119,8 @@ be able to construct the data model:
       dictionary is supposed to be parsed from JSON-encoded YANG
       library data (see the factory method of the
       :class:`~yangson.datamodel.DataModel` class.
+
+   .. automethod:: module_set_id
 
    .. automethod:: resolve_pname
 

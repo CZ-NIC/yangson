@@ -8,12 +8,12 @@ Contents:
 
    introduction
    concepts-terms
-   statement
-   datamodel
-   schema
-   instances
+   .. statement
+   .. datamodel
+   .. schema
+   .. instances
    context
-   typealiases
+   .. typealiases
    references
    glossary
    xpath

@@ -47,10 +47,6 @@ This module defines several type aliases representing “raw” values produced 
       configuration, and ``False`` otherwise. Implemented as a
       :class:`property`.
 
-   .. automethod:: uniname
-
-   .. automethod:: instance_name
-
    .. automethod:: instance_route
 
    .. automethod:: state_roots
@@ -71,8 +67,6 @@ This module defines several type aliases representing “raw” values produced 
    .. automethod:: get_schema_descendant
 
    .. automethod:: get_data_child
-
-   .. automethod:: get_data_descendant
 
    .. automethod:: from_raw
 

@@ -8,24 +8,7 @@ from .typealiases import *
 """This module provides class `Context`."""
 
 class Context:
-    """Global repository of data model structures and utility methods.
-
-    The information is installed in class varables, which means that
-    different schemas cannot be generated in parallel. No instances of
-    this class are expected to be created.
-    """
-
-    @classmethod
-    def initialize(cls) -> None:
-        """Initialize the context variables."""
-        cls.module_search_path = [] # type: List[str]
-        cls.modules = {} # type: Dict[ModuleId, Statement]
-        cls.implement = [] # type: List[YangIdentifier]
-        cls.revisions = {} # type: Dict[YangIdentifier, List[str]]
-        cls.prefix_map = {} # type: Dict[ModuleId, Dict[YangIdentifier, ModuleId]]
-        cls.ns_map = {} # type: Dict[YangIdentifier, YangIdentifier]
-        cls.identity_bases = {} # type: Dict[QualName, MutableSet[QualName]]
-        cls.features = set() # type: MutableSet[QualName]
+    """Global repository of data model structures and utility methods."""
 
     # Regular expressions
     not_re = re.compile(r"not\s+")
@@ -33,19 +16,36 @@ class Context:
     or_re = re.compile(r"\s+or\s+")
 
     @classmethod
+    def initialize(cls) -> None:
+        """Initialize the context variables."""
+        cls.module_search_path = [] # type: List[str]
+        """List of directories where to look for YANG modules."""
+        cls.modules = {} # type: Dict[ModuleId, Statement]
+        """Dictionary of modules and submodules comprising the data model."""
+        cls.implement = [] # type: List[YangIdentifier]
+        """List of modules with conformance type “implement”."""
+        cls.revisions = {} # type: Dict[YangIdentifier, List[str]]
+        """Dictionary of module and submodule revisions."""
+        cls.prefix_map = {} # type: Dict[ModuleId, Dict[YangIdentifier, ModuleId]]
+        """Dictionary of prefix mappings."""
+        cls.ns_map = {} # type: Dict[YangIdentifier, YangIdentifier]
+        """Dictionary of module and submodule namespaces."""
+        cls.identity_bases = {} # type: Dict[QualName, MutableSet[QualName]]
+        """Dictionary of identity bases."""
+        cls.features = set() # type: MutableSet[QualName]
+        """Set of supported features."""
+
+    @classmethod
     def from_yang_library(cls, yang_lib: Dict[str, Any],
                           mod_path: List[str]) -> None:
-        """Initialize the data model structures from YANG library data.
+        """Set the data model structures from YANG library data.
 
         :param yang_lib: dictionary with YANG library data
-        :param mod_path: list of filesystem paths from which the
-                         YANG modules listed in `yang_lib` can be
-                         retrieved
+        :param mod_path: value for `module_search_path`
         :raises BadYangLibraryData: invalid YANG library data
         :raises MultipleImplementedRevisions: multiple revisions of an
                                               implemented module
-        :raises ModuleNotFound: a YANG module wasn't found in any of the
-                                directories listed in `mod_path`
+        :raises ModuleNotFound: a YANG module wasn't found
         :raises FeaturePrerequisiteError: a pre-requisite feature isn't
                                           supported.
         """
@@ -80,8 +80,7 @@ class Context:
                         locpref = bt.find1("prefix", required=True).argument
                         cls.prefix_map[smid] = { locpref: mid }
         except (KeyError, AttributeError) as e:
-            raise e
-            # raise BadYangLibraryData()
+            raise BadYangLibraryData()
         for mod in cls.revisions:
             cls.revisions[mod].sort(key=lambda r: "0" if r is None else r)
         cls._process_imports()
