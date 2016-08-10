@@ -3,7 +3,8 @@ import pytest
 from decimal import Decimal
 from yangson import DataModel
 from yangson.constants import ContentType
-from yangson.context import Context, BadPath, BadPrefName
+from yangson.context import (Context, FeatureExprParser, BadPath,
+                             InvalidFeatureExpression, BadPrefName)
 from yangson.datatype import YangTypeError
 from yangson.instance import MinElements, NonexistentInstance
 from yangson.instvalue import ArrayValue, ObjectValue
@@ -131,7 +132,9 @@ def test_context(data_model):
     assert Context.translate_pname("sd:foo", stid) == ("foo", "defs")
     with pytest.raises(BadPrefName):
         Context.translate_pname("d:foo", stid)
-    assert Context.feature_expr("feA and not feB", tid) == True
+    assert FeatureExprParser("feA and not (not feA or feB)", tid).parse()
+    with pytest.raises(InvalidFeatureExpression):
+        FeatureExprParser("feA andnot (not feA or feB)", tid).parse()
     assert not Context.is_derived_from(("all-uses", "test"), ("all-uses", "test"))
     assert Context.is_derived_from(("all-uses", "test"), ("licence-property", "test"))
     assert Context.is_derived_from(("CC-BY-SA", "testb"), ("share-alike", "test"))
@@ -155,6 +158,7 @@ def test_schema(data_model):
     lc = cb.get_data_child("leafC", "testb")
     llb = data_model.get_schema_node("/test:choiA/llistB/llistB")
     lj = data_model.get_data_node("/test:contA/listA/contD/contE/leafJ")
+    assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
     llc = data_model.get_schema_node("/testb:rpcA/output/llistC")
     ll = lsta.get_schema_descendant(Context.path2route(
         "test:contD/acA/output/leafL"))

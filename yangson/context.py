@@ -2,6 +2,7 @@ import hashlib
 import re
 from typing import Dict, List, MutableSet
 from .constants import pname_re, YangsonException
+from .parser import Parser, ParserException
 from .statement import ModuleParser, Statement
 from .typealiases import *
 
@@ -252,8 +253,6 @@ class Context:
             if cls.is_derived_from(ib, base): return True
         return False
 
-    # Feature handling
-
     @classmethod
     def _check_feature_dependences(cls):
         """Verify feature dependences."""
@@ -275,74 +274,64 @@ class Context:
         if not iffs:
             return True
         for i in iffs:
-            if cls.feature_expr(i.argument, mid):
-                continue
-            return False
+            if not FeatureExprParser(i.argument, mid).parse():
+                return False
         return True
 
-    @classmethod
-    def feature_test(cls, fname: PrefName, mid: ModuleId) -> bool:
-        """Is feature `fname` supported?
+class FeatureExprParser(Parser):
+    """Parser and evaluator for if-feature expressions."""
 
-        :param fname: prefixed name of a feature
-        :param mid: YANG module context
+    def __init__(self, text: str, mid: ModuleId) -> None:
+        """Initialize the parser instance.
+
+        :param mid: id of the context module
         """
-        return cls.translate_pname(fname, mid) in cls.features
+        super().__init__(text)
+        self.mid = mid
 
-    @classmethod
-    def feature_expr(cls, fexpr: str, mid: ModuleId) -> bool:
-        """Evaluate feature expression.
+    def parse(self) -> bool:
+        """Parse and evaluate a complete **if-feature** expression."""
+        self.skip_ws()
+        res = self._feature_disj()
+        self.skip_ws()
+        if not self.at_end():
+            raise InvalidFeatureExpression(self)
+        return res
 
-        :param fexpr: feature expression
-        :param mid: YANG module context
-        :raises BadFeatureExpression: invalid feature expression
-        """
-        x, px = cls._feature_disj(fexpr, 0, mid)
-        if px < len(fexpr):
-            raise BadFeatureExpression(fexpr)
+    def _feature_disj(self) -> bool:
+        x = self._feature_conj()
+        if self.test_string("or"):
+            if not self.skip_ws():
+                raise InvalidFeatureExpression(self)
+            return self._feature_disj() or x
         return x
 
-    @classmethod
-    def _feature_atom(cls, fexpr: str, ptr: int,
-                      mid: ModuleId) -> Tuple[bool, int]:
-        if fexpr[ptr] == "(":
-            x, px = cls._feature_disj(fexpr, ptr + 1, mid)
-            if fexpr[px] == ")":
-                return (x, px + 1)
-        else:
-            mo = pname_re.match(fexpr, ptr)
-            if mo:
-                return (cls.feature_test(mo.group(), mid), mo.end())
-        raise BadFeatureExpression(fexpr)
+    def _feature_conj(self) -> bool:
+        x = self._feature_term()
+        if self.test_string("and"):
+            if not self.skip_ws():
+                raise InvalidFeatureExpression(self)
+            return self._feature_conj() and x
+        return x
 
-    @classmethod
-    def _feature_term(cls, fexpr: str, ptr: int,
-                      mid: ModuleId) -> Tuple[bool, int]:
-        mo = cls.not_re.match(fexpr, ptr)
-        if mo:
-            x, px = cls._feature_atom(fexpr, mo.end(), mid)
-            return (not x, px)
-        return cls._feature_atom(fexpr, ptr, mid)
+    def _feature_term(self) -> bool:
+        if self.test_string("not"):
+            if not self.skip_ws():
+                raise InvalidFeatureExpression(self)
+            return not self._feature_atom()
+        return self._feature_atom()
 
-    @classmethod
-    def _feature_conj(cls, fexpr: str, ptr: int,
-                      mid: ModuleId) -> Tuple[bool, int]:
-        x, px = cls._feature_term(fexpr, ptr, mid)
-        mo = cls.and_re.match(fexpr, px)
-        if mo:
-            y, py = cls._feature_conj(fexpr, mo.end(), mid)
-            return (x and y, py)
-        return (x, px)
-
-    @classmethod
-    def _feature_disj(cls, fexpr: str, ptr: int,
-                      mid: ModuleId) -> Tuple[bool, int]:
-        x, px = cls._feature_conj(fexpr, ptr, mid)
-        mo = cls.or_re.match(fexpr, px)
-        if mo:
-            y, py = cls._feature_disj(fexpr, mo.end(), mid)
-            return (x or y, py)
-        return (x, px)
+    def _feature_atom(self) -> bool:
+        if self.peek() == "(":
+            self.adv_skip_ws()
+            res = self._feature_disj()
+            self.char(")")
+            self.skip_ws()
+            return res
+        n, p = self.qualified_name()
+        self.skip_ws()
+        ns = Context.prefix2ns(p, self.mid) if p else self.mid[0]
+        return (n, ns) in Context.features
 
 class ModuleNotFound(YangsonException):
     """A module is not found."""
@@ -383,14 +372,11 @@ class BadPrefName(YangsonException):
     def __str__(self) -> str:
         return self.pname
 
-class BadFeatureExpression(YangsonException):
-    """Broken "if-feature" argument."""
-
-    def __init__(self, expr: str) -> None:
-        self.expr = expr
+class InvalidFeatureExpression(ParserException):
+    """Exception to be raised for an invalid **if-feature** expression."""
 
     def __str__(self) -> str:
-        return self.expr
+        return str(self.parser)
 
 class FeaturePrerequisiteError(YangsonException):
     """Missing feature dependences."""

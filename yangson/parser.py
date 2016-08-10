@@ -143,8 +143,8 @@ class Parser:
         """
         return self.match_regex(ident_re, True, "YANG identifier")
 
-    def instance_name(self) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
-        """Parse instance name."""
+    def qualified_name(self) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
+        """Parse a qualified name."""
         i1 = self.yang_identifier()
         try:
             next = self.peek()
@@ -174,7 +174,7 @@ class ParserException(YangsonException):
         """
         if "\n" in self.parser.input:
             return "line {0}, column {1}".format(*self.parser.line_column())
-        return "position " + str(self.parser.offset)
+        return str(self.parser)
 
 class EndOfInput(ParserException):
     """End of input."""

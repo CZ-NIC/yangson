@@ -186,7 +186,7 @@ module test {
     leaf enumeration {
       type d:typC {
         enum Phobos {
-          if-feature "feA";
+          if-feature "feA and not feB";
         }
         enum Deimos {
           if-feature "feB";
