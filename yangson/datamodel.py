@@ -1,3 +1,4 @@
+import hashlib
 import json
 from typing import Dict, List, Optional
 from .constants import YangsonException
@@ -26,7 +27,14 @@ class DataModel:
             raise BadYangLibraryData() from None
         Context.from_yang_library(yl, mod_path)
 
-    def from_raw(self, robj: RawObject) -> RootNode:
+    @staticmethod
+    def module_set_id():
+        """Return numeric id of the current set of modules."""
+        fnames = sorted(["@".join(m) for m in Context.modules.keys()])
+        return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
+
+    @staticmethod
+    def from_raw(robj: RawObject) -> RootNode:
         """Return an instance created from a raw data tree.
 
         :param robj: a dictionary representing raw data tree
@@ -34,7 +42,8 @@ class DataModel:
         cooked = Context.schema.from_raw(robj)
         return RootNode(cooked, Context.schema, cooked.timestamp)
 
-    def get_schema_node(self, path: SchemaPath) -> Optional[SchemaNode]:
+    @staticmethod
+    def get_schema_node(path: SchemaPath) -> Optional[SchemaNode]:
         """Return the schema node corresponding to `path`.
 
         :param path: schema path
@@ -42,7 +51,8 @@ class DataModel:
         """
         return Context.schema.get_schema_descendant(Context.path2route(path))
 
-    def get_data_node(self, path: SchemaPath) -> Optional[DataNode]:
+    @staticmethod
+    def get_data_node(path: SchemaPath) -> Optional[DataNode]:
         """Return the data node corresponding to `path`.
 
         :param path: data path
@@ -55,7 +65,8 @@ class DataModel:
             if node is None: return None
         return node
 
-    def parse_instance_id(self, iid: str) -> InstancePath:
+    @staticmethod
+    def parse_instance_id(iid: str) -> InstancePath:
         """Parse instance identifier.
 
         :param iid: instance identifier string
@@ -65,7 +76,8 @@ class DataModel:
         """
         return InstanceIdParser(iid).parse()
 
-    def parse_resource_id(self, rid: str) -> InstancePath:
+    @staticmethod
+    def parse_resource_id(rid: str) -> InstancePath:
         """Parse RESTCONF data resource identifier.
 
         :param rid: data resource identifier
@@ -77,7 +89,8 @@ class DataModel:
         """
         return ResourceIdParser(rid).parse()
 
-    def ascii_tree(self) -> str:
+    @staticmethod
+    def ascii_tree() -> str:
         """Return ascii-art representation of the main data tree."""
         return Context.schema._ascii_tree("")
 

@@ -1,7 +1,5 @@
-import hashlib
-import re
 from typing import Dict, List, MutableSet
-from .constants import pname_re, YangsonException
+from .constants import YangsonException
 from .parser import Parser, ParserException
 from .statement import ModuleParser, Statement
 from .typealiases import *
@@ -10,11 +8,6 @@ from .typealiases import *
 
 class Context:
     """Global repository of data model structures and utility methods."""
-
-    # Regular expressions
-    not_re = re.compile(r"not\s+")
-    and_re = re.compile(r"\s+and\s+")
-    or_re = re.compile(r"\s+or\s+")
 
     @classmethod
     def initialize(cls) -> None:
@@ -60,7 +53,7 @@ class Context:
                 if "feature" in item:
                     cls.features.update(
                         [ (f,name) for f in item["feature"] ])
-                rev = item["revision"] if item["revision"] else None
+                rev = item["revision"]
                 mid = (name, rev)
                 ct = item["conformance-type"]
                 if ct == "implement": cls.implement.append(name)
@@ -72,7 +65,7 @@ class Context:
                     for s in item["submodules"]["submodule"]:
                         sname = s["name"]
                         cls.ns_map[sname] = name
-                        rev = s["revision"] if s["revision"] else None
+                        rev = s["revision"]
                         smid = (sname, rev)
                         if ct == "implement": cls.implement.append(sname)
                         cls.revisions.setdefault(sname, []).append(rev)
@@ -96,13 +89,6 @@ class Context:
         cls.schema._make_schema_patterns()
 
     @classmethod
-    def module_set_id(cls):
-        """Return numeric id of the current set of modules."""
-        fnames = ["@".join(m) for m in cls.modules.keys()]
-        fnames.sort()
-        return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
-
-    @classmethod
     def _load_module(cls, name: YangIdentifier,
                     rev: RevisionDate) -> Statement:
         """Read, parse and register YANG module or submodule."""
@@ -120,7 +106,8 @@ class Context:
         raise ModuleNotFound(name, rev)
 
     @classmethod
-    def _last_revision(cls, mname: YangIdentifier) -> ModuleId:
+    def last_revision(cls, mname: YangIdentifier) -> ModuleId:
+        """Return last revision of a module that's part of the data model."""
         return (mname, cls.revisions[mname][-1])
 
     @classmethod
@@ -137,7 +124,7 @@ class Context:
                 if rev in cls.revisions[impn]:
                     imid = (impn, rev)
                 elif rev is None:             # use last revision
-                    imid = cls._last_revision(impn)
+                    imid = cls.last_revision(impn)
                 else:
                     raise ModuleNotFound(impn, rev)
                 cls.prefix_map[mid][prefix] = imid

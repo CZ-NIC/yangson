@@ -123,10 +123,10 @@ def instance(data_model):
 
 def test_context(data_model):
     assert len(Context.implement) == 3
-    assert Context.module_set_id() == "b6d7e0614440c5ad8a7370fe46c777254d331983"
-    tid = Context._last_revision("test")
-    stid = Context._last_revision("subtest")
-    tbid = Context._last_revision("testb")
+    assert data_model.module_set_id() == "b6d7e0614440c5ad8a7370fe46c777254d331983"
+    tid = Context.last_revision("test")
+    stid = Context.last_revision("subtest")
+    tbid = Context.last_revision("testb")
     assert Context.modules[tid].argument == "test"
     assert Context.translate_pname("t:foo", tbid) == ("foo", "test")
     assert Context.translate_pname("sd:foo", stid) == ("foo", "defs")
