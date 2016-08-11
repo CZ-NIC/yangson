@@ -1,0 +1,11 @@
+module hello-world {
+
+  namespace "http://example.com/hello-world";
+
+  prefix "hw";
+
+  leaf greeting {
+    type string;
+    default "Hello, world!";
+  }
+}

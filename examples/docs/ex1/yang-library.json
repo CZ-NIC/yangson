@@ -1,0 +1,12 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "XXXX",
+    "module": [
+      {
+        "name": "hello-world",
+        "namespace": "http://example.com/hello-world",
+        "conformance-type": "implement"
+      }
+    ]
+  }
+}
