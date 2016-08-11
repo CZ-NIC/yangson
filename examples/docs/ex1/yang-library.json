@@ -5,6 +5,7 @@
       {
         "name": "hello-world",
         "namespace": "http://example.com/hello-world",
+        "revision": "",
         "conformance-type": "implement"
       }
     ]
