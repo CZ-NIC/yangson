@@ -85,9 +85,11 @@ Limitations:
   </template>
 
   <template match="nc:capabilities">
-    <element name="yl:modules-state">
-      <element name="yl:module-set-id">XXXX</element>
-      <apply-templates select="nc:capability[contains(., 'module=')]"/>
+    <element name="nc:data">
+      <element name="yl:modules-state">
+	<element name="yl:module-set-id">XXXX</element>
+	<apply-templates select="nc:capability[contains(., 'module=')]"/>
+      </element>
     </element>
   </template>
 
