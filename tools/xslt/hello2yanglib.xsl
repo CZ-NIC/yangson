@@ -41,7 +41,7 @@ Limitations:
   </template>
 
   <template name="uri-parameters">
-    <param name="text" select="substring-after(., '?')"/>
+    <param name="text"/>
     <choose>
       <when test="contains($text, '&amp;')">
 	<call-template name="uri-param">
@@ -95,10 +95,16 @@ Limitations:
 
   <template match="nc:capability">
     <element name="yl:module">
-      <call-template name="uri-parameters"/>
+      <variable name="pars" select="substring-after(., '?')"/>
+      <call-template name="uri-parameters">
+	<with-param name="text" select="$pars"/>
+      </call-template>
       <element name="yl:namespace">
 	<value-of select="substring-before(., '?')"/>
       </element>
+      <if test="not(contains($pars, 'revision='))">
+	<element name="yl:revision"/>
+      </if>
       <element name="yl:conformance-type">implement</element>
     </element>
   </template>
