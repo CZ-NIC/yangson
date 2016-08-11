@@ -3,7 +3,7 @@ import decimal
 import re
 from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, List, Optional, Tuple, Union
-from .constants import NonexistentSchemaNode, YangsonException
+from .constants import NonexistentSchemaNode, Singleton, YangsonException
 from .context import Context
 from .instance import InstanceNode, InstanceIdParser, InstancePath
 from .parser import ParserException
@@ -204,16 +204,8 @@ class UnionType(DataType):
         self.types = [ self.resolve_type(ts, mid)
                        for ts in stmt.find_all("type") ]
 
-class EmptyType(DataType):
-    """Class representing YANG "empty" type."""
-
-    _instance = None
-
-    def __new__(cls, mid: ModuleId):
-        """Create the singleton instance if it doesn't exist yet."""
-        if not cls._instance:
-            cls._instance = super(EmptyType, cls).__new__(cls)
-        return cls._instance
+class EmptyType(DataType, metaclass=Singleton):
+    """Singleton class representing YANG "empty" type."""
 
     def canonical_string(self, val: Tuple[None]) -> str:
         return ""

@@ -1,7 +1,7 @@
 """This module defines classes for schema patterns."""
 
 from typing import List, Optional
-from .constants import ContentType
+from .constants import ContentType, Singleton
 from .typealiases import *
 from .xpathast import Expr
 
@@ -21,16 +21,8 @@ class SchemaPattern:
         """
         return False
 
-class Empty(SchemaPattern):
-    """Singleton class representing empty pattern."""
-
-    _instance = None
-
-    def __new__(cls):
-        """Create the singleton instance if it doesn't exist yet."""
-        if not cls._instance:
-            cls._instance = super(Empty, cls).__new__(cls)
-        return cls._instance
+class Empty(SchemaPattern, metaclass=Singleton):
+    """Singleton class representing the empty pattern."""
 
     def nullable(self, cnode: "DataNode", content: ContentType) -> bool:
         """Override the superclass method.

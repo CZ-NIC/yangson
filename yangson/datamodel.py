@@ -1,7 +1,7 @@
 import hashlib
 import json
 from typing import Dict, List, Optional
-from .constants import YangsonException
+from .constants import Singleton, YangsonException
 from .context import Context, BadYangLibraryData
 from .instance import (EntryKeys, RootNode, InstancePath,
                        MemberName, InstanceIdParser, ResourceIdParser)
@@ -9,8 +9,8 @@ from .schema import (BadSchemaNodeType, DataNode, GroupNode,
                      NonexistentSchemaNode, RawObject, SchemaNode)
 from .typealiases import *
 
-class DataModel:
-    """YANG data model."""
+class DataModel(metaclass=Singleton):
+    """Singleton class representing the entry point to the YANG data model."""
 
     def __init__(self, yltxt: str, mod_path: List[str]) -> None:
         """Initialize the class instance.

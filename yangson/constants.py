@@ -33,6 +33,15 @@ _integer = "[0-9]+"
 integer_re = re.compile(_integer)
 decimal_re = re.compile(r"{}(\.{})?|\.{}".format(_integer, _integer, _integer))
 
+# Singleton metaclass
+
+class Singleton(type):
+    _instances = {}
+    def __call__(cls, *args, **kwargs):
+        if cls not in cls._instances:
+            cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
+        return cls._instances[cls]
+
 # Enumeration classes
 
 class DefaultDeny(Enum):
