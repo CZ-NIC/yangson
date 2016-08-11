@@ -27,6 +27,13 @@ class DataModel:
             raise BadYangLibraryData() from None
         Context.from_yang_library(yl, mod_path)
 
+    @classmethod
+    def from_file(cls, name: str, mod_path: List[str] = ["."]) -> "DataModel":
+        """Return an instance initialised from a file with YANG library data."""
+        with open(name, encoding="utf-8") as infile:
+            yltxt = infile.read()
+        return cls(yltxt, mod_path)
+
     @staticmethod
     def module_set_id():
         """Return numeric id of the current set of modules."""
