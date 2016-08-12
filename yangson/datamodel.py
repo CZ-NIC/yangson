@@ -29,14 +29,18 @@ class DataModel(metaclass=Singleton):
 
     @classmethod
     def from_file(cls, name: str, mod_path: List[str] = ["."]) -> "DataModel":
-        """Return an instance initialised from a file with YANG library data."""
+        """Return an instance initialised from a file with YANG library data.
+
+        :param name: name of the file with YANG library data
+        :param mod_path: list of directories where to search for YANG modules
+        """
         with open(name, encoding="utf-8") as infile:
             yltxt = infile.read()
         return cls(yltxt, mod_path)
 
     @staticmethod
-    def module_set_id():
-        """Return numeric id of the current set of modules."""
+    def module_set_id() -> str:
+        """Return hexadecimal id of the current set of modules."""
         fnames = sorted(["@".join(m) for m in Context.modules.keys()])
         return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
 
@@ -73,48 +77,6 @@ class DataModel(metaclass=Singleton):
         return node
 
     @staticmethod
-    def parse_instance_id(iid: str) -> InstancePath:
-        """Parse instance identifier.
-
-        :param iid: instance identifier string
-        :raises BadInstanceIdentifier: if the instance identifier is invalid
-        :raises NonexistentSchemaNode: if the instance identifier refers to
-                                       a data node that doesn't exist
-        """
-        return InstanceIdParser(iid).parse()
-
-    @staticmethod
-    def parse_resource_id(rid: str) -> InstancePath:
-        """Parse RESTCONF data resource identifier.
-
-        :param rid: data resource identifier
-        :raises BadResourceIdentifier: if the resource identifier is invalid
-        :raises NonexistentSchemaNode: if the resource identifier refers to
-                                       a data node that doesn't exist
-        :raises BadSchemaNodeType: if keys are specified for a schema node that
-                                   is not a list
-        """
-        return ResourceIdParser(rid).parse()
-
-    @staticmethod
     def ascii_tree() -> str:
         """Return ascii-art representation of the main data tree."""
         return Context.schema._ascii_tree("")
-
-class BadInstanceIdentifier(YangsonException):
-    """Exception to be raised for malformed instance identifier."""
-
-    def __init__(self, iid: str) -> None:
-        self.iid = iid
-
-    def __str__(self) -> str:
-        return self.iid
-
-class BadResourceIdentifier(YangsonException):
-    """Exception to be raised for malformed resource identifier."""
-
-    def __init__(self, rid: str) -> None:
-        self.rid = rid
-
-    def __str__(self) -> str:
-        return self.rid

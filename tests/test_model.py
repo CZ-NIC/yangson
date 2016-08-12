@@ -6,7 +6,8 @@ from yangson.constants import ContentType
 from yangson.context import (Context, FeatureExprParser, BadPath,
                              InvalidFeatureExpression, BadPrefName)
 from yangson.datatype import YangTypeError
-from yangson.instance import MinElements, NonexistentInstance
+from yangson.instance import (InstanceIdParser, MinElements,
+                              NonexistentInstance, ResourceIdParser)
 from yangson.instvalue import ArrayValue, ObjectValue
 from yangson.schema import SequenceNode, NonexistentSchemaNode
 from yangson.xpathast import XPathTypeError
@@ -448,28 +449,28 @@ def test_xpath(instance):
     xptest("bit-is-set(., 'dos')", False, conta)
 
 def test_instance_paths(data_model, instance):
-    rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
-    rid2 = data_model.parse_resource_id(
-        "/test:contA/listA=C0FFEE,true/contD/contE")
-    iid1 = data_model.parse_instance_id("/test:contA/testb:leafN")
-    iid2 = data_model.parse_instance_id(
-        "/test:contA/listA[leafE='C0FFEE'][leafF = 'true']/contD/contE")
-    iid3 = data_model.parse_instance_id("/test:contA/listA[1]/contD/contE")
+    rid1 = ResourceIdParser("/test:contA/testb:leafN").parse()
+    rid2 = ResourceIdParser(
+        "/test:contA/listA=C0FFEE,true/contD/contE").parse()
+    iid1 = InstanceIdParser("/test:contA/testb:leafN").parse()
+    iid2 = InstanceIdParser(
+        "/test:contA/listA[leafE='C0FFEE'][leafF = 'true']/contD/contE").parse()
+    iid3 = InstanceIdParser("/test:contA/listA[1]/contD/contE").parse()
     bad_pth = "/test:contA/listA=ABBA,true/contD/contE"
     assert instance.peek(rid1) == instance.peek(iid1) == "hi!"
     assert (instance.goto(rid2).member("leafP").value ==
             instance.goto(iid2).member("leafP").value ==
             instance.goto(iid3).member("leafP").value == 10)
     with pytest.raises(NonexistentSchemaNode):
-        data_model.parse_resource_id("/test:contA/leafX")
+        ResourceIdParser("/test:contA/leafX").parse()
     with pytest.raises(NonexistentSchemaNode):
-        data_model.parse_instance_id("/test:contA/llX[. = 'foo']")
-    assert instance.peek(data_model.parse_resource_id(bad_pth)) == None
+        InstanceIdParser("/test:contA/llX[. = 'foo']").parse()
+    assert instance.peek(ResourceIdParser(bad_pth).parse()) == None
     with pytest.raises(NonexistentInstance):
-        instance.goto(data_model.parse_resource_id(bad_pth))
+        instance.goto(ResourceIdParser(bad_pth).parse())
 
 def test_edits(data_model, instance):
-    laii = data_model.parse_instance_id("/test:contA/listA")
+    laii = InstanceIdParser("/test:contA/listA").parse()
     la = instance.goto(laii)
     inst1 = la.entry(1).update_from_raw(
         {"leafE": "B00F", "leafF": False}).top()
