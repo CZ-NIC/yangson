@@ -78,5 +78,5 @@ class DataModel(metaclass=Singleton):
 
     @staticmethod
     def ascii_tree() -> str:
-        """Return ascii-art representation of the main data tree."""
+        """Return ASCII art representation of the main data tree."""
         return Context.schema._ascii_tree("")

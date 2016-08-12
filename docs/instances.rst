@@ -412,3 +412,12 @@ array, the result will be quite different::
 
 The new :class:`Instance` ``minst2`` contains the modified value, but
 neither ``inst`` nor ``minst`` changed.
+
+The syntax of an instance identifier is given by the production rule
+``instance-identifier`` in `sec. 14`_ of [Bjo16]_.
+
+The syntax of a resource identifier is given by the production rule
+``api-path`` in `sec. 3.5.1.1`_ of [BBW16]_.
+
+.. _sec. 14: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-12#section-14
+.. _sec. 3.5.1.1: https://tools.ietf.org/html/draft-ietf-netconf-restconf-13#section-3.5.1.1

@@ -529,7 +529,6 @@ class TerminalNode(SchemaNode):
         return []
 
     def _ascii_tree(self, indent: str) -> str:
-        """Return the receiver's ascii-art subtree."""
         return ""
 
     def _tree_line(self) -> str:
