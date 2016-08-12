@@ -1,0 +1,9 @@
+{
+  "example-2:top": {
+    "foo": [
+      1,
+      2
+    ],
+    "bar": true
+  }
+}

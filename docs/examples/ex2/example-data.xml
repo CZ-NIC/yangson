@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<data xmlns="urn:ietf:params:xml:ns:netconf:base:1.0">
+  <top xmlns="http://example.com/example-2">
+    <foo>1</foo>
+    <foo>2</foo>
+    <bar>true</bar>
+  </top>
+</data>
