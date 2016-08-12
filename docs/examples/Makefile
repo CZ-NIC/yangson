@@ -71,7 +71,7 @@ model.xsl: hello.xml
 model.tree: hello.xml
 	@pyang $(PYANG_OPTS) -f tree -o $@ -L $<
 
-skel:
+skel: hello.xml
 	@pyang $(PYANG_OPTS) -f sample-xml-skeleton \
 	  --sample-xml-skeleton-defaults -L $< | \
 	  xmllint -o $(baty).xml --format -
