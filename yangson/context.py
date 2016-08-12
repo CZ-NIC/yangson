@@ -200,6 +200,7 @@ class Context:
         :param path: schema path
         :raises BadPath: invalid path
         """
+        if path == "/" or path == "": return []
         nlist = path.split("/")
         prevns = None
         res = []
