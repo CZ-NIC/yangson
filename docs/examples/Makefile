@@ -3,19 +3,20 @@ yams = $(patsubst %.yin,%.yang,$(wildcard *.yin))
 EXAMPLE_BASE = example
 EXAMPLE_TARGET = data
 PYANG_OPTS =
+IETF_DIR = ../../../examples/ietf
 baty = $(EXAMPLE_BASE)-$(EXAMPLE_TARGET)
-export YANG_MODPATH ?= .:../../ietf
+export YANG_MODPATH ?= .:$(IETF_DIR)
 xsldir = ../../../tools/xslt
 schemas = $(baty).rng $(baty).sch $(baty).dsrl
 y2dopts = -t $(EXAMPLE_TARGET) -b $(EXAMPLE_BASE)
-tgt = 
+ylfile = yang-library-$(lastword $(subst /, ,$(abspath .))).json
 rngparms = --stringparam target $(EXAMPLE_TARGET) \
 	--stringparam basename $(EXAMPLE_BASE) \
 	--stringparam schema-dir $(PYANG_RNG_LIBDIR) \
 	$(PYANG_XSLT_DIR)/gen-relaxng.xsl
 .PHONY: all clean commit json rnc skel yang
 
-all: yang-library.json $(baty).json
+all: $(ylfile) $(baty).json
 
 yang: $(yams)
 
@@ -38,10 +39,10 @@ hello.xml: $(yams)
 	@echo '</capabilities>' >> $@
 	@echo '</hello>' >> $@
 
-../yang-library.xsl: ../../ietf/ietf-yang-library@2016-06-21.yang
+../yang-library.xsl: $(IETF_DIR)/ietf-yang-library@2016-06-21.yang
 	@pyang $(PYANG_OPTS) -f jsonxsl -o $@ $<
 
-yang-library.json: hello.xml ../yang-library.xsl
+$(ylfile): hello.xml ../yang-library.xsl
 	@xsltproc $(xsldir)/hello2yanglib.xsl $< | \
 	  xsltproc -o $@ ../yang-library.xsl -
 
@@ -75,7 +76,7 @@ skel:
 	  --sample-xml-skeleton-defaults -L $< | \
 	  xmllint -o $(baty).xml --format -
 
-commit: $(yams) $(baty).json yang-library.json
+commit: $(yams) $(baty).json $(ylfile)
 	@git add $^
 	@git commit
 
