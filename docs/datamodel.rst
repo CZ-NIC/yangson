@@ -15,17 +15,11 @@ Data Model
 This module provides the :class:`DataModel` class that provides the basic
 user-level API to the *Yangson* library.
 
-.. class:: DataModel(yltxt: str, mod_path: List[str] )
-
-   This class represents a high-level view of the YANG data model. Its
-   constructor has two arguments:
-
-   - **yltxt** – JSON text with YANG library data;
-   - **mod_path** – list of filesystem paths from which the YANG modules
-     that are listed in the YANG library data can be retrieved.
+.. autoclass:: DataModel(yltxt: str, mod_path: List[str] )
 
    It is a *singleton* class which means that only one instance can be
-   created.
+   created. This limitation corresponds to the fact that it is not
+   possible to work with multiple data models at the same time.
 
    :class:`DataModel` is also re-exported by the main package, so it
    can also be imported directly from there:

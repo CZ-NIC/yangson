@@ -10,16 +10,14 @@ from .schema import (BadSchemaNodeType, DataNode, GroupNode,
 from .typealiases import *
 
 class DataModel(metaclass=Singleton):
-    """Singleton class representing the entry point to the YANG data model."""
+    """The basic entry point to the YANG data model.
+
+    :param yltxt: JSON text with YANG library data
+    :param mod_path: list of directories where to look for YANG modules
+    """
 
     def __init__(self, yltxt: str, mod_path: List[str]) -> None:
-        """Initialize the class instance.
-
-        :param yltxt: JSON text containing YANG library data
-        :param mod_path: list of filesystem paths from which
-                         YANG modules listed in YANG library
-                         can be retrieved.
-        """
+        """Initialize the class instance."""
         Context.schema = GroupNode()
         try:
             yl = json.loads(yltxt)
