@@ -1,0 +1,11 @@
+module example-1 {
+
+  namespace "http://example.com/example-1";
+
+  prefix "ex1";
+
+  leaf greeting {
+    type string;
+    default "Hello, world!";
+  }
+}

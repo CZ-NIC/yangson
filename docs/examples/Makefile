@@ -81,4 +81,4 @@ commit: $(yams) $(baty).json $(ylfile)
 	@git commit
 
 clean:
-	@rm -rf *.rng *.rnc *.xsl model.tree
+	@rm -rf *.rng *.rnc *.dsdl *.xsl model.tree

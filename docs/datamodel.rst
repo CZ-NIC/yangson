@@ -59,7 +59,7 @@ user-level API to the *Yangson* library.
       .. doctest::
 
 	 >>> dm.module_set_id()
-	 'eecdf487a0fc6d21a07007801dea3c38f751bf23'
+	 'ae4bf1ddf85a67ab94a9ab71593cd1c78b7f231d'
 
    .. automethod:: from_raw
 
@@ -81,7 +81,7 @@ user-level API to the *Yangson* library.
 	 ...   rdata = json.load(infile)
 	 >>> inst = dm.from_raw(rdata)
 	 >>> inst.value
-	 {'hello-world:greeting': 'Hi!'}
+	 {'example-1:greeting': 'Hi!'}
 
    .. automethod:: get_schema_node
 
@@ -98,7 +98,7 @@ user-level API to the *Yangson* library.
 
       .. doctest::
 
-	 >>> dm.get_data_node("/hello-world:greeting").name
+	 >>> dm.get_data_node("/example-1:greeting").name
 	 'greeting'
 
    .. automethod:: ascii_tree
@@ -116,7 +116,7 @@ user-level API to the *Yangson* library.
       .. doctest::
 
 	 >>> dm.ascii_tree()
-	 '+--rw hello-world:greeting?\n'
+	 '+--rw example-1:greeting?\n'
 
 .. _sec. 6.1: https://tools.ietf.org/html/draft-ietf-netmod-yang-json-10#section-6.1
 .. _pyang: https://github.com/mbj4668/pyang

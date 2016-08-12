@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<module name="hello-world"
+<module name="example-1"
         xmlns="urn:ietf:params:xml:ns:yang:yin:1"
-        xmlns:hw="http://example.com/hello-world">
-  <namespace uri="http://example.com/hello-world"/>
-  <prefix value="hw"/>
+        xmlns:ex1="http://example.com/example-1">
+  <namespace uri="http://example.com/example-1"/>
+  <prefix value="ex1"/>
   <leaf name="greeting">
     <type name="string"/>
     <default value="Hello, world!"/>
