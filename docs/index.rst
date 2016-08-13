@@ -11,7 +11,7 @@ Contents:
    .. statement
    .. datamodel
    .. schema
-   .. instances
+   instance
    context
    .. typealiases
    references
