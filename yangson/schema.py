@@ -48,7 +48,8 @@ class SchemaNode:
     def iname2qname(self, iname: InstanceName) -> QualName:
         """Translate instance name to a qualified name.
 
-        :param iname: instance name
+        Args:
+            iname: Instance name.
         """
         p, s, loc = iname.partition(":")
         return (loc, p) if s else (p, self.ns)
@@ -185,7 +186,8 @@ class InternalNode(SchemaNode):
     def add_child(self, node: SchemaNode) -> None:
         """Add child node to the receiver.
 
-        :param node: child node
+        Args:
+            node: Child node.
         """
         node.parent = self
         self.children.append(node)
@@ -194,8 +196,9 @@ class InternalNode(SchemaNode):
                   ns: YangIdentifier = None) -> Optional["SchemaNode"]:
         """Return receiver's schema child.
 
-        :param name: child's name
-        :param ns: child's namespace (= `self.ns` if absent)
+        Args:
+            name: Child's name.
+            ns: Child's namespace (= `self.ns` if absent).
         """
         ns = ns if ns else self.ns
         todo = []
@@ -225,8 +228,9 @@ class InternalNode(SchemaNode):
             self, route: SchemaRoute) -> Optional["SchemaNode"]:
         """Return descendant schema node or ``None``.
 
-        :param route: schema route of the descendant node
-                     (relative to the receiver).
+        Args:
+            route: Schema route of the descendant node
+                   (relative to the receiver).
         """
         node = self
         for p in route:
@@ -438,7 +442,8 @@ class InternalNode(SchemaNode):
     def from_raw(self, val: RawObject) -> ObjectValue:
         """Transform a raw dictionary into object value.
 
-        :param val: raw dictionary
+        Args:
+            val: Raw dictionary.
         """
         res = ObjectValue()
         for qn in val:
@@ -510,7 +515,8 @@ class TerminalNode(SchemaNode):
     def from_raw(self, val: RawScalar) -> ScalarValue:
         """Transform a scalar value.
 
-        :param val: raw scalar value
+        Args:
+            val: Raw scalar value.
         """
         return self.type.from_raw(val)
 
@@ -633,7 +639,8 @@ class SequenceNode(DataNode):
     def from_raw(self, val: RawList) -> ArrayValue:
         """Transform a raw array into array value.
 
-        :param val: raw array
+        Args:
+            val: Raw array.
         """
         res = ArrayValue()
         for en in val:
@@ -902,7 +909,8 @@ class AnydataNode(TerminalNode, DataNode):
     def from_raw(self, val: RawValue) -> Value:
         """Transform an anydata or anyxml value.
 
-        :param val: raw value
+        Args:
+            val: Raw value.
         """
         def convert(val):
             if isinstance(val, list):

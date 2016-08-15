@@ -1,11 +1,10 @@
-"""This module contains classes andtype aliases representing instance values."""
+"""This module contains classes for representing instance node values."""
 
 from datetime import datetime
 from typing import Dict, List, Union
 from .typealiases import *
 
-# Local type aliases
-
+#: Type alias covers all possible instance node values.
 Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
 
 class StructuredValue:
@@ -14,6 +13,7 @@ class StructuredValue:
     def __init__(self, ts: datetime) -> None:
         """Initialize class instance.
 
+        Args:
         :param ts: creation timestamp
         """
         self.timestamp = ts if ts else datetime.now()
@@ -29,6 +29,7 @@ class StructuredValue:
     def __eq__(self, val: "StructuredValue") -> bool:
         """Return ``True`` if the receiver equal to `val`.
 
+        Args:
         :param val: value to compare
         """
         return self.__class__ == val.__class__ and hash(self) == hash(val)

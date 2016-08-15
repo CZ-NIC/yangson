@@ -36,8 +36,9 @@ class DataType:
     def derived_type(cls, stmt: Statement, mid: ModuleId) -> "DataType":
         """Completely resolve a derived type.
 
-        :param stmt: derived type statement
-        :param mid: id of the context module
+        Args:
+            stmt: Derived type statement.
+            mid: Id of the context module.
         """
         tchain = []
         s = stmt
@@ -62,8 +63,9 @@ class DataType:
     def _in_range(num: Union[int, decimal.Decimal], rng: Range) -> bool:
         """Decide whether a number fits into a range.
 
-        :param num: a number
-        :param rng: range
+        Args:
+            num: A number.
+            rng: Numeric range.
         """
         for r in rng:
             if len(r) == 1:
@@ -76,8 +78,9 @@ class DataType:
                        parser: Callable[[str], Any]) -> Range:
         """Combine original range with a new one specified in `rex`.
 
-        :param orig: original range
-        :param rex: range expression
+        Args:
+            orig: Original range.
+            rex: Range expression.
         """
         to_num = lambda xs: [ parser(x) for x in xs ]
         lo = orig[0][0]
@@ -104,7 +107,8 @@ class DataType:
     def parse_value(self, input: str) -> ScalarValue:
         """Parse value of a data type.
 
-        :param input: string representation of the value
+        Args:
+            input: String representation of the value.
         """
         res = self._parse(input)
         if res is not None and self._constraints(res): return res
@@ -113,14 +117,16 @@ class DataType:
     def _parse(self, input: str) -> Optional[ScalarValue]:
         """The most generic parsing method is to return `input`.
 
-        :param input: string representation of the value
+        Args:
+            input: String representation of the value.
         """
         return self._convert_raw(input)
 
     def from_raw(self, raw: RawScalar) -> ScalarValue:
         """Return a cooked value of the receiver type.
 
-        :param raw: raw value obtained from JSON parser
+        Args:
+            raw: Raw value obtained from JSON parser.
         """
         try:
             res = self._convert_raw(raw)
@@ -154,16 +160,18 @@ class DataType:
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
-        :param stmt: YANG ``type`` statement
-        :param mid: id of the context module
+        Args:
+            stmt: Yang ``type`` statement.
+            mid: Id of the context module.
         """
         self.handle_restrictions(stmt, mid)
 
     def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type restriction substatements.
 
-        :param stmt: YANG ``type`` statement
-        :param mid: id of the context module
+        Args:
+            stmt: Yang ``type`` statement.
+            mid: Id of the context module.
         """
         pass
 
@@ -198,8 +206,9 @@ class UnionType(DataType):
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
-        :param stmt: YANG ``type`` statement
-        :param mid: id of the context module
+        Args:
+            stmt: Yang ``type`` statement.
+            mid: Id of the context module.
         """
         self.types = [ self.resolve_type(ts, mid)
                        for ts in stmt.find_all("type") ]
@@ -289,14 +298,16 @@ class BooleanType(DataType):
     def contains(self, val: bool) -> bool:
         """Return ``True`` if the receiver type contains `val`.
 
-        :param val: value to test
+        Args:
+            val: Value to test.
         """
         return isinstance(val, bool)
 
     def _parse(self, input: str) -> bool:
         """Parse boolean value.
 
-        :param input: string representation of the value
+        Args:
+            input: String representation of the value.
         """
         if input == "true": return True
         if input == "false": return False
@@ -320,8 +331,9 @@ class StringType(DataType):
     def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type restrictions.
 
-        :param stmt: YANG string type statement
-        :param mid: id of the context module
+        Args:
+            stmt: Yang string type statement.
+            mid: Id of the context module.
         """
         lstmt = stmt.find1("length")
         if lstmt:
@@ -337,7 +349,8 @@ class StringType(DataType):
     def contains(self, val: str) -> bool:
         """Return ``True`` if the receiver type contains `val`.
 
-        :param val: value to test
+        Args:
+            val: Value to test.
         """
         return isinstance(val, str) and self._constraints(val)
 
@@ -408,8 +421,9 @@ class LinkType(DataType):
     def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
-        :param stmt: YANG ``type leafref/instance-identifier`` statement
-        :param mid: id of the context module
+        Args:
+            stmt: Yang ``type leafref/instance-identifier`` statement.
+            mid: Id of the context module.
         """
         if stmt.find1("require-instance", "false"):
             self.require_instance = False
@@ -425,8 +439,9 @@ class LeafrefType(LinkType):
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
-        :param stmt: YANG ``type leafref`` statement
-        :param mid: id of the context module
+        Args:
+            stmt: Yang ``type leafref`` statement.
+            mid: Id of the context module.
         """
         self.path = XPathParser(
             stmt.find1("path", required=True).argument, mid).parse()
@@ -472,8 +487,9 @@ class IdentityrefType(DataType):
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
-        :param stmt: YANG ``type identityref`` statement
-        :param mid: id of the context module
+        Args:
+            stmt: Yang ``type identityref`` statement.
+            mid: Id of the context module.
         """
         self.bases = [ Context.translate_pname(b.argument, mid)
                        for b in stmt.find_all("base") ]
@@ -491,8 +507,9 @@ class NumericType(DataType):
     def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
-        :param stmt: YANG ``type`` statement
-        :param mid: id of the context module
+        Args:
+            stmt: Yang ``type`` statement.
+            mid: Id of the context module.
         """
         rstmt = stmt.find1("range")
         if rstmt:
@@ -511,8 +528,9 @@ class Decimal64Type(NumericType):
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
-        :param stmt: YANG ``type decimal64`` statement
-        :param mid: id of the context module
+        Args:
+            stmt: Yang ``type decimal64`` statement.
+            mid: Id of the context module.
         """
         fd = int(stmt.find1("fraction-digits", required=True).argument)
         self._epsilon = decimal.Decimal(10) ** -fd
@@ -533,7 +551,8 @@ class Decimal64Type(NumericType):
     def contains(self, val: decimal.Decimal) -> bool:
         """Return ``True`` if the receiver type contains `val`.
 
-        :param val: value to test
+        Args:
+            val: Value to test.
         """
         return isinstance(val, decimal.Decimal) and self._constraints(val)
 
@@ -546,7 +565,8 @@ class IntegralType(NumericType):
     def _parse(self, input: str) -> int:
         """Parse integral value.
 
-        :param input: string representation of the value
+        Args:
+            input: String representation of the value.
         """
         try:
             return (int(input, 16) if self.hexa_re.match(input) else int(input))
@@ -556,7 +576,8 @@ class IntegralType(NumericType):
     def contains(self, val: int) -> bool:
         """Return ``True`` if the receiver type contains `val`.
 
-        :param val: value to test
+        Args:
+            val: Value to test.
         """
         return isinstance(val, int) and self._constraints(val)
 

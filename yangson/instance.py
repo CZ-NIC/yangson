@@ -17,18 +17,22 @@ class JSONPointer(tuple):
         return "/" + "/".join([ str(c) for c in self ])
 
 class InstanceNode:
-    """YANG data node instance implemented as a zipper structure."""
+    """YANG data node instance implemented as a zipper structure.
 
-    def __init__(self, value: Value, parent: Optional["InstanceNode"],
-                 schema_node: "DataNode", ts: datetime) -> None:
-        """Initialize the class instance.
+    Attributes:
+        value: Value of the node (scalar or structured).
+        parinst: Parent instance node.
+        schema_node: Corresponding schema node.
+        timestamp: Time of last modification.
+    """
 
-        :param value: instance value
-        """
+    def __init__(self, value: Value, parinst: Optional["InstanceNode"],
+                 schema_node: "DataNode", timestamp: datetime) -> None:
+        """Initialize the class instance."""
         self.value = value
-        self.parent = parent
+        self.parinst = parinst
         self.schema_node = schema_node
-        self.timestamp = ts
+        self.timestamp = timestamp
 
     def __str__(self):
         """Return string representation of the receiver's value."""
@@ -69,9 +73,9 @@ class InstanceNode:
         """Return JSONPointer of the receiver."""
         parents = []
         inst = self
-        while inst.parent:
+        while inst.parinst:
             parents.append(inst)
-            inst = inst.parent
+            inst = inst.parinst
         return JSONPointer([ i._pointer_fragment() for i in parents[::-1] ])
 
     def update_from_raw(self, value: RawValue) -> "InstanceNode":
@@ -82,21 +86,22 @@ class InstanceNode:
     def up(self) -> "InstanceNode":
         """Ascend to the parent instance node."""
         try:
-            ts = max(self.timestamp, self.parent.timestamp)
-            return self.parent._copy(self.zip(), ts)
+            ts = max(self.timestamp, self.parinst.timestamp)
+            return self.parinst._copy(self.zip(), ts)
         except AttributeError:
             raise NonexistentInstance(self, "up of top") from None
 
     def top(self) -> "InstanceNode":
         inst = self
-        while inst.parent:
+        while inst.parinst:
             inst = inst.up()
         return inst
 
     def goto(self, ii: "InstancePath") -> "InstanceNode":
         """Return an instance in the receiver's subtree.
 
-        :param ii: instance route (relative to the receiver)
+        Args:
+            ii: Instance route (relative to the receiver).
         """
         inst = self # type: "InstanceNode"
         for sel in ii:
@@ -106,7 +111,8 @@ class InstanceNode:
     def peek(self, ii: "InstancePath") -> Optional[Value]:
         """Return a value in the receiver's subtree.
 
-        :param ii: instance route (relative to the receiver)
+        Args:
+            ii: Instance route (relative to the receiver).
         """
         val = self.value
         for sel in ii:
@@ -117,7 +123,8 @@ class InstanceNode:
     def update(self, newval: Value) -> "InstanceNode":
         """Return a copy of the receiver with a new value.
 
-        :param newval: new value
+        Args:
+            newval: New value.
         """
         return self._copy(newval, datetime.now())
 
@@ -346,9 +353,9 @@ class ObjectMember(InstanceNode):
     """This class represents an object member."""
 
     def __init__(self, name: InstanceName, siblings: Dict[InstanceName, Value],
-                 value: Value, parent: InstanceNode,
+                 value: Value, parinst: InstanceNode,
                  schema_node: "DataNode", ts: datetime ) -> None:
-        super().__init__(value, parent, schema_node, ts)
+        super().__init__(value, parinst, schema_node, ts)
         self.name = name
         self.siblings = siblings
 
@@ -375,16 +382,16 @@ class ObjectMember(InstanceNode):
               newts: datetime = None) -> "ObjectMember":
         return ObjectMember(self.name, self.siblings,
                            newval if newval else self.value,
-                           self.parent, self.schema_node,
+                           self.parinst, self.schema_node,
                            newts if newts else self._timestamp)
 
     def sibling(self, name: InstanceName) -> InstanceNode:
-        ssn = self.parent._member_schema_node(name)
+        ssn = self.parinst._member_schema_node(name)
         try:
             sibs = self.siblings.copy()
             newval = sibs.pop(name)
             sibs[self.name] = self.value
-            return ObjectMember(name, sibs, newval, self.parent,
+            return ObjectMember(name, sibs, newval, self.parinst,
                                 ssn, self.timestamp)
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
@@ -404,21 +411,21 @@ class ArrayEntry(InstanceNode):
     """This class represents an array entry."""
 
     def __init__(self, before: List[Value], after: List[Value],
-                 value: Value, parent: InstanceNode,
+                 value: Value, parinst: InstanceNode,
                  schema_node: "DataNode", ts: datetime = None) -> None:
-        super().__init__(value, parent, schema_node, ts)
+        super().__init__(value, parinst, schema_node, ts)
         self.before = before
         self.after = after
 
     @property
     def name(self) -> Optional[InstanceName]:
         """Return the name of the receiver."""
-        return self.parent.name
+        return self.parinst.name
 
     @property
     def qualName(self) -> Optional[QualName]:
         """Return the receiver's qualified name."""
-        return self.parent.qualName
+        return self.parinst.qualName
 
     @property
     def index(self) -> int:
@@ -450,7 +457,7 @@ class ArrayEntry(InstanceNode):
               newts: datetime = None) -> "ArrayEntry":
         return ArrayEntry(self.before, self.after,
                           newval if newval else self.value,
-                          self.parent, self.schema_node,
+                          self.parinst, self.schema_node,
                           newts if newts else self._timestamp)
 
     def next(self) -> "ArrayEntry":
@@ -459,7 +466,7 @@ class ArrayEntry(InstanceNode):
         except IndexError:
             raise NonexistentInstance(self, "next of last") from None
         return ArrayEntry(self.before + [self.value], self.after[1:], newval,
-                          self.parent, self.schema_node, self.timestamp)
+                          self.parinst, self.schema_node, self.timestamp)
 
     def previous(self) -> "ArrayEntry":
         try:
@@ -467,7 +474,7 @@ class ArrayEntry(InstanceNode):
         except IndexError:
             raise NonexistentInstance(self, "previous of first") from None
         return ArrayEntry(self.before[:-1], [self.value] + self.after, newval,
-                          self.parent, self.schema_node, self.timestamp)
+                          self.parinst, self.schema_node, self.timestamp)
 
     def insert_before(self, value: Value,
                       validate: bool = True) -> "ArrayEntry":
@@ -475,14 +482,14 @@ class ArrayEntry(InstanceNode):
             len(self.before) + len(self.after) + 1):
             raise MaxElements(self)
         return ArrayEntry(self.before, [self.value] + self.after, value,
-                          self.parent, self.schema_node, datetime.now())
+                          self.parinst, self.schema_node, datetime.now())
 
     def insert_after(self, value: Value, validate: bool = True) -> "ArrayEntry":
         if validate and (self.schema_node.max_elements <=
             len(self.before) + len(self.after) + 1):
             raise MaxElements(self)
         return ArrayEntry(self.before + [self.value], self.after, value,
-                          self.parent, self.schema_node, datetime.now())
+                          self.parinst, self.schema_node, datetime.now())
 
     def ancestors_or_self(
             self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
@@ -545,7 +552,8 @@ class MemberName(InstanceSelector):
     def __init__(self, name: InstanceName) -> None:
         """Initialize the class instance.
 
-        :param name: member name
+        Args:
+            name: Member name.
         """
         self.name = name
 
@@ -559,14 +567,16 @@ class MemberName(InstanceSelector):
     def peek_step(self, obj: ObjectValue) -> Value:
         """Return the member of `obj` addressed by the receiver.
 
-        :param obj: current object
+        Args:
+            obj: Current object.
         """
         return obj.get(self.name)
 
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.
 
-        :param inst: current instance
+        Args:
+            inst: Current instance.
         """
         return inst.member(self.name)
 
@@ -576,7 +586,8 @@ class EntryIndex(InstanceSelector):
     def __init__(self, index: int) -> None:
         """Initialize the class instance.
 
-        :param index: index of an entry
+        Args:
+            index: Index of an entry.
         """
         self.index = index
 
@@ -590,7 +601,8 @@ class EntryIndex(InstanceSelector):
     def peek_step(self, arr: ArrayValue) -> Value:
         """Return the entry of `arr` addressed by the receiver.
 
-        :param arr: current array
+        Args:
+            arr: Current array.
         """
         try:
             return arr[self.index]
@@ -600,7 +612,8 @@ class EntryIndex(InstanceSelector):
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.
 
-        :param inst: current instance
+        Args:
+            inst: Current instance.
         """
         return inst.entry(self.index)
 
@@ -610,7 +623,8 @@ class EntryValue(InstanceSelector):
     def __init__(self, value: ScalarValue) -> None:
         """Initialize the class instance.
 
-        :param value: value of a leaf-list entry
+        Args:
+            value: Value of a leaf-list entry.
         """
         self.value = value
 
@@ -624,7 +638,8 @@ class EntryValue(InstanceSelector):
     def peek_step(self, arr: ArrayValue) -> Value:
         """Return the entry of `arr` addressed by the receiver.
 
-        :param arr: current array
+        Args:
+            arr: Current array.
         """
         try:
             return arr[arr.index(self.value)]
@@ -634,7 +649,8 @@ class EntryValue(InstanceSelector):
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.
 
-        :param inst: current instance
+        Args:
+            inst: Current instance.
         """
         try:
             return inst.entry(inst.value.index(self.value))
@@ -648,7 +664,8 @@ class EntryKeys(InstanceSelector):
     def __init__(self, keys: Dict[InstanceName, ScalarValue]) -> None:
         """Initialize the class instance.
 
-        :param keys: dictionary with keys of an entry
+        Args:
+            keys: Dictionary with keys of an entry.
         """
         self.keys = keys
 
@@ -663,7 +680,8 @@ class EntryKeys(InstanceSelector):
     def peek_step(self, arr: ArrayValue) -> Value:
         """Return the entry of `arr` addressed by the receiver.
 
-        :param arr: current array
+        Args:
+            arr: Current array.
         """
         for en in arr:
             flag = True
@@ -676,7 +694,8 @@ class EntryKeys(InstanceSelector):
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.
 
-        :param inst: current instance
+        Args:
+            inst: Current instance.
         """
         return inst.look_up(self.keys)
 

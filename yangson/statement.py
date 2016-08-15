@@ -29,11 +29,12 @@ class Statement:
                  pref: YangIdentifier = None) -> None:
         """Initialize the class instance.
 
-        :param kw: keyword
-        :param arg: argument
-        :param sup: parent statement
-        :param sub: list of substatements
-        :param pref: keyword prefix (``None`` for built-in statements)
+        Args:
+            kw: Keyword.
+            arg: Argument.
+            sup: Parent statement.
+            sub: List of substatements.
+            pref: Keyword prefix (``None`` for built-in statements).
         """
         self.prefix = pref
         self.keyword = kw
@@ -56,15 +57,15 @@ class Statement:
               required: bool = False) -> Optional["Statement"]:
         """Return first substatement with the given parameters.
 
-        :param kw: statement keyword (local part for extensions)
-        :param arg: argument (all arguments will match if ``None``)
-        :param pref: keyword prefix (``None`` for built-in statements)
-        :param required: this parameter determines what happens if the
-                         statement is not found: if it is ``False``
-                         (which is the default), then ``None`` is returned,
-                         otherwise an exception is raised
-        :raises StatementNotFound: if `required` is ``True`` and the
-                                   statement is not found
+        Args:
+            kw: Statement keyword (local part for extensions).
+            arg: Argument (all arguments will match if ``None``).
+            pref: Keyword prefix (``None`` for built-in statements).
+            required: Should an exception be raised on failure?
+
+        Raises:
+            StatementNotFound: If `required` is ``True`` and the
+                statement is not found.
         """
         for sub in self.substatements:
             if (sub.keyword == kw and sub.prefix == pref and
@@ -76,8 +77,9 @@ class Statement:
                  pref: YangIdentifier = None) -> List["Statement"]:
         """Return the list all substatements with the given keyword and prefix.
 
-        :param kw: statement keyword (local part for extensions)
-        :param pref: keyword prefix (``None`` for built-in statements)
+        Args:
+            kw: Statement keyword (local part for extensions).
+            pref: Keyword prefix (``None`` for built-in statements).
         """
         return [c for c in self.substatements
                 if c.keyword == kw and c.prefix == pref]
@@ -86,9 +88,12 @@ class Statement:
                        kw: YangIdentifier) -> "Statement":
         """Recursively search ancestor statements for a definition.
 
-        :param name: name of a grouping or datatype (with no prefix)
-        :param kw: ``grouping`` or ``typedef``
-        :raises DefinitionNotFound: if the definition is not found
+        Args:
+            name: Name of a grouping or datatype (with no prefix).
+            kw: ``Grouping`` or ``typedef``.
+
+        Raises:
+            DefinitionNotFound: If the definition is not found.
         """
         stmt = self.superstmt
         while stmt:
@@ -108,7 +113,8 @@ class ModuleParser(Parser):
     def unescape(cls, text: str) -> str:
         """Replace escape sequence with corresponding characters.
 
-        :param text: text to unescape
+        Args:
+            text: Text to unescape.
         """
         chop = text.split("\\", 1)
         return (chop[0] if len(chop) == 1
@@ -118,7 +124,8 @@ class ModuleParser(Parser):
     def opt_separator(self) -> bool:
         """Parse an optional separator and return ``True`` if found.
 
-        :raises EndOfInput: if past the end of `self.input`
+        Raises:
+            EndOfInput: If past the end of input.
         """
         def back_break(c):
             self.offset -= 1
@@ -142,8 +149,9 @@ class ModuleParser(Parser):
     def separator(self) -> None:
         """Parse a mandatory separator.
 
-        :raises EndOfInput: if past the end of `self.input`
-        :raises UnexpectedInput: if no separator is found
+        Raises:
+            EndOfInput: If past the end of input.
+            UnexpectedInput: If no separator is found.
         """
         present = self.opt_separator()
         if not present: raise UnexpectedInput(self, "separator")
@@ -151,8 +159,9 @@ class ModuleParser(Parser):
     def keyword(self) -> Tuple[Optional[str], str]:
         """Parse a YANG statement keyword.
 
-        :raises EndOfInput: if past the end of `self.input`
-        :raises UnexpectedInput: if no syntactically correct keyword is found
+        Raises:
+            EndOfInput: If past the end of input.
+            UnexpectedInput: If no syntactically correct keyword is found.
         """
         i1 = self.yang_identifier()
         if self.peek() == ":":
@@ -164,8 +173,9 @@ class ModuleParser(Parser):
     def statement(self) -> Statement:
         """Parse YANG statement.
 
-        :raises EndOfInput: if past the end of `self.input`
-        :raises UnexpectedInput: if no syntactically correct statement is found
+        Raises:
+            EndOfInput: If past the end of input.
+            UnexpectedInput: If no syntactically correct statement is found.
         """
         pref,kw = self.keyword()
         pres = self.opt_separator()
@@ -224,7 +234,8 @@ class ModuleParser(Parser):
     def sq_argument(self) -> str:
         """Parse single-quoted argument.
 
-        :raises EndOfInput: if past the end of `self.input`
+        Raises:
+            EndOfInput: If past the end of input.
         """
         self.offset += 1
         start = self.offset
@@ -235,7 +246,8 @@ class ModuleParser(Parser):
     def dq_argument(self) -> str:
         """Parse double-quoted argument.
 
-        :raises EndOfInput: if past the end of `self.input`
+        Raises:
+            EndOfInput: If past the end of input.
         """
         def escape():
             self._escape = True
@@ -253,7 +265,8 @@ class ModuleParser(Parser):
     def unq_argument(self) -> str:
         """Parse unquoted argument.
 
-        :raises EndOfInput: if past the end of `self.input`
+        Raises:
+            EndOfInput: If past the end of input.
         """
         def comm_start():
             self.offset -= 1
@@ -273,7 +286,8 @@ class ModuleParser(Parser):
     def substatements(self) -> List[Statement]:
         """Parse substatements.
 
-        :raises EndOfInput: if past the end of `self.input`
+        Raises:
+            EndOfInput: If past the end of input.
         """
         res = []
         self.opt_separator()
@@ -286,9 +300,12 @@ class ModuleParser(Parser):
     def parse(self) -> Statement:
         """Parse a complete YANG module or submodule.
 
-        :param mtext: YANG module text
-        :raises EndOfInput: if past the end of `self.input`
-        :raises UnexpectedInput: if top-level statement isn't ``(sub)module``
+        Args:
+            mtext: Yang module text.
+
+        Raises:
+            EndOfInput: If past the end of input.
+            UnexpectedInput: If top-level statement isn't ``(sub)module``.
         """
         self.opt_separator()
         start = self.offset

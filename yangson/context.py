@@ -34,14 +34,16 @@ class Context:
                           mod_path: List[str]) -> None:
         """Set the data model structures from YANG library data.
 
-        :param yang_lib: dictionary with YANG library data
-        :param mod_path: value for `module_search_path`
-        :raises BadYangLibraryData: invalid YANG library data
-        :raises MultipleImplementedRevisions: multiple revisions of an
-                                              implemented module
-        :raises ModuleNotFound: a YANG module wasn't found
-        :raises FeaturePrerequisiteError: a pre-requisite feature isn't
-                                          supported.
+        Args:
+            yang_lib: Dictionary with YANG library data.
+            mod_path: Value for `module_search_path`.
+
+        Raises:
+            BadYangLibraryData: Invalid YANG library data.
+            MultipleImplementedRevisions: Multiple revisions of an
+                implemented module.
+            ModuleNotFound: A YANG module wasn't found.
+            FeaturePrerequisiteError: A pre-requisite feature isn't supported.
         """
         cls.initialize()
         cls.module_search_path = mod_path
@@ -162,9 +164,12 @@ class Context:
                       mid: ModuleId) -> Tuple[YangIdentifier, ModuleId]:
         """Return the name and module identifier in which the name is defined.
 
-        :param pname: prefixed name
-        :param mid: identifier of the context module
-        :raises BadPrefName: invalid prefix
+        Args:
+            pname: Prefixed name.
+            mid: Identifier of the context module.
+
+        Raises:
+            BadPrefName: Invalid prefix.
         """
         p, s, loc = pname.partition(":")
         try:
@@ -176,8 +181,9 @@ class Context:
     def translate_pname(cls, pname: PrefName, mid: ModuleId) -> QualName:
         """Translate a prefixed name to a qualified name.
 
-        :param pname: prefixed name
-        :param mid: identifier of the context module
+        Args:
+            pname: Prefixed name.
+            mid: Identifier of the context module.
         """
         loc, nid = cls.resolve_pname(pname, mid)
         return (loc, cls.ns_map[nid[0]])
@@ -186,8 +192,9 @@ class Context:
     def sid2route(cls, sid: str, mid: ModuleId) -> SchemaRoute:
         """Translate a schema node identifier to a schema route.
 
-        :param sid: schema node identifier (absolute or relative)
-        :param mid: identifier of the context module
+        Args:
+            sid: Schema node identifier (absolute or relative).
+            mid: Identifier of the context module.
         """
         nlist = sid.split("/")
         return [ cls.translate_pname(qn, mid)
@@ -197,8 +204,11 @@ class Context:
     def path2route(cls, path: SchemaPath) -> SchemaRoute:
         """Translate a schema path to a schema route.
 
-        :param path: schema path
-        :raises BadPath: invalid path
+        Args:
+            path: Schema path.
+
+        Raises:
+            BadPath: Invalid path.
         """
         if path == "/" or path == "": return []
         nlist = path.split("/")
@@ -220,8 +230,9 @@ class Context:
     def get_definition(cls, stmt: Statement, mid: ModuleId) -> Statement:
         """Return the statement defining a grouping or derived type.
 
-        :param stmt: "uses" or "type" statement
-        :param mid: identifier of the context module
+        Args:
+            stmt: "Uses" or "type" statement.
+            mid: Identifier of the context module.
         """
         kw = "grouping" if stmt.keyword == "uses" else "typedef"
         loc, did = cls.resolve_pname(stmt.argument, mid)
@@ -255,8 +266,9 @@ class Context:
     def if_features(cls, stmt: Statement, mid: ModuleId) -> bool:
         """Evaluate ``if-feature`` substatements, if any.
 
-        :param stmt: YANG statement that is tested on if-features
-        :param mid: identifier of the context module
+        Args:
+            stmt: Yang statement that is tested on if-features.
+            mid: Identifier of the context module.
         """
         iffs = stmt.find_all("if-feature")
         if not iffs:
@@ -272,7 +284,8 @@ class FeatureExprParser(Parser):
     def __init__(self, text: str, mid: ModuleId) -> None:
         """Initialize the parser instance.
 
-        :param mid: id of the context module
+        Args:
+            mid: Id of the context module.
         """
         super().__init__(text)
         self.mid = mid

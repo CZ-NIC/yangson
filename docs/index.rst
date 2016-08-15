@@ -9,8 +9,9 @@ Contents:
    introduction
    concepts-terms
    .. statement
-   .. datamodel
+   datamodel
    .. schema
+   instvalue
    instance
    context
    .. typealiases

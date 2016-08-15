@@ -1,3 +1,5 @@
+"""Basic access to the YANG data model."""
+
 import hashlib
 import json
 from typing import Dict, List, Optional
@@ -12,12 +14,17 @@ from .typealiases import *
 class DataModel(metaclass=Singleton):
     """The basic entry point to the YANG data model.
 
-    :param yltxt: JSON text with YANG library data
-    :param mod_path: list of directories where to look for YANG modules
+    It is a singleton class, which means that only one instance can be
+    created.
     """
 
     def __init__(self, yltxt: str, mod_path: List[str]) -> None:
-        """Initialize the class instance."""
+        """Initialize the class instance.
+        
+        Args:
+            yltxt: JSON text with YANG library data.
+            mod_path: List of directories where to look for YANG modules.
+        """
         Context.schema = GroupNode()
         try:
             yl = json.loads(yltxt)
@@ -27,10 +34,14 @@ class DataModel(metaclass=Singleton):
 
     @classmethod
     def from_file(cls, name: str, mod_path: List[str] = ["."]) -> "DataModel":
-        """Return an instance initialised from a file with YANG library data.
+        """Initialize the data model from a file with YANG library data.
 
-        :param name: name of the file with YANG library data
-        :param mod_path: list of directories where to search for YANG modules
+        Args:
+            name: Name of a file with YANG library data.
+            mod_path: List of directories where to look for YANG modules.
+
+        Returns:
+            Initialised class instance.
         """
         with open(name, encoding="utf-8") as infile:
             yltxt = infile.read()
@@ -38,34 +49,54 @@ class DataModel(metaclass=Singleton):
 
     @staticmethod
     def module_set_id() -> str:
-        """Return hexadecimal id of the current set of modules."""
+        """Compute unique id of YANG modules comprising the data model.
+
+        Returns:
+            String consisting of hexadecimal digits.
+        """
         fnames = sorted(["@".join(m) for m in Context.modules.keys()])
         return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
 
     @staticmethod
     def from_raw(robj: RawObject) -> RootNode:
-        """Return an instance created from a raw data tree.
+        """Create an instance node from a raw data tree.
 
-        :param robj: a dictionary representing raw data tree
+        Args:
+            robj: Dictionary representing a raw data tree.
+
+        Returns:
+            Root instance node.
         """
         cooked = Context.schema.from_raw(robj)
         return RootNode(cooked, Context.schema, cooked.timestamp)
 
     @staticmethod
     def get_schema_node(path: SchemaPath) -> Optional[SchemaNode]:
-        """Return the schema node corresponding to `path`.
+        """Return a specific schema node.
 
-        :param path: schema path
-        :raises BadPath: if the schema path is invalid
+        Args:
+            path: Schema path.
+
+        Returns:
+            Schema node if found in the schema, or ``None``.
+
+        Raises:
+            BadPath: If the schema path is invalid.
         """
         return Context.schema.get_schema_descendant(Context.path2route(path))
 
     @staticmethod
     def get_data_node(path: SchemaPath) -> Optional[DataNode]:
-        """Return the data node corresponding to `path`.
+        """Return a specific data node.
 
-        :param path: data path
-        :raises BadPath: if the data path is invalid
+        Args:
+            path: Schema path containing only data nodes.
+
+        Returns:
+            Data node if found in the schema, or ``None``.
+
+        Raises:
+            BadPath: If the schema path is invalid
         """
         addr = Context.path2route(path)
         node = Context.schema
@@ -76,5 +107,9 @@ class DataModel(metaclass=Singleton):
 
     @staticmethod
     def ascii_tree() -> str:
-        """Return ASCII art representation of the main data tree."""
+        """Generate ASCII art representation of the schema tree.
+
+        Returns:
+            String with the ASCII tree.
+        """
         return Context.schema._ascii_tree("")

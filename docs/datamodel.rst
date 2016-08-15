@@ -12,10 +12,10 @@ Data Model
    import os
    os.chdir("examples/ex1")
 
-This module provides the :class:`DataModel` class that provides the basic
-user-level API to the *Yangson* library.
+This module provides the :class:`DataModel` class that serves as the basic
+user-level entry point to the *Yangson* library.
 
-.. autoclass:: DataModel(yltxt: str, mod_path: List[str] )
+.. class:: DataModel(yltxt: str, mod_path: List[str] )
 
    It is a *singleton* class which means that only one instance can be
    created. This limitation corresponds to the fact that it is not
@@ -28,17 +28,27 @@ user-level API to the *Yangson* library.
 
       >>> from yangson import DataModel
 
-   .. automethod:: from_file
+   .. classmethod:: from_file(name, mod_path = ["."] )
 
-      By default, the **mod_path** list contains only the current directory.
+      Initialize the data model from a file containing YANG library
+      data [RFC7895]_. The *name* argument is the name of the file,
+      and the second argument, *mod_path*, is a list of file system
+      directories, in which all YANG modules implemented or imported
+      by the data model need to be found.
+      
+      By default, *mod_path* includes only the current directory.
 
       .. doctest::
 
 	 >>> dm = DataModel.from_file("yang-library-ex1.json")
 
-   .. automethod:: module_set_id
+   .. staticmethod:: module_set_id()
 
-      The algorithm for computing the result is as follows:
+      Return a unique identifier of the set of modules comprising the
+      data model. This value is intended to be stored in the
+      ``module-set-id`` leaf of YANG library data.
+      
+      The method computes the identifier as follows:
 
       - The list of module and sumodule names with revisions in the
 	format ``name@revision`` is created. For (sub)modules that
@@ -55,19 +65,19 @@ user-level API to the *Yangson* library.
 	 >>> dm.module_set_id()
 	 'ae4bf1ddf85a67ab94a9ab71593cd1c78b7f231d'
 
-   .. automethod:: from_raw
+   .. staticmethod:: from_raw(robj)
 
-      The **robj** parameter will typically contain a Python
-      dictionary parsed from JSON text with the library function
-      :func:`json.load` or :func:`json.loads`. We call this value
-      “raw” because it needs to be processed into the internal or
-      “cooked” form. For example, 64-bit numbers have to be encoded as
-      strings in JSON text (see `sec. 6.1`_ of [Lho16]_), whereas the
-      cooked form is a Python number.
+      Create a root instance node from a raw data tree contained in
+      the *robj* argument. The latter will typically be a Python
+      dictionary directly parsed from JSON text with the library
+      function :func:`json.load` or :func:`json.loads`. We call this
+      data tree “raw” because it needs to be processed into the internal
+      or “cooked” form. For example, 64-bit numbers have to be encoded
+      as strings in JSON text (see `sec. 6.1`_ of [Lho16]_), whereas
+      the cooked form is a Python number.
 
-      See the documentation of :mod:`datatype` module for details
-      about the cooked form of each data type, and see also
-      :term:`raw value`.
+      See the documentation of :mod:`instvalue` module for more
+      details, and see also :term:`raw value`.
 
       .. doctest::
 
@@ -77,26 +87,33 @@ user-level API to the *Yangson* library.
 	 >>> inst.value
 	 {'example-1:greeting': 'Hi!'}
 
-   .. automethod:: get_schema_node
+   .. staticmethod:: get_schema_node(path)
 
-      See also :term:`schema path`.
+      Return the schema node addressed by the *path* argument (see
+      :term:`schema path`), or ``None`` if such a schema node doesn't exist.
 
       .. doctest::
 
 	 >>> dm.get_schema_node("/").parent is None
 	 True
 
-   .. automethod:: get_data_node
+   .. staticmethod:: get_data_node(path)
 
-      See also :term:`schema path`.
+      Return the schema node addressed by the *path* argument (see
+      :term:`schema path`), or ``None`` if such a schema node doesn't
+      exist. As opposed to the :meth:`get_schema_node` method, the
+      components of the *path* argument should be exclusively *data
+      nodes*, i.e. **choice* and **case* nodes should be omitted. 
 
       .. doctest::
 
 	 >>> dm.get_data_node("/example-1:greeting").name
 	 'greeting'
 
-   .. automethod:: ascii_tree
+   .. staticmethod:: ascii_tree()
 
+      Generate ASCII art representation of the schema tree.
+      
       Note that this method returns a single tree for the entire data
       model. Other tools, such as pyang_, often produce one tree per
       module. Other differences are:

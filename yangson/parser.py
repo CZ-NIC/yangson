@@ -26,7 +26,8 @@ class Parser:
     def __init__(self, text: str):
         """Initialize the class instance.
 
-        :param text: input text
+        Args:
+            text: Input text.
         """
         self.input = text
         self.offset = 0 # type: int
@@ -48,7 +49,8 @@ class Parser:
     def peek(self) -> str:
         """Peek at the next character.
 
-        :raises EndOfInput: if past the end of `self.input`
+        Raises:
+            EndOfInput: If past the end of `self.input`.
         """
         try:
             return self.input[self.offset]
@@ -89,9 +91,12 @@ class Parser:
     def scan(self, ptab: ParseTable, init: State = 0) -> State:
         """Simple stateful scanner.
 
-        :param ptab: transition table (DFA with possible side-effects).
-        :param init: initial state
-        :raises EndOfInput: if past the end of `self.input`
+        Args:
+            ptab: Transition table (DFA with possible side-effects).
+            init: Initial state.
+
+        Raises:
+            EndOfInput: If past the end of `self.input`.
         """
         state = init
         while True:
@@ -113,13 +118,13 @@ class Parser:
                     meaning: str = "") -> str:
         """Match a regular expression and advance the parser.
 
-        :param regex: compiled regular expression object
-        :param required: this parameter determines what happens if `regex`
-                         doesn't match: if it is ``False`` (which is the
-                         default), then ``None`` is returned, otherwise
-                         an exception is raised
-        :param meaning: meaning of `regex` (for use in error messages)
-        :raises UnexpectedInput: if no syntactically correct keyword is found
+        Args:
+            regex: Compiled regular expression object.
+            required: Should the exception be raised on unexpected input? 
+            meaning: Meaning of `regex` (for use in error messages).
+
+        Raises:
+            UnexpectedInput: If no syntactically correct keyword is found.
         """
         mo = regex.match(self.input, self.offset)
         if mo:
@@ -139,7 +144,8 @@ class Parser:
     def yang_identifier(self) -> YangIdentifier:
         """Parse YANG identifier.
 
-        :raises UnexpectedInput: if no syntactically correct keyword is found
+        Raises:
+            UnexpectedInput: If no syntactically correct keyword is found.
         """
         return self.match_regex(ident_re, True, "YANG identifier")
 

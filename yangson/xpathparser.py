@@ -13,7 +13,8 @@ class XPathParser(Parser):
     def __init__(self, text: str, mid: ModuleId) -> None:
         """Initialize the parser instance.
 
-        :param mid: id of the context module
+        Args:
+            mid: Id of the context module.
         """
         super().__init__(text)
         self.mid = mid
