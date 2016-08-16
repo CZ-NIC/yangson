@@ -42,6 +42,7 @@ tree = """+--rw (test:choiA)?
 |  +--rw listA* [leafE leafF]
 |     +--rw contD
 |     |  +---x acA
+|     |  |  +--ro input
 |     |  |  +--ro output
 |     |  |     +--ro leafL
 |     |  +--rw contE!

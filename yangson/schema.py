@@ -673,8 +673,10 @@ class ListNode(SequenceNode, InternalNode):
                 self._mandatory_children.add(kn)
 
     def _key_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self.keys = [
-            Context.translate_pname(k, mid) for k in stmt.argument.split()]
+        self.keys = []
+        for k in stmt.argument.split():
+            self.keys.append(Context.translate_pname(k, mid) if ":" in k
+                             else (k, self.ns))
 
     def _unique_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.unique.append(
@@ -795,35 +797,44 @@ class CaseNode(InternalNode):
 class RpcActionNode(GroupNode):
     """RPC or action node."""
 
+    def _handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
+        self.add_child(InputNode(self.ns))
+        self.add_child(OutputNode(self.ns))
+        super()._handle_substatements(stmt, mid)
+
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "-x"
 
     def _input_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle RPC or action input statement."""
-        inp = InputNode()
-        inp.name = "input"
-        inp.ns = self.ns
-        inp._config = False
-        self.add_child(inp)
-        inp._handle_substatements(stmt, mid)
+        self.get_child("input")._handle_substatements(stmt, mid)
 
     def _output_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle RPC or action output statement."""
-        outp = OutputNode()
-        outp.name = "output"
-        outp.ns = self.ns
-        outp._config = False
-        self.add_child(outp)
-        outp._handle_substatements(stmt, mid)
+        self.get_child("output")._handle_substatements(stmt, mid)
 
 class InputNode(GroupNode):
     """RPC or action input node."""
+
+    def __init__(self, ns) -> None:
+        """Initialize the class instance."""
+        super().__init__()
+        self._config = False
+        self.name = "input"
+        self.ns = ns
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
 
 class OutputNode(GroupNode):
     """RPC or action output node."""
+
+    def __init__(self, ns) -> None:
+        """Initialize the class instance."""
+        super().__init__()
+        self._config = False
+        self.name = "output"
+        self.ns = ns
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
