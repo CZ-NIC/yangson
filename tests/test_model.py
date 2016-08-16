@@ -41,15 +41,12 @@ tree = """+--rw (test:choiA)?
 |  +--rw testb:leafT?
 |  +--rw listA* [leafE leafF]
 |     +--rw contD
-|     |  +---x acA
-|     |  |  +--ro input
-|     |  |  +--ro output
-|     |  |     +--ro leafL
 |     |  +--rw contE!
 |     |  |  +--rw leafJ?
 |     |  |  +--rw leafP?
 |     |  |  +--rw leafU?
 |     |  +--rw leafG?
+|     |  +--ro leafL
 |     +--rw leafE
 |     +--rw leafF
 +--rw test:contT
@@ -67,13 +64,9 @@ tree = """+--rw (test:choiA)?
 |  +--rw uint32?
 |  +--rw uint64?
 |  +--rw uint8?
-+---n testb:noA
-|  +--rw testb:leafO?
-+---x testb:rpcA
-   +--ro testb:input
-   |  +--ro testb:leafK?
-   +--ro testb:output
-      +--ro testb:llistC*
++--ro testb:leafK?
++--rw testb:leafO?
++--ro testb:llistC*
 """
 
 @pytest.fixture
@@ -195,6 +188,7 @@ def test_schema(data_model):
     assert data_model.get_data_node("/testb:noA/leafO") is None
 
 def test_tree(data_model):
+    print(data_model.ascii_tree())
     assert data_model.ascii_tree() == tree
 
 def test_types(data_model):

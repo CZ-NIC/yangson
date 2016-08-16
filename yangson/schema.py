@@ -81,6 +81,9 @@ class SchemaNode:
         """
         return [r.data_path() for r in self._state_roots()]
 
+    def _flatten(self) -> List["SchemaNode"]:
+        return [self]
+
     def _handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         """Dispatch actions for substatements of `stmt`."""
         for s in stmt.substatements:
@@ -453,12 +456,16 @@ class InternalNode(SchemaNode):
 
     def _ascii_tree(self, indent: str) -> str:
         """Return the receiver's subtree as ASCII art."""
+        if not self.children: return ""
+        cs = []
+        for c in self.children:
+            cs.extend(c._flatten())
+        cs.sort(key=lambda x: x.qual_name)
         res = ""
-        if not self.children: return res
-        cn = sorted(self.children, key=lambda x: x.qual_name)
-        for c in cn[:-1]:
+        for c in cs[:-1]:
             res += indent + c._tree_line() + c._ascii_tree(indent + "|  ")
-        return res + indent + cn[-1]._tree_line() + cn[-1]._ascii_tree(indent + "   ")
+        return (res + indent + cs[-1]._tree_line() +
+                cs[-1]._ascii_tree(indent + "   "))
 
 class GroupNode(InternalNode):
     """Anonymous group of schema nodes."""
@@ -472,6 +479,12 @@ class GroupNode(InternalNode):
 
     def _pattern_entry(self) -> SchemaPattern:
         return super()._schema_pattern()
+
+    def _flatten(self) -> List["SchemaNode"]:
+        res = []
+        for c in self.children:
+            res.extend(c._flatten())
+        return res
 
 class DataNode(SchemaNode):
     """Abstract superclass for data nodes."""
