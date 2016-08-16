@@ -63,8 +63,8 @@ class Context:
                 mod = cls._load_module(name, rev)
                 locpref = mod.find1("prefix", required=True).argument
                 cls.prefix_map[mid] = { locpref: mid }
-                if "submodules" in item and "submodule" in item["submodules"]:
-                    for s in item["submodules"]["submodule"]:
+                if "submodule" in item:
+                    for s in item["submodule"]:
                         sname = s["name"]
                         cls.ns_map[sname] = name
                         rev = s["revision"]

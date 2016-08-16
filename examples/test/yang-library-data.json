@@ -18,14 +18,12 @@
         "schema": "https://example.com/test.yang",
         "namespace": "http://example.com/test",
         "conformance-type": "implement",
-        "submodules": {
-          "submodule": [
-            {
-              "name": "subtest",
-              "revision": "2016-04-26"
-            }
-          ]
-        }
+        "submodule": [
+          {
+            "name": "subtest",
+            "revision": "2016-04-26"
+          }
+        ]
       },
       {
         "name": "defs",
