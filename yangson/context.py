@@ -202,7 +202,7 @@ class Context:
 
     @classmethod
     def path2route(cls, path: SchemaPath) -> SchemaRoute:
-        """Translate a schema path to a schema route.
+        """Translate a schema/data path to a schema/data route.
 
         Args:
             path: Schema path.

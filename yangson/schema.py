@@ -68,20 +68,18 @@ class SchemaNode:
         return (self.name if dp and self.ns == dp.ns
                 else self.ns + ":" + self.name)
 
-    def instance_route(self) -> InstanceRoute:
-        """Return the instance route corresponding to the receiver."""
-        return (self.parent.instance_route() + [self.iname()]
-                if self.parent else [])
+    def data_path(self) -> DataPath:
+        """Return the receiver's data path."""
+        return ("{}/{}".format(self.parent.data_path(), self.iname())
+                if self.parent else "")
 
-    def state_roots(self) -> List[InstanceRoute]:
-        """Return a list of instance routes to descendant state data roots.
+    def state_roots(self) -> List[DataPath]:
+        """Return a list of data paths to descendant state data roots.
 
         If the receiver itself is state data, then the resulting list
         contains only the receiver's instance route.
         """
-        if self.config:
-            return [r.instance_route() for r in self._state_roots()]
-        return [self.instance_route()]
+        return [r.data_path() for r in self._state_roots()]
 
     def _handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         """Dispatch actions for substatements of `stmt`."""
@@ -274,9 +272,9 @@ class InternalNode(SchemaNode):
         for m in inst.value:
             p = p.deriv(m, inst, content)
         if isinstance(p, NotAllowed):
-            raise SchemaViolation(inst, str(p))
+            raise SchemaError(inst, str(p))
         if not p.nullable(inst, content):
-            raise SchemaViolation(inst, "missing " + str(p))
+            raise SchemaError(inst, "missing " + str(p))
 
     def _make_schema_patterns(self) -> None:
         """Build schema pattern for the receiver and its data descendants."""
@@ -342,11 +340,10 @@ class InternalNode(SchemaNode):
         return "{} {}\n".format(self._tree_line_prefix(), self.iname())
 
     def _state_roots(self) -> List[SchemaNode]:
-        if hasattr(self,"_config") and not self._config:
-            return [self]
+        if not self.config: return [self]
         res = []
-        for c in self.children:
-            res += c._state_roots()
+        for c in self.data_children():
+            res.extend(c._state_roots())
         return res
 
     def _handle_child(
@@ -465,6 +462,13 @@ class InternalNode(SchemaNode):
 
 class GroupNode(InternalNode):
     """Anonymous group of schema nodes."""
+
+    def state_roots(self) -> List[DataPath]:
+        """Override superclass method."""
+        return []
+
+    def _state_roots(self) -> List[SchemaNode]:
+        return []
 
     def _pattern_entry(self) -> SchemaPattern:
         return super()._schema_pattern()
@@ -611,11 +615,11 @@ class SequenceNode(DataNode):
             super().validate(inst, content)
         else:
             if len(inst.value) < self.min_elements:
-                raise SchemaViolation(
+                raise SchemaError(
                     inst, "number of entries less than min-elements")
             if (self.max_elements is not None and
                 len(inst.value) > self.max_elements):
-                raise SchemaViolation(
+                raise SchemaError(
                     inst, "number of entries greater than max-elements")
 
     def _post_process(self) -> None:
@@ -788,18 +792,11 @@ class CaseNode(InternalNode):
         return "{}:({})\n".format(
             self._tree_line_prefix(), self.iname())
 
-class RpcActionNode(InternalNode):
+class RpcActionNode(GroupNode):
     """RPC or action node."""
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "-x"
-
-    def state_roots(self) -> List[InstanceRoute]:
-        """Return a list of routes to descendant state data roots (or self)."""
-        return []
-
-    def _state_roots(self) -> List[SchemaNode]:
-        return []
 
     def _input_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle RPC or action input statement."""
@@ -819,30 +816,23 @@ class RpcActionNode(InternalNode):
         self.add_child(outp)
         outp._handle_substatements(stmt, mid)
 
-class InputNode(InternalNode):
+class InputNode(GroupNode):
     """RPC or action input node."""
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
 
-class OutputNode(InternalNode):
+class OutputNode(GroupNode):
     """RPC or action output node."""
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
 
-class NotificationNode(InternalNode):
+class NotificationNode(GroupNode):
     """Notification node."""
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "-n"
-
-    def state_roots(self) -> List[InstanceRoute]:
-        """Return a list of routes to descendant state data roots (or self)."""
-        return []
-
-    def _state_roots(self) -> List[SchemaNode]:
-        return []
 
 class LeafNode(TerminalNode, DataNode):
     """Leaf node."""
@@ -958,7 +948,7 @@ class ValidationError(YangsonException):
     def __str__(self) -> str:
         return "[{}] {}".format(self.inst.path(), self.detail)
 
-class SchemaViolation(ValidationError):
+class SchemaError(ValidationError):
     """Exception to be raised when an instance violates thes schema."""
     pass
 

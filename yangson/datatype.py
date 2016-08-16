@@ -5,7 +5,7 @@ from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, List, Optional, Tuple, Union
 from .constants import NonexistentSchemaNode, Singleton, YangsonException
 from .context import Context
-from .instance import InstanceNode, InstanceIdParser, InstancePath
+from .instance import InstanceNode, InstanceIdParser
 from .parser import ParserException
 from .statement import Statement
 from .typealiases import *

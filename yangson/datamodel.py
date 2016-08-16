@@ -5,8 +5,8 @@ import json
 from typing import Dict, List, Optional
 from .constants import Singleton, YangsonException
 from .context import Context, BadYangLibraryData
-from .instance import (EntryKeys, RootNode, InstancePath,
-                       MemberName, InstanceIdParser, ResourceIdParser)
+from .instance import (EntryKeys, RootNode, MemberName,
+                       InstanceIdParser, ResourceIdParser)
 from .schema import (BadSchemaNodeType, DataNode, GroupNode,
                      NonexistentSchemaNode, RawObject, SchemaNode)
 from .typealiases import *
@@ -72,7 +72,7 @@ class DataModel(metaclass=Singleton):
 
     @staticmethod
     def get_schema_node(path: SchemaPath) -> Optional[SchemaNode]:
-        """Return a specific schema node.
+        """Return the schema node addressed by a schema path.
 
         Args:
             path: Schema path.
@@ -86,11 +86,11 @@ class DataModel(metaclass=Singleton):
         return Context.schema.get_schema_descendant(Context.path2route(path))
 
     @staticmethod
-    def get_data_node(path: SchemaPath) -> Optional[DataNode]:
-        """Return a specific data node.
+    def get_data_node(path: DataPath) -> Optional[DataNode]:
+        """Return the data node addressed by a data path.
 
         Args:
-            path: Schema path containing only data nodes.
+            path: Data path.
 
         Returns:
             Data node if found in the schema, or ``None``.

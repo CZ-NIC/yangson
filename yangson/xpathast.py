@@ -309,7 +309,7 @@ class Step(Expr):
                 lambda n, qn=self.qname: n.following_siblings(qn),
             Axis.parent: (
                 lambda n, qn=self.qname: [] if qn and qn != n.parent.qualName
-                else n.xpath_parent()),
+                else n.parent()),
             Axis.preceding_sibling:
                 lambda n, qn=self.qname: n.preceding_siblings(qn),
             Axis.self:

@@ -6,7 +6,7 @@ from urllib.parse import unquote
 from .constants import ContentType, YangsonException
 from .context import Context
 from .instvalue import ArrayValue, ObjectValue, Value
-from .parser import EndOfInput, Parser
+from .parser import EndOfInput, Parser, UnexpectedInput
 from .typealiases import *
 
 class JSONPointer(tuple):
@@ -29,10 +29,10 @@ class InstanceNode:
     def __init__(self, value: Value, parinst: Optional["InstanceNode"],
                  schema_node: "DataNode", timestamp: datetime) -> None:
         """Initialize the class instance."""
-        self.value = value
-        self.parinst = parinst
-        self.schema_node = schema_node
-        self.timestamp = timestamp
+        self.value = value             # type: Value
+        self.parinst = parinst         # type: Optional["InstanceNode"]
+        self.schema_node = schema_node # type: DataNode
+        self.timestamp = timestamp     # type: datetime
 
     def __str__(self):
         """Return string representation of the receiver's value."""
@@ -43,16 +43,21 @@ class InstanceNode:
 
     @property
     def qualName(self) -> Optional[QualName]:
-        """Return the receiver's qualified name."""
+        """The receiver's qualified name."""
         return None
 
     @property
     def namespace(self) -> Optional[YangIdentifier]:
-        """Return the receiver's namespace."""
+        """The receiver's namespace."""
         return self.schema_node.ns
 
     def validate(self, content: ContentType = ContentType.config) -> None:
-        """Validate the receiver."""
+        """Validate the receiver.
+
+        Raises:
+            SchemaViolation: If the value doesn't conform to the schema.
+            SemanticError: If the value violates a semantic constraint.
+        """
         sn = self.schema_node
         sn.validate(self, content)
         if isinstance(sn, TerminalNode):
@@ -78,55 +83,81 @@ class InstanceNode:
             inst = inst.parinst
         return JSONPointer([ i._pointer_fragment() for i in parents[::-1] ])
 
-    def update_from_raw(self, value: RawValue) -> "InstanceNode":
-        """Update the receiver's value from a raw value."""
+    def update(self, value: Value) -> "InstanceNode":
+        """Update the receiver's value.
+
+        Args:
+            value: New value.
+
+        Returns:
+            Copy of the receiver with the updated value.
+        """
+        return self._copy(value, datetime.now())
+
+    def update_from_raw(self, rvalue: RawValue) -> "InstanceNode":
+        """Update the receiver's value from a raw value.
+
+        Args:
+            rvalue: New raw value.
+
+        Returns:
+            Copy of the receiver with the updated value.
+        """
         newval = self.schema_node.from_raw(value)
         return self.update(newval)
 
     def up(self) -> "InstanceNode":
-        """Ascend to the parent instance node."""
-        try:
-            ts = max(self.timestamp, self.parinst.timestamp)
-            return self.parinst._copy(self.zip(), ts)
-        except AttributeError:
-            raise NonexistentInstance(self, "up of top") from None
+        """Move the focus to the parent instance node.
+
+        Returns:
+            An instance node that is the parent of the receiver.
+
+        Raises:
+            NonexistentInstance: If there is no parent.
+        """
+        ts = max(self.timestamp, self.parinst.timestamp)
+        return self.parinst._copy(self.zip(), ts)
 
     def top(self) -> "InstanceNode":
+        """Move the focus to the root instance node.
+
+        Returns:
+            The root instance node.
+        """
         inst = self
         while inst.parinst:
             inst = inst.up()
         return inst
 
-    def goto(self, ii: "InstancePath") -> "InstanceNode":
-        """Return an instance in the receiver's subtree.
+    def goto(self, iroute: "InstanceRoute") -> "InstanceNode":
+        """Move the focus to an instance node inside the receiver's value.
 
         Args:
-            ii: Instance route (relative to the receiver).
+            iroute: Instance route (relative to the receiver).
+
+        Returns:
+            The instance node addressed with the argument.
+
+        Raises:
+            InstanceTypeError: If `iroute` is incompatible with the schema.
+            NonexistentInstance: If the instance node doesn't exist.
         """
         inst = self # type: "InstanceNode"
-        for sel in ii:
+        for sel in iroute:
             inst = sel.goto_step(inst)
         return inst
 
-    def peek(self, ii: "InstancePath") -> Optional[Value]:
-        """Return a value in the receiver's subtree.
+    def peek(self, iroute: "InstanceRoute") -> Optional[Value]:
+        """Return a value within the receiver's subtree.
 
         Args:
-            ii: Instance route (relative to the receiver).
+            iroute: Instance route (relative to the receiver).
         """
         val = self.value
-        for sel in ii:
+        for sel in iroute:
             val = sel.peek_step(val)
             if val is None: return None
         return val
-
-    def update(self, newval: Value) -> "InstanceNode":
-        """Return a copy of the receiver with a new value.
-
-        Args:
-            newval: New value.
-        """
-        return self._copy(newval, datetime.now())
 
     def _member_schema_node(self, name: InstanceName) -> "DataNode":
         qname = self.schema_node.iname2qname(name)
@@ -285,7 +316,7 @@ class InstanceNode:
         """Return the node-set of receiver's XPath following-siblings."""
         return []
 
-    def xpath_parent(self) -> List["InstanceNode"]:
+    def parent(self) -> List["InstanceNode"]:
         return [self.up()]
 
     def deref(self) -> List["InstanceNode"]:
@@ -329,6 +360,14 @@ class RootNode(InstanceNode):
                  ts: datetime) -> None:
         super().__init__(value, None, schema_node, ts)
         self.name = None
+
+    def up(self) -> None:
+        """Override the superclass method.
+
+        Raises:
+            NonexistentInstance: root node has no parent
+        """
+        raise NonexistentInstance(self, "up of top")
 
     def _copy(self, newval: Value = None,
               newts: datetime = None) -> InstanceNode:
@@ -532,15 +571,8 @@ class ArrayEntry(InstanceNode):
         return ([] if qname and self.qualName != qname
                 else self.following_entries())
 
-    def xpath_parent(self) -> List["InstanceNode"]:
+    def parent(self) -> List["InstanceNode"]:
         return [self.up().up()]
-
-class InstancePath(list):
-    """Instance route."""
-
-    def __str__(self):
-        """Return a string representation of the receiver."""
-        return "".join([ str(i) for i in self ])
 
 class InstanceSelector:
     """Components of instance identifers."""
@@ -778,10 +810,10 @@ class InstancePathParser(Parser):
 class ResourceIdParser(InstancePathParser):
     """Parser for RESTCONF resource identifiers."""
 
-    def parse(self) -> InstancePath:
+    def parse(self) -> "InstanceRoute":
         """Parse resource identifier."""
         if self.peek() == "/": self.offset += 1
-        res = InstancePath()
+        res = []
         sn = Context.schema
         while True:
             mnam, cn = self.member_name(sn)
@@ -822,9 +854,9 @@ class ResourceIdParser(InstancePathParser):
 class InstanceIdParser(InstancePathParser):
     """Parser for YANG instance identifiers."""
 
-    def parse(self) -> InstancePath:
+    def parse(self) -> "InstanceRoute":
         """Parse instance identifier."""
-        res = InstancePath()
+        res = []
         sn = Context.schema
         while True:
             self.char("/")
@@ -902,6 +934,8 @@ class InstanceIdParser(InstancePathParser):
             val = knod.type.parse_value(unquote(ks[j]))
             sel[knod.iname()] = val
         return EntryKeys(sel)
+
+InstanceRoute = List[InstanceSelector]
 
 from .schema import (CaseNode, ChoiceNode, DataNode, InternalNode,
                      LeafNode, LeafListNode, ListNode,
