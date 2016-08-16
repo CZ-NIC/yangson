@@ -6,62 +6,148 @@
    :synopsis: Persistent data instances.
 .. moduleauthor:: Ladislav Lhotka <lhotka@nic.cz>
 
-The *Yangson* library represents instance data using an internal
-tree-like structure that has the following useful properties:
+.. testsetup::
 
-* every node in the data data tree (except the root node) has access
-  to its parent node,
+   import json
+   import os
+   from yangson import DataModel
+   os.chdir("examples/ex1")
 
-* it is a `persistent structure`__ so that we can edit it and, at the
-  same time, keep the original version intact.
-
-The following classes and their method implement this functionality.
+The *Yangson* library represents instance data nodes using a
+`persistent structure`__ so that we can edit it while keeping the
+original version intact, and sharing as much data as possible between
+both versions.
 
 __ https://en.wikipedia.org/wiki/Persistent_data_structure
 
-.. autoclass:: InstanceNode(value: :const:Value, parinst: Optional[InstanceNode], schema_node: DataNode, timestamp: datetime.datetime)
+.. class:: InstanceNode(value, parinst, schema_node, timestamp)
+
+   This abstract class for instance nodes has the following
+   attributes:
+
+   * *value* – scalar or structured value of the node,
+
+   * *parinst* – parent instance node (``None`` for the root node),
+
+   * *schema_node* – schema node corresponding to the instance,
+
+   * *timestamp* – time of the last modification.
 
    Each instance variable is initialized from the constructor's
-   parameter of the same name. The type alias :const:`Value`
+   parameter of the same name.
 
-   This class implements a *zipper* interface for JSON-like values
-   pretty much along the lines of Gérard Huet's original
-   paper [Hue97]_. Every :class:`Instance` contains
+   In addition, :class:`InstanceNode` defines the following
+   :class:`property` attributes:
 
-   * a *value*, as defined by the ``Value`` type alias;
+   .. attribute:: qualName
 
-   * a *crumb* that describes the neighborhood of the *value*.
+      The :term:`qualified name` of the instance node. For the root
+      node that has no name it is ``None``.
 
-   Inside a larger data structure, an :class:Instance represents
-   “focus” on a particular element of the structure, where the *value*
-   contains the element and its subtree, and *crumb* contains the rest
-   of the structure: all ancestors and siblings of the focused
-   element.
+   .. attribute:: namespace
 
-   The focus can be moved and values added, deleted and updated around
-   the current focus by using the methods described below. Each of the
-   methods returns a new :class:`Instance` that shares as much as
-   possible of the entire data tree with other instances, but any
-   modifications of an :class:`Instance` – if performed via the
-   methods of this class – don't affect any other instances.
+      The :term:`namespace identifier` of the instance node. For the root
+      node that doesn't belong to any namespace it is ``None``.
 
-   Due to the heterogeneity of JSON-like values, the zipper interface is not
-   as elegant as for trees: some operations are intended to work only
-   with certain :class:`Instance` types. In the following subsections,
-   the methods are classified according to the context for which they
-   are designed.
+   The :class:`InstanceNode` class implements a *zipper* interface for
+   JSON-like values pretty much along the lines of Gérard Huet's
+   original paper [Hue97]_. However, due to the heterogeneity of
+   JSON-like values, the zipper interface is not as simple and elegant
+   as for normal trees. In particular, sibling instance nodes have
+   different representations depending on the class on the instance
+   node, which can be either :class:`ObjectMember` (for nodes that are
+   object members) or :class:`ArrayEntry` (for nodes that are array
+   entries). The details can be found in the documentation of these
+   classes below.
 
-   Section :ref:`sec-example` illustrates the zipper interface with
-   several examples.
+   The easiest way to create an :class:`InstanceNode` is to use the
+   :meth:`DataModel.from_raw` method:
 
-Methods for All Types of Instances
-----------------------------------
+   .. doctest::
 
-   .. method:: goto(ii: InstanceIdentifier) -> Instance
+      >>> dm = DataModel.from_file("yang-library-ex2.json")
+      >>> with open("example-data.json") as infile:
+      ...   ri = json.load(infile)
+      >>> inst = dm.from_raw(ri)
+      >>> inst.value
+      {'example-2:top': {'foo': [1, 2], 'bar': True}}
 
-      Return the instance inside the receiver's subtree identified by
-      the instance identifier *ii* (see TODO). The path specified in
-      *ii* is interpreted relative to the receiver.
+   Inside the larger structure of a data tree, an
+   :class:`InstanceNode` represents “focus” on a particular node of
+   the structure. The focus can be moved to a neighbour instance
+   (parent, child, sibling) and the value of an instance node can be
+   created, deleted and updated by using the methods described
+   below. Each of the methods returns a new :class:`InstanceNode` that
+   shares, as much as possible, portions of the surrounding data tree
+   with the original instance node.  However, any modifications to the
+   new instance node – if performed through the methods of the
+   :class:`InstanceNode` class and its subclasses – leave other
+   instance nodes intact.
+
+   .. method:: validate(content = ContentType.config)
+
+      Validate the receiver's value. The method returns ``None`` if
+      the validation succeeds, otherwise and exception is raised:
+
+      * :exc:yangson.schema.SchemaError – if the value doesn't conform
+	to the schema,
+
+      * :exc:yangson.schema.SemanticError – if the value violates a
+	semantic constraint.
+
+      .. doctest::
+
+	 >>> inst.validate()
+	 >>> inst.value['example-2:top']['baz'] = "ILLEGAL"
+	 >>> inst.validate()
+	 Traceback (most recent call last):
+	 ...
+	 yangson.schema.SchemaError: [/example-2:top] not allowed: member 'baz'
+
+   .. method:: path()
+
+      Return the JSON Pointer [RFC6901]_ of the receiver.
+
+   .. method:: update(value)
+
+      Return a new :class:`InstanceNode` that is a copy of the
+      receiver with the value updated from the *value* argument.
+
+      .. doctest::
+
+	 >>> ri['example-2:top']['bar'] = False
+	 >>> inst2 = inst.update_from_raw(ri)
+	 >>> inst2.value
+	 {'example-2:top': {'foo': [1, 2], 'bar': False}}
+	 >>> inst.value
+	 {'example-2:top': {'foo': [1, 2], 'bar': True}}
+
+   .. method:: update_from_raw(rvalue)
+
+      This method is similar to :meth:`update`, only the argument
+      *rvalue* has to be a :term:`raw value`.
+
+   .. method:: up()
+
+      Move the focus to the parent instance node. If the receiver is
+      the root of the data tree, exception :exc:`NonexistentInstance`
+      is raised.
+
+   .. method:: top()
+
+      Move the focus to the root instance node.
+
+   .. method:: goto(iroute)
+
+      Move the focus to an :class:`InstanceNode` inside the receiver's
+      value. The argument *iroute* is an
+      :const:`yangson.typealiases.InstanceRoute` that identifies the
+      new focus. The instance node that is the new focus is
+      returned, or one of the following exceptions is raised:
+
+      * :exc:`InstanceTypeError` – if the argument isn't compatible
+	with the schema,
+      * :exc:`NonexistentInstance` – if the new focus doesn't exist.
 
    .. method:: peek(ii: InstanceIdentifier) -> Value
 

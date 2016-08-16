@@ -24,9 +24,9 @@ Glossary
    qualified name
 
        A tuple in the form *(name, module)* where *name* is the name
-       of a YANG entity (schema node, feature, identity etc.), and
-       *module* is the name of the YANG module in which the entity is
-       defined. Python type alias for the qualified name is
+       of a YANG entity (schema or data node, feature, identity etc.),
+       and *module* is the name of the YANG module in which the entity
+       is defined. Python type alias for the qualified name is
        :const:`QualName`.
 
    schema route

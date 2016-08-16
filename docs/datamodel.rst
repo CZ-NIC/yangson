@@ -99,11 +99,10 @@ user-level entry point to the *Yangson* library.
 
    .. staticmethod:: get_data_node(path)
 
-      Return the schema node addressed by the *path* argument (see
-      :term:`schema path`), or ``None`` if such a schema node doesn't
-      exist. As opposed to the :meth:`get_schema_node` method, the
-      components of the *path* argument should be exclusively *data
-      nodes*, i.e. **choice* and **case* nodes should be omitted. 
+      Return the schema node addressed by the *path* argument or
+      ``None`` if such a data node doesn't exist. As opposed to the
+      :meth:`get_schema_node` method, the *path* argument is a
+      :term:`data path`, i.e. it contains only *data nodes*.
 
       .. doctest::
 
