@@ -22,8 +22,8 @@ class Context:
         """Dictionary of module and submodule revisions."""
         cls.prefix_map = {} # type: Dict[ModuleId, Dict[YangIdentifier, ModuleId]]
         """Dictionary of prefix mappings."""
-        cls.ns_map = {} # type: Dict[YangIdentifier, YangIdentifier]
-        """Dictionary of module and submodule namespaces."""
+        cls._main_module = {} # type: Dict[YangIdentifier, YangIdentifier]
+        """Dictionary mapping submodules to their main modules."""
         cls.identity_bases = {} # type: Dict[QualName, MutableSet[QualName]]
         """Dictionary of identity bases."""
         cls.features = set() # type: MutableSet[QualName]
@@ -51,7 +51,6 @@ class Context:
         try:
             for item in yang_lib["ietf-yang-library:modules-state"]["module"]:
                 name = item["name"]
-                cls.ns_map[name] = name
                 if "feature" in item:
                     cls.features.update(
                         [ (f,name) for f in item["feature"] ])
@@ -66,7 +65,7 @@ class Context:
                 if "submodule" in item:
                     for s in item["submodule"]:
                         sname = s["name"]
-                        cls.ns_map[sname] = name
+                        cls._main_module[sname] = name
                         rev = s["revision"]
                         smid = (sname, rev)
                         if ct == "implement": cls.implement.append(sname)
@@ -106,6 +105,15 @@ class Context:
             cls.modules[(name, rev)] = res
             return res
         raise ModuleNotFound(name, rev)
+
+    @classmethod
+    def main_module(cls, name: YangIdentifier) -> YangIdentifier:
+        """For any module, return the corresponding main module.
+
+        Args:
+            name: Name of a main module or submodule.
+        """
+        return cls._main_module.get(name, name)
 
     @classmethod
     def last_revision(cls, mname: YangIdentifier) -> ModuleId:
@@ -186,7 +194,7 @@ class Context:
             mid: Identifier of the context module.
         """
         loc, nid = cls.resolve_pname(pname, mid)
-        return (loc, cls.ns_map[nid[0]])
+        return (loc, cls.main_module(nid[0]))
 
     @classmethod
     def sid2route(cls, sid: str, mid: ModuleId) -> SchemaRoute:

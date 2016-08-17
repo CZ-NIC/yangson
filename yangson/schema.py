@@ -353,7 +353,7 @@ class InternalNode(SchemaNode):
             self, node: SchemaNode, stmt: Statement, mid: ModuleId) -> None:
         """Add child node to the receiver and handle substatements."""
         node.name = stmt.argument
-        node.ns = Context.ns_map[mid[0]] if self._nsswitch else self.ns
+        node.ns = Context.main_module(mid[0]) if self._nsswitch else self.ns
         self.add_child(node)
         node._handle_substatements(stmt, mid)
 
@@ -772,7 +772,7 @@ class ChoiceNode(InternalNode):
         else:
             cn = CaseNode()
             cn.name = stmt.argument
-            cn.ns = Context.ns_map[mid[0]] if self._nsswitch else self.ns
+            cn.ns = Context.main_module(mid[0]) if self._nsswitch else self.ns
             self.add_child(cn)
             cn._handle_child(node, stmt, mid)
 
