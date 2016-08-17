@@ -114,7 +114,7 @@ def instance(data_model):
     return data_model.from_raw(json.loads(data))
 
 def test_context(data_model):
-    assert len(Context.implement) == 3
+    assert len(Context.implement) == 2
     assert data_model.module_set_id() == "b6d7e0614440c5ad8a7370fe46c777254d331983"
     tid = Context.last_revision("test")
     stid = Context.last_revision("subtest")

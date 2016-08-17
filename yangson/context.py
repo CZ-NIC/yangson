@@ -16,18 +16,22 @@ class Context:
         """List of directories where to look for YANG modules."""
         cls.modules = {} # type: Dict[ModuleId, Statement]
         """Dictionary of modules and submodules comprising the data model."""
-        cls.implement = [] # type: List[YangIdentifier]
-        """List of modules with conformance type “implement”."""
+        cls.implement = set() # type: MutableSet[YangIdentifier]
+        """Set of main modules with conformance type "implement"."""
         cls.revisions = {} # type: Dict[YangIdentifier, List[str]]
         """Dictionary of module and submodule revisions."""
         cls.prefix_map = {} # type: Dict[ModuleId, Dict[YangIdentifier, ModuleId]]
         """Dictionary of prefix mappings."""
         cls._main_module = {} # type: Dict[YangIdentifier, YangIdentifier]
         """Dictionary mapping submodules to their main modules."""
+        cls.submodules = {} # type: Dict[ModuleId, List[ModuleId]]
+        """Dictionary of submodules belonging to a main module."""
         cls.identity_bases = {} # type: Dict[QualName, MutableSet[QualName]]
         """Dictionary of identity bases."""
         cls.features = set() # type: MutableSet[QualName]
         """Set of supported features."""
+        cls._module_sequence = [] # type: List[ModuleId]
+        """List that defines the order of module processing."""
 
     @classmethod
     def from_yang_library(cls, yang_lib: Dict[str, Any],
@@ -57,7 +61,10 @@ class Context:
                 rev = item["revision"]
                 mid = (name, rev)
                 ct = item["conformance-type"]
-                if ct == "implement": cls.implement.append(name)
+                if ct == "implement":
+                    if name in cls.implement:
+                        raise MultipleImplementedRevisions(name)
+                    cls.implement.add(name)
                 cls.revisions.setdefault(name, []).append(rev)
                 mod = cls._load_module(name, rev)
                 locpref = mod.find1("prefix", required=True).argument
@@ -68,8 +75,8 @@ class Context:
                         cls._main_module[sname] = name
                         rev = s["revision"]
                         smid = (sname, rev)
-                        if ct == "implement": cls.implement.append(sname)
                         cls.revisions.setdefault(sname, []).append(rev)
+                        cls.submodules.setdefault(mid, []).append((sname, rev))
                         submod = cls._load_module(sname, rev)
                         bt = submod.find1("belongs-to", name, required=True)
                         locpref = bt.find1("prefix", required=True).argument
@@ -77,13 +84,10 @@ class Context:
         except (KeyError, AttributeError) as e:
             raise BadYangLibraryData()
         for mod in cls.revisions:
-            cls.revisions[mod].sort(key=lambda r: "0" if r is None else r)
+            cls.revisions[mod].sort()
         cls._process_imports()
         cls._check_feature_dependences()
-        for mn in cls.implement:
-            if len(cls.revisions[mn]) > 1:
-                raise MultipleImplementedRevisions(mn)
-            mid = (mn, cls.revisions[mn][0])
+        for mid in cls._module_sequence:
             cls.schema._handle_substatements(cls.modules[mid], mid)
         cls._apply_augments()
         cls.schema._post_process()
@@ -122,42 +126,45 @@ class Context:
 
     @classmethod
     def _process_imports(cls) -> None:
-        deps = { mn: 0 for mn in cls.implement }
-        impby = { mn: [] for mn in cls.implement }
+        deps = { mn: set() for mn in cls.implement }
+        impby = { mn: set() for mn in cls.implement }
         for mid in cls.modules:
             mod = cls.modules[mid]
             for impst in mod.find_all("import"):
                 impn = impst.argument
                 prefix = impst.find1("prefix", required=True).argument
                 revst = impst.find1("revision-date")
-                rev = revst.argument if revst else None
-                if rev in cls.revisions[impn]:
-                    imid = (impn, rev)
-                elif rev is None:             # use last revision
+                if revst:
+                    rev = revst.argument
+                    if rev in cls.revisions[impn]:
+                        imid = (impn, rev)
+                    else:
+                        raise ModuleNotFound(impn, rev)
+                else:                              # use last revision
                     imid = cls.last_revision(impn)
-                else:
-                    raise ModuleNotFound(impn, rev)
                 cls.prefix_map[mid][prefix] = imid
-                if mid[0] in deps and impn in deps:
-                    deps[mid[0]] += 1
-                    impby[impn].append(mid[0])
-        cls.implement = []
-        free = [mn for mn in deps if deps[mn] == 0]
+                mm = cls.main_module(mid[0])
+                if mm in cls.implement and impn in cls.implement:
+                    deps[mm].add(impn)
+                    impby[impn].add(mm)
+        free = [mn for mn in deps if len(deps[mn]) == 0]
         if not free: raise CyclicImports()
         while free:
             n = free.pop()
-            cls.implement.append(n)
+            nid = cls.last_revision(n)
+            cls._module_sequence.append(nid)
+            if nid in cls.submodules:
+                cls._module_sequence.extend(cls.submodules[nid])
             for m in impby[n]:
-                deps[m] -= 1
-                if deps[m] == 0:
+                deps[m].remove(n)
+                if len(deps[m]) == 0:
                     free.append(m)
-        if [mn for mn in deps if deps[mn] > 0]: raise CyclicImports()
+        if [mn for mn in deps if len(deps[mn]) > 0]: raise CyclicImports()
 
     @classmethod
     def _apply_augments(cls) -> None:
         """Apply top-level augments from all implemented modules."""
-        for mn in cls.implement:
-            mid = (mn, cls.revisions[mn][0])
+        for mid in cls._module_sequence:
             mod = cls.modules[mid]
             for aug in mod.find_all("augment"):
                 cls.schema._augment_stmt(aug, mid, True)
