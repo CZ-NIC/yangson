@@ -1,7 +1,7 @@
 from typing import Dict, List, MutableSet
 from .constants import YangsonException
 from .parser import Parser, ParserException
-from .statement import ModuleParser, Statement
+from .statement import DefinitionNotFound, ModuleParser, Statement
 from .typealiases import *
 
 """This module provides class `Context`."""
@@ -251,9 +251,14 @@ class Context:
         """
         kw = "grouping" if stmt.keyword == "uses" else "typedef"
         loc, did = cls.resolve_pname(stmt.argument, mid)
-        dstmt = (stmt.get_definition(loc, kw) if did == mid else
-                 cls.modules[did].find1(kw, loc, required=True))
-        return (dstmt, did)
+        if did == mid: return (stmt.get_definition(loc, kw), mid)
+        dstmt = cls.modules[did].find1(kw, loc)
+        if dstmt: return (dstmt, did)
+        if did in cls.submodules:
+            for sid in cls.submodules[did]:
+                dstmt = cls.modules[sid].find1(kw, loc)
+                if dstmt: return (dstmt, sid)
+        raise DefinitionNotFound(kw, stmt.argument)
 
     @classmethod
     def is_derived_from(cls, identity: QualName, base: QualName) -> bool:

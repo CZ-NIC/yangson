@@ -55,6 +55,10 @@ module testb {
 	base t:all-uses;
       }
     }
+    leaf leafV {
+      mandatory true;
+      type t:typE;
+    }
   }
 
   augment "/t:choiA" {

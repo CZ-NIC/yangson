@@ -22,6 +22,12 @@ submodule subtest {
 
   revision 2016-04-26;
 
+  typedef typE {
+    type sd:typA {
+      range "-100..100";
+    }
+  }
+
   choice choiA {
     leaf-list llistB {
       type inet:ip-address-no-zone;
