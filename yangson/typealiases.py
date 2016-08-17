@@ -3,7 +3,7 @@
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-RevisionDate = Optional[str]
+RevisionDate = str # YYYY-MM-DD or empty string
 Uri = str
 YangIdentifier = str
 InstanceName = str # [YangIdentifier ":"] YangIdentifier
