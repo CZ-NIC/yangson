@@ -4,7 +4,23 @@ from .parser import Parser, ParserException
 from .statement import DefinitionNotFound, ModuleParser, Statement
 from .typealiases import *
 
-"""This module provides class `Context`."""
+"""
+This module implements the following classes:
+
+* Context
+* FeatureExprParser
+
+The module defines the following exceptions:
+
+* ModuleNotFound
+* BadYangLibraryData
+* BadPath
+* BadPrefName
+* InvalidFeatureExpression
+* FeaturePrerequisiteError
+* MultipleImplementedRevisions
+* CyclicImports
+"""
 
 class Context:
     """Global repository of data model structures and utility methods."""
@@ -12,24 +28,24 @@ class Context:
     @classmethod
     def initialize(cls) -> None:
         """Initialize the context variables."""
+        cls.features = set() # type: MutableSet[QualName]
+        """Set of supported features."""
+        cls.identity_bases = {} # type: Dict[QualName, MutableSet[QualName]]
+        """Dictionary of identity bases."""
+        cls.implement = set() # type: MutableSet[YangIdentifier]
+        """Set of main modules with conformance type "implement"."""
         cls.module_search_path = [] # type: List[str]
         """List of directories where to look for YANG modules."""
         cls.modules = {} # type: Dict[ModuleId, Statement]
         """Dictionary of modules and submodules comprising the data model."""
-        cls.implement = set() # type: MutableSet[YangIdentifier]
-        """Set of main modules with conformance type "implement"."""
-        cls.revisions = {} # type: Dict[YangIdentifier, List[str]]
-        """Dictionary of module and submodule revisions."""
         cls.prefix_map = {} # type: Dict[ModuleId, Dict[YangIdentifier, ModuleId]]
         """Dictionary of prefix mappings."""
-        cls._main_module = {} # type: Dict[YangIdentifier, YangIdentifier]
-        """Dictionary mapping submodules to their main modules."""
+        cls.revisions = {} # type: Dict[YangIdentifier, List[str]]
+        """Dictionary of module and submodule revisions."""
         cls.submodules = {} # type: Dict[ModuleId, List[ModuleId]]
         """Dictionary of submodules belonging to a main module."""
-        cls.identity_bases = {} # type: Dict[QualName, MutableSet[QualName]]
-        """Dictionary of identity bases."""
-        cls.features = set() # type: MutableSet[QualName]
-        """Set of supported features."""
+        cls._main_module = {} # type: Dict[YangIdentifier, YangIdentifier]
+        """Dictionary mapping submodules to their main modules."""
         cls._module_sequence = [] # type: List[ModuleId]
         """List that defines the order of module processing."""
 
@@ -43,11 +59,12 @@ class Context:
             mod_path: Value for `module_search_path`.
 
         Raises:
-            BadYangLibraryData: Invalid YANG library data.
-            MultipleImplementedRevisions: Multiple revisions of an
-                implemented module.
-            ModuleNotFound: A YANG module wasn't found.
-            FeaturePrerequisiteError: A pre-requisite feature isn't supported.
+            BadYangLibraryData: If YANG library data is invalid.
+            FeaturePrerequisiteError: If a pre-requisite feature isn't
+                supported.
+            MultipleImplementedRevisions: If multiple revisions of an
+                implemented module are listed in YANG library.
+            ModuleNotFound: If a YANG module wasn't found.
         """
         cls.initialize()
         cls.module_search_path = mod_path

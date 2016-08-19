@@ -12,7 +12,7 @@ from .schema import (BadSchemaNodeType, DataNode, GroupNode,
 from .typealiases import *
 
 class DataModel(metaclass=Singleton):
-    """The basic entry point to the YANG data model.
+    """Basic entry point to the YANG data model.
 
     It is a singleton class, which means that only one instance can be
     created.
@@ -24,6 +24,14 @@ class DataModel(metaclass=Singleton):
         Args:
             yltxt: JSON text with YANG library data.
             mod_path: List of directories where to look for YANG modules.
+
+        Raises:
+            BadYangLibraryData: If YANG library data is invalid.
+            FeaturePrerequisiteError: If a pre-requisite feature isn't
+                supported.
+            MultipleImplementedRevisions: If multiple revisions of an
+                implemented module are listed in YANG library.
+            ModuleNotFound: If a YANG module wasn't found.
         """
         Context.schema = GroupNode()
         try:
@@ -42,6 +50,14 @@ class DataModel(metaclass=Singleton):
 
         Returns:
             Initialised class instance.
+
+        Raises:
+            BadYangLibraryData: If YANG library data is invalid.
+            FeaturePrerequisiteError: If a pre-requisite feature isn't
+                supported.
+            MultipleImplementedRevisions: If multiple revisions of an
+                implemented module are listed in YANG library.
+            ModuleNotFound: If a YANG module wasn't found.
         """
         with open(name, encoding="utf-8") as infile:
             yltxt = infile.read()
