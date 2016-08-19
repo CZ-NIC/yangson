@@ -98,10 +98,6 @@ class SchemaNode:
     def _noop(self, stmt: Statement, mid: ModuleId) -> None:
         pass
 
-    def _if_feature_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        if Context.translate_pname(stmt.argument, mid) not in Context.features:
-            self.parent.remove_child(self)
-
     def _config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         if stmt.argument == "false": self._config = False
 
@@ -146,7 +142,6 @@ class SchemaNode:
         "identity": "_identity_stmt",
         "ietf-netconf-acm:default-deny-all": "_nacm_default_deny_stmt",
         "ietf-netconf-acm:default-deny-write": "_nacm_default_deny_stmt",
-        "if-feature": "_if_feature_stmt",
         "input": "_input_stmt",
         "key": "_key_stmt",
         "leaf": "_leaf_stmt",
@@ -352,6 +347,7 @@ class InternalNode(SchemaNode):
     def _handle_child(
             self, node: SchemaNode, stmt: Statement, mid: ModuleId) -> None:
         """Add child node to the receiver and handle substatements."""
+        if not Context.if_features(stmt, mid): return
         node.name = stmt.argument
         node.ns = Context.main_module(mid[0]) if self._nsswitch else self.ns
         self.add_child(node)
@@ -372,8 +368,14 @@ class InternalNode(SchemaNode):
 
     def _refine_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle **refine** statement."""
-        path = Context.sid2route(stmt.argument, mid)
-        self.get_schema_descendant(path)._handle_substatements(stmt, mid)
+        target = self.get_schema_descendant(
+            Context.sid2route(stmt.argument, mid))
+        for ist in stmt.find_all("if-feature"):
+            if Context.translate_pname(
+                    stmt.argument, mid) not in Context.features:
+                target.parent.remove_child(target)
+                return
+        target._handle_substatements(stmt, mid)
 
     def _uses_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle uses statement."""
