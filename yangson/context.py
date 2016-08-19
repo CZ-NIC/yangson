@@ -368,7 +368,8 @@ class FeatureExprParser(Parser):
             return res
         n, p = self.qualified_name()
         self.skip_ws()
-        ns = Context.prefix2ns(p, self.mid) if p else self.mid[0]
+        ns = (Context.prefix2ns(p, self.mid) if p
+              else Context.main_module(self.mid[0]))
         return (n, ns) in Context.features
 
 class ModuleNotFound(YangsonException):

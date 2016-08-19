@@ -400,8 +400,9 @@ class InternalNode(SchemaNode):
         """Handle identity statement."""
         if not Context.if_features(stmt, mid): return
         bases = stmt.find_all("base")
-        Context.identity_bases[(stmt.argument, mid[0])] = set(
-            [Context.translate_pname(ist.argument, mid) for ist in bases])
+        Context.identity_bases[
+            (stmt.argument, Context.main_module(mid[0]))] = set(
+                [Context.translate_pname(ist.argument, mid) for ist in bases])
 
     def _list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle list statement."""

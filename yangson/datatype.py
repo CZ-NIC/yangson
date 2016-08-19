@@ -473,7 +473,7 @@ class IdentityrefType(DataType):
 
     def _convert_raw(self, raw: str) -> QualName:
         i1, s, i2 = raw.partition(":")
-        return (i2, i1) if s else (i1, self.module_id[0])
+        return (i2, i1) if s else (i1, Context.main_module(self.module_id[0]))
 
     def _constraints(self, val: QualName) -> bool:
         for b in self.bases:
