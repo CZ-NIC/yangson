@@ -5,28 +5,32 @@ from .statement import DefinitionNotFound, ModuleParser, Statement
 from .typealiases import *
 
 """
+Essential data model structures and methods.
+
 This module implements the following classes:
 
-* Context
-* FeatureExprParser
+* Context: Repository of data model structures and methods.
+* FeatureExprParser: Parser for if-feature expressions.
 
 The module defines the following exceptions:
 
-* ModuleNotFound
-* BadYangLibraryData
-* BadPath
-* BadPrefName
-* InvalidFeatureExpression
-* FeaturePrerequisiteError
-* MultipleImplementedRevisions
-* CyclicImports
+* ModuleNotFound: YANG module not found.
+* BadYangLibraryData: Invalid YANG library data.
+* BadPath: Invalid schema path
+* UnknownPrefix: Unknown namespace prefix.
+* InvalidFeatureExpression: Invalid if-feature expression.
+* FeaturePrerequisiteError: A supported feature depends on
+  another that isn't supported.
+* MultipleImplementedRevisions: YANG library specifies multiple
+  revisions of an implemented module.
+* CyclicImports: Imports of YANG modules form a cycle.
 """
 
 class Context:
     """Global repository of data model structures and utility methods."""
 
     @classmethod
-    def initialize(cls) -> None:
+    def _initialize(cls) -> None:
         """Initialize the context variables."""
         cls.features = set() # type: MutableSet[QualName]
         """Set of supported features."""
@@ -50,9 +54,12 @@ class Context:
         """List that defines the order of module processing."""
 
     @classmethod
-    def from_yang_library(cls, yang_lib: Dict[str, Any],
-                          mod_path: List[str]) -> None:
+    def _from_yang_library(cls, yang_lib: Dict[str, Any],
+                           mod_path: List[str]) -> None:
         """Set the data model structures from YANG library data.
+
+        This method requires that the class variable `schema` be
+        initialized with a GroupNode instance.
 
         Args:
             yang_lib: Dictionary with YANG library data.
@@ -66,7 +73,7 @@ class Context:
                 implemented module are listed in YANG library.
             ModuleNotFound: If a YANG module wasn't found.
         """
-        cls.initialize()
+        cls._initialize()
         cls.module_search_path = mod_path
         cls.schema._nsswitch = cls.schema._config = True
         try:
@@ -201,13 +208,13 @@ class Context:
             mid: Identifier of the context module.
 
         Raises:
-            BadPrefName: Invalid prefix.
+            UnknownPrefix: If the prefix is not known.
         """
         p, s, loc = pname.partition(":")
         try:
             return (loc, cls.prefix_map[mid][p]) if s else (p, mid)
         except KeyError:
-            raise BadPrefName(pname) from None
+            raise UnknownPrefix(pname) from None
 
     @classmethod
     def translate_pname(cls, pname: PrefName, mid: ModuleId) -> QualName:
@@ -402,8 +409,8 @@ class BadPath(YangsonException):
     def __str__(self) -> str:
         return self.path
 
-class BadPrefName(YangsonException):
-    """Broken prefixed name."""
+class UnknownPrefix(YangsonException):
+    """Unknown prefix."""
 
     def __init__(self, pname: str) -> None:
         self.pname = pname

@@ -4,7 +4,7 @@ from decimal import Decimal
 from yangson import DataModel
 from yangson.constants import ContentType
 from yangson.context import (Context, FeatureExprParser, BadPath,
-                             InvalidFeatureExpression, BadPrefName)
+                             InvalidFeatureExpression, UnknownPrefix)
 from yangson.datatype import YangTypeError
 from yangson.instance import (InstanceIdParser, MinElements,
                               NonexistentInstance, ResourceIdParser)
@@ -124,7 +124,7 @@ def test_context(data_model):
     assert Context.modules[tid].argument == "test"
     assert Context.translate_pname("t:foo", tbid) == ("foo", "test")
     assert Context.translate_pname("sd:foo", stid) == ("foo", "defs")
-    with pytest.raises(BadPrefName):
+    with pytest.raises(UnknownPrefix):
         Context.translate_pname("d:foo", stid)
     assert FeatureExprParser("feA and not (not feA or feB)", tid).parse()
     with pytest.raises(InvalidFeatureExpression):

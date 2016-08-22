@@ -38,7 +38,7 @@ class DataModel(metaclass=Singleton):
             yl = json.loads(yltxt)
         except json.JSONDecodeError:
             raise BadYangLibraryData() from None
-        Context.from_yang_library(yl, mod_path)
+        Context._from_yang_library(yl, mod_path)
 
     @classmethod
     def from_file(cls, name: str, mod_path: List[str] = ["."]) -> "DataModel":
