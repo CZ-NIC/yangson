@@ -52,7 +52,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   <xsl:strip-space elements="*"/>
 
   <!-- The 'date' parameter, if set, overrides the value of the
-       'revision' statement. -->
+       first 'revision' statement. -->
   <xsl:param name="date"/>
   <!-- Amount of indentation added for each YANG hierarchy level. -->
   <xsl:param name="indent-step" select="2"/>
@@ -61,17 +61,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   <!-- Marks for unordered list items at different levels of
        embedding -->
   <xsl:param name="list-bullets" select="'-*o+'"/>
-
-  <xsl:variable name="revision">
-    <xsl:choose>
-      <xsl:when test="$date">
-	<xsl:value-of select="$date"/>
-      </xsl:when>
-      <xsl:otherwise>
-	<xsl:value-of select="/yin:module/yin:revision/@date"/>
-      </xsl:otherwise>
-    </xsl:choose>
-  </xsl:variable>
 
   <xsl:variable name="unit-indent">
     <xsl:call-template name="repeat-string">
@@ -415,7 +404,16 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
   <xsl:template match="yin:revision">
     <xsl:call-template name="statement">
-      <xsl:with-param name="arg" select="$revision"/>
+      <xsl:with-param name="arg">
+	<xsl:choose>
+	  <xsl:when test="$date and not(preceding-sibling::yin:revision)">
+	    <xsl:value-of select="$date"/>
+	  </xsl:when>
+	  <xsl:otherwise>
+	    <xsl:value-of select="@date"/>
+	  </xsl:otherwise>
+	</xsl:choose>
+      </xsl:with-param>
     </xsl:call-template>
   </xsl:template>
 
