@@ -88,7 +88,7 @@ class SchemaNode:
         """Dispatch actions for substatements of `stmt`."""
         for s in stmt.substatements:
             if s.prefix:
-                key = Context.prefix_map[mid][s.prefix][0] + ":" + s.keyword
+                key = Context.modules[mid].prefix_map[s.prefix][0] + ":" + s.keyword
             else:
                 key = s.keyword
             mname = SchemaNode._stmt_callback.get(key, "_noop")
@@ -349,7 +349,7 @@ class InternalNode(SchemaNode):
         """Add child node to the receiver and handle substatements."""
         if not Context.if_features(stmt, mid): return
         node.name = stmt.argument
-        node.ns = Context.main_module(mid[0]) if self._nsswitch else self.ns
+        node.ns = Context.namespace(mid) if self._nsswitch else self.ns
         self.add_child(node)
         node._handle_substatements(stmt, mid)
 
@@ -370,12 +370,10 @@ class InternalNode(SchemaNode):
         """Handle **refine** statement."""
         target = self.get_schema_descendant(
             Context.sid2route(stmt.argument, mid))
-        for ist in stmt.find_all("if-feature"):
-            if Context.translate_pname(
-                    stmt.argument, mid) not in Context.features:
-                target.parent.remove_child(target)
-                return
-        target._handle_substatements(stmt, mid)
+        if not Context.if_features(stmt, mid):
+            target.parent.remove_child(target)
+        else:
+            target._handle_substatements(stmt, mid)
 
     def _uses_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle uses statement."""
@@ -401,7 +399,7 @@ class InternalNode(SchemaNode):
         if not Context.if_features(stmt, mid): return
         bases = stmt.find_all("base")
         Context.identity_bases[
-            (stmt.argument, Context.main_module(mid[0]))] = set(
+            (stmt.argument, Context.namespace(mid))] = set(
                 [Context.translate_pname(ist.argument, mid) for ist in bases])
 
     def _list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
@@ -775,7 +773,7 @@ class ChoiceNode(InternalNode):
         else:
             cn = CaseNode()
             cn.name = stmt.argument
-            cn.ns = Context.main_module(mid[0]) if self._nsswitch else self.ns
+            cn.ns = Context.namespace(mid) if self._nsswitch else self.ns
             self.add_child(cn)
             cn._handle_child(node, stmt, mid)
 

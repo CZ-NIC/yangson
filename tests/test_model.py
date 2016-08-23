@@ -121,7 +121,7 @@ def test_context(data_model):
     tid = Context.last_revision("test")
     stid = Context.last_revision("subtest")
     tbid = Context.last_revision("testb")
-    assert Context.modules[tid].argument == "test"
+    assert Context.modules[tid].statement.argument == "test"
     assert Context.translate_pname("t:foo", tbid) == ("foo", "test")
     assert Context.translate_pname("sd:foo", stid) == ("foo", "defs")
     with pytest.raises(UnknownPrefix):
@@ -313,7 +313,7 @@ def test_instance(instance):
 
 def test_xpath(instance):
     def xptest(expr, res=True, node=instance, module="test"):
-        mid = (module, Context.revisions[module][0])
+        mid = Context.last_revision(module)
         assert XPathParser(expr, mid).parse().evaluate(node) == res
     conta = instance.member("test:contA")
     lr = conta.member("testb:leafR")

@@ -388,8 +388,8 @@ class FuncDerivedFrom(BinaryExpr):
         self.mid = mid
 
     def _properties_str(self):
-        return (("OR-SELF, " if self.or_self else "") +
-                Context.main_module(self.mid[0]))
+        return ("OR-SELF, " if self.or_self
+                else "") + Context.namespace(self.mid)
 
     def _eval(self, xctx: XPathContext) -> bool:
         ns = self.left._eval(xctx)

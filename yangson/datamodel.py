@@ -70,7 +70,7 @@ class DataModel(metaclass=Singleton):
         Returns:
             String consisting of hexadecimal digits.
         """
-        fnames = sorted(["@".join(m) for m in Context.modules.keys()])
+        fnames = sorted(["@".join(m) for m in Context.modules])
         return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
 
     @staticmethod
