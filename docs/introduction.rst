@@ -64,6 +64,26 @@ following diagram.
 
 .. image:: imports.png
 
+YANG Modules
+************
+
+In order be able to find and read the correct revision of each YANG
+module, *Yangson* requires that the names of disk files containing
+modules are of the form specified in [Bjo16]_, sec. `5.2`__::
+
+    module-or-submodule-name ['@' revision-date] '.yang'
+
+For a (sub)module without a **revision** statement, the ``'@'
+revision-date`` part must be omitted, otherwise it has to be present.
+
+__ https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-14#section-5.2
+
+*Yangson* is currently able to parse only the compact syntax of YANG
+files. Modules written in the alternative XML format (YIN) can be
+converted to the compact syntax by using the XSLT stylesheet
+*yin2yang.xsl* that is also included in *Yangson* distribution
+(directory *tools/xslt*).
+
 Example Data Model
 ******************
 

@@ -12,7 +12,7 @@ Contents:
    datamodel
    .. schema
    instvalue
-   instance
+   .. instance
    context
    .. typealiases
    references

@@ -12,14 +12,24 @@ Data Model
    import os
    os.chdir("examples/ex1")
 
+.. testcleanup::
+
+   os.chdir("../..")
+   del DataModel._instances[DataModel]
+
 This module provides the :class:`DataModel` class that serves as the basic
 user-level entry point to the *Yangson* library.
 
 .. class:: DataModel(yltxt: str, mod_path: List[str] )
 
-   It is a *singleton* class which means that only one instance can be
-   created. This limitation corresponds to the fact that it is not
-   possible to work with multiple data models at the same time.
+   Build the data model from YANG library data [RFC7895]_ and YANG
+   modules. The *yltxt* argument is a string with JSON-encoded YANG
+   library data, and the *mod_path* argument is a list of filesystem
+   directories in which *Yangson* searches for YANG modules.
+   :class:`DataModel` is a *singleton* class which means that only one
+   instance can be created. This limitation corresponds to the fact
+   that it is not possible to work with multiple data models at the
+   same time.
 
    :class:`DataModel` is also re-exported by the main package, so it
    can also be imported directly from there:
@@ -30,13 +40,11 @@ user-level entry point to the *Yangson* library.
 
    .. classmethod:: from_file(name, mod_path = ["."] )
 
-      Initialize the data model from a file containing YANG library
-      data [RFC7895]_. The *name* argument is the name of the file,
-      and the second argument, *mod_path*, is a list of file system
-      directories, in which all YANG modules implemented or imported
-      by the data model need to be found.
-      
-      By default, *mod_path* includes only the current directory.
+      Initialize the data model from a file containing JSON-encoded
+      YANG library data [RFC7895]_. The *name* argument is the name of
+      that file, and the second argument, *mod_path*, has the same
+      meaning as in the class constructor above. By default,
+      *mod_path* includes only the current directory.
 
       .. doctest::
 
@@ -81,35 +89,36 @@ user-level entry point to the *Yangson* library.
 
       .. doctest::
 
-	 >>> with open("example-data.json", encoding="utf-8") as infile:
-	 ...   rdata = json.load(infile)
-	 >>> inst = dm.from_raw(rdata)
+	 >>> with open("example-data.json") as infile:
+	 ...   ri = json.load(infile)
+	 >>> inst = dm.from_raw(ri)
 	 >>> inst.value
 	 {'example-1:greeting': 'Hi!'}
 
    .. staticmethod:: get_schema_node(path)
 
       Return the schema node addressed by the *path* argument (see
-      :term:`schema path`), or ``None`` if such a schema node doesn't exist.
+      :term:`schema path`), or ``None`` if no such schema node exists.
 
       .. doctest::
 
-	 >>> dm.get_schema_node("/").parent is None
+	 >>> root = dm.get_schema_node("/")
+	 >>> root.parent is None
 	 True
 
    .. staticmethod:: get_data_node(path)
 
-      Return the schema node addressed by the *path* argument or
+      Return the data node addressed by the *path* argument or
       ``None`` if such a data node doesn't exist. As opposed to the
       :meth:`get_schema_node` method, the *path* argument is a
-      :term:`data path`, i.e. it contains only *data nodes*.
+      :term:`data path`, i.e. it contains only names of *data nodes*.
 
       .. doctest::
+	 >>> leaf = dm.get_data_node("/example-1:greeting")
+	 >>> leaf.parent is root
+	 True
 
-	 >>> dm.get_data_node("/example-1:greeting").name
-	 'greeting'
-
-   .. staticmethod:: ascii_tree()
+    .. staticmethod:: ascii_tree()
 
       Generate ASCII art representation of the schema tree.
       
@@ -124,7 +133,6 @@ user-level entry point to the *Yangson* library.
 	tree.
 
       .. doctest::
-
 	 >>> dm.ascii_tree()
 	 '+--rw example-1:greeting?\n'
 

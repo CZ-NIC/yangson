@@ -6,56 +6,84 @@ Data Model Context
    :synopsis: Global repository of data model information and methods.
 .. moduleauthor:: Ladislav Lhotka <lhotka@nic.cz>
 
-The *Yangson* library requires two pieces of information in order to
-be able to construct the data model:
+.. testsetup::
 
-* *YANG library* data [RFC7895]_ with a list of YANG modules and
-  submodules that comprise the data model, supported features, and a
-  few other details;
+   import os
+   os.chdir("examples/ex3")
 
-* list of filesystem directories from which the YANG modules can be
-  retrieved.
+.. testcleanup::
 
-*Yangson* reads the YANG library data and tries to locate all modules
-and submodules specified in YANG library data. Names of files in which
-(sub)modules are stored must be of the form specified in [Bjo16]_,
-sec. `5.2`__::
+   os.chdir("../..")
+   del DataModel._instances[DataModel]
 
-    module-or-submodule-name ['@' revision-date] '.yang'
+Essential data model structures and methods
 
-*Yangson* is currently able to parse only the compact format of YANG
-files. The alternative XML format (YIN) may be supported in a future
-version.
+This module implements the following classes:
 
-__ https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-14#section-5.2
+* :class:`Context`: Repository of data model structures and methods.
+* :class:`FeatureExprParser`: Parser for **if-feature** expressions.
 
-If a revision date is specified for a (sub)module in YANG library
-data, then it must also appear in the file name. 
+The module defines the following exceptions:
 
-All modules and submodules are then processed into the data model
-schema plus a number of other data structures that are needed in other
-Python modules. To make them globally available, *Yangson* stores
-these data structures in the :class:`Context` class.
+* :exc:`ModuleNotFound`: YANG module not found.
+* :exc:`BadYangLibraryData`: Invalid YANG library data.
+* :exc:`BadPath`: Invalid :term:`schema path`
+* :exc:`UnknownPrefix`: Unknown namespace prefix.
+* :exc:`InvalidFeatureExpression`: Invalid **if-feature** expression.
+* :exc:`FeaturePrerequisiteError`: A supported feature depends on
+  another that isn't supported.
+* :exc:`MultipleImplementedRevisions`: YANG library specifies multiple
+  revisions of an implemented module.
+* :exc:`CyclicImports`: Imports of YANG modules form a cycle.
 
 .. class:: Context
 
-   This class serves as a global storage of the data model schema and
-   several other important data model structures as class attributes.
-   This means that it is possible to work with only one data model at
-   a time.
-   
-   The :class:`Context` also provides a number of class methods for
-   retrieving and using this global data. 
+   This class serves as a global repository of the data model schema and
+   several other important data structures that are stored as class
+   attributes. This means that
 
-   No instances of this class are expected to be created.
+   * it is possible to work with only one data model at a time,
+
+   * no instances of this class are expected to be created.
+
+   The :class:`Context` class also provides a number of class methods
+   for retrieving and transforming this global data.
+
+   Other Python modules that need the data model information and/or
+   methods should import the :class:`Context` class.
+
+   .. doctest::
+
+      >>> from yangson import DataModel
+      >>> from yangson.context import Context
+      >>> dm = DataModel.from_file("yang-library-ex3.json")
+
+   .. attribute:: features
+
+      Set of supported features.
+
+      Each entry is the :term:`qualified name` of a feature that is
+      declared as supported in YANG library data.
+
+      .. doctest::
+
+	 >>> fs = Context.features
+	 >>> ('fea1', 'a') in fs
+	 True
+	 >>> ('fea2', 'a') in fs
+	 True
 
    .. attribute:: module_search_path
 
       List of directories where to look for YANG modules.
 
-      All YANG modules and submodules listed in YANG library
-      data [RFC7895]_ have to be located in one of these
-      directories. Names of
+      All YANG modules and submodules listed in YANG library data have
+      to be located in one of these directories.
+
+      .. doctest::
+
+	 >>> Context.module_search_path
+	 ['.']
 
    .. attribute:: modules
 
@@ -65,12 +93,14 @@ these data structures in the :class:`Context` class.
       corresponding **module** or **submodule** statements (see
       :class:`Statement`).
 
+      .. doctest::
+
+	 >>> len(Context.modules)
+	 3
+
    .. attribute:: implement
 
       List of modules with conformance type “implement”.
-
-      The revisions aren't specified because the data model cannot contain
-      more than one revision of each implemented module.
 
    .. attribute:: revisions
 
@@ -105,35 +135,3 @@ these data structures in the :class:`Context` class.
       The keys are :term:`qualified name`\ s of identities, and each
       value is a list of :term:`qualified name`\ s of identities that
       are defined as bases for the key identity.
-
-   .. attribute:: features
-
-      Set of supported features.
-
-      Each entry is the :term:`qualified name` of a feature that is
-      declared as supported in YANG library data.
-
-   .. automethod:: from_yang_library
-
-      This class method bootstraps the data model. The `yang_lib`
-      dictionary is supposed to be parsed from JSON-encoded YANG
-      library data (see the factory method of the
-      :class:`~yangson.datamodel.DataModel` class.
-
-   .. automethod:: module_set_id
-
-   .. automethod:: resolve_pname
-
-   .. automethod:: translate_pname
-
-   .. automethod:: sid2route
-
-   .. automethod:: path2route
-
-   .. automethod:: get_definition
-
-   .. automethod:: if_features
-
-   .. automethod:: feature_test
-
-   .. automethod:: feature_expr
