@@ -18,659 +18,671 @@ ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 -->
 
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+<stylesheet xmlns="http://www.w3.org/1999/XSL/Transform"
 		xmlns:xi="http://www.w3.org/2001/XInclude"
 		xmlns:html="http://www.w3.org/1999/xhtml"
 		xmlns:yin="urn:ietf:params:xml:ns:yang:yin:1"
 		version="1.0">
-  <xsl:output method="xml" encoding="utf-8"/>
-  <xsl:strip-space elements="*"/>
-  <xsl:template name="preceding-comment">
-    <xsl:if
+  <output method="xml" encoding="utf-8"/>
+  <strip-space elements="*"/>
+  <template name="preceding-comment">
+    <if
 	test="count((preceding-sibling::*|preceding-sibling::comment())
 	      [last()]|preceding-sibling::comment()[1]) = 1">
-      <xsl:apply-templates select="preceding-sibling::comment()[1]"/>
-    </xsl:if>
-  </xsl:template>
-  <xsl:template match="html:*|xi:*|@*|comment()|text()">
-    <xsl:copy-of select="."/>
-  </xsl:template>
-  <xsl:template name="data-def-stmt">
-    <xsl:apply-templates
+      <apply-templates select="preceding-sibling::comment()[1]"/>
+    </if>
+  </template>
+  <template match="html:*|xi:*|@*|comment()|text()">
+    <copy-of select="."/>
+  </template>
+  <template name="data-def-stmt">
+    <apply-templates
 	select="yin:container|yin:leaf|yin:leaf-list|
 		yin:list|yin:choice|yin:anyxml|yin:uses"/>
-  </xsl:template>
+  </template>
 
-  <xsl:template match="yin:module">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:yang-version"/>
-      <xsl:apply-templates select="yin:namespace"/>
-      <xsl:apply-templates select="yin:prefix"/>
-      <xsl:apply-templates select="yin:import"/>
-      <xsl:apply-templates select="yin:include"/>
-      <xsl:apply-templates select="yin:organization"/>
-      <xsl:apply-templates select="yin:contact"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:apply-templates select="yin:revision"/>
-      <xsl:apply-templates
+  <template match="yin:module">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:yang-version"/>
+      <apply-templates select="yin:namespace"/>
+      <apply-templates select="yin:prefix"/>
+      <apply-templates select="yin:import"/>
+      <apply-templates select="yin:include"/>
+      <apply-templates select="yin:organization"/>
+      <apply-templates select="yin:contact"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <apply-templates select="yin:revision"/>
+      <apply-templates
 	  select="yin:extension|yin:feature|yin:identity|yin:typedef|
 		  yin:grouping|yin:container|yin:leaf|yin:leaf-list|
 		  yin:list|yin:choice|yin:anyxml|yin:uses|yin:augment|
 		  yin:rpc|yin:notification|yin:deviation"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:submodule">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:yang-version"/>
-      <xsl:apply-templates select="yin:belongs-to"/>
-      <xsl:apply-templates select="yin:import"/>
-      <xsl:apply-templates select="yin:include"/>
-      <xsl:apply-templates select="yin:organization"/>
-      <xsl:apply-templates select="yin:contact"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:apply-templates select="yin:revision"/>
-      <xsl:apply-templates
+    </copy>
+  </template>
+  <template match="yin:submodule">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:yang-version"/>
+      <apply-templates select="yin:belongs-to"/>
+      <apply-templates select="yin:import"/>
+      <apply-templates select="yin:include"/>
+      <apply-templates select="yin:organization"/>
+      <apply-templates select="yin:contact"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <apply-templates select="yin:revision"/>
+      <apply-templates
 	  select="yin:extension|yin:feature|yin:identity|yin:typedef|
 		  yin:grouping|yin:container|yin:leaf|yin:leaf-list|
 		  yin:list|yin:choice|yin:anyxml|yin:uses|yin:augment|
 		  yin:rpc|yin:notification|yin:deviation"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:feature">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:if-feature">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:identity">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:base"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:base">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:yang-version">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:import">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:prefix"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:include">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:namespace">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:prefix">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:belongs-to">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:prefix"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:organization">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:text"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:text">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:contact">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:text"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:description">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:text"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:reference">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:text"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:units">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:revision">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:extension">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:argument"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:argument">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:yin-element"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:yin-element">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:typedef">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:type"/>
-      <xsl:apply-templates select="yin:units"/>
-      <xsl:apply-templates select="yin:default"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:type">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:fraction-digits"/>
-      <xsl:apply-templates select="yin:range"/>
-      <xsl:apply-templates select="yin:length"/>
-      <xsl:apply-templates select="yin:pattern"/>
-      <xsl:apply-templates select="yin:enum"/>
-      <xsl:apply-templates select="yin:bit"/>
-      <xsl:apply-templates select="yin:path"/>
-      <xsl:apply-templates select="yin:base"/>
-      <xsl:apply-templates select="yin:type"/>
-      <xsl:apply-templates select="yin:require-instance"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:fraction-digits">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:range">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:error-message"/>
-      <xsl:apply-templates select="yin:error-app-tag"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:length">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:error-message"/>
-      <xsl:apply-templates select="yin:error-app-tag"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:pattern">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:error-message"/>
-      <xsl:apply-templates select="yin:error-app-tag"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:default">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:enum">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:value"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:bit">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:position"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:position">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:path">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:require-instance">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:status">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:config">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:mandatory">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:presence">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:ordered-by">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:must">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:error-message"/>
-      <xsl:apply-templates select="yin:error-app-tag"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:error-message">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:value"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:value">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:error-app-tag">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:min-elements">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:max-elements">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:value">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:grouping">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:apply-templates select="yin:typedef"/>
-      <xsl:apply-templates select="yin:grouping"/>
-      <xsl:call-template name="data-def-stmt"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:container">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:when"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:must"/>
-      <xsl:apply-templates select="yin:presence"/>
-      <xsl:apply-templates select="yin:config"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:apply-templates select="yin:typedef"/>
-      <xsl:apply-templates select="yin:grouping"/>
-      <xsl:call-template name="data-def-stmt"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:leaf">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:when"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:type"/>
-      <xsl:apply-templates select="yin:units"/>
-      <xsl:apply-templates select="yin:must"/>
-      <xsl:apply-templates select="yin:default"/>
-      <xsl:apply-templates select="yin:config"/>
-      <xsl:apply-templates select="yin:mandatory"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:leaf-list">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:when"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:type"/>
-      <xsl:apply-templates select="yin:units"/>
-      <xsl:apply-templates select="yin:must"/>
-      <xsl:apply-templates select="yin:config"/>
-      <xsl:apply-templates select="yin:min-elements"/>
-      <xsl:apply-templates select="yin:max-elements"/>
-      <xsl:apply-templates select="yin:ordered-by"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:list">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:when"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:must"/>
-      <xsl:apply-templates select="yin:key"/>
-      <xsl:apply-templates select="yin:unique"/>
-      <xsl:apply-templates select="yin:config"/>
-      <xsl:apply-templates select="yin:min-elements"/>
-      <xsl:apply-templates select="yin:max-elements"/>
-      <xsl:apply-templates select="yin:ordered-by"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:apply-templates select="yin:typedef"/>
-      <xsl:apply-templates select="yin:grouping"/>
-      <xsl:call-template name="data-def-stmt"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:key">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:unique">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:choice">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:when"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:default"/>
-      <xsl:apply-templates select="yin:config"/>
-      <xsl:apply-templates select="yin:mandatory"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:apply-templates select="yin:container"/>
-      <xsl:apply-templates select="yin:leaf"/>
-      <xsl:apply-templates select="yin:leaf-list"/>
-      <xsl:apply-templates select="yin:list"/>
-      <xsl:apply-templates select="yin:anyxml"/>
-      <xsl:apply-templates select="yin:case"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:case">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:when"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:call-template name="data-def-stmt"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:anyxml">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:when"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:must"/>
-      <xsl:apply-templates select="yin:config"/>
-      <xsl:apply-templates select="yin:mandatory"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:uses">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:when"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:apply-templates select="yin:refine"/>
-      <xsl:apply-templates select="yin:augment"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:refine">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:must"/>
-      <xsl:apply-templates select="yin:presence"/>
-      <xsl:apply-templates select="yin:default"/>
-      <xsl:apply-templates select="yin:config"/>
-      <xsl:apply-templates select="yin:mandatory"/>
-      <xsl:apply-templates select="yin:min-elements"/>
-      <xsl:apply-templates select="yin:max-elements"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:augment">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:when"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:call-template name="data-def-stmt"/>
-      <xsl:apply-templates select="yin:case"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:when">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:rpc">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:apply-templates select="yin:typedef"/>
-      <xsl:apply-templates select="yin:grouping"/>
-      <xsl:apply-templates select="yin:input"/>
-      <xsl:apply-templates select="yin:output"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:input">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:typedef"/>
-      <xsl:apply-templates select="yin:grouping"/>
-      <xsl:call-template name="data-def-stmt"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:output">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:typedef"/>
-      <xsl:apply-templates select="yin:grouping"/>
-      <xsl:call-template name="data-def-stmt"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:notification">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:if-feature"/>
-      <xsl:apply-templates select="yin:status"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:apply-templates select="yin:typedef"/>
-      <xsl:apply-templates select="yin:grouping"/>
-      <xsl:call-template name="data-def-stmt"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:deviation">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:description"/>
-      <xsl:apply-templates select="yin:reference"/>
-      <xsl:apply-templates select="yin:deviate"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="yin:deviate">
-    <xsl:call-template name="preceding-comment"/>
-    <xsl:copy>
-      <xsl:apply-templates select="html:*|xi:*|@*|text()"/>
-      <xsl:apply-templates select="yin:type"/>
-      <xsl:apply-templates select="yin:units"/>
-      <xsl:apply-templates select="yin:must"/>
-      <xsl:apply-templates select="yin:unique"/>
-      <xsl:apply-templates select="yin:default"/>
-      <xsl:apply-templates select="yin:config"/>
-      <xsl:apply-templates select="yin:mandatory"/>
-      <xsl:apply-templates select="yin:min-elements"/>
-      <xsl:apply-templates select="yin:max-elements"/>
-    </xsl:copy>
-  </xsl:template>
-  <xsl:template match="/">
-    <xsl:apply-templates select="yin:module"/>
-    <xsl:apply-templates select="yin:submodule"/>
-  </xsl:template>
-</xsl:stylesheet>
+    </copy>
+  </template>
+  <template match="yin:feature">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:if-feature">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:identity">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:base"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:base">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:yang-version">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:import">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:prefix"/>
+      <apply-templates select="yin:revision-date"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:revision-date">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:include">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:revision-date"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:namespace">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:prefix">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:belongs-to">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:prefix"/>
+    </copy>
+  </template>
+  <template match="yin:organization">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:text"/>
+    </copy>
+  </template>
+  <template match="yin:text">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:contact">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:text"/>
+    </copy>
+  </template>
+  <template match="yin:description">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:text"/>
+    </copy>
+  </template>
+  <template match="yin:reference">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:text"/>
+    </copy>
+  </template>
+  <template match="yin:units">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:revision">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:extension">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:argument"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:argument">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:yin-element"/>
+    </copy>
+  </template>
+  <template match="yin:yin-element">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:typedef">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:type"/>
+      <apply-templates select="yin:units"/>
+      <apply-templates select="yin:default"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:type">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:fraction-digits"/>
+      <apply-templates select="yin:range"/>
+      <apply-templates select="yin:length"/>
+      <apply-templates select="yin:pattern"/>
+      <apply-templates select="yin:enum"/>
+      <apply-templates select="yin:bit"/>
+      <apply-templates select="yin:path"/>
+      <apply-templates select="yin:base"/>
+      <apply-templates select="yin:type"/>
+      <apply-templates select="yin:require-instance"/>
+    </copy>
+  </template>
+  <template match="yin:fraction-digits">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:range">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:error-message"/>
+      <apply-templates select="yin:error-app-tag"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:length">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:error-message"/>
+      <apply-templates select="yin:error-app-tag"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:pattern">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:error-message"/>
+      <apply-templates select="yin:error-app-tag"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:default">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:enum">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:value"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:bit">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:position"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:position">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:path">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:require-instance">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:status">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:config">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:mandatory">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:presence">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:ordered-by">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:must">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:error-message"/>
+      <apply-templates select="yin:error-app-tag"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:error-message">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:value"/>
+    </copy>
+  </template>
+  <template match="yin:value">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:error-app-tag">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:min-elements">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:max-elements">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:value">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:grouping">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <apply-templates select="yin:typedef"/>
+      <apply-templates select="yin:grouping"/>
+      <call-template name="data-def-stmt"/>
+    </copy>
+  </template>
+  <template match="yin:container">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:when"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:must"/>
+      <apply-templates select="yin:presence"/>
+      <apply-templates select="yin:config"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <apply-templates select="yin:typedef"/>
+      <apply-templates select="yin:grouping"/>
+      <call-template name="data-def-stmt"/>
+    </copy>
+  </template>
+  <template match="yin:leaf">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:when"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:type"/>
+      <apply-templates select="yin:units"/>
+      <apply-templates select="yin:must"/>
+      <apply-templates select="yin:default"/>
+      <apply-templates select="yin:config"/>
+      <apply-templates select="yin:mandatory"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:leaf-list">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:when"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:type"/>
+      <apply-templates select="yin:units"/>
+      <apply-templates select="yin:must"/>
+      <apply-templates select="yin:config"/>
+      <apply-templates select="yin:min-elements"/>
+      <apply-templates select="yin:max-elements"/>
+      <apply-templates select="yin:ordered-by"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:list">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:when"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:must"/>
+      <apply-templates select="yin:key"/>
+      <apply-templates select="yin:unique"/>
+      <apply-templates select="yin:config"/>
+      <apply-templates select="yin:min-elements"/>
+      <apply-templates select="yin:max-elements"/>
+      <apply-templates select="yin:ordered-by"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <apply-templates select="yin:typedef"/>
+      <apply-templates select="yin:grouping"/>
+      <call-template name="data-def-stmt"/>
+    </copy>
+  </template>
+  <template match="yin:key">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:unique">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+    </copy>
+  </template>
+  <template match="yin:choice">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:when"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:default"/>
+      <apply-templates select="yin:config"/>
+      <apply-templates select="yin:mandatory"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <apply-templates select="yin:container"/>
+      <apply-templates select="yin:leaf"/>
+      <apply-templates select="yin:leaf-list"/>
+      <apply-templates select="yin:list"/>
+      <apply-templates select="yin:anyxml"/>
+      <apply-templates select="yin:case"/>
+    </copy>
+  </template>
+  <template match="yin:case">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:when"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <call-template name="data-def-stmt"/>
+    </copy>
+  </template>
+  <template match="yin:anyxml">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:when"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:must"/>
+      <apply-templates select="yin:config"/>
+      <apply-templates select="yin:mandatory"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:uses">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:when"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <apply-templates select="yin:refine"/>
+      <apply-templates select="yin:augment"/>
+    </copy>
+  </template>
+  <template match="yin:refine">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:must"/>
+      <apply-templates select="yin:presence"/>
+      <apply-templates select="yin:default"/>
+      <apply-templates select="yin:config"/>
+      <apply-templates select="yin:mandatory"/>
+      <apply-templates select="yin:min-elements"/>
+      <apply-templates select="yin:max-elements"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:augment">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:when"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <call-template name="data-def-stmt"/>
+      <apply-templates select="yin:case"/>
+    </copy>
+  </template>
+  <template match="yin:when">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+    </copy>
+  </template>
+  <template match="yin:rpc">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <apply-templates select="yin:typedef"/>
+      <apply-templates select="yin:grouping"/>
+      <apply-templates select="yin:input"/>
+      <apply-templates select="yin:output"/>
+    </copy>
+  </template>
+  <template match="yin:input">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:typedef"/>
+      <apply-templates select="yin:grouping"/>
+      <call-template name="data-def-stmt"/>
+    </copy>
+  </template>
+  <template match="yin:output">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:typedef"/>
+      <apply-templates select="yin:grouping"/>
+      <call-template name="data-def-stmt"/>
+    </copy>
+  </template>
+  <template match="yin:notification">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <apply-templates select="yin:typedef"/>
+      <apply-templates select="yin:grouping"/>
+      <call-template name="data-def-stmt"/>
+    </copy>
+  </template>
+  <template match="yin:deviation">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <apply-templates select="yin:deviate"/>
+    </copy>
+  </template>
+  <template match="yin:deviate">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:type"/>
+      <apply-templates select="yin:units"/>
+      <apply-templates select="yin:must"/>
+      <apply-templates select="yin:unique"/>
+      <apply-templates select="yin:default"/>
+      <apply-templates select="yin:config"/>
+      <apply-templates select="yin:mandatory"/>
+      <apply-templates select="yin:min-elements"/>
+      <apply-templates select="yin:max-elements"/>
+    </copy>
+  </template>
+  <template match="/">
+    <apply-templates select="yin:module"/>
+    <apply-templates select="yin:submodule"/>
+  </template>
+</stylesheet>
