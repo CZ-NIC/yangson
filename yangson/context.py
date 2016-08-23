@@ -378,7 +378,7 @@ class FeatureExprParser(Parser):
             self.char(")")
             self.skip_ws()
             return res
-        n, p = self.qualified_name()
+        n, p = self.name_opt_prefix()
         self.skip_ws()
         fid = Context.modules[self.mid].prefix_map[p] if p else self.mid
         return n in Context.modules[fid].features

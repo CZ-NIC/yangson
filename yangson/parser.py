@@ -149,8 +149,8 @@ class Parser:
         """
         return self.match_regex(ident_re, True, "YANG identifier")
 
-    def qualified_name(self) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
-        """Parse a qualified name."""
+    def name_opt_prefix(self) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
+        """Parse name with an optional prefix."""
         i1 = self.yang_identifier()
         try:
             next = self.peek()
