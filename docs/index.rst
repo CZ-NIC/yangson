@@ -8,6 +8,7 @@ Contents:
 
    introduction
    concepts-terms
+   typealiases
    datamodel
    context
    references
