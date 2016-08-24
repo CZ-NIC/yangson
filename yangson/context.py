@@ -49,7 +49,7 @@ class Context:
 
     @classmethod
     def _initialize(cls) -> None:
-        """Initialize the context structures."""
+        """Initialize the data model structures."""
         cls.module_search_path = [] # type: List[str]
         """List of directories where to look for YANG modules."""
         cls.modules = {} # type: Dict[ModuleId, ModuleData]
@@ -71,7 +71,7 @@ class Context:
 
         Args:
             yang_lib: Dictionary with YANG library data.
-            mod_path: Value for `module_search_path`.
+            mod_path: Value for `Context.module_search_path`.
 
         Raises:
             BadYangLibraryData: If YANG library data is invalid.
@@ -79,7 +79,8 @@ class Context:
                 supported.
             MultipleImplementedRevisions: If multiple revisions of an
                 implemented module are listed in YANG library.
-            ModuleNotFound: If a YANG module wasn't found.
+            ModuleNotFound: If a YANG module wasn't found in any of the
+                directories specified in `mod_path`.
         """
         cls._initialize()
         cls.module_search_path = mod_path
@@ -140,23 +141,6 @@ class Context:
         raise ModuleNotFound(name, rev)
 
     @classmethod
-    def namespace(cls, mid: ModuleId) -> YangIdentifier:
-        """Return the namespace corresponding to a module or submodule.
-
-        Args:
-            mid: Module identifier.
-        """
-        return cls.modules[mid].main_module[0]
-
-    @classmethod
-    def last_revision(cls, name: YangIdentifier) -> ModuleId:
-        """Return last revision of a module that's part of the data model."""
-        revs = [mn for mn in cls.modules if mn[0] == name]
-        if not revs:
-            raise ModuleNotRegistered(impn, rev)
-        return sorted(revs, key=lambda x: x[1])[-1]
-
-    @classmethod
     def _process_imports(cls) -> None:
         impl = set(cls.implement.items())
         deps = { mid: set() for mid in impl }
@@ -192,17 +176,76 @@ class Context:
             raise CyclicImports()
 
     @classmethod
+    def _check_feature_dependences(cls):
+        """Verify feature dependences."""
+        for mid in cls.modules:
+            for fst in cls.modules[mid].statement.find_all("feature"):
+                fn, fid = cls.resolve_pname(fst.argument, mid)
+                if fn not in cls.modules[fid].features: continue
+                if not cls.if_features(fst, mid):
+                    raise FeaturePrerequisiteError(*fn)
+
+    @classmethod
     def _apply_augments(cls) -> None:
         """Apply top-level augments from all implemented modules."""
         for mid in cls._module_sequence:
+            nsswitch = cls.modules[mid].main_module == mid
             mod = cls.modules[mid].statement
             for aug in mod.find_all("augment"):
-                cls.schema._augment_stmt(aug, mid, True)
+                cls.schema._augment_stmt(aug, mid, nsswitch)
+
+    @classmethod
+    def namespace(cls, mid: ModuleId) -> YangIdentifier:
+        """Return the namespace corresponding to a module or submodule.
+
+        Args:
+            mid: Module identifier.
+
+        Raises:
+            ModuleNotRegistered: If `mid` is not registered in the data model.
+        """
+        try:
+            mdata = cls.modules[mid]
+        except KeyError:
+            raise ModuleNotRegistered(*mid) from None
+        return mdata.main_module[0]
+
+    @classmethod
+    def last_revision(cls, name: YangIdentifier) -> ModuleId:
+        """Return the last revision of a module that's part of the data model.
+
+        Args:
+            name: Name of a module or submodule.
+
+        Raises:
+            ModuleNotRegistered: If the module `name` is not present in the
+                data model.
+        """
+        revs = [mn for mn in cls.modules if mn[0] == name]
+        if not revs:
+            raise ModuleNotRegistered(impn)
+        return sorted(revs, key=lambda x: x[1])[-1]
 
     @classmethod
     def prefix2ns(cls, prefix: YangIdentifier, mid: ModuleId) -> YangIdentifier:
-        """Return the namespace corresponding to the prefix."""
-        return cls.modules[mid].prefix_map[prefix][0]
+        """Return the namespace corresponding to a prefix.
+
+        Args:
+            prefix: Prefix associated with a module and its namespace.
+            mid: Identifier of the module in which the prefix is declared.
+
+        Raises:
+            ModuleNotRegistered: If `mid` is not registered in the data model.
+            UnknownPrefix: If `prefix` is not declared.
+        """
+        try:
+            mdata = cls.modules[mid]
+        except KeyError:
+            raise ModuleNotRegistered(*mid) from None
+        try:
+            return mdata.prefix_map[prefix][0]
+        except KeyError:
+            raise UnknownPrefix(prefix) from None
 
     @classmethod
     def resolve_pname(cls, pname: PrefName,
@@ -210,15 +253,20 @@ class Context:
         """Return the name and module identifier in which the name is defined.
 
         Args:
-            pname: Prefixed name.
+            pname: Name with an optional prefix.
             mid: Identifier of the context module.
 
         Raises:
-            UnknownPrefix: If the prefix is not known.
+            ModuleNotRegistered: If `mid` is not registered in the data model.
+            UnknownPrefix: If the prefix specified in `pname` is not declared.
         """
         p, s, loc = pname.partition(":")
         try:
-            return (loc, cls.modules[mid].prefix_map[p]) if s else (p, mid)
+            mdata = cls.modules[mid]
+        except KeyError:
+            raise ModuleNotRegistered(*mid) from None
+        try:
+            return (loc, mdata.prefix_map[p]) if s else (p, mid)
         except KeyError:
             raise UnknownPrefix(pname) from None
 
@@ -227,19 +275,27 @@ class Context:
         """Translate a prefixed name to a qualified name.
 
         Args:
-            pname: Prefixed name.
+            pname: Name with an optional prefix.
             mid: Identifier of the context module.
+
+        Raises:
+            ModuleNotRegistered: If `mid` is not registered in the data model.
+            UnknownPrefix: If the prefix specified in `pname` is not declared.
         """
         loc, nid = cls.resolve_pname(pname, mid)
         return (loc, cls.namespace(nid))
 
     @classmethod
-    def sid2route(cls, sid: str, mid: ModuleId) -> SchemaRoute:
+    def sid2route(cls, sid: SchemaNodeId, mid: ModuleId) -> SchemaRoute:
         """Translate a schema node identifier to a schema route.
 
         Args:
             sid: Schema node identifier (absolute or relative).
             mid: Identifier of the context module.
+
+        Raises:
+            ModuleNotRegistered: If `mid` is not registered in the data model.
+            UnknownPrefix: If a prefix specified in `sid` is not declared.
         """
         nlist = sid.split("/")
         return [ cls.translate_pname(qn, mid)
@@ -272,16 +328,34 @@ class Context:
         return res
 
     @classmethod
-    def get_definition(cls, stmt: Statement, mid: ModuleId) -> Statement:
-        """Return the statement defining a grouping or derived type.
+    def get_definition(cls, stmt: Statement,
+                       mid: ModuleId) -> Tuple[Statement, ModuleId]:
+        """Find the statement defining a grouping or derived type.
 
         Args:
-            stmt: "Uses" or "type" statement.
+            stmt: YANG "uses" or "type" statement.
             mid: Identifier of the context module.
+
+        Returns:
+            A tuple consisting of the definition statement ('grouping' or
+            'typedef') and indentifier of the module where it appears.
+
+        Raises:
+            ValueError: If `stmt` is neither "uses" nor "type" statement.
+            ModuleNotRegistered: If `mid` is not registered in the data model.
+            UnknownPrefix: If the prefix specified in the argument of `stmt`
+                is not declared.
+            DefinitionNotFound: If the corresponding definition is not found.
         """
-        kw = "grouping" if stmt.keyword == "uses" else "typedef"
+        if stmt.keyword == "uses":
+            kw = "grouping"
+        elif stmt.keyword == "type":
+            kw = "typedef"
+        else:
+            raise ValueError("not a 'uses' or 'type' statement")
         loc, did = cls.resolve_pname(stmt.argument, mid)
-        if did == mid: return (stmt.get_definition(loc, kw), mid)
+        if did == mid:
+            return (stmt.get_definition(loc, kw), mid)
         dstmt = cls.modules[did].statement.find1(kw, loc)
         if dstmt: return (dstmt, did)
         for sid in cls.modules[did].submodules:
@@ -302,22 +376,18 @@ class Context:
         return False
 
     @classmethod
-    def _check_feature_dependences(cls):
-        """Verify feature dependences."""
-        for mid in cls.modules:
-            for fst in cls.modules[mid].statement.find_all("feature"):
-                fn, fid = cls.resolve_pname(fst.argument, mid)
-                if fn not in cls.modules[fid].features: continue
-                if not cls.if_features(fst, mid):
-                    raise FeaturePrerequisiteError(*fn)
-
-    @classmethod
     def if_features(cls, stmt: Statement, mid: ModuleId) -> bool:
         """Evaluate ``if-feature`` substatements on a statement, if any.
 
         Args:
             stmt: Yang statement that is tested on if-features.
             mid: Identifier of the context module.
+
+        Raises:
+            ModuleNotRegistered: If `mid` is not registered in the data model.
+            InvalidFeatureExpression: If a if-feature expression is not
+                syntactically correct.
+            UnknownPrefix: If a prefix specified in `sid` is not declared.
         """
         iffs = stmt.find_all("if-feature")
         if not iffs:
@@ -334,13 +404,25 @@ class FeatureExprParser(Parser):
         """Initialize the parser instance.
 
         Args:
-            mid: Id of the context module.
+            mid: Identifier of the context module.
+
+        Raises:
+            ModuleNotRegistered: If `mid` is not registered in the data model.
         """
         super().__init__(text)
-        self.mid = mid
+        try:
+            self.mdata = Context.modules[mid]
+        except KeyError:
+            raise ModuleNotRegistered(*mid) from None
 
     def parse(self) -> bool:
-        """Parse and evaluate a complete **if-feature** expression."""
+        """Parse and evaluate a complete **if-feature** expression.
+
+        Raises:
+            InvalidFeatureExpression: If the if-feature expression is not
+                syntactically correct.
+            UnknownPrefix: If a prefix of a feature name is not declared.
+        """
         self.skip_ws()
         res = self._feature_disj()
         self.skip_ws()
@@ -380,10 +462,16 @@ class FeatureExprParser(Parser):
             return res
         n, p = self.name_opt_prefix()
         self.skip_ws()
-        fid = Context.modules[self.mid].prefix_map[p] if p else self.mid
+        if p is None:
+            fid = self.mdata.main_module
+        else:
+            try:
+                fid = self.mdata.prefix_map[p]
+            except KeyError:
+                raise UnknownPrefix(p) from None
         return n in Context.modules[fid].features
 
-class MissingModule(YangsonException):
+class _MissingModule(YangsonException):
     """Abstract exception – a module is missing."""
 
     def __init__(self, name: YangIdentifier, rev: str = "") -> None:
@@ -395,11 +483,11 @@ class MissingModule(YangsonException):
             return self.name + "@" + self.rev
         return self.name
 
-class ModuleNotFound(MissingModule):
+class ModuleNotFound(_MissingModule):
     """A module that is listed in YANG library is not found."""
     pass
 
-class ModuleNotRegistered(MissingModule):
+class ModuleNotRegistered(_MissingModule):
     """A module is not registered in YANG library."""
     pass
 

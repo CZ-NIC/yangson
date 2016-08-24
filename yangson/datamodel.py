@@ -31,7 +31,8 @@ class DataModel(metaclass=Singleton):
                 supported.
             MultipleImplementedRevisions: If multiple revisions of an
                 implemented module are listed in YANG library.
-            ModuleNotFound: If a YANG module wasn't found.
+            ModuleNotFound: If a YANG module wasn't found in any of the
+                directories specified in `mod_path`.
         """
         Context.schema = GroupNode()
         try:
@@ -49,15 +50,10 @@ class DataModel(metaclass=Singleton):
             mod_path: List of directories where to look for YANG modules.
 
         Returns:
-            Initialised class instance.
+            The data model instance.
 
         Raises:
-            BadYangLibraryData: If YANG library data is invalid.
-            FeaturePrerequisiteError: If a pre-requisite feature isn't
-                supported.
-            MultipleImplementedRevisions: If multiple revisions of an
-                implemented module are listed in YANG library.
-            ModuleNotFound: If a YANG module wasn't found.
+            The same exceptions as the class constructor above.
         """
         with open(name, encoding="utf-8") as infile:
             yltxt = infile.read()
