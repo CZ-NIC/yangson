@@ -1,0 +1,22 @@
+submodule example-3-suba {
+
+  yang-version "1.1";
+
+  belongs-to example-3-a {
+    prefix "ex3a";
+  }
+
+  import ietf-inet-types {
+    prefix "inet";
+    revision-date 2013-07-15;
+  }
+
+  revision 2016-07-21;
+
+  augment "/ex3a:top" {
+    leaf bar {
+      if-feature "fea2";
+      type inet:ipv4-address-no-zone;
+    }
+  }
+}

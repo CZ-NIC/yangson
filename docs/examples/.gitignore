@@ -2,5 +2,7 @@
 *.dsdl
 *.rng
 *.rnc
+*.xml
 *.xsl
+*.yin
 model.tree

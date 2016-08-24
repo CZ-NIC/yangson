@@ -1,0 +1,33 @@
+module example-3-b {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/example-3/b";
+
+  prefix "ex3b";
+
+  import ietf-inet-types {
+    prefix "oin";
+    revision-date 2010-09-24;
+  }
+
+  import example-3-a {
+    prefix "ex3a";
+  }
+
+  revision 2016-08-22;
+
+  identity idY;
+
+  identity idZ {
+    base ex3a:idX;
+    base idY;
+  }
+
+  augment "/ex3a:top" {
+    if-feature "ex3a:fea1 or ex3a:fea2";
+    leaf baz {
+      type oin:port-number;
+    }
+  }
+}

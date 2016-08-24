@@ -1,0 +1,41 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "1c663505cbf729d39312b8234c81462614aae0c6",
+    "module": [
+      {
+        "name": "example-3-a",
+        "feature": [
+          "fea1",
+          "fea2"
+        ],
+        "namespace": "http://example.com/example-3/a",
+        "revision": "2016-06-18",
+        "conformance-type": "implement",
+	"submodule": [
+	  {
+	    "name": "example-3-suba",
+	    "revision": "2016-07-21"
+	  }
+	]
+      },
+      {
+        "name": "example-3-b",
+        "namespace": "http://example.com/example-3/b",
+        "revision": "2016-08-22",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-inet-types",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
+        "revision": "2010-09-24",
+        "conformance-type": "import"
+      },
+      {
+        "name": "ietf-inet-types",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
+        "revision": "2013-07-15",
+        "conformance-type": "implement"
+      }
+    ]
+  }
+}
