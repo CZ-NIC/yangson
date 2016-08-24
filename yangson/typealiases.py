@@ -12,6 +12,7 @@ InstanceIdentifier = str # YANG instance identifier
 ResourceIdentifier = str # RESTCONF resource identifier
 ScalarValue = Union[int, Decimal, str]
 QualName = Tuple[YangIdentifier, YangIdentifier] # (name, namespace)
+SchemaNodeId = str # [/] PrefName *("/" PrefName)
 SchemaRoute = List[QualName]
 SchemaPath = str # ["/"] ModuleName ":" NodeName *("/" [ModuleName ":"] NodeName)
 DataPath = str # same syntax as SchemaPath but containing only data nodes
