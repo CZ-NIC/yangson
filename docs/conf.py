@@ -359,3 +359,4 @@ epub_exclude_files = ['search.html']
 #epub_use_index = True
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+doctest_test_doctest_blocks = ""

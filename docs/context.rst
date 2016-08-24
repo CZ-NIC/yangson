@@ -9,6 +9,7 @@ Data Model Context
 .. testsetup::
 
    import os
+   from yangson import DataModel
    os.chdir("examples/ex3")
 
 .. testcleanup::
@@ -20,12 +21,14 @@ Essential data model structures and methods
 
 This module implements the following classes:
 
+* :class:`ModuleData`: Data related to a YANG module or submodule.
 * :class:`Context`: Repository of data model structures and methods.
 * :class:`FeatureExprParser`: Parser for **if-feature** expressions.
 
 The module defines the following exceptions:
 
 * :exc:`ModuleNotFound`: YANG module not found.
+* :exc:`ModuleNotRegistered`: Module is not registered in YANG library.
 * :exc:`BadYangLibraryData`: Invalid YANG library data.
 * :exc:`BadPath`: Invalid :term:`schema path`
 * :exc:`UnknownPrefix`: Unknown namespace prefix.
@@ -35,6 +38,40 @@ The module defines the following exceptions:
 * :exc:`MultipleImplementedRevisions`: YANG library specifies multiple
   revisions of an implemented module.
 * :exc:`CyclicImports`: Imports of YANG modules form a cycle.
+
+.. class:: ModuleData
+
+   Objects of this class contain data related to a single module or
+   submodule that is a part of the data model. Such objects are values
+   of the dictionary :attr:`Context.modules`.
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: main_module
+
+      This attribute contains the :term:`module identifier` of the
+      main module corresponding to the receiver.
+
+   .. attribute:: statement
+
+      The **module** or **submodule** statement corresponding to the
+      receiver. It is the entry point to the hierarchy of the
+      (sub)module statements.
+
+   .. attribute:: prefix_map
+
+      Dictionary that maps prefixes declared in the receiver module
+      to :term:`module identifier`\ s.
+
+   .. attribute:: features
+
+      Set of features defined in the receiver module that are
+      supported by the data model.
+
+   .. attribute:: submodules
+
+      Set of submodules of the receiver module. If the receiver is a
+      submodule, then this set is by definition empty.
 
 .. class:: Context
 
@@ -54,24 +91,11 @@ The module defines the following exceptions:
 
    .. doctest::
 
-      >>> from yangson import DataModel
       >>> from yangson.context import Context
-      >>> dm = DataModel.from_file("yang-library-ex3.json")
+      >>> dm = DataModel.from_file("yang-library-ex3.json",
+      ...   [".", "../../../examples/ietf"])
 
-   .. attribute:: features
-
-      Set of supported features.
-
-      Each entry is the :term:`qualified name` of a feature that is
-      declared as supported in YANG library data.
-
-      .. doctest::
-
-	 >>> fs = Context.features
-	 >>> ('fea1', 'a') in fs
-	 True
-	 >>> ('fea2', 'a') in fs
-	 True
+   .. rubric:: Class Attributes
 
    .. attribute:: module_search_path
 
@@ -83,55 +107,286 @@ The module defines the following exceptions:
       .. doctest::
 
 	 >>> Context.module_search_path
-	 ['.']
+	 ['.', '../../../examples/ietf']
 
    .. attribute:: modules
 
       Dictionary of modules and submodules comprising the data model.
 
       The keys are :term:`module identifier`\ s, and the values are
-      corresponding **module** or **submodule** statements (see
-      :class:`Statement`).
+      objects of the :class:`ModuleData` class.
 
       .. doctest::
 
 	 >>> len(Context.modules)
-	 3
+	 5
+	 >>> Context.modules[('example-3-a', '2016-06-18')].main_module
+	 ('example-3-a', '2016-06-18')
+	 >>> Context.modules[('example-3-suba', '2016-07-21')].main_module
+	 ('example-3-a', '2016-06-18')
+	 >>> Context.modules[('example-3-suba', '2016-07-21')].prefix_map['inet']
+	 ('ietf-inet-types', '2013-07-15')
+	 >>> sorted(Context.modules[('example-3-a', '2016-06-18')].features)
+	 ['fea1', 'fea2']
 
    .. attribute:: implement
 
-      List of modules with conformance type “implement”.
+      Dictionary of implemented modules. They correspond to YANG
+      library entries that have conformance type ``implement``. For
+      each module, only one revision can be implemented – other
+      revisions may be present but only with conformance type ``import``.
 
-   .. attribute:: revisions
+      The keys of this dictionary are module names, and the values are
+      revision dates.
 
-      Dictionary of module and submodule revisions.
+      .. doctest::
 
-      The keys are module and submodule names, and each value is a list of
-      revisions that are used in the data model.
-      For an :term:`implemented module`, this list must be a
-      singleton, whereas :term:`imported-only module`\ s may be present
-      in multiple revisions.
-
-   .. attribute:: prefix_map
-
-      Dictionary of prefix mappings.
-
-      The keys are :term:`module identifier`\ s, and each value
-      contains a mapping of prefixes for the module. The keys of this
-      mapping are prefixes, and the values are :term:`module
-      identifier`\ s.
-      
-   .. attribute:: ns_map
-
-      Dictionary of module and submodule namespaces.
-
-      The keys are module and submodule names, and the values are
-      :term:`namespace identifier`\ s.
+	 >>> Context.implement['example-3-b']
+	 '2016-08-22'
 
    .. attribute:: identity_bases
 
       Dictionary of identity bases.
 
       The keys are :term:`qualified name`\ s of identities, and each
-      value is a list of :term:`qualified name`\ s of identities that
+      value is a set of :term:`qualified name`\ s of identities that
       are defined as bases for the key identity.
+
+      .. doctest::
+
+	 >>> sorted(Context.identity_bases[('idZ', 'example-3-b')])
+	 [('idX', 'example-3-a'), ('idY', 'example-3-b')]
+
+   .. rubric:: Methods
+
+   .. classmethod:: namespace(mid: ModuleId) -> YangIdentifier
+
+      Return the namespace corresponding to a module or submodule. The
+      argument *mid* is the :term:`module identifier` of the
+      (sub)module.
+
+      *Yangson* uses main module module names rather than URIs as namespace
+      identifiers.
+
+      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      identified by *mid* is not part of the data model.
+
+      .. doctest::
+
+	 >>> Context.namespace(('example-3-suba', '2016-07-21'))
+	 'example-3-a'
+
+   .. classmethod:: last_revision(name: YangIdentifier) -> ModuleId
+
+      Return :term:`module identifier` of the most recent revision of
+      a module or submodule. Argument *name* gives the name of the
+      (sub)module. The method raises :exc:`ModuleNotRegistered` if no
+      (sub)module of that name is part of the data model.
+
+      .. doctest::
+
+	 >>> Context.last_revision('ietf-inet-types')
+	 ('ietf-inet-types', '2013-07-15')
+
+   .. classmethod:: prefix2ns(prefix: YangIdentifier, mid: ModuleId) \
+		    -> YangIdentifier
+
+      Return namespace identifier corresponding to a prefix given by
+      the *prefix* argument. The module context, in which the prefix
+      is resolved, is specified by the *mid* argument.
+
+      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      identified by *mid* is not part of the data model, and
+      :exc:`UnknownPrefix` if *prefix* is not declared in that
+      (sub)module.
+
+      .. doctest::
+
+	 >>> Context.prefix2ns('oin', ('example-3-b', '2016-08-22'))
+	 'ietf-inet-types'
+
+   .. classmethod:: resolve_pname(pname: PrefName, mid: ModuleId) \
+		    -> Tuple[YangIdentifier, ModuleId]
+
+      Resolve a :term:`prefixed name` in the *pname* argument and
+      return a tuple consisting of an unprefixed name and a
+      :term:`module identifier` of the (sub)module in which that name
+      is defined. The argument *mid* specifies the (sub)module in
+      which *pname* is to be resolved.
+
+      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      identified by *mid* is not part of the data model, and
+      :exc:`UnknownPrefix` if the prefix specified in *pname* is not
+      declared in that (sub)module.
+
+      .. doctest::
+
+	 >>> Context.resolve_pname('oin:port-number', ('example-3-b', '2016-08-22'))
+	 ('port-number', ('ietf-inet-types', '2010-09-24'))
+
+
+   .. classmethod:: translate_pname(pname: PrefName, mid: ModuleId) \
+		    -> QualName
+
+      Translate :term:`prefixed name` in the *pname* argument to a
+      :term:`qualified name`. The argument *mid* specifies the
+      (sub)module in which *pname* is to be resolved.
+
+      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      identified by *mid* is not part of the data model, and
+      :exc:`UnknownPrefix` if the prefix specified in *pname* is not
+      declared in that (sub)module.
+
+      .. doctest::
+
+	 >>> Context.translate_pname('oin:port-number', ('example-3-b', '2016-08-22'))
+	 ('port-number', 'ietf-inet-types')
+
+   .. classmethod:: sid2route(sid: SchemaNodeId, mid: ModuleId) \
+		    -> SchemaRoute
+
+      Translate :term:`schema node identifier` in the *sid* argument
+      to a :term:`schema route`.  The argument *mid* specifies the
+      (sub)module in which *sid* is to be resolved.
+
+      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      identified by *mid* is not part of the data model, and
+      :exc:`UnknownPrefix` if a prefix specified in *sid* is not
+      declared in that (sub)module.
+
+      .. doctest::
+
+	 >>> Context.sid2route('/ex3a:top/ex3a:bar', ('example-3-b', '2016-08-22'))
+	 [('top', 'example-3-a'), ('bar', 'example-3-a')]
+
+   .. classmethod:: path2route(path: SchemaPath) -> SchemaRoute
+
+      Translate :term:`schema path` or :term:`data path` in the *path*
+      argument to a :term:`schema route` or :term:`data route`,
+      respectively.
+
+      This method raises :exc:`BadPath` if *path* is not a valid
+      schema or data path.
+
+      .. doctest::
+
+	 >>> Context.path2route('/example-3-a:top/bar')
+	 [('top', 'example-3-a'), ('bar', 'example-3-a')]
+
+   .. classmethod:: get_definition(stmt: Statement, mid: ModuleId) \
+		    -> Tuple[Statement, ModuleId]
+
+      Find the **grouping** or **typedef** statement to which the
+      statement in the *stmt* argument refers. The argument *mid*
+      specifies the (sub)module in which the name of the grouping or
+      type is to be resolved. The returned value is a tuple consisting
+      of the definition statement and :term:`module identifier` of the
+      (sub)module where the definition appears.
+
+      This method may raise the following exceptions:
+
+      * :exc:`ValueError` – if the *stmt* statement is neither
+	**uses** nor **type** statement.
+      * :exc:`ModuleNotRegistered` – if the (sub)module identified by
+	*mid* is not part of the data model.
+      * :exc:`UnknownPrefix` – if the prefix specified in the argument
+	of the *stmt* statement is not declared in the *mid*
+	(sub)module.
+      * :exc:`DefinitionNotFound` – if the corresponding definition
+	statement is not found.
+
+      .. doctest::
+
+	 >>> bmod = Context.modules[('example-3-b', '2016-08-22')].statement
+	 >>> baztype = bmod.find1("augment").find1("leaf").find1("type")
+	 >>> pn = Context.get_definition(baztype, ('example-3-b', '2016-08-22'))
+	 >>> pn[0].keyword
+	 'typedef'
+	 >>> pn[0].argument
+	 'port-number'
+	 >>> pn[1]
+	 ('ietf-inet-types', '2010-09-24')
+
+   .. classmethod:: is_derived_from(identity: QualName, base: \
+		    QualName) -> bool
+
+      Return ``True`` if the identity specified in the *identity*
+      argument is derived (directly or transitively) from the identity
+      *base*, otherwise return ``False``. Both *identity* and *base*
+      has to be a :term:`qualified name`.
+
+      .. doctest::
+
+	 >>> Context.is_derived_from(('idZ', 'example-3-b'), ('idX', 'example-3-a'))
+	 True
+
+   .. classmethod:: if_features(stmt: Statement, mid: ModuleId) -> bool
+
+      Evaluate all **if-feature** statements that are substatements of
+      *stmt*. Return ``False`` if any of them is false, otherwise
+      return ``True``. If the statement `stmt` has no **if-feature**
+      substatements, ``True`` is returned. The argument *mid*
+      specifies the (sub)module in which features names are to be
+      resolved.
+
+      This method may raise the following exceptions:
+
+      * :exc:`InvalidFeatureExpression` – if the argument of an
+	**if-feature** statement is not syntactically correct.
+      * :exc:`ModuleNotRegistered` – if the (sub)module identified by
+	*mid* is not part of the data model.
+      * :exc:`UnknownPrefix` – if a prefix of a feature name is not
+	declared in the *mid* (sub)module.
+
+      .. doctest::
+
+	 >>> amod = Context.modules[('example-3-a', '2016-06-18')].statement
+	 >>> foo = amod.find1("container").find1("leaf")
+	 >>> Context.if_features(foo, ('example-3-a', '2016-06-18'))
+	 True
+
+.. class:: FeatureExprParser(text: str, mid: ModuleId)
+
+   This class implements a parser and evaluator of expressions
+   appearing in the argument of **if-feature** statements. It is a
+   subclass of :class:`Parser`.
+
+   The arguments of the class constructor are:
+
+   * *text* – text to parse.
+   * *mid* – :term:`module identifier` of the (sub)module that
+     provides context for parsing and evaluating the feature
+     expression.
+
+   The constructor may raise :exc:`ModuleNotRedistered` if the
+   (sub)module identified by *mid* is not part of the data model.
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: mdata
+
+      :class:`ModuleData` object correpsonding to the (sub)module
+      identified by the *mid* argument of the class constructor.
+
+      Two other instance variables are inherited from the
+      :class:`Parser` class.
+
+   .. rubric:: Methods
+
+   .. method:: parse() -> bool
+
+      Parse and evaluate a feature expression, and return the result.
+
+      This method may raise the following exceptions:
+
+      * :exc:`InvalidFeatureExpression` – if the input is not a
+	syntactically correct feature expression.
+      * :exc:`UnknownPrefix` – if a prefix of a feature name is not
+	declared.
+
+      .. doctest::
+
+	 >>> from yangson.context import FeatureExprParser
+	 >>> FeatureExprParser('ex3a:fea1 and not (ex3a:fea1 or ex3a:fea2)',
+	 ... ('example-3-a', '2016-06-18')).parse()
+	 False

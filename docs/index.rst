@@ -8,18 +8,10 @@ Contents:
 
    introduction
    concepts-terms
-   .. statement
    datamodel
-   .. schema
-   instvalue
-   .. instance
    context
-   .. typealiases
    references
    glossary
-   xpath
-   app-a
-   app-b
 
 Indices and tables
 ==================

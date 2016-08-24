@@ -416,7 +416,7 @@ class FeatureExprParser(Parser):
             raise ModuleNotRegistered(*mid) from None
 
     def parse(self) -> bool:
-        """Parse and evaluate a complete **if-feature** expression.
+        """Parse and evaluate a complete feature expression.
 
         Raises:
             InvalidFeatureExpression: If the if-feature expression is not
