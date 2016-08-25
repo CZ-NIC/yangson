@@ -268,7 +268,7 @@ class Context:
         try:
             return (loc, mdata.prefix_map[p]) if s else (p, mid)
         except KeyError:
-            raise UnknownPrefix(pname) from None
+            raise UnknownPrefix(p) from None
 
     @classmethod
     def translate_pname(cls, pname: PrefName, mid: ModuleId) -> QualName:
@@ -492,9 +492,9 @@ class ModuleNotRegistered(_MissingModule):
     pass
 
 class BadYangLibraryData(YangsonException):
-    """Broken YANG Library data."""
+    """Broken YANG library data."""
 
-    def __init__(self, reason: str = "broken yang-library data") -> None:
+    def __init__(self, reason: str) -> None:
         self.reason = reason
 
     def __str__(self) -> str:
@@ -510,32 +510,30 @@ class BadPath(YangsonException):
         return self.path
 
 class UnknownPrefix(YangsonException):
-    """Unknown prefix."""
+    """Unknown namespace prefix."""
 
-    def __init__(self, pname: str) -> None:
-        self.pname = pname
+    def __init__(self, prefix: str) -> None:
+        self.prefix = prefix
 
     def __str__(self) -> str:
-        return self.pname
+        return self.prefix
 
 class InvalidFeatureExpression(ParserException):
-    """Exception to be raised for an invalid **if-feature** expression."""
-
-    def __str__(self) -> str:
-        return str(self.parser)
+    """Invalid **if-feature** expression."""
+    pass
 
 class FeaturePrerequisiteError(YangsonException):
-    """Missing feature dependences."""
+    """Pre-requisite feature is not supported."""
 
-    def __init__(self, fname: YangIdentifier, ns: YangIdentifier) -> None:
-        self.fname = fname
+    def __init__(self, name: YangIdentifier, ns: YangIdentifier) -> None:
+        self.name = name
         self.ns = ns
 
     def __str__(self) -> str:
-        return "{}:{}".format(self.ns, self.fname)
+        return "{}:{}".format(self.ns, self.name)
 
 class MultipleImplementedRevisions(YangsonException):
-    """An implemented module has multiple revisions."""
+    """A module has multiple implemented revisions."""
 
     def __init__(self, module: YangIdentifier) -> None:
         self.module = module
@@ -544,5 +542,5 @@ class MultipleImplementedRevisions(YangsonException):
         return self.module
 
 class CyclicImports(YangsonException):
-    """An implemented module has multiple revisions."""
+    """YANG modules are imported in a cyclic fashion."""
     pass
