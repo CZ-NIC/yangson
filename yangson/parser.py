@@ -1,7 +1,8 @@
 """Simple parser class."""
 
+import re
 from typing import Any, Callable, List, Mapping, Optional, Tuple
-from .constants import decimal_re, ident_re, integer_re, ws_re, YangsonException
+from .exceptions import YangsonException
 from .typealiases import *
 
 # Local type aliases
@@ -22,6 +23,21 @@ class Parser:
     * input: input string
     * offset: current position in the input string
     """
+
+    # Regular expressions
+
+    ident_re = re.compile("[a-zA-Z_][a-zA-Z0-9_.-]*")
+    """Regular expression for YANG identifier."""
+
+    ws_re = re.compile(r"[ \n\t\r]*")
+    """Regular expression for whitespace."""
+
+    _uint = "[0-9]+"
+    uint_re = re.compile(_uint)
+    """Regular expression for unsigned integer."""
+
+    ufloat_re = re.compile(r"{}(\.{})?|\.{}".format(_uint, _uint, _uint))
+    """Regular expression for unsigned float."""
 
     def __init__(self, text: str):
         """Initialize the class instance.
@@ -133,13 +149,13 @@ class Parser:
         if required:
             raise UnexpectedInput(self, meaning)
 
-    def integer(self) -> int:
-        """Parse an integer."""
-        return int(self.match_regex(integer_re, True, "integer"))
+    def unsigned_integer(self) -> int:
+        """Parse unsigned integer."""
+        return int(self.match_regex(self.uint_re, True, "unsigned integer"))
 
-    def float(self) -> float:
-        """Parse a number into float."""
-        return float(self.match_regex(decimal_re, True, "number"))
+    def unsigned_float(self) -> float:
+        """Parse unsigned number (exponential notation is not permitted)."""
+        return float(self.match_regex(self.ufloat_re, True, "unsigned float"))
 
     def yang_identifier(self) -> YangIdentifier:
         """Parse YANG identifier.
@@ -147,7 +163,7 @@ class Parser:
         Raises:
             UnexpectedInput: If no syntactically correct keyword is found.
         """
-        return self.match_regex(ident_re, True, "YANG identifier")
+        return self.match_regex(self.ident_re, True, "YANG identifier")
 
     def name_opt_prefix(self) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
         """Parse name with an optional prefix."""
@@ -162,7 +178,7 @@ class Parser:
 
     def skip_ws(self) -> bool:
         """Skip optional whitespace."""
-        return len(self.match_regex(ws_re)) > 0
+        return len(self.match_regex(self.ws_re)) > 0
 
     def adv_skip_ws(self) -> bool:
         """Advance offset and skip optional whitespace."""

@@ -3,15 +3,16 @@
 import hashlib
 import json
 from typing import Dict, List, Optional
-from .constants import Singleton, YangsonException
+from .exceptions import YangsonException
 from .context import Context, BadYangLibraryData
 from .instance import (EntryKeys, RootNode, MemberName,
                        InstanceIdParser, ResourceIdParser)
 from .schema import (BadSchemaNodeType, DataNode, GroupNode,
                      NonexistentSchemaNode, RawObject, SchemaNode)
 from .typealiases import *
+from .typealiases import _Singleton
 
-class DataModel(metaclass=Singleton):
+class DataModel(metaclass=_Singleton):
     """Basic entry point to the YANG data model.
 
     It is a singleton class, which means that only one instance can be

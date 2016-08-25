@@ -1,8 +1,9 @@
 """This module defines classes for schema patterns."""
 
 from typing import List, Optional
-from .constants import ContentType, Singleton
+from .enumerations import ContentType
 from .typealiases import *
+from .typealiases import _Singleton
 from .xpathast import Expr
 
 class SchemaPattern:
@@ -21,7 +22,7 @@ class SchemaPattern:
         """
         return False
 
-class Empty(SchemaPattern, metaclass=Singleton):
+class Empty(SchemaPattern, metaclass=_Singleton):
     """Singleton class representing the empty pattern."""
 
     def nullable(self, cnode: "DataNode", content: ContentType) -> bool:

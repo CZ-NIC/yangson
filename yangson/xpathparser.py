@@ -1,8 +1,8 @@
 """Parser for XPath 1.0 expressions"""
 
 from typing import List, Optional, Tuple, Union
-from .constants import Axis, MultiplicativeOp
 from .context import Context
+from .enumerations import Axis, MultiplicativeOp
 from .parser import Parser, ParserException, EndOfInput, UnexpectedInput
 from .typealiases import *
 from .xpathast import *
@@ -132,7 +132,7 @@ class XPathParser(Parser):
             return Literal(val)
         if ("0" <= next <= "9" or
             next == "." and "0" <= self.input[self.offset + 1] <= "9"):
-            val = self.float()
+            val = self.unsigned_float()
             self.skip_ws()
             return Number(val)
         start = self.offset

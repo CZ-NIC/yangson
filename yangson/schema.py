@@ -1,17 +1,16 @@
 """Classes for schema nodes."""
 
 from typing import Dict, List, MutableSet, Optional, Set, Tuple, Union
-from .constants import (ContentType, DefaultDeny, NonexistentSchemaNode,
-                        YangsonException)
+from .exceptions import NonexistentSchemaNode, YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
+from .enumerations import ContentType, DefaultDeny
 from .instvalue import ArrayValue, ObjectValue, Value
 from .schpattern import *
 from .statement import Statement, WrongArgument
 from .typealiases import *
 from .xpathparser import XPathParser
 
-# Local type aliases
 class SchemaNode:
     """Abstract superclass for schema nodes."""
 

@@ -3,12 +3,13 @@ import decimal
 import re
 from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, List, Optional, Tuple, Union
-from .constants import NonexistentSchemaNode, Singleton, YangsonException
+from .exceptions import NonexistentSchemaNode, YangsonException
 from .context import Context
 from .instance import InstanceNode, InstanceIdParser
 from .parser import ParserException
 from .statement import Statement
 from .typealiases import *
+from .typealiases import _Singleton
 from .xpathparser import XPathParser
 
 # Local type aliases
@@ -213,7 +214,7 @@ class UnionType(DataType):
         self.types = [ self.resolve_type(ts, mid)
                        for ts in stmt.find_all("type") ]
 
-class EmptyType(DataType, metaclass=Singleton):
+class EmptyType(DataType, metaclass=_Singleton):
     """Singleton class representing YANG "empty" type."""
 
     def canonical_string(self, val: Tuple[None]) -> str:

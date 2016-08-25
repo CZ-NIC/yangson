@@ -3,8 +3,9 @@ from math import ceil, copysign, floor
 from pyxb.utils.xmlre import XMLToPython
 import re
 from typing import List, Optional, Tuple
-from .constants import Axis, MultiplicativeOp, YangsonException
+from .exceptions import YangsonException
 from .context import Context
+from .enumerations import Axis, MultiplicativeOp
 from .instance import InstanceNode
 from .nodeset import NodeExpr, NodeSet, XPathValue
 from .typealiases import *

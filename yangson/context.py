@@ -1,5 +1,5 @@
 from typing import Dict, List, MutableSet, Optional, Tuple
-from .constants import YangsonException
+from .exceptions import YangsonException
 from .parser import Parser, ParserException
 from .statement import DefinitionNotFound, ModuleParser, Statement
 from .typealiases import *

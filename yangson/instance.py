@@ -3,8 +3,9 @@
 from datetime import datetime
 from typing import Any, Callable, List, Tuple
 from urllib.parse import unquote
-from .constants import ContentType, YangsonException
+from .exceptions import YangsonException
 from .context import Context
+from .enumerations import ContentType
 from .instvalue import ArrayValue, ObjectValue, Value
 from .parser import EndOfInput, Parser, UnexpectedInput
 from .typealiases import *
@@ -870,7 +871,7 @@ class InstanceIdParser(InstancePathParser):
                 self.offset += 1
                 self.skip_ws()
                 if self.peek() in "0123456789":
-                    ind = self.integer() - 1
+                    ind = self.unsigned_integer() - 1
                     if ind < 0:
                         raise UnexpectedInput(self, "positive index")
                     self.skip_ws()

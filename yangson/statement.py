@@ -1,7 +1,7 @@
 """YANG statements."""
 
 from typing import List, Optional, Tuple
-from .constants import YangsonException
+from .exceptions import YangsonException
 from .parser import EndOfInput, Parser, UnexpectedInput
 from .typealiases import YangIdentifier
 

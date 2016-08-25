@@ -2,10 +2,10 @@ import json
 import pytest
 from decimal import Decimal
 from yangson import DataModel
-from yangson.constants import ContentType
 from yangson.context import (Context, FeatureExprParser, BadPath,
                              InvalidFeatureExpression, UnknownPrefix)
 from yangson.datatype import YangTypeError
+from yangson.enumerations import ContentType
 from yangson.instance import (InstanceIdParser, MinElements,
                               NonexistentInstance, ResourceIdParser)
 from yangson.instvalue import ArrayValue, ObjectValue
