@@ -82,7 +82,7 @@ module test {
       mandatory "true";
     }
     list listA {
-      key "leafE leafF";
+      key 'leafE leafF';
       unique "contD/leafG";
       min-elements 2;
       grouping grA {
