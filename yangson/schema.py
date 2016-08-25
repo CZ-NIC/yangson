@@ -352,8 +352,7 @@ class InternalNode(SchemaNode):
         self.add_child(node)
         node._handle_substatements(stmt, mid)
 
-    def _augment_stmt(self, stmt: Statement, mid: ModuleId,
-                      nsswitch: bool = False) -> None:
+    def _augment_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle **augment** statement."""
         if not Context.if_features(stmt, mid): return
         path = Context.sid2route(stmt.argument, mid)
@@ -362,7 +361,7 @@ class InternalNode(SchemaNode):
             gr = GroupNode()
             target.add_child(gr)
             target = gr
-        target._nsswitch = nsswitch
+        target._nsswitch = self.ns != Context.namespace(mid)
         target._handle_substatements(stmt, mid)
 
     def _refine_stmt(self, stmt: Statement, mid: ModuleId) -> None:
@@ -385,7 +384,7 @@ class InternalNode(SchemaNode):
             sn = self
         sn._handle_substatements(grp, gid)
         for augst in stmt.find_all("augment"):
-            sn._augment_stmt(augst, mid, False)
+            sn._augment_stmt(augst, mid)
         for refst in stmt.find_all("refine"):
             sn._refine_stmt(refst, mid)
 

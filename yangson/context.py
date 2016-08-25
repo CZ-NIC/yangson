@@ -189,10 +189,9 @@ class Context:
     def _apply_augments(cls) -> None:
         """Apply top-level augments from all implemented modules."""
         for mid in cls._module_sequence:
-            nsswitch = cls.modules[mid].main_module == mid
             mod = cls.modules[mid].statement
             for aug in mod.find_all("augment"):
-                cls.schema._augment_stmt(aug, mid, nsswitch)
+                cls.schema._augment_stmt(aug, mid)
 
     @classmethod
     def namespace(cls, mid: ModuleId) -> YangIdentifier:
