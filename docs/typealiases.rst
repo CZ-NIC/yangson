@@ -3,6 +3,7 @@ Type Aliases
 ============
 
 .. automodule:: yangson.typealiases
+   :synopsis: Type aliases
    :members:
 
    In order to keep the class and method signature readable, the

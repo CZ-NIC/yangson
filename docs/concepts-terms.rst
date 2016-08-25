@@ -10,7 +10,7 @@ Another factor that may cause confusion is conflicting terminology: some terms, 
 Therefore, when reading the following sections, it is important to distinuish whether a given text discusses programming language or data modelling stuff.
 
 Data Models
-***********
+===========
 
 Data models define and describe some data. In the case of YANG, the data are of four different sorts:
 
@@ -36,7 +36,7 @@ The formal means include:
 A complete data model usually corresponds to a particular device or network service.
 
 Trees and Nodes
-***************
+===============
 
 In most practical applications of the Yangson library, a programmer needs to work with two types of trees:
 
@@ -47,7 +47,7 @@ In most practical applications of the Yangson library, a programmer needs to wor
 Each node in the data tree corresponds to a *data node* in the schema tree. This looks confusing but in fact it is quite logical: data nodes are special schema nodes that have counterparts in the data tree. There are other schema nodes, namely *choice* and *case*, that don't have this property – they are used in the schema for specifying possible alternatives of which only one can appear in the data tree.
 
 YANG Modules
-************
+============
 
 YANG data models consist of *modules*. Each module defines the schema for some (usually related) parts of the data trees. Typically, a YANG module covers a certain subsystem or function. Every module defines a namespace that needs to be locally unique in a given data model. In Yangson, the namespace is identified by the YANG module name.
 

@@ -4,5 +4,7 @@ Supporting Modules
 
 .. toctree::
 
-   constants
    typealiases
+   enumerations
+   exceptions
+   parser

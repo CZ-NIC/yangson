@@ -1,10 +1,9 @@
-==================
+******************
 Data Model Context
-==================
+******************
 
 .. module:: yangson.context
    :synopsis: Global repository of data model information and methods.
-.. moduleauthor:: Ladislav Lhotka <lhotka@nic.cz>
 
 .. testsetup::
 
@@ -17,7 +16,7 @@ Data Model Context
    os.chdir("../..")
    del DataModel._instances[DataModel]
 
-Essential data model structures and methods
+Essential data model structures and methods.
 
 This module implements the following classes:
 
@@ -27,23 +26,24 @@ This module implements the following classes:
 
 The module defines the following exceptions:
 
-* :exc:`ModuleNotFound`: YANG module not found.
-* :exc:`ModuleNotRegistered`: Module is not registered in YANG library.
-* :exc:`BadYangLibraryData`: Invalid YANG library data.
-* :exc:`BadPath`: Invalid :term:`schema path`
+* :exc:`ModuleNotFound`: A module or submodule registered in YANG library is not found.
+* :exc:`ModuleNotRegistered`: An imported module is not registered in YANG library.
+* :exc:`BadYangLibraryData`: Broken YANG library data.
+* :exc:`BadPath`: Invalid :term:`schema path` or :term:`data path`.
 * :exc:`UnknownPrefix`: Unknown namespace prefix.
 * :exc:`InvalidFeatureExpression`: Invalid **if-feature** expression.
-* :exc:`FeaturePrerequisiteError`: A supported feature depends on
-  another that isn't supported.
-* :exc:`MultipleImplementedRevisions`: YANG library specifies multiple
-  revisions of an implemented module.
-* :exc:`CyclicImports`: Imports of YANG modules form a cycle.
+* :exc:`FeaturePrerequisiteError`: Pre-requisite feature is not supported.
+* :exc:`MultipleImplementedRevisions`: A module has multiple implemented revisions.
+* :exc:`CyclicImports`: YANG modules are imported in a cyclic fashion.
 
-.. class:: ModuleData
+.. class:: ModuleData(main_module: YangIdentifier)
 
    Objects of this class contain data related to a single module or
    submodule that is a part of the data model. Such objects are values
    of the dictionary :attr:`Context.modules`.
+
+   The constructor argument *main_module* contains the value for
+   :attr:`main_module` instance attribute.
 
    .. rubric:: Instance Attributes
 
@@ -349,7 +349,7 @@ The module defines the following exceptions:
 
    This class implements a parser and evaluator of expressions
    appearing in the argument of **if-feature** statements. It is a
-   subclass of :class:`Parser`.
+   subclass of :class:`~.parser.Parser`.
 
    The arguments of the class constructor are:
 
@@ -390,3 +390,46 @@ The module defines the following exceptions:
 	 >>> FeatureExprParser('ex3a:fea1 and not (ex3a:fea1 or ex3a:fea2)',
 	 ... ('example-3-a', '2016-06-18')).parse()
 	 False
+
+.. autoexception:: ModuleNotFound
+
+   The *name* and *rev* arguments give the name and revision of the
+   non-existent (sub)module.
+
+.. autoexception:: ModuleNotRegistered
+
+   The *name* and *rev* arguments give the name and revision of the
+   module that is missing in YANG library.
+
+.. autoexception:: BadYangLibraryData
+
+   The *reason* argument is a text describing the problem.
+
+.. autoexception:: BadPath
+
+   The *path* argument contains the invalid path.
+
+.. autoexception:: UnknownPrefix
+
+   The *prefix* argument contains the unknown prefix.
+
+.. autoexception:: InvalidFeatureExpression
+   :show-inheritance:
+
+.. autoexception:: FeaturePrerequisiteError
+
+   The *name* and *ns* arguments contain the name and namespace of the
+   feature for which a pre-requisite feature is not supported by the
+   data model.
+
+.. autoexception:: MultipleImplementedRevisions
+
+   See sec. `5.6.5`_ of [Bjo16]_ for further explanation. The *module*
+   argument contains the name of the module with multiple implemented revisions.
+
+.. autoexception:: CyclicImports
+
+   See sec. `5.1`_ of [Bjo16]_ for further explanation.
+
+.. _5.6.5: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-5.6.5
+.. _5.1: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-5.1

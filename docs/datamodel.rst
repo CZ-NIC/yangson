@@ -1,10 +1,9 @@
-==========
+**********
 Data Model
-==========
+**********
 
 .. module:: yangson.datamodel
    :synopsis: Data model representation.
-.. moduleauthor:: Ladislav Lhotka <lhotka@nic.cz>
 
 .. testsetup::
 

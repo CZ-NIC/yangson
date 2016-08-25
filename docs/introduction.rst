@@ -12,7 +12,7 @@ Yangson supports only the JSON data encoding as defined in [Lho16]_.
 __ https://github.com/mbj4668/pyang
 
 Yangson Modules
-***************
+===============
 
 The Yangson package comprises the following Python modules:
 
@@ -65,7 +65,7 @@ following diagram.
 .. image:: imports.png
 
 YANG Modules
-************
+============
 
 In order be able to find and read the correct revision of each YANG
 module, *Yangson* requires that the names of disk files containing
@@ -76,7 +76,7 @@ modules are of the form specified in [Bjo16]_, sec. `5.2`__::
 For a (sub)module without a **revision** statement, the ``'@'
 revision-date`` part must be omitted, otherwise it has to be present.
 
-__ https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis-14#section-5.2
+__ https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-5.2
 
 *Yangson* is currently able to parse only the compact syntax of YANG
 files. Modules written in the alternative XML format (YIN) can be
@@ -84,17 +84,9 @@ converted to the compact syntax by using the XSLT stylesheet
 *yin2yang.xsl* that is also included in *Yangson* distribution
 (directory *tools/xslt*).
 
-Example Data Model
-******************
+Doctest Examples
+================
 
-Throughout this documentation, examples will refer to a data model of
-the `Turing machine`_. This data model consists of two YANG modules,
-``turing-machine.yang`` and ``second-tape.yang`` that are included in
-the Yangson package (directory ``examples/turing``). Their complete
-listings are also included in :ref:`app-a`.
-
-:ref:`app-b` then shows a JSON-encoded instance document conforming to
-the data model. (Guess what this Turing machine “program” actually does.)
+TBD
 
 .. _persistent structures: https://en.wikipedia.org/wiki/Persistent_data_structure
-.. _Turing machine: https://en.wikipedia.org/wiki/Turing_machine
