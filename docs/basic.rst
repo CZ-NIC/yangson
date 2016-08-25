@@ -1,0 +1,7 @@
+#################
+Basic Interaction
+#################
+
+.. toctree::
+
+   datamodel

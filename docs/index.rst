@@ -8,9 +8,9 @@ Contents:
 
    introduction
    concepts-terms
-   typealiases
-   datamodel
-   context
+   basic
+   advanced
+   support
    references
    glossary
 
