@@ -1,6 +1,6 @@
 """YANG statements."""
 
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 from .exceptions import YangsonException
 from .parser import EndOfInput, Parser, UnexpectedInput
 from .typealiases import YangIdentifier
@@ -106,8 +106,12 @@ class ModuleParser(Parser):
     """Parse YANG modules."""
 
     unescape_map = { "n" : "\n", "t": "\t", '"': '"',
-                     "\\": "\\" } # type: Mapping[str,str]
+                     "\\": "\\" } # type: Dict[str,str]
     """Dictionary for mapping escape sequences to characters."""
+
+    def _back_break(self) -> int:
+        self.offset -= 1
+        return -1
 
     @classmethod
     def unescape(cls, text: str) -> str:
@@ -127,23 +131,38 @@ class ModuleParser(Parser):
         Raises:
             EndOfInput: If past the end of input.
         """
-        def back_break(c):
-            self.offset -= 1
-            return -1
         start = self.offset
-        self.scan(
-            [(lambda c: -1, { " ": lambda: 0,
-                              "\t": lambda: 0,
-                              "\n": lambda: 0,
-                              "\r": lambda: 1,
-                              "/": lambda: 2 }),
-             (back_break, { "\n": lambda: 0 }),
-             (back_break, { "/": lambda: 3,
-                        "*": lambda: 4 }),
-             (lambda c: -1 if c is None else 3, { "\n": lambda: 0 }),
-             (lambda c: 4, { "*": lambda: 5 }),
-             (lambda c: 4, { "/": lambda: 0,
-                             "*": lambda: 5 })])
+        self.dfa([
+        {  # state 0: whitespace
+           "": lambda: -1,
+           " ": lambda: 0,
+           "\t": lambda: 0,
+           "\n": lambda: 0,
+           "\r": lambda: 1,
+           "/": lambda: 2
+           },
+        { # state 1: CR/LF?
+          "": self._back_break,
+          "\n": lambda: 0
+          },
+        { # state 2: start comment?
+          "": self._back_break,
+          "/": lambda: 3,
+          "*": lambda: 4
+          },
+        { # state 3: line comment
+          "": lambda: 3,
+          "\n": lambda: 0
+          },
+        { # state 4: block comment
+          "": lambda: 4,
+          "*": lambda: 5
+          },
+        { # state 5: end block comment?
+          "": lambda: 4,
+          "/": lambda: 0,
+          "*": lambda: 5
+          }])
         return start < self.offset
 
     def separator(self) -> None:
@@ -238,10 +257,7 @@ class ModuleParser(Parser):
             EndOfInput: If past the end of input.
         """
         self.offset += 1
-        start = self.offset
-        self.scan([(lambda c: 0, { "'": lambda: -1 })])
-        self._arg += self.input[start:self.offset]
-        self.offset += 1
+        self._arg += self.up_to("'")
 
     def dq_argument(self) -> str:
         """Parse double-quoted argument.
@@ -255,9 +271,15 @@ class ModuleParser(Parser):
         self._escape = False                 # any escaped chars?
         self.offset += 1
         start = self.offset
-        self.scan([(lambda c: 0, { '"': lambda: -1,
-                                    '\\': escape }),
-                    (lambda c: 0, {})])
+        self.dfa([
+        { # state 0: argument
+          "": lambda: 0,
+          '"': lambda: -1,
+          "\\": escape
+          },
+        { # state 1: after escape
+          "": lambda: 0
+          }])
         self._arg += (self.unescape(self.input[start:self.offset])
                       if self._escape else self.input[start:self.offset])
         self.offset += 1
@@ -268,19 +290,23 @@ class ModuleParser(Parser):
         Raises:
             EndOfInput: If past the end of input.
         """
-        def comm_start():
-            self.offset -= 1
-            return -1
         start = self.offset
-        self.scan([(lambda c: 0, { ";": lambda: -1,
-                                  " ": lambda: -1,
-                                  "\t": lambda: -1,
-                                  "\r": lambda: -1,
-                                  "\n": lambda: -1,
-                                  "{": lambda: -1,
-                                  '/': lambda: 1 }),
-                    (lambda c: 0, { "/": comm_start,
-                                    "*": comm_start })])
+        self.dfa([
+        { # state 0: argument
+          "": lambda: 0,
+          ";": lambda: -1,
+          " ": lambda: -1,
+          "\t": lambda: -1,
+          "\r": lambda: -1,
+          "\n": lambda: -1,
+          "{": lambda: -1,
+          '/': lambda: 1
+          },
+        { # state 1: comment?
+          "": lambda: 0,
+          "/": self._back_break,
+          "*": self._back_break
+          }])
         self._arg = self.input[start:self.offset]
 
     def substatements(self) -> List[Statement]:

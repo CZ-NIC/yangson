@@ -1,28 +1,17 @@
 """Simple parser class."""
 
 import re
-from typing import Any, Callable, List, Mapping, Optional, Tuple
+from typing import Any, Callable, List, Dict, Optional, Tuple
 from .exceptions import YangsonException
 from .typealiases import *
 
 # Local type aliases
-State = int
-ParseTable = List[
-    Tuple[
-        Callable[[Optional[str]], State],
-        Mapping[str, Callable[[], State]]
-    ]
-]
+TransitionTable = List[Dict[str, Callable[[], int]]]
+"""Transition table for a DFA."""
 
 class Parser:
 
-    """Simple parser.
-
-    Instance variables:
-
-    * input: input string
-    * offset: current position in the input string
-    """
+    """Recursive-descent parser."""
 
     # Regular expressions
 
@@ -46,7 +35,9 @@ class Parser:
             text: Input text.
         """
         self.input = text
+        """Input text for the parser."""
         self.offset = 0 # type: int
+        """Current position in the input text."""
 
     def __str__(self):
         """Return string representation of the parser state."""
@@ -63,7 +54,7 @@ class Parser:
         return self.offset >= len(self.input)
 
     def peek(self) -> str:
-        """Peek at the next character.
+        """Return the next character without advancing offset.
 
         Raises:
             EndOfInput: If past the end of `self.input`.
@@ -74,21 +65,43 @@ class Parser:
             raise EndOfInput(self)
 
     def char(self, c: str) -> None:
-        """Parse the specified character."""
+        """Parse the specified character.
+
+        Args:
+            c: One-character string.
+
+        Raises:
+            EndOfInput: If past the end of `self.input`.
+            UnexpectedInput: If the next character is different from `c`.
+        """
         if self.peek() == c:
             self.offset += 1
         else:
             raise UnexpectedInput(self, "char " + c)
 
     def test_string(self, string: str) -> bool:
-        """Test whether `string` comes next."""
+        """If `string` comes next, return ``True`` and advance offset.
+
+        Args:
+            string: string to test
+        """
         if self.input.startswith(string, self.offset):
             self.offset += len(string)
             return True
         return False
 
     def one_of(self, chset: str) -> str:
-        """Parse one character form the specified set."""
+        """Parse one character form the specified set.
+
+        Args:
+            chset: string of characters to try as alternatives.
+
+        Returns:
+            The character that was actually matched.
+
+        Raises:
+            UnexpectedInput: If the next character is not in `chset`.
+        """
         res = self.peek()
         if res in chset:
             self.offset += 1
@@ -104,11 +117,11 @@ class Parser:
         self.offset = end + 1
         return res
 
-    def scan(self, ptab: ParseTable, init: State = 0) -> State:
-        """Simple stateful scanner.
+    def dfa(self, ttab: TransitionTable, init: int = 0) -> int:
+        """Run a DFA and return the final (negative) state.
 
         Args:
-            ptab: Transition table (DFA with possible side-effects).
+            ttab: Transition table (with possible side-effects).
             init: Initial state.
 
         Raises:
@@ -116,9 +129,9 @@ class Parser:
         """
         state = init
         while True:
-            (owise, disp) = ptab[state]
+            disp = ttab[state]
             ch = self.peek()
-            state = disp[ch]() if ch in disp else owise(ch)
+            state = disp[ch if ch in disp else ""]()
             if state < 0:
                 return state
             self.offset += 1
@@ -186,7 +199,7 @@ class Parser:
         return self.skip_ws()
 
 class ParserException(YangsonException):
-    """Base exception class for the parser of YANG modules."""
+    """Base class for parser exceptions."""
 
     def __init__(self, p: Parser) -> None:
         self.parser = p
@@ -199,7 +212,7 @@ class ParserException(YangsonException):
         return str(self.parser)
 
 class EndOfInput(ParserException):
-    """End of input."""
+    """Unexpected end of input."""
     pass
 
 class UnexpectedInput(ParserException):
