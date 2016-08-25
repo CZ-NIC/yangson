@@ -114,8 +114,8 @@ class Context:
                         bt = submod.find1("belongs-to", name, required=True)
                         locpref = bt.find1("prefix", required=True).argument
                         sdata.prefix_map[locpref] = mid
-        except (KeyError, AttributeError) as e:
-            raise BadYangLibraryData()
+        except KeyError as e:
+            raise BadYangLibraryData("missing " + str(e)) from None
         cls._process_imports()
         cls._check_feature_dependences()
         for mid in cls._module_sequence:
@@ -484,11 +484,11 @@ class _MissingModule(YangsonException):
         return self.name
 
 class ModuleNotFound(_MissingModule):
-    """A module that is listed in YANG library is not found."""
+    """A module or submodule registered in YANG library is not found."""
     pass
 
 class ModuleNotRegistered(_MissingModule):
-    """A module is not registered in YANG library."""
+    """An imported module is not registered in YANG library."""
     pass
 
 class BadYangLibraryData(YangsonException):

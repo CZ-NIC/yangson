@@ -3,7 +3,7 @@
 from enum import Enum
 
 class ContentType(Enum):
-    """Enumeration of data content types."""
+    """Enumeration of instance data content types."""
     config = 1
     nonconfig = 2
     all = 3

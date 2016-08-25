@@ -38,8 +38,8 @@ class DataModel(metaclass=_Singleton):
         Context.schema = GroupNode()
         try:
             yl = json.loads(yltxt)
-        except json.JSONDecodeError:
-            raise BadYangLibraryData() from None
+        except json.JSONDecodeError as e:
+            raise BadYangLibraryData(str(e)) from None
         Context._from_yang_library(yl, mod_path)
 
     @classmethod
