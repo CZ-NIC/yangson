@@ -802,7 +802,7 @@ class InstancePathParser(Parser):
 
     def member_name(self, sn: "InternalNode") -> Tuple[MemberName, "DataNode"]:
         """Parser object member name."""
-        name, ns = self.name_opt_prefix()
+        name, ns = self.prefixed_name()
         cn = sn.get_data_child(name, ns if ns else sn.ns)
         if cn is None:
             raise NonexistentSchemaNode(name, ns)
@@ -899,7 +899,7 @@ class InstanceIdParser(InstancePathParser):
         "Parse one or more key predicates."""
         sel = {}
         while True:
-            name, ns = self.name_opt_prefix()
+            name, ns = self.prefixed_name()
             knod = sn.get_data_child(name, ns)
             val = self.get_value(knod)
             sel[knod.iname()] = val

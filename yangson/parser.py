@@ -2,6 +2,7 @@
 
 import re
 from typing import Any, Callable, List, Dict, Optional, Tuple
+from typing.re import Pattern
 from .exceptions import YangsonException
 from .typealiases import *
 
@@ -39,7 +40,7 @@ class Parser:
         self.offset = 0 # type: int
         """Current position in the input text."""
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Return string representation of the parser state."""
         return self.input[:self.offset] + "§" + self.input[self.offset:]
 
@@ -108,9 +109,16 @@ class Parser:
             return res
         raise UnexpectedInput(self, "one of " + chset)
 
-    def up_to(self, c: str) -> str:
-        """Return segment terminated by a character."""
-        end = self.input.find(c, self.offset)
+    def up_to(self, term: str) -> str:
+        """Parse and return segment terminated by the first occurence of a string.
+
+        Args:
+            term: Terminating string.
+
+        Raises:
+            EndOfInput: If `term` does not occur in the rest of the input text.
+        """
+        end = self.input.find(term, self.offset)
         if end < 0:
             raise EndOfInput(self)
         res = self.input[self.offset:end]
@@ -131,7 +139,7 @@ class Parser:
         while True:
             disp = ttab[state]
             ch = self.peek()
-            state = disp[ch if ch in disp else ""]()
+            state = disp.get(ch, disp[""])()
             if state < 0:
                 return state
             self.offset += 1
@@ -143,9 +151,9 @@ class Parser:
              self.offset - self.input.rfind("\n", 0, self.offset) - 1)
         return (l + 1, c)
 
-    def match_regex(self, regex, required: bool = False,
+    def match_regex(self, regex: Pattern, required: bool = False,
                     meaning: str = "") -> str:
-        """Match a regular expression and advance the parser.
+        """Parse input based on a regular expression .
 
         Args:
             regex: Compiled regular expression object.
@@ -163,23 +171,23 @@ class Parser:
             raise UnexpectedInput(self, meaning)
 
     def unsigned_integer(self) -> int:
-        """Parse unsigned integer."""
+        """Parse and return an unsigned integer."""
         return int(self.match_regex(self.uint_re, True, "unsigned integer"))
 
     def unsigned_float(self) -> float:
-        """Parse unsigned number (exponential notation is not permitted)."""
+        """Parse and return unsigned floating-point number."""
         return float(self.match_regex(self.ufloat_re, True, "unsigned float"))
 
     def yang_identifier(self) -> YangIdentifier:
-        """Parse YANG identifier.
+        """Parse and return YANG identifier.
 
         Raises:
             UnexpectedInput: If no syntactically correct keyword is found.
         """
         return self.match_regex(self.ident_re, True, "YANG identifier")
 
-    def name_opt_prefix(self) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
-        """Parse name with an optional prefix."""
+    def prefixed_name(self) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
+        """Parse name with an optional colon-separated prefix."""
         i1 = self.yang_identifier()
         try:
             next = self.peek()

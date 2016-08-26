@@ -460,7 +460,7 @@ class FeatureExprParser(Parser):
             self.char(")")
             self.skip_ws()
             return res
-        n, p = self.name_opt_prefix()
+        n, p = self.prefixed_name()
         self.skip_ws()
         if p is None:
             fid = self.mdata.main_module
