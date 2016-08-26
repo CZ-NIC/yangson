@@ -84,7 +84,7 @@ class Context:
         """
         cls._initialize()
         cls.module_search_path = mod_path
-        cls.schema._nsswitch = cls.schema._config = True
+        cls.schema._config = True
         try:
             for item in yang_lib["ietf-yang-library:modules-state"]["module"]:
                 name = item["name"]
@@ -119,6 +119,7 @@ class Context:
         cls._process_imports()
         cls._check_feature_dependences()
         for mid in cls._module_sequence:
+            cls.schema._new_ns = cls.namespace(mid)
             cls.schema._handle_substatements(cls.modules[mid].statement, mid)
         cls._apply_augments()
         cls.schema._post_process()
@@ -265,7 +266,7 @@ class Context:
         except KeyError:
             raise ModuleNotRegistered(*mid) from None
         try:
-            return (loc, mdata.prefix_map[p]) if s else (p, mid)
+            return (loc, mdata.prefix_map[p]) if s else (p, mdata.main_module)
         except KeyError:
             raise UnknownPrefix(p) from None
 

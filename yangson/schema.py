@@ -169,7 +169,7 @@ class InternalNode(SchemaNode):
         """Initialize the class instance."""
         super().__init__()
         self.children = [] # type: List[SchemaNode]
-        self._nsswitch = False # type: bool
+        self._new_ns = None # type: Optional[ModuleId]
         self.default_children = [] # type: List["SchemaNode"]
         self._mandatory_children = set() # type: MutableSet["SchemaNode"]
 
@@ -348,7 +348,7 @@ class InternalNode(SchemaNode):
         """Add child node to the receiver and handle substatements."""
         if not Context.if_features(stmt, mid): return
         node.name = stmt.argument
-        node.ns = Context.namespace(mid) if self._nsswitch else self.ns
+        node.ns = self._new_ns if self._new_ns else self.ns
         self.add_child(node)
         node._handle_substatements(stmt, mid)
 
@@ -361,7 +361,8 @@ class InternalNode(SchemaNode):
             gr = GroupNode()
             target.add_child(gr)
             target = gr
-        target._nsswitch = self.ns != Context.namespace(mid)
+        myns = Context.namespace(mid)
+        target._new_ns = None if target.ns == myns else myns
         target._handle_substatements(stmt, mid)
 
     def _refine_stmt(self, stmt: Statement, mid: ModuleId) -> None:
@@ -771,7 +772,7 @@ class ChoiceNode(InternalNode):
         else:
             cn = CaseNode()
             cn.name = stmt.argument
-            cn.ns = Context.namespace(mid) if self._nsswitch else self.ns
+            cn.ns = self._new_ns if self._new_ns else self.ns
             self.add_child(cn)
             cn._handle_child(node, stmt, mid)
 
