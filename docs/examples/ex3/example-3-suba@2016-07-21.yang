@@ -14,7 +14,8 @@ submodule example-3-suba {
   revision 2016-07-21;
 
   augment "/ex3a:top" {
-    leaf bar {
+    uses gbar;
+    leaf baz {
       if-feature "fea2";
       type inet:ipv4-address-no-zone;
     }

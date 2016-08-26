@@ -18,6 +18,12 @@ module example-3-a {
 
   identity idX;
 
+  grouping gbar {
+    leaf bar {
+      type string;
+    }
+  }
+
   container top {
     leaf foo {
       if-feature "fea1";

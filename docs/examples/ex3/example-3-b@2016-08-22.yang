@@ -26,6 +26,7 @@ module example-3-b {
 
   augment "/ex3a:top" {
     if-feature "ex3a:fea1 or ex3a:fea2";
+    uses ex3a:gbar;
     leaf baz {
       type oin:port-number;
     }
