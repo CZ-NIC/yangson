@@ -90,8 +90,7 @@ This module defines the following exceptions:
 
    .. method:: char(c: str) -> None
 
-      Parse the character specified in the *c* argument that should
-      be a single-character string.
+      Parse the character *c*.
 
       This method may raise these exceptions:
 
@@ -109,9 +108,9 @@ This module defines the following exceptions:
 
       This method realizes a deterministic finite automaton (DFA) that
       is also capable of side effects. The states of the DFA are
-      integers, and the *init* argument specifies the initial state.
-      Negative integers correspond to final states, and the method
-      returns the final state in which automaton reaches.
+      integers, and *init* specifies the initial state.  Negative
+      integers correspond to final states, and the method returns the
+      final state in which automaton reaches.
 
       The *ttab* argument is a transition table for the DFA. The
       :data:`TransitionTable` alias stands for a list whose *i*-th
@@ -160,7 +159,7 @@ This module defines the following exceptions:
       regular expression matches, the matched string is returned and
       :attr:`offset` is advanced past that string in the input text.
 
-      The *required* argument controls what happens if the regular
+      The *required* flag controls what happens if the regular
       expression doesn't match: if it is ``True``, then
       :exc:`UnexpectedInput` is raised, otherwise ``None`` is
       returned.
@@ -176,9 +175,9 @@ This module defines the following exceptions:
    .. method:: one_of(chset: str) -> str
 
       Parse one character from the set of alternatives specified in
-      the *chset* argument. If a match is found, :attr:`offset` is
-      advanced by one position, and the matching character is
-      returned. Otherwise, :exc:`UnexpectedInput` is raised.
+      *chset*. If a match is found, :attr:`offset` is advanced by one
+      position, and the matching character is returned. Otherwise,
+      :exc:`UnexpectedInput` is raised.
 
       .. doctest::
 
@@ -266,8 +265,8 @@ This module defines the following exceptions:
    .. method:: up_to(term: str) -> str
 
       Parse and return a segment of input text up to the terminating
-      string specified by the *term* argument. Raise :exc:`EndOfInput`
-      if *term* does not occur in the rest of the input string.
+      string *term*. Raise :exc:`EndOfInput` if *term* does not occur
+      in the rest of the input string.
 
       .. doctest::
 

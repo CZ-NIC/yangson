@@ -57,10 +57,9 @@ user-level entry point to the *Yangson* library.
 
       Initialize the data model from a file containing JSON-encoded
       YANG library data and return the :class:`DataModel`
-      instance. The *name* argument is the name of that file, and the
-      second argument, *mod_path*, has the same meaning as in the
-      class constructor above. By default, *mod_path* includes only
-      the current directory.
+      instance. The *name* argument is the name of that file, and
+      *mod_path* has the same meaning as in the class constructor. By
+      default, *mod_path* includes only the current directory.
 
       This method may raise the same exceptions as the class
       constructor.
@@ -118,8 +117,8 @@ user-level entry point to the *Yangson* library.
 
    .. staticmethod:: get_schema_node(path: SchemaPath) -> Optional[SchemaNode]
 
-      Return the schema node addressed by the *path* argument (see
-      :term:`schema path`), or ``None`` if no such schema node exists.
+      Return the schema node addressed by *path* argument, or ``None``
+      if no such schema node exists.
 
       .. doctest::
 
@@ -129,8 +128,8 @@ user-level entry point to the *Yangson* library.
 
    .. staticmethod:: get_data_node(path: DataPath) -> Optional[DataNode]
 
-      Return the data node addressed by the *path* argument or
-      ``None`` if such a data node doesn't exist. As opposed to the
+      Return the data node addressed by *path*, or ``None`` if such a
+      data node doesn't exist. As opposed to the
       :meth:`get_schema_node` method, the *path* argument is a
       :term:`data path`, i.e. it contains only names of *data nodes*.
 

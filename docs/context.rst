@@ -179,9 +179,10 @@ The module defines the following exceptions:
    .. classmethod:: last_revision(name: YangIdentifier) -> ModuleId
 
       Return :term:`module identifier` of the most recent revision of
-      a module or submodule. Argument *name* gives the name of the
-      (sub)module. The method raises :exc:`ModuleNotRegistered` if no
-      (sub)module of that name is part of the data model.
+      a module or submodule *name*.
+
+      The method raises :exc:`ModuleNotRegistered` if no (sub)module
+      of that name is part of the data model.
 
       .. doctest::
 
@@ -191,9 +192,9 @@ The module defines the following exceptions:
    .. classmethod:: prefix2ns(prefix: YangIdentifier, mid: ModuleId) \
 		    -> YangIdentifier
 
-      Return namespace identifier corresponding to a prefix given by
-      the *prefix* argument. The module context, in which the prefix
-      is resolved, is specified by the *mid* argument.
+      Return namespace identifier corresponding *prefix*. The module
+      context, in which the prefix is resolved, is specified by the
+      *mid* argument.
 
       This method raises :exc:`ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
@@ -208,11 +209,10 @@ The module defines the following exceptions:
    .. classmethod:: resolve_pname(pname: PrefName, mid: ModuleId) \
 		    -> Tuple[YangIdentifier, ModuleId]
 
-      Resolve a :term:`prefixed name` in the *pname* argument and
-      return a tuple consisting of an unprefixed name and a
-      :term:`module identifier` of the (sub)module in which that name
-      is defined. The argument *mid* specifies the (sub)module in
-      which *pname* is to be resolved.
+      Resolve *pname* and return a tuple consisting of an unprefixed
+      name and a :term:`module identifier` of the (sub)module in which
+      that name is defined. The argument *mid* specifies the
+      (sub)module in which *pname* is to be resolved.
 
       This method raises :exc:`ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
