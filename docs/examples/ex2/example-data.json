@@ -2,7 +2,9 @@
   "example-2:top": {
     "foo": [
       1,
-      2
+      2,
+      3,
+      4
     ],
     "bar": true
   }

@@ -12,6 +12,11 @@ module example-2 {
     }
     leaf bar {
       type boolean;
+      mandatory "true";
+    }
+    leaf baz {
+      type string;
+      default "hi!";
     }
   }
 }
