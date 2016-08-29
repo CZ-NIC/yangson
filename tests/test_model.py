@@ -297,19 +297,19 @@ def test_instance(instance):
     assert str(lt) == "test:CC-BY"
     assert tbln.namespace == "testb"
     assert str(tbln.path()) == "/test:contA/testb:leafN"
-    assert (instance.ancestors() == instance.preceding_siblings() ==
-            instance.following_siblings() == [])
-    axtest(instance.ancestors_or_self(), ["/"])
-    axtest(la1.ancestors(False), ["/test:contA"])
-    axtest(la1.ancestors_or_self(("listA", "test")), ["/test:contA/listA/1" ])
-    axtest(la1.preceding_siblings(), ["/test:contA/listA/0"])
-    axtest(la1.following_siblings(), [])
-    assert len(conta.children()) == 10
-    axtest(la1.children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance.descendants(with_self=True)) == 30
-    axtest(conta.descendants(("listA", "test")),
+    assert (instance._ancestors() == instance._preceding_siblings() ==
+            instance._following_siblings() == [])
+    axtest(instance._ancestors_or_self(), ["/"])
+    axtest(la1._ancestors(False), ["/test:contA"])
+    axtest(la1._ancestors_or_self(("listA", "test")), ["/test:contA/listA/1" ])
+    axtest(la1._preceding_siblings(), ["/test:contA/listA/0"])
+    axtest(la1._following_siblings(), [])
+    assert len(conta._children()) == 10
+    axtest(la1._children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
+    assert len(instance._descendants(with_self=True)) == 30
+    axtest(conta._descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
-    axtest(tbln.ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
+    axtest(tbln._ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
 
 def test_xpath(instance):
     def xptest(expr, res=True, node=instance, module="test"):

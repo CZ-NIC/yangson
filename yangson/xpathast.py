@@ -299,20 +299,20 @@ class Step(Expr):
 
     def _node_trans(self) -> NodeExpr:
         return {
-            Axis.ancestor: lambda n, qn=self.qname: n.ancestors(qn),
+            Axis.ancestor: lambda n, qn=self.qname: n._ancestors(qn),
             Axis.ancestor_or_self:
-                lambda n, qn=self.qname: n.ancestors_or_self(qn),
-            Axis.child: lambda n, qn=self.qname: n.children(qn),
-            Axis.descendant: lambda n, qn=self.qname: n.descendants(qn),
+                lambda n, qn=self.qname: n._ancestors_or_self(qn),
+            Axis.child: lambda n, qn=self.qname: n._children(qn),
+            Axis.descendant: lambda n, qn=self.qname: n._descendants(qn),
             Axis.descendant_or_self:
-                lambda n, qn=self.qname: n.descendants(qn, True),
+                lambda n, qn=self.qname: n._descendants(qn, True),
             Axis.following_sibling:
-                lambda n, qn=self.qname: n.following_siblings(qn),
+                lambda n, qn=self.qname: n._following_siblings(qn),
             Axis.parent: (
                 lambda n, qn=self.qname: [] if qn and qn != n.parent.qualName
-                else n.parent()),
+                else n._parent()),
             Axis.preceding_sibling:
-                lambda n, qn=self.qname: n.preceding_siblings(qn),
+                lambda n, qn=self.qname: n._preceding_siblings(qn),
             Axis.self:
                 lambda n, qn=self.qname: [] if qn and qn != n.qualName else [n],
                 }[self.axis]
@@ -378,7 +378,7 @@ class FuncDeref(UnaryExpr):
         if not isinstance(ns, NodeSet):
             raise XPathTypeError(ns)
         ref = ns[0]
-        return NodeSet(ref.deref())
+        return NodeSet(ref._deref())
 
 class FuncDerivedFrom(BinaryExpr):
 

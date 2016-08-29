@@ -548,7 +548,7 @@ class TerminalNode(SchemaNode):
         res = ni.member(iname)
         if self.when is None or self.when.evaluate(res):
             res.value = dflt
-            return res.xpath_nodes()
+            return res._node_set()
         return []
 
     def _ascii_tree(self, indent: str) -> str:
