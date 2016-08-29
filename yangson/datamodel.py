@@ -7,8 +7,7 @@ from .exceptions import YangsonException
 from .context import Context, BadYangLibraryData
 from .instance import (EntryKeys, RootNode, MemberName,
                        InstanceIdParser, ResourceIdParser)
-from .schema import (BadSchemaNodeType, DataNode, GroupNode,
-                     NonexistentSchemaNode, RawObject, SchemaNode)
+from .schema import DataNode, GroupNode, RawObject, SchemaNode
 from .typealiases import *
 from .typealiases import _Singleton
 

@@ -1,4 +1,29 @@
-"""Classes related to instance data."""
+"""Instance data represented as a persistent structure.
+
+This module implements the following classes:
+
+* InstanceNode: Abstract class for instance nodes.
+* RootNode: Root of the data tree.
+* ObjectMember: Instance node that is an object member.
+* ArrayEntry: Instance node that is an array entry.
+* ResourceIdParser: Parser for RESTCONF resource identifiers.
+* InstanceIdParser: Parser for instance identifiers.
+
+The module defines the following exceptions:
+
+* InstanceException: Base class for exceptions related to operations
+  on instance nodes.
+* NonexistentInstance: Attempt to access an instance node that doesn't
+  exist.
+* InstanceTypeError: A method is called for a wrong type of instance
+  node.
+* DuplicateMember: Attempt to create a member that already exists.
+* MandatoryMember: Attempt to remove a mandatory member.
+* MinElements: An array becomes shorter than the minimum number of
+  elements specified in the data model..
+* MaxElements: An array becomes longer than the maximum number of
+  elements specified in the data model.
+"""
 
 from datetime import datetime
 from typing import Any, Callable, List, Tuple
@@ -18,22 +43,19 @@ class JSONPointer(tuple):
         return "/" + "/".join([ str(c) for c in self ])
 
 class InstanceNode:
-    """YANG data node instance implemented as a zipper structure.
-
-    Attributes:
-        value: Value of the node (scalar or structured).
-        parinst: Parent instance node.
-        schema_node: Corresponding schema node.
-        timestamp: Time of last modification.
-    """
+    """YANG data node instance implemented as a zipper structure."""
 
     def __init__(self, value: Value, parinst: Optional["InstanceNode"],
                  schema_node: "DataNode", timestamp: datetime) -> None:
         """Initialize the class instance."""
         self.value = value             # type: Value
+        """Value of the receiver."""
         self.parinst = parinst         # type: Optional["InstanceNode"]
+        """Parent instance node, or ``None`` for the root node."""
         self.schema_node = schema_node # type: DataNode
+        """Data node corresponding to the instance node."""
         self.timestamp = timestamp     # type: datetime
+        """Time of the receiver's last modification."""
 
     def __str__(self):
         """Return string representation of the receiver's value."""
@@ -55,8 +77,11 @@ class InstanceNode:
     def validate(self, content: ContentType = ContentType.config) -> None:
         """Validate the receiver.
 
+        Args:
+            Indication of the receiver's content type: config or all.
+
         Raises:
-            SchemaViolation: If the value doesn't conform to the schema.
+            SchemaError`: If the value doesn't conform to the schema.
             SemanticError: If the value violates a semantic constraint.
         """
         sn = self.schema_node
@@ -117,7 +142,7 @@ class InstanceNode:
             NonexistentInstance: If there is no parent.
         """
         ts = max(self.timestamp, self.parinst.timestamp)
-        return self.parinst._copy(self.zip(), ts)
+        return self.parinst._copy(self._zip(), ts)
 
     def top(self) -> "InstanceNode":
         """Move the focus to the root instance node.
@@ -131,19 +156,19 @@ class InstanceNode:
         return inst
 
     def goto(self, iroute: "InstanceRoute") -> "InstanceNode":
-        """Move the focus to an instance node inside the receiver's value.
+        """Move the focus to an instance inside the receiver's value.
 
         Args:
             iroute: Instance route (relative to the receiver).
 
         Returns:
-            The instance node addressed with the argument.
+            The instance node corresponding to the target instance.
 
         Raises:
             InstanceTypeError: If `iroute` is incompatible with the schema.
             NonexistentInstance: If the instance node doesn't exist.
         """
-        inst = self # type: "InstanceNode"
+        inst = self
         for sel in iroute:
             inst = sel.goto_step(inst)
         return inst
@@ -160,14 +185,17 @@ class InstanceNode:
             if val is None: return None
         return val
 
-    def _member_schema_node(self, name: InstanceName) -> "DataNode":
-        qname = self.schema_node.iname2qname(name)
-        res = self.schema_node.get_data_child(*qname)
-        if res is None:
-            raise NonexistentSchemaNode(qname)
-        return res
-
     def member(self, name: InstanceName) -> "ObjectMember":
+        """Return an instance node corresponding to a receiver's member.
+
+        Args:
+            name: Instance name of the member
+
+        Raises:
+            NonexistentSchemaNode: If the member isn't permitted by the schema.
+            NonexistentInstance: If receiver's value doesn't contain member of
+                that name.
+        """
         csn = self._member_schema_node(name)
         sibs = self.value.copy()
         try:
@@ -177,6 +205,18 @@ class InstanceNode:
             raise NonexistentInstance(self, "member " + name) from None
 
     def put_member(self, name: InstanceName, value: Value) -> "InstanceNode":
+        """Return a copy of the receiver with a new value of a member.
+
+        If the member is permitted by the schema but doesn't exist, it
+        is created.
+
+        Args:
+            name: Instance name of the member.
+            value: New value of the member.
+
+        Raises:
+            NonexistentSchemaNode: If the member isn't permitted by the schema.
+        """
         csn = self._member_schema_node(name)
         newval = self.value.copy()
         newval[name] = value
@@ -191,6 +231,20 @@ class InstanceNode:
 
     def delete_member(self, name: InstanceName,
                       validate: bool = True) -> "InstanceNode":
+        """Return a copy of the receiver with a member deleted from its value.
+
+        Args:
+            name: Instance name of the member.
+            validate: If ``False``, the member is deleted even if it violates
+                the schema.
+
+        Raises:
+            NonexistentSchemaNode: If the member isn't permitted by the schema.
+            NonexistentInstance: If receiver's value doesn't contain member of
+                that name.
+            MandatoryMember: If `validate` is ``True`` and the schema doesn't
+            permit the removal.
+        """
         if name not in self.value:
             raise NonexistentInstance(self, "member " + name) from None
         csn = self._member_schema_node(name)
@@ -201,6 +255,15 @@ class InstanceNode:
         return self._copy(ObjectValue(newval, ts), ts)
 
     def entry(self, index: int) -> "ArrayEntry":
+        """Return an instance node corresponding to a receiver's entry.
+
+        Args:
+            index: Index of the entry.
+
+        Raises:
+            InstanceTypeError: If the receiver's value is not an array.
+            NonexistentInstance: If entry `index` is not present.
+        """
         val = self.value
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "entry of non-array")
@@ -211,6 +274,12 @@ class InstanceNode:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
     def last_entry(self) -> "ArrayEntry":
+        """Return an instance node corresponding to the last entry of the receiver.
+
+        Raises:
+            InstanceTypeError: If the receiver's value isn't an array.
+            NonexistentInstance: If the receiver's value is an empty array.
+        """
         val = self.value
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "last entry of non-array")
@@ -222,6 +291,19 @@ class InstanceNode:
 
     def delete_entry(self, index: int,
                      validate: bool = True) -> "InstanceNode":
+        """Return a copy of the receiver with an entry deleted from its value.
+
+        Args:
+            index: Index of the deleted entry.
+            validate: If ``False``, the entry is deleted even if it violates
+                the schema.
+
+        Raises:
+            InstanceTypeError: If the receiver value is not an array.
+            NonexistentInstance: If entry `index` is not present.
+            MinElements: If `validate` is ``True`` and the schema doesn't
+                permit the removal.
+        """
         val = self.value
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "entry of non-array")
@@ -233,7 +315,15 @@ class InstanceNode:
         return self._copy(ArrayValue(val[:index] + val[index+1:], ts), ts)
 
     def look_up(self, keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
-        """Return the entry with matching keys."""
+        """Return the entry with matching keys.
+
+        Args:
+            keys: Dictionary of list keys and their values.
+
+        Raises:
+            InstanceTypeError: If the receiver is not a YANG list.
+            NonexistentInstance: If no entry with matching keys exists.
+        """
         if not isinstance(self.value, ArrayValue):
             raise InstanceTypeError(self, "lookup on non-list")
         try:
@@ -275,6 +365,13 @@ class InstanceNode:
             sn._apply_defaults(res.value)
             return res
         return self
+
+    def _member_schema_node(self, name: InstanceName) -> "DataNode":
+        qname = self.schema_node.iname2qname(name)
+        res = self.schema_node.get_data_child(*qname)
+        if res is None:
+            raise NonexistentSchemaNode(*qname)
+        return res
 
     def _node_set(self) -> List["InstanceNode"]:
         """XPath - return the list of all receiver's nodes."""
@@ -357,7 +454,8 @@ class RootNode(InstanceNode):
     def __init__(self, value: Value, schema_node: "DataNode",
                  ts: datetime) -> None:
         super().__init__(value, None, schema_node, ts)
-        self.name = None
+        self.name = None # type: None
+        """The instance name of the root node is always ``None``."""
 
     def up(self) -> None:
         """Override the superclass method.
@@ -393,8 +491,10 @@ class ObjectMember(InstanceNode):
                  value: Value, parinst: InstanceNode,
                  schema_node: "DataNode", ts: datetime ) -> None:
         super().__init__(value, parinst, schema_node, ts)
-        self.name = name
-        self.siblings = siblings
+        self.name = name # type: InstanceName
+        """The instance name of the receiver."""
+        self.siblings = siblings # type: Dict[InstanceName, Value]
+        """Sibling members within the parent object."""
 
     @property
     def qualName(self) -> Optional[QualName]:
@@ -402,7 +502,7 @@ class ObjectMember(InstanceNode):
         p, s, loc = self.name.partition(":")
         return (loc, p) if s else (p, self.namespace)
 
-    def zip(self) -> ObjectValue:
+    def _zip(self) -> ObjectValue:
         """Zip the receiver into an object and return it."""
         res = ObjectValue(self.siblings.copy(), self.timestamp)
         res[self.name] = self.value
@@ -422,7 +522,16 @@ class ObjectMember(InstanceNode):
                            self.parinst, self.schema_node,
                            newts if newts else self._timestamp)
 
-    def sibling(self, name: InstanceName) -> InstanceNode:
+    def sibling(self, name: InstanceName) -> "ObjectMember":
+        """Return an instance node corresponding to a sibling member.
+
+        Args:
+            name: Instance name of the sibling member.
+
+        Raises:
+            NonexistentSchemaNode: If member `name` is not permitted by the schema.
+            NonexistentInstance: If sibling member `name` doesn't exist.
+        """
         ssn = self.parinst._member_schema_node(name)
         try:
             sibs = self.siblings.copy()
@@ -451,11 +560,13 @@ class ArrayEntry(InstanceNode):
                  value: Value, parinst: InstanceNode,
                  schema_node: "DataNode", ts: datetime = None) -> None:
         super().__init__(value, parinst, schema_node, ts)
-        self.before = before
-        self.after = after
+        self.before = before # type: List[Value]
+        """Preceding entries of the parent array."""
+        self.after = after # type: List[Value]
+        """Following entries of the parent array."""
 
     @property
-    def name(self) -> Optional[InstanceName]:
+    def name(self) -> InstanceName:
         """Return the name of the receiver."""
         return self.parinst.name
 
@@ -476,7 +587,7 @@ class ArrayEntry(InstanceNode):
         """
         return self.update(super(SequenceNode, self.schema_node).from_raw(value))
 
-    def zip(self) -> ArrayValue:
+    def _zip(self) -> ArrayValue:
         """Zip the receiver into an array and return it."""
         res = ArrayValue(self.before.copy(), self.timestamp)
         res.append(self.value)
@@ -498,6 +609,11 @@ class ArrayEntry(InstanceNode):
                           newts if newts else self._timestamp)
 
     def next(self) -> "ArrayEntry":
+        """Return an instance node corresponding to the next entry.
+
+        Raises:
+            NonexistentInstance: If the receiver is the last entry of the parent array.
+        """
         try:
             newval = self.after[0]
         except IndexError:
@@ -506,6 +622,11 @@ class ArrayEntry(InstanceNode):
                           self.parinst, self.schema_node, self.timestamp)
 
     def previous(self) -> "ArrayEntry":
+        """Return an instance node corresponding to the previous entry.
+
+        Raises:
+            NonexistentInstance: If the receiver is the first entry of the parent array.
+        """
         try:
             newval = self.before[-1]
         except IndexError:
@@ -513,8 +634,20 @@ class ArrayEntry(InstanceNode):
         return ArrayEntry(self.before[:-1], [self.value] + self.after, newval,
                           self.parinst, self.schema_node, self.timestamp)
 
-    def insert_before(self, value: Value,
-                      validate: bool = True) -> "ArrayEntry":
+    def insert_before(self, value: Value, validate: bool = True) -> "ArrayEntry":
+        """Insert a new entry before the receiver.
+
+        Args:
+            value: The value of the new entry.
+            validate: If ``False``, the entry is inserted even if it violates the
+                schema.
+
+        Returns:
+            An instance node of the new inserted entry.
+
+        Raises:
+            MaxElements: If `validate` is ``True`` and the insertion would violate max-elements.
+        """
         if validate and (self.schema_node.max_elements <=
             len(self.before) + len(self.after) + 1):
             raise MaxElements(self)
@@ -522,6 +655,19 @@ class ArrayEntry(InstanceNode):
                           self.parinst, self.schema_node, datetime.now())
 
     def insert_after(self, value: Value, validate: bool = True) -> "ArrayEntry":
+        """Insert a new entry after the receiver.
+
+        Args:
+            value: The value of the new entry.
+            validate: If ``False``, the entry is inserted even if it violates the
+                schema.
+
+        Returns:
+            An instance node of the newly inserted entry.
+
+        Raises:
+            MaxElements: If `validate` is ``True`` and the insertion would violate max-elements.
+        """
         if validate and (self.schema_node.max_elements <=
             len(self.before) + len(self.after) + 1):
             raise MaxElements(self)
@@ -730,71 +876,6 @@ class EntryKeys(InstanceSelector):
         """
         return inst.look_up(self.keys)
 
-# Exceptions
-
-class InstanceError(YangsonException):
-    """Exceptions related to operations on the instance structure."""
-
-    def __init__(self, inst: InstanceNode):
-        self.instance = inst
-
-    def __str__(self):
-        return "[" + str(self.instance.path()) + "]"
-
-class NonexistentInstance(InstanceError):
-    """Exception to raise when moving out of bounds."""
-
-    def __init__(self, inst: InstanceNode, text: str) -> None:
-        super().__init__(inst)
-        self.text = text
-
-    def __str__(self):
-        return "{} {}".format(super().__str__(), self.text)
-
-class InstanceTypeError(InstanceError):
-    """Exception to raise when calling a method for a wrong instance type."""
-
-    def __init__(self, inst: InstanceNode, text: str) -> None:
-        super().__init__(inst)
-        self.text = text
-
-    def __str__(self):
-        return "{} {}".format(super().__str__(), self.text)
-
-class DuplicateMember(InstanceError):
-    """Exception to raise on attempt to create a member that already exists."""
-
-    def __init__(self, inst: InstanceNode, name: InstanceName) -> None:
-        super().__init__(inst)
-        self.name = name
-
-    def __str__(self):
-        return "{} duplicate member {}".format(super().__str__(), self.name)
-
-class MandatoryMember(InstanceError):
-    """Exception to raise on attempt to remove a mandatory member."""
-
-    def __init__(self, inst: InstanceNode, name: InstanceName) -> None:
-        super().__init__(inst)
-        self.name = name
-
-    def __str__(self):
-        return "{} mandatory member {}".format(super().__str__(), self.name)
-
-class MinElements(InstanceError):
-    """Exception to raise if an array becomes shorter than min-elements."""
-
-    def __str__(self):
-        return "{} less than {} entries".format(
-            super().__str__(), self.instance.schema_node.min_elements)
-
-class MaxElements(InstanceError):
-    """Exception to raise if an array becomes longer than max-elements."""
-
-    def __str__(self):
-        return "{} more than {} entries".format(
-            super().__str__(), self.instance.schema_node.max_elements)
-
 class InstancePathParser(Parser):
     """Abstract class for parsers of strings identifying instances."""
 
@@ -933,6 +1014,69 @@ class InstanceIdParser(InstancePathParser):
             val = knod.type.parse_value(unquote(ks[j]))
             sel[knod.iname()] = val
         return EntryKeys(sel)
+
+class InstanceException(YangsonException):
+    """Base class for exceptions related to operations on instance nodes."""
+
+    def __init__(self, inst: InstanceNode):
+        self.instance = inst
+
+    def __str__(self):
+        return "[" + str(self.instance.path()) + "]"
+
+class NonexistentInstance(InstanceException):
+    """Attempt to access an instance node that doesn't exist."""
+
+    def __init__(self, inst: InstanceNode, text: str) -> None:
+        super().__init__(inst)
+        self.text = text
+
+    def __str__(self):
+        return "{} {}".format(super().__str__(), self.text)
+
+class InstanceTypeError(InstanceException):
+    """A method is called for a wrong type of instance node."""
+
+    def __init__(self, inst: InstanceNode, text: str) -> None:
+        super().__init__(inst)
+        self.text = text
+
+    def __str__(self):
+        return "{} {}".format(super().__str__(), self.text)
+
+class DuplicateMember(InstanceException):
+    """Attempt to create a member that already exists."""
+
+    def __init__(self, inst: InstanceNode, name: InstanceName) -> None:
+        super().__init__(inst)
+        self.name = name
+
+    def __str__(self):
+        return "{} duplicate member {}".format(super().__str__(), self.name)
+
+class MandatoryMember(InstanceException):
+    """Attempt to remove a mandatory member."""
+
+    def __init__(self, inst: InstanceNode, name: InstanceName) -> None:
+        super().__init__(inst)
+        self.name = name
+
+    def __str__(self):
+        return "{} mandatory member {}".format(super().__str__(), self.name)
+
+class MinElements(InstanceException):
+    """An array becomes shorter than min-elements."""
+
+    def __str__(self):
+        return "{} less than {} entries".format(
+            super().__str__(), self.instance.schema_node.min_elements)
+
+class MaxElements(InstanceException):
+    """An array becomes shorter than max-elements."""
+
+    def __str__(self):
+        return "{} more than {} entries".format(
+            super().__str__(), self.instance.schema_node.max_elements)
 
 InstanceRoute = List[InstanceSelector]
 

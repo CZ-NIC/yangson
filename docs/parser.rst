@@ -19,9 +19,7 @@ This module implements the following class:
 This module defines the following exceptions:
 
 * :exc:`ParserException`: Base class for parser exceptions.
-
 * :exc:`EndOfInput`: Unexpected end of input.
-
 * :exc:`UnexpectedInput`: Unexpected input.
 
 .. rubric:: Type alias

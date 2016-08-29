@@ -1,7 +1,7 @@
 """Classes for schema nodes."""
 
 from typing import Dict, List, MutableSet, Optional, Set, Tuple, Union
-from .exceptions import NonexistentSchemaNode, YangsonException
+from .exceptions import YangsonException
 from .context import Context
 from .datatype import DataType, RawScalar
 from .enumerations import ContentType, DefaultDeny
@@ -450,7 +450,7 @@ class InternalNode(SchemaNode):
             cn = self.iname2qname(qn)
             ch = self.get_data_child(*cn)
             if ch is None:
-                raise NonexistentSchemaNode(*cn)
+                raise NonexistentSchemaNode()
             res[ch.iname()] = ch.from_raw(val[qn])
         return res
 
@@ -942,7 +942,7 @@ class AnydataNode(TerminalNode, DataNode):
         if self._mandatory:
             self.parent._add_mandatory_child(self)
 
-class SchemaNodeError(YangsonException):
+class SchemaNodeException(YangsonException):
     """Abstract exception class for schema node errors."""
 
     def __init__(self, sn: SchemaNode) -> None:
@@ -952,7 +952,18 @@ class SchemaNodeError(YangsonException):
         return "{} in module {}".format(self.schema_node.name,
                                         self.schema_node.ns)
 
-class BadSchemaNodeType(SchemaNodeError):
+class NonexistentSchemaNode(SchemaNodeException):
+    """Exception to be raised when a schema node doesn't exist."""
+
+    def __init__(self, name: YangIdentifier,
+                 ns: YangIdentifier = None) -> None:
+        self.name = name
+        self.ns = ns
+
+    def __str__(self) -> str:
+        return "{} in module {}".format(self.name, self.ns)
+
+class BadSchemaNodeType(SchemaNodeException):
     """Exception to be raised when a schema node is of a wrong type."""
 
     def __init__(self, sn: SchemaNode, expected: str) -> None:

@@ -3,7 +3,7 @@ import decimal
 import re
 from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, List, Optional, Tuple, Union
-from .exceptions import NonexistentSchemaNode, YangsonException
+from .exceptions import YangsonException
 from .context import Context
 from .instance import InstanceNode, InstanceIdParser
 from .parser import ParserException
@@ -458,7 +458,7 @@ class InstanceIdentifierType(LinkType):
         try:
             InstanceIdParser(val).parse()
             return True
-        except (ParserException, NonexistentSchemaNode):
+        except:
             return False
 
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:

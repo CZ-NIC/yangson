@@ -1,9 +1,3 @@
-from typing import Dict, List, MutableSet, Optional, Tuple
-from .exceptions import YangsonException
-from .parser import Parser, ParserException
-from .statement import DefinitionNotFound, ModuleParser, Statement
-from .typealiases import *
-
 """
 Essential data model structures and methods.
 
@@ -27,6 +21,12 @@ The module defines the following exceptions:
   revisions of an implemented module.
 * CyclicImports: Imports of YANG modules form a cycle.
 """
+
+from typing import Dict, List, MutableSet, Optional, Tuple
+from .exceptions import YangsonException
+from .parser import Parser, ParserException
+from .statement import DefinitionNotFound, ModuleParser, Statement
+from .typealiases import *
 
 class ModuleData:
     """Data related to a YANG module or submodule."""
