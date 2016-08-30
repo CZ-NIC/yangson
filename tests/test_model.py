@@ -269,7 +269,7 @@ def test_types(data_model):
 
 def test_instance(instance):
     def axtest(expr, res):
-        assert [ str(i.path()) for i in expr ] == res
+        assert [ i.json_pointer() for i in expr ] == res
     hi = hash(instance)
     instd = instance.add_defaults()
     hix = hash(instance)
@@ -286,17 +286,17 @@ def test_instance(instance):
     assert instance.value == inst1.value
     assert instance.value != inst2.value
     assert instance.timestamp < inst1.timestamp < inst2.timestamp
-    assert inst1.path() == inst2.path() == ()
+    assert inst1.json_pointer() == inst2.json_pointer() == "/"
     assert la1.namespace == "test"
     assert la1.member("leafE").namespace == "test"
     assert la1.member("leafF").value is False
     with pytest.raises(NonexistentInstance):
         la1.member("contD")
-    assert str(la1.path()) == "/test:contA/listA/1"
+    assert la1.json_pointer() == "/test:contA/listA/1"
     assert lt.value == ("CC-BY", "test")
     assert str(lt) == "test:CC-BY"
     assert tbln.namespace == "testb"
-    assert str(tbln.path()) == "/test:contA/testb:leafN"
+    assert tbln.json_pointer() == "/test:contA/testb:leafN"
     assert (instance._ancestors() == instance._preceding_siblings() ==
             instance._following_siblings() == [])
     axtest(instance._ancestors_or_self(), ["/"])

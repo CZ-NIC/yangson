@@ -981,7 +981,7 @@ class ValidationError(YangsonException):
         self.detail = detail
 
     def __str__(self) -> str:
-        return "[{}] {}".format(self.inst.path(), self.detail)
+        return "[{}] {}".format(self.inst.json_pointer(), self.detail)
 
 class SchemaError(ValidationError):
     """Exception to be raised when an instance violates thes schema."""

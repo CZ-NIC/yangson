@@ -35,13 +35,6 @@ from .instvalue import ArrayValue, ObjectValue, Value
 from .parser import EndOfInput, Parser, UnexpectedInput
 from .typealiases import *
 
-class JSONPointer(tuple):
-    """This class represents JSON Pointer [RFC 6901]."""
-
-    def __str__(self) -> str:
-        """Return string representation of the receiver."""
-        return "/" + "/".join([ str(c) for c in self ])
-
 class InstanceNode:
     """YANG data node instance implemented as a zipper structure."""
 
@@ -100,14 +93,14 @@ class InstanceNode:
             for m in self.value:
                 self.member(m).validate(content)
 
-    def path(self) -> str:
-        """Return JSONPointer of the receiver."""
+    def json_pointer(self) -> str:
+        """Return JSON Pointer [RFC6901]_ of the receiver."""
         parents = []
         inst = self
         while inst.parinst:
             parents.append(inst)
             inst = inst.parinst
-        return JSONPointer([ i._pointer_fragment() for i in parents[::-1] ])
+        return "/" + "/".join([i._pointer_fragment() for i in parents[::-1]])
 
     def update(self, value: Value) -> "InstanceNode":
         """Update the receiver's value.
@@ -599,7 +592,7 @@ class ArrayEntry(InstanceNode):
         return not isinstance(self.schema_node, LeafListNode)
 
     def _pointer_fragment(self) -> int:
-        return len(self.before)
+        return str(len(self.before))
 
     def _copy(self, newval: Value = None,
               newts: datetime = None) -> "ArrayEntry":
@@ -686,7 +679,7 @@ class ArrayEntry(InstanceNode):
         return self.up()._ancestors(qname)
 
     def preceding_entries(self) -> List["ArrayEntry"]:
-        """Return the list of instances preceding in the array."""
+        """Return the list of entries preceding the receiver."""
         res = []
         ent = self
         for i in range(len(self.before)):
@@ -695,7 +688,7 @@ class ArrayEntry(InstanceNode):
         return res
 
     def following_entries(self) -> List["ArrayEntry"]:
-        """Return the list of instances following in the array."""
+        """Return the list of entries following the receiver."""
         res = []
         ent = self
         for i in range(len(self.after)):
@@ -879,7 +872,7 @@ class EntryKeys(InstanceSelector):
 class InstancePathParser(Parser):
     """Abstract class for parsers of strings identifying instances."""
 
-    def member_name(self, sn: "InternalNode") -> Tuple[MemberName, "DataNode"]:
+    def _member_name(self, sn: "InternalNode") -> Tuple[MemberName, "DataNode"]:
         """Parser object member name."""
         name, ns = self.prefixed_name()
         cn = sn.get_data_child(name, ns if ns else sn.ns)
@@ -896,18 +889,18 @@ class ResourceIdParser(InstancePathParser):
         res = []
         sn = Context.schema
         while True:
-            mnam, cn = self.member_name(sn)
+            mnam, cn = self._member_name(sn)
             res.append(mnam)
             try:
                 next = self.one_of("/=")
             except EndOfInput:
                 return res
             if next == "=":
-                res.append(self.key_values(cn))
+                res.append(self._key_values(cn))
                 if self.at_end(): return res
             sn = cn
 
-    def key_values(self, sn: "SequenceNode") -> Union[EntryKeys, EntryValue]:
+    def _key_values(self, sn: "SequenceNode") -> Union[EntryKeys, EntryValue]:
         """Parse leaf-list value or list keys."""
         try:
             keys = self.up_to("/")
@@ -920,8 +913,8 @@ class ResourceIdParser(InstancePathParser):
         ks = keys.split(",")
         try:
             if len(ks) != len(sn.keys):
-                raise UnexpectedInput(self,
-                                      "exactly {} keys".format(len(sn.keys)))
+                raise UnexpectedInput(
+                    self, "exactly {} keys".format(len(sn.keys)))
         except AttributeError:
             raise BadSchemaNodeType(sn, "list")
         sel = {}
@@ -940,7 +933,7 @@ class InstanceIdParser(InstancePathParser):
         sn = Context.schema
         while True:
             self.char("/")
-            mnam, cn = self.member_name(sn)
+            mnam, cn = self._member_name(sn)
             res.append(mnam)
             try:
                 next = self.peek()
@@ -958,13 +951,13 @@ class InstanceIdParser(InstancePathParser):
                     res.append(EntryIndex(ind))
                 elif isinstance(cn, LeafListNode):
                     self.char(".")
-                    res.append(EntryValue(self.get_value(cn)))
+                    res.append(EntryValue(self._get_value(cn)))
                 else:
-                    res.append(self.key_predicates(cn))
+                    res.append(self._key_predicates(cn))
                 if self.at_end(): return res
             sn = cn
 
-    def get_value(self, tn: "TerminalNode") -> ScalarValue:
+    def _get_value(self, tn: "TerminalNode") -> ScalarValue:
         self.skip_ws()
         self.char("=")
         self.skip_ws()
@@ -974,13 +967,13 @@ class InstanceIdParser(InstancePathParser):
         self.char("]")
         return tn.type.parse_value(val)
 
-    def key_predicates(self, sn: "ListNode") -> EntryKeys:
+    def _key_predicates(self, sn: "ListNode") -> EntryKeys:
         "Parse one or more key predicates."""
         sel = {}
         while True:
             name, ns = self.prefixed_name()
             knod = sn.get_data_child(name, ns)
-            val = self.get_value(knod)
+            val = self._get_value(knod)
             sel[knod.iname()] = val
             try:
                 next = self.peek()
@@ -991,7 +984,7 @@ class InstanceIdParser(InstancePathParser):
             self.skip_ws()
         return EntryKeys(sel)
 
-    def key_values(self, sn: "SequenceNode") -> EntryKeys:
+    def _key_values(self, sn: "SequenceNode") -> EntryKeys:
         """Parse leaf-list value or list keys."""
         try:
             keys = self.up_to("/")
@@ -1022,27 +1015,27 @@ class InstanceException(YangsonException):
         self.instance = inst
 
     def __str__(self):
-        return "[" + str(self.instance.path()) + "]"
+        return "[" + self.instance.json_pointer() + "]"
 
 class NonexistentInstance(InstanceException):
     """Attempt to access an instance node that doesn't exist."""
 
-    def __init__(self, inst: InstanceNode, text: str) -> None:
+    def __init__(self, inst: InstanceNode, detail: str) -> None:
         super().__init__(inst)
-        self.text = text
+        self.detail = detail
 
     def __str__(self):
-        return "{} {}".format(super().__str__(), self.text)
+        return "{} {}".format(super().__str__(), self.detail)
 
 class InstanceTypeError(InstanceException):
     """A method is called for a wrong type of instance node."""
 
-    def __init__(self, inst: InstanceNode, text: str) -> None:
+    def __init__(self, inst: InstanceNode, detail: str) -> None:
         super().__init__(inst)
-        self.text = text
+        self.detail = detail
 
     def __str__(self):
-        return "{} {}".format(super().__str__(), self.text)
+        return "{} {}".format(super().__str__(), self.detail)
 
 class DuplicateMember(InstanceException):
     """Attempt to create a member that already exists."""
@@ -1062,7 +1055,7 @@ class MandatoryMember(InstanceException):
         self.name = name
 
     def __str__(self):
-        return "{} mandatory member {}".format(super().__str__(), self.name)
+        return "{} member {}".format(super().__str__(), self.name)
 
 class MinElements(InstanceException):
     """An array becomes shorter than min-elements."""

@@ -22,8 +22,8 @@ def comparison(meth):
 class NodeSet(list):
 
     def union(self, ns: "NodeSet") -> "NodeSet":
-        paths = set([n.path() for n in self])
-        return self.__class__(self + [n for n in ns if n.path() not in paths])
+        paths = set([n.json_pointer() for n in self])
+        return self.__class__(self + [n for n in ns if n.json_pointer() not in paths])
 
     def bind(self, trans: NodeExpr) -> "NodeSet":
         res = self.__class__([])
