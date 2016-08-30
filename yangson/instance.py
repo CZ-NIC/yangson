@@ -79,9 +79,9 @@ class InstanceNode:
         """
         sn = self.schema_node
         sn.validate(self, content)
-        if isinstance(sn, TerminalNode):
+        if isinstance(sn, (LeafNode, AnydataNode)):
             return
-        elif isinstance(self.value, ArrayValue):
+        if isinstance(self.value, ArrayValue):
             e = self.entry(0)
             while True:
                 e.validate(content)
@@ -89,7 +89,7 @@ class InstanceNode:
                     e = e.next()
                 except NonexistentInstance:
                     break
-        else:
+        elif isinstance(self.value, ObjectValue):
             for m in self.value:
                 self.member(m).validate(content)
 
@@ -1073,6 +1073,6 @@ class MaxElements(InstanceException):
 
 InstanceRoute = List[InstanceSelector]
 
-from .schema import (CaseNode, ChoiceNode, DataNode, InternalNode,
+from .schema import (AnydataNode, CaseNode, ChoiceNode, DataNode, InternalNode,
                      LeafNode, LeafListNode, ListNode,
                      NonexistentSchemaNode, SequenceNode, TerminalNode)

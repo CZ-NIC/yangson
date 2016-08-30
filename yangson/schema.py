@@ -265,6 +265,8 @@ class InternalNode(SchemaNode):
     def validate(self, inst: "InstanceNode", content: ContentType) -> None:
         """Extend the superclass method."""
         super().validate(inst, content)
+        if not isinstance(inst.value, ObjectValue):
+            raise SchemaError(inst, "non-object value")
         p = self.schema_pattern
         for m in inst.value:
             p = p.deriv(m, inst, content)
@@ -866,6 +868,11 @@ class LeafNode(TerminalNode, DataNode):
         super().__init__()
         self._mandatory = False # type: bool
 
+    def validate(self, inst: "InstanceNode", content: ContentType) -> None:
+        super().validate(inst, content)
+        if not self.type.contains(inst.value):
+            raise SchemaError(inst, "invalid type")
+
     def _post_process(self) -> None:
         if self._mandatory:
             self.parent._add_mandatory_child(self)
@@ -887,6 +894,11 @@ class LeafListNode(SequenceNode, TerminalNode):
         super().__init__()
         self.min_elements = 0 # type: int
         self.max_elements = None # type: Optional[int]
+
+    def validate(self, inst: "InstanceNode", content: ContentType) -> None:
+        super().validate(inst, content)
+        if isinstance(inst, ArrayEntry) and not self.type.contains(inst.value):
+            raise SchemaError(inst, "invalid type")
 
     def _post_process(self) -> None:
         super()._post_process()
