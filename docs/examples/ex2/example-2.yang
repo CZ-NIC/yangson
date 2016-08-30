@@ -7,14 +7,23 @@ module example-2 {
   prefix "ex2";
 
   container top {
-    leaf-list foo {
-      type uint8;
+    list foo {
+      key "number";
+      leaf number {
+        type uint8;
+      }
+      leaf in-words {
+        type string {
+          pattern "[a-z][a-z\\-]+[a-z]";
+        }
+      }
     }
     leaf bar {
       type boolean;
       mandatory "true";
     }
     leaf baz {
+      when "not(../foo/in-words = 'fourty-two')";
       type string;
       default "hi!";
     }
