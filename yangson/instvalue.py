@@ -6,6 +6,7 @@ from .typealiases import *
 
 #: Type alias covers all possible instance node values.
 Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
+EntryValue = Union[ScalarValue, "ObjectValue"]
 
 class StructuredValue:
     """Abstract class for array and object values."""

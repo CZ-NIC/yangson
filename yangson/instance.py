@@ -71,27 +71,13 @@ class InstanceNode:
         """Validate the receiver.
 
         Args:
-            Indication of the receiver's content type: config or all.
+            content: Receiver's content type (config/all).
 
         Raises:
             SchemaError`: If the value doesn't conform to the schema.
             SemanticError: If the value violates a semantic constraint.
         """
-        sn = self.schema_node
-        sn.validate(self, content)
-        if isinstance(sn, (LeafNode, AnydataNode)):
-            return
-        if isinstance(self.value, ArrayValue):
-            e = self.entry(0)
-            while True:
-                e.validate(content)
-                try:
-                    e = e.next()
-                except NonexistentInstance:
-                    break
-        elif isinstance(self.value, ObjectValue):
-            for m in self.value:
-                self.member(m).validate(content)
+        self.schema_node.validate(self, content)
 
     def json_pointer(self) -> str:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
@@ -222,21 +208,16 @@ class InstanceNode:
         ts = datetime.now()
         return self._copy(ObjectValue(newval, ts) , ts)
 
-    def delete_member(self, name: InstanceName,
-                      validate: bool = True) -> "InstanceNode":
+    def delete_member(self, name: InstanceName) -> "InstanceNode":
         """Return a copy of the receiver with a member deleted from its value.
 
         Args:
             name: Instance name of the member.
-            validate: If ``False``, the member is deleted even if it violates
-                the schema.
 
         Raises:
             NonexistentSchemaNode: If the member isn't permitted by the schema.
             NonexistentInstance: If receiver's value doesn't contain member of
                 that name.
-            MandatoryMember: If `validate` is ``True`` and the schema doesn't
-            permit the removal.
         """
         if name not in self.value:
             raise NonexistentInstance(self, "member " + name) from None
@@ -282,28 +263,21 @@ class InstanceNode:
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
-    def delete_entry(self, index: int,
-                     validate: bool = True) -> "InstanceNode":
+    def delete_entry(self, index: int) -> "InstanceNode":
         """Return a copy of the receiver with an entry deleted from its value.
 
         Args:
             index: Index of the deleted entry.
-            validate: If ``False``, the entry is deleted even if it violates
-                the schema.
 
         Raises:
             InstanceTypeError: If the receiver value is not an array.
             NonexistentInstance: If entry `index` is not present.
-            MinElements: If `validate` is ``True`` and the schema doesn't
-                permit the removal.
         """
         val = self.value
         if not isinstance(val, ArrayValue):
             raise InstanceTypeError(self, "entry of non-array")
         if index >= len(val):
             raise NonexistentInstance(self, "entry " + str(index)) from None
-        if validate and self.schema_node.min_elements >= len(val):
-            raise MinElements(self)
         ts = datetime.now()
         return self._copy(ArrayValue(val[:index] + val[index+1:], ts), ts)
 
@@ -377,7 +351,7 @@ class InstanceNode:
                  qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
         """XPath - return the list of receiver's children."""
         sn = self.schema_node
-        if isinstance(sn, TerminalNode): return []
+        if not isinstance(sn, InternalNode): return []
         if qname:
             cn = sn.get_data_child(*qname)
             if cn is None: return []
@@ -627,43 +601,27 @@ class ArrayEntry(InstanceNode):
         return ArrayEntry(self.before[:-1], [self.value] + self.after, newval,
                           self.parinst, self.schema_node, self.timestamp)
 
-    def insert_before(self, value: Value, validate: bool = True) -> "ArrayEntry":
+    def insert_before(self, value: Value) -> "ArrayEntry":
         """Insert a new entry before the receiver.
 
         Args:
             value: The value of the new entry.
-            validate: If ``False``, the entry is inserted even if it violates the
-                schema.
 
         Returns:
             An instance node of the new inserted entry.
-
-        Raises:
-            MaxElements: If `validate` is ``True`` and the insertion would violate max-elements.
         """
-        if validate and (self.schema_node.max_elements <=
-            len(self.before) + len(self.after) + 1):
-            raise MaxElements(self)
         return ArrayEntry(self.before, [self.value] + self.after, value,
                           self.parinst, self.schema_node, datetime.now())
 
-    def insert_after(self, value: Value, validate: bool = True) -> "ArrayEntry":
+    def insert_after(self, value: Value) -> "ArrayEntry":
         """Insert a new entry after the receiver.
 
         Args:
             value: The value of the new entry.
-            validate: If ``False``, the entry is inserted even if it violates the
-                schema.
 
         Returns:
             An instance node of the newly inserted entry.
-
-        Raises:
-            MaxElements: If `validate` is ``True`` and the insertion would violate max-elements.
         """
-        if validate and (self.schema_node.max_elements <=
-            len(self.before) + len(self.after) + 1):
-            raise MaxElements(self)
         return ArrayEntry(self.before + [self.value], self.after, value,
                           self.parinst, self.schema_node, datetime.now())
 

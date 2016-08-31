@@ -475,10 +475,8 @@ def test_edits(data_model, instance):
     inst2 = instance.put_member("testb:leafQ", "ABBA").top()
     with pytest.raises(NonexistentInstance):
         inst2.member("test:llistB")
-    modla = la.delete_entry(1, validate=False)
+    modla = la.delete_entry(1)
     assert len(modla.value) == 1
-    with pytest.raises(MinElements):
-        la.delete_entry(1)
     llb1 = instance.member("test:llistB").entry(1)
     modllb = llb1.update_from_raw("2001:db8:0:2::1").up()
     assert modllb.value == ArrayValue(["::1", "2001:db8:0:2::1"])
