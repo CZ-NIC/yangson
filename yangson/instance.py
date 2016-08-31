@@ -108,7 +108,7 @@ class InstanceNode:
         Returns:
             Copy of the receiver with the updated value.
         """
-        newval = self.schema_node.from_raw(value)
+        newval = self.schema_node.from_raw(rvalue)
         return self.update(newval)
 
     def up(self) -> "InstanceNode":
