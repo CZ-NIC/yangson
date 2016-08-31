@@ -373,10 +373,10 @@ class BinaryType(StringType):
         except TypeError:
             return None
 
-    def contains(self, val: str) -> bool:
+    def contains(self, val: bytes) -> bool:
         return isinstance(val, bytes) and self._constraints(val)
 
-    def _constraints(self, val: str) -> bool:
+    def _constraints(self, val: bytes) -> bool:
         return self._in_range(len(val), self._length)
 
     def canonical_string(self, val: bytes) -> str:
