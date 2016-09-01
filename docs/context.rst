@@ -424,12 +424,12 @@ The module defines the following exceptions:
 
 .. autoexception:: MultipleImplementedRevisions
 
-   See sec. `5.6.5`_ of [Bjo16]_ for further explanation. The *module*
+   See sec. `5.6.5`_ of [RFC7950]_ for further explanation. The *module*
    argument contains the name of the module with multiple implemented revisions.
 
 .. autoexception:: CyclicImports
 
-   See sec. `5.1`_ of [Bjo16]_ for further explanation.
+   See sec. `5.1`_ of [RFC7950]_ for further explanation.
 
-.. _5.6.5: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-5.6.5
-.. _5.1: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-5.1
+.. _5.6.5: https://tools.ietf.org/html/rfc7950#section-5.6.5
+.. _5.1: https://tools.ietf.org/html/rfc7950#section-5.1

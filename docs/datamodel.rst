@@ -101,7 +101,7 @@ user-level entry point to the *Yangson* library.
       data tree “raw” because it needs to be processed into the
       “cooked” form before it can be used in *Yangson*. For example,
       64-bit numbers have to be encoded as strings in JSON text (see
-      `sec. 6.1`_ of [Lho16]_), whereas the cooked form is a Python
+      `sec. 6.1`_ of [RFC7951]_), whereas the cooked form is a Python
       number.
 
       See the documentation of :mod:`instvalue` module for more
@@ -158,5 +158,5 @@ user-level entry point to the *Yangson* library.
 	 >>> dm.ascii_tree()
 	 '+--rw example-1:greeting?\n'
 
-.. _sec. 6.1: https://tools.ietf.org/html/draft-ietf-netmod-yang-json-10#section-6.1
+.. _sec. 6.1: https://tools.ietf.org/html/rfc7951#section-6.1
 .. _pyang: https://github.com/mbj4668/pyang

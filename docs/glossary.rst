@@ -43,7 +43,7 @@ Glossary
        route`, a data route also identifes a unique descendant schema
        node because names of data nodes belonging to the cases of the
        same choice are required to be unique, see sec. `6.2.1`_ in
-       [Bjo16]_.
+       [RFC7950]_.
 
    prefixed name
 
@@ -56,7 +56,7 @@ Glossary
    YANG identifier
 
        A string satisfying the rules for a YANG identifier (see
-       sec. `6.2`_ in [Bjo16]_): it starts with an uppercase or
+       sec. `6.2`_ in [RFC7950]_): it starts with an uppercase or
        lowercase ASCII letter or an underscore character (``_``),
        followed by zero or more ASCII letters, digits, underscore
        characters, hyphens, and dots. Python type alias for the YANG
@@ -93,14 +93,14 @@ Glossary
        A sequence of :term:`prefixed name`\ s of schema nodes
        separated with slashes. A schema node identifier that starts
        with a slash is absolute, otherwise it is relative. See
-       [Bjo16]_, sec. `6.5`_.
+       [RFC7950]_, sec. `6.5`_.
 
    instance name
 
        A string in the form [*module_name*\ ``:``]\ *name* where
        *name* is a name of a data node. Instance names identify nodes
        in the data tree, and are used both as :class:`ObjectValue`
-       keys and member names in JSON serialization. See [Lho16]_,
+       keys and member names in JSON serialization. See [RFC7951]_,
        sec. `4`_ for details. Python type alias for the instance name
        is :const:`InstanceName`.
 
@@ -115,7 +115,7 @@ Glossary
 
        A string that identifies a unique instance in the data
        tree. The syntax of instance identifiers is defined in
-       [Bjo16]_, sec. `9.13`_, and [Lho16]_, sec. `6.11`_.
+       [RFC7950]_, sec. `9.13`_, and [RFC7951]_, sec. `6.11`_.
 
    resource identifier
 
@@ -144,11 +144,11 @@ Glossary
        is identical to the module name whereas for submodules it is
        the name of the main module to which the submodule belongs.
 
-.. _2.2: https://tools.ietf.org/html/draft-ietf-netconf-yang-library#section-2.2
+.. _2.2: https://tools.ietf.org/html/rfc7895#section-2.2
 .. _3.5.1: https://tools.ietf.org/html/draft-ietf-netconf-restconf#section-3.5.1
-.. _4: https://tools.ietf.org/html/draft-ietf-netmod-yang-json#section-4
-.. _6.2: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-6.2
-.. _6.2.1: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-6.2.1
-.. _6.11: https://tools.ietf.org/html/draft-ietf-netmod-yang-json#section-6.11
-.. _6.5: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-6.5
-.. _9.13: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-9.13
+.. _4: https://tools.ietf.org/html/rfc7951#section-4
+.. _6.2: https://tools.ietf.org/html/rfc7950#section-6.2
+.. _6.2.1: https://tools.ietf.org/html/rfc7950#section-6.2.1
+.. _6.11: https://tools.ietf.org/html/rfc7951#section-6.11
+.. _6.5: https://tools.ietf.org/html/rfc7950#section-6.5
+.. _9.13: https://tools.ietf.org/html/rfc7950#section-9.13

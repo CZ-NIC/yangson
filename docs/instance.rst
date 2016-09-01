@@ -274,7 +274,7 @@ The module defines the following exceptions:
       Return a new instance node that is a copy of the receiver
       extended with default values from the data model. Only default
       values that are “in use” are added, see sections `7.6.1`_ and
-      `7.7.2`_ in [Bjo16]_.
+      `7.7.2`_ in [RFC7950]_.
 
       .. doctest::
 
@@ -577,5 +577,5 @@ The module defines the following exceptions:
 .. autoexception:: MaxElements
    :show-inheritance:
 
-.. _7.6.1: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-7.6.1
-.. _7.7.2: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-7.7.2
+.. _7.6.1: https://tools.ietf.org/html/rfc7950#section-7.6.1
+.. _7.7.2: https://tools.ietf.org/html/rfc7950#section-7.7.2

@@ -24,7 +24,7 @@ intelligent data structures. The reasons are as follows:
   last modification (to be used in HTTP ``Last-Modified`` headers).
 
 * All 64-bit numbers (of YANG types ``int64``, ``uint64`` and
-  ``decimal64``) are encoded as JSON strings [Lho16]_, so we need to
+  ``decimal64``) are encoded as JSON strings [RFC7951]_, so we need to
   convert them to :class:`int` and :class:`decimal.decimal` values.
 
 This module defines a type alias representing an union of possible

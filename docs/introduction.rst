@@ -3,11 +3,11 @@ Introduction
 ************
 
 Yangson is a Python library that offers programmers tools for working with
-configuration and other data modelled with YANG [Bjo16]_. It is not
+configuration and other data modelled with YANG [RFC7950]_. It is not
 intended to aid YANG module development, pyang__ is better suited for
 this purpose.
 
-Yangson supports only the JSON data encoding as defined in [Lho16]_.  
+Yangson supports only the JSON data encoding as defined in [RFC7951]_.
 
 __ https://github.com/mbj4668/pyang
 
@@ -69,14 +69,12 @@ YANG Modules
 
 In order be able to find and read the correct revision of each YANG
 module, *Yangson* requires that the names of disk files containing
-modules are of the form specified in [Bjo16]_, sec. `5.2`__::
+modules are of the form specified in [RFC7950]_, sec. `5.2`_::
 
     module-or-submodule-name ['@' revision-date] '.yang'
 
 For a (sub)module without a **revision** statement, the ``'@'
 revision-date`` part must be omitted, otherwise it has to be present.
-
-__ https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis#section-5.2
 
 *Yangson* is currently able to parse only the compact syntax of YANG
 files. Modules written in the alternative XML format (YIN) can be
@@ -90,3 +88,4 @@ Doctest Examples
 TBD
 
 .. _persistent structures: https://en.wikipedia.org/wiki/Persistent_data_structure
+.. _5.2: https://tools.ietf.org/html/rfc7950#section-5.2
