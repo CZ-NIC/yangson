@@ -242,16 +242,16 @@ The module defines the following exceptions:
 	 >>> Context.translate_pname('oin:port-number', ('example-3-b', '2016-08-22'))
 	 ('port-number', 'ietf-inet-types')
 
-   .. classmethod:: sid2route(sid: SchemaNodeId, mid: ModuleId) \
+   .. classmethod:: sni2route(sni: SchemaNodeId, mid: ModuleId) \
 		    -> SchemaRoute
 
-      Translate :term:`schema node identifier` in the *sid* argument
+      Translate :term:`schema node identifier` in the *sni* argument
       to a :term:`schema route`.  The argument *mid* specifies the
-      (sub)module in which *sid* is to be resolved.
+      (sub)module in which *sni* is to be resolved.
 
       This method raises :exc:`ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
-      :exc:`UnknownPrefix` if a prefix specified in *sid* is not
+      :exc:`UnknownPrefix` if a prefix specified in *sni* is not
       declared in that (sub)module.
 
       .. doctest::

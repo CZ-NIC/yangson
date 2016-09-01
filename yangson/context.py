@@ -286,20 +286,20 @@ class Context:
         return (loc, cls.namespace(nid))
 
     @classmethod
-    def sid2route(cls, sid: SchemaNodeId, mid: ModuleId) -> SchemaRoute:
+    def sni2route(cls, sni: SchemaNodeId, mid: ModuleId) -> SchemaRoute:
         """Translate a schema node identifier to a schema route.
 
         Args:
-            sid: Schema node identifier (absolute or relative).
+            sni: Schema node identifier (absolute or relative).
             mid: Identifier of the context module.
 
         Raises:
             ModuleNotRegistered: If `mid` is not registered in the data model.
-            UnknownPrefix: If a prefix specified in `sid` is not declared.
+            UnknownPrefix: If a prefix specified in `sni` is not declared.
         """
-        nlist = sid.split("/")
+        nlist = sni.split("/")
         return [ cls.translate_pname(qn, mid)
-                 for qn in (nlist[1:] if sid[0] == "/" else nlist) ]
+                 for qn in (nlist[1:] if sni[0] == "/" else nlist) ]
 
     @staticmethod
     def path2route(path: SchemaPath) -> SchemaRoute:
@@ -387,7 +387,8 @@ class Context:
             ModuleNotRegistered: If `mid` is not registered in the data model.
             InvalidFeatureExpression: If a if-feature expression is not
                 syntactically correct.
-            UnknownPrefix: If a prefix specified in `sid` is not declared.
+            UnknownPrefix: If a prefix specified in a feature name is not
+                declared.
         """
         iffs = stmt.find_all("if-feature")
         if not iffs:

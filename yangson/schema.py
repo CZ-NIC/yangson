@@ -392,7 +392,7 @@ class InternalNode(SchemaNode):
     def _augment_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle **augment** statement."""
         if not Context.if_features(stmt, mid): return
-        path = Context.sid2route(stmt.argument, mid)
+        path = Context.sni2route(stmt.argument, mid)
         target = self.get_schema_descendant(path)
         if stmt.find1("when"):
             gr = GroupNode()
@@ -405,7 +405,7 @@ class InternalNode(SchemaNode):
     def _refine_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle **refine** statement."""
         target = self.get_schema_descendant(
-            Context.sid2route(stmt.argument, mid))
+            Context.sni2route(stmt.argument, mid))
         if not Context.if_features(stmt, mid):
             target.parent.remove_child(target)
         else:
@@ -802,7 +802,14 @@ class ListNode(SequenceNode, InternalNode):
 
     def _unique_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.unique.append(
-            [Context.sid2route(sid, mid) for sid in stmt.argument.split()])
+            [Context.sni2route(sid, mid) for sid in stmt.argument.split()])
+
+    def _sni2dni(self, sni: SchemaNodeId, mid: Module) -> str:
+        """Leave only components corresponding to data nodes."""
+        res = []
+        sn = self
+        for c in sni.split("/"):
+            sn.get
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
