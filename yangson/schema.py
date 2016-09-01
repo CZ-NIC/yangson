@@ -44,11 +44,11 @@ class SchemaNode:
         """Validate instance against the receiver.
 
         Args:
-            inst: Instance node to be chancked.
+            inst: Instance node to be validated.
             content: Content type of the instance (config/all).
 
         Raises:
-            SchemaError: if `inst` doesn't match the schema pattern.
+            SchemaError: if `inst` violates the schema.
             SemanticError: If a "must" expression evaluates to ``False``.
         """
         pass
@@ -271,7 +271,7 @@ class InternalNode(SchemaNode):
         """Return the set of instance names under the receiver."""
         return frozenset([c.iname() for c in self.data_children()])
 
-    def check_schema_pattern(self, inst: "InstanceNode",
+    def _check_schema_pattern(self, inst: "InstanceNode",
                              content: ContentType) -> None:
         """Match receiver's schema pattern against an instance.
 
@@ -294,7 +294,7 @@ class InternalNode(SchemaNode):
         """Extend the superclass method."""
         if not isinstance(inst.value, ObjectValue):
             raise SchemaError(inst, "non-object value")
-        self.check_schema_pattern(inst, content)
+        self._check_schema_pattern(inst, content)
         super().validate(inst, content)
         for m in inst.value:
             inst.member(m).validate(content)
@@ -517,7 +517,7 @@ class DataNode(SchemaNode):
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
-    def check_must(self, inst: "InstanceNode") -> None:
+    def _check_must(self, inst: "InstanceNode") -> None:
         """Check that all receiver's "must" constraints for the instance.
 
         Args:
@@ -532,7 +532,7 @@ class DataNode(SchemaNode):
 
     def validate(self, inst: "InstanceNode", content: ContentType) -> None:
         """Extend the superclass method."""
-        self.check_must(inst)
+        self._check_must(inst)
         super().validate(inst, content)
 
     def _pattern_entry(self) -> SchemaPattern:
@@ -570,7 +570,7 @@ class TerminalNode(SchemaNode):
         """
         return self.type.from_raw(val)
 
-    def check_type(self, inst: "InstanceNode"):
+    def _check_type(self, inst: "InstanceNode"):
         """Check whether receiver's type matches the instance value.
 
         Args:
@@ -584,7 +584,7 @@ class TerminalNode(SchemaNode):
 
     def validate(self, inst: "InstanceNode", content: ContentType) -> None:
         """Extend the superclass method."""
-        self.check_type(inst)
+        self._check_type(inst)
         super().validate(inst, content)
 
     def default_value(self) -> None:
@@ -664,7 +664,7 @@ class SequenceNode(DataNode):
         """Is the receiver a mandatory node?"""
         return self.min_elements > 0
 
-    def check_cardinality(self, inst: "InstanceNode") -> None:
+    def _check_cardinality(self, inst: "InstanceNode") -> None:
         """Check that the instance satisfies cardinality constraints.
 
         Args:
@@ -684,7 +684,8 @@ class SequenceNode(DataNode):
         if isinstance(inst, ArrayEntry):
             super().validate(inst, content)
         elif isinstance(inst.value, ArrayValue):
-            self.check_cardinality(inst)
+            self._check_unique(inst)
+            self._check_cardinality(inst)
             try:
                 e = inst.entry(0)
                 while True:
@@ -743,7 +744,17 @@ class ListNode(SequenceNode, InternalNode):
         """Initialize the class instance."""
         super().__init__()
         self.keys = [] # type: List[QualName]
+        self._key_members = []
         self.unique = [] # type: List[List[SchemaRoute]]
+
+    def _check_unique(self, inst: "InstanceNode") -> None:
+        """Check uniqueness of keys and "unique" properties."""
+        ukeys = set()
+        for en in inst.value:
+            kval = tuple([en[k] for k in self._key_members])
+            if kval in ukeys:
+                raise SchemaError(inst, "non-unique list key")
+            ukeys.add(kval)
 
     def _add_default_child(self, node: SchemaNode) -> None:
         if node.qual_name not in self.keys:
@@ -753,6 +764,7 @@ class ListNode(SequenceNode, InternalNode):
         super()._post_process()
         for k in self.keys:
             kn = self.get_data_child(*k)
+            self._key_members.append(kn.iname())
             if not kn._mandatory:
                 kn._mandatory = True
                 self._mandatory_children.add(kn)
@@ -966,6 +978,10 @@ class LeafListNode(SequenceNode, TerminalNode):
         super().__init__()
         self.min_elements = 0 # type: int
         self.max_elements = None # type: Optional[int]
+
+    def _check_unique(self, inst: "InstanceNode") -> None:
+        if len(set(inst.value)) < len(inst.value):
+            raise SchemaError(inst, "non-unique leaf-list values")
 
     def _post_process(self) -> None:
         super()._post_process()
