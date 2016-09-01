@@ -140,6 +140,10 @@ class DataType:
         """Return a cooked value."""
         return raw
 
+    def to_raw(self, val: ScalarValue) -> RawScalar:
+        """Return a raw value ready to be serialized in JSON."""
+        return self.canonical_string(val)
+
     def from_yang(self, input: str, mid: ModuleId) -> ScalarValue:
         """Parse value specified in a YANG module."""
         return self.parse_value(input)
@@ -231,6 +235,9 @@ class EmptyType(DataType, metaclass=_Singleton):
             return tuple(raw)
         except TypeError:
             return None
+
+    def to_raw(self, val: Tuple[None]) -> List[None]:
+        return [None]
 
 class BitsType(DataType):
     """Class representing YANG "bits" type."""

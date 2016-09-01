@@ -308,6 +308,25 @@ class InstanceNode:
         except TypeError:
             raise InstanceTypeError(self, "lookup on non-list") from None
 
+    def raw_value(self) -> RawValue:
+        """Return receiver's value in a raw form (ready for JSON encoding)."""
+        if isinstance(self.value, ObjectValue):
+            res = {}
+            for m in self.value:
+                res[m] = self.member(m).raw_value()
+        elif isinstance(self.value, ArrayValue):
+            res = []
+            try:
+                en = self.entry(0)
+                while True:
+                    res.append(en.raw_value())
+                    en = en.next()
+            except NonexistentInstance:
+                pass
+        else:
+            res = self.schema_node.type.to_raw(self.value)
+        return res
+
     def add_defaults(self) -> "InstanceNode":
         """Return a copy of the receiver with defaults added to its value."""
         sn = self.schema_node
