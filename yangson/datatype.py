@@ -142,7 +142,7 @@ class DataType:
 
     def to_raw(self, val: ScalarValue) -> RawScalar:
         """Return a raw value ready to be serialized in JSON."""
-        return self.canonical_string(val)
+        return val
 
     def from_yang(self, input: str, mid: ModuleId) -> ScalarValue:
         """Parse value specified in a YANG module."""
@@ -187,6 +187,16 @@ class UnionType(DataType):
         """Initialize the class instance."""
         super().__init__(mid)
         self.types = [] # type: List[DataType]
+
+    def to_raw(self, val: ScalarValue) -> RawScalar:
+        for t in self.types:
+            if t.contains(val):
+                return t.to_raw(val)
+
+    def canonical_string(self, val: ScalarValue) -> RawScalar:
+        for t in self.types:
+            if t.contains(val):
+                return t.canonical_string(val)
 
     def _parse(self, input: str) -> Optional[ScalarValue]:
         for t in self.types:
@@ -236,9 +246,6 @@ class EmptyType(DataType, metaclass=_Singleton):
         except TypeError:
             return None
 
-    def to_raw(self, val: Tuple[None]) -> List[None]:
-        return [None]
-
 class BitsType(DataType):
     """Class representing YANG "bits" type."""
 
@@ -253,12 +260,15 @@ class BitsType(DataType):
         except AttributeError:
             return None
 
-    def _constraints(self, val: List[str]) -> bool:
+    def _constraints(self, val: Tuple[str]) -> bool:
         for b in val:
             if b not in self.bit: return False
         return True
 
-    def as_int(self, val: List[str]) -> int:
+    def to_raw(self, val: Tuple[str]) -> str:
+        return self.canonical_string(val)
+
+    def as_int(self, val: Tuple[str]) -> int:
         """Transform a "bits" value to an integer."""
         res = 0
         try:
@@ -292,7 +302,7 @@ class BitsType(DataType):
         for bit in set(self.bit) - new:
             del self.bit[bit]
 
-    def canonical_string(self, val: List[str]) -> str:
+    def canonical_string(self, val: Tuple[str]) -> str:
         try:
             items = [(self.bit[b], b) for b in val]
         except KeyError:
@@ -385,6 +395,9 @@ class BinaryType(StringType):
 
     def _constraints(self, val: bytes) -> bool:
         return self._in_range(len(val), self._length)
+
+    def to_raw(self, val: bytes) -> str:
+        return self.canonical_string(val)
 
     def canonical_string(self, val: bytes) -> str:
         return base64.b64encode(val).decode("ascii")
@@ -486,13 +499,19 @@ class IdentityrefType(DataType):
         self.bases = [] # type: List[QualName]
 
     def _convert_raw(self, raw: str) -> QualName:
-        i1, s, i2 = raw.partition(":")
+        try:
+            i1, s, i2 = raw.partition(":")
+        except AttributeError:
+            return None
         return (i2, i1) if s else (i1, Context.namespace(self.module_id))
 
     def _constraints(self, val: QualName) -> bool:
         for b in self.bases:
             if not Context.is_derived_from(val, b): return False
         return True
+
+    def to_raw(self, val: QualName) -> str:
+        return self.canonical_string(val)
 
     def from_yang(self, input:str, mid: ModuleId) -> QualName:
         """Override the superclass method."""
@@ -559,6 +578,9 @@ class Decimal64Type(NumericType):
         except decimal.InvalidOperation:
             return None
 
+    def to_raw(self, val: decimal.Decimal) -> str:
+        return self.canonical_string(val)
+
     def canonical_string(self, val: decimal.Decimal) -> str:
         return "0.0" if val == 0 else str(val).rstrip("0")
 
@@ -585,6 +607,12 @@ class IntegralType(NumericType):
         try:
             return (int(input, 16) if self.hexa_re.match(input) else int(input))
         except ValueError:
+            return None
+
+    def _convert_raw(self, raw: str) -> int:
+        try:
+            return int(raw)
+        except (ValueError, TypeError):
             return None
 
     def contains(self, val: int) -> bool:
@@ -615,11 +643,8 @@ class Int64Type(IntegralType):
 
     _range = [[-9223372036854775808, 9223372036854775807]] # type: Range
 
-    def _convert_raw(self, raw: str) -> int:
-        try:
-            return int(raw)
-        except ValueError:
-            return None
+    def to_raw(self, val: int) -> str:
+        return self.canonical_string(val)
 
 class Uint8Type(IntegralType):
     """Class representing YANG "uint8" type."""
@@ -646,6 +671,9 @@ class Uint64Type(IntegralType):
             return int(raw)
         except ValueError:
             return None
+
+    def to_raw(self, val: int) -> str:
+        return self.canonical_string(val)
 
 class YangTypeError(YangsonException):
     """Exception to be raised if a value doesn't match its type."""
