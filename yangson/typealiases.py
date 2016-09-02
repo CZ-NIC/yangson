@@ -21,7 +21,7 @@ InstanceIdentifier = str
 ResourceIdentifier = str
 """RESTCONF resource identifier, see sec. `3.5.3`_ of [BBW16]_."""
 
-ScalarValue = Union[int, Decimal, str]
+ScalarValue = Union[int, Decimal, str, Tuple[None]]
 """Scalar value of an InstanceNode."""
 
 QualName = Tuple[YangIdentifier, YangIdentifier]
@@ -42,7 +42,7 @@ DataPath = str # same syntax as SchemaPath but containing only data nodes
 ModuleId = Tuple[YangIdentifier, RevisionDate]
 """Module identifier: (YangIdentifier, RevisionDate)."""
 
-RawScalar = Union[bool, int, str]
+RawScalar = Union[bool, int, str, List[None]]
 """Raw scalar value as produced by JSON parser."""
 
 RawObject = Dict[InstanceName, "RawValue"]
