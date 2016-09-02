@@ -3,8 +3,8 @@
 from typing import Dict, List, MutableSet, Optional, Set, Tuple, Union
 from .exceptions import YangsonException
 from .context import Context
-from .datatype import DataType, RawScalar
-from .enumerations import ContentType, DefaultDeny
+from .datatype import DataType, LeafrefType, RawScalar
+from .enumerations import Axis, ContentType, DefaultDeny
 from .instvalue import ArrayValue, EntryValue, ObjectValue, Value
 from .schpattern import *
 from .statement import Statement, WrongArgument
@@ -80,6 +80,20 @@ class SchemaNode:
         """Return the receiver's data path."""
         return ("{}/{}".format(self.parent.data_path(), self.iname())
                 if self.parent else "")
+
+    def follow_leafref(self, xpath: "Expr") -> Optional["SchemaNode"]:
+        """Follow leafref path starting from the receiver."""
+        if isinstance(xpath, LocationPath):
+            lft = self.follow_leafref(xpath.left)
+            if lft is None: return None
+            return lft.follow_leafref(xpath.right)
+        elif isinstance(xpath, Step):
+            if xpath.axis == Axis.parent:
+                return self.data_parent()
+            elif xpath.axis == Axis.child:
+                if isinstance(self, InternalNode) and xpath.qname:
+                    return self.get_data_child(*xpath.qname)
+        return None
 
     def state_roots(self) -> List[DataPath]:
         """Return a list of data paths to descendant state data roots.
@@ -472,7 +486,7 @@ class InternalNode(SchemaNode):
             cn = self.iname2qname(qn)
             ch = self.get_data_child(*cn)
             if ch is None:
-                raise NonexistentSchemaNode()
+                raise NonexistentSchemaNode(*cn)
             res[ch.iname()] = ch.from_raw(val[qn])
         return res
 
@@ -581,6 +595,15 @@ class TerminalNode(SchemaNode):
         """
         if not self.type.contains(inst.value):
             raise SchemaError(inst, "invalid type")
+
+    def _post_process(self) -> None:
+        super()._post_process()
+        if isinstance(self.type, LeafrefType):
+            start = Context.schema if self.type.path.absolute else self
+            ref = start.follow_leafref(self.type.path)
+            if ref is None:
+                raise BadLeafrefPath(self)
+            self.type.ref_type = ref.type
 
     def validate(self, inst: "InstanceNode", content: ContentType) -> None:
         """Extend the superclass method."""
@@ -955,6 +978,7 @@ class LeafNode(TerminalNode, DataNode):
         return self._mandatory
 
     def _post_process(self) -> None:
+        super()._post_process()
         if self._mandatory:
             self.parent._add_mandatory_child(self)
         elif self.default_value() is not None:
@@ -1074,6 +1098,10 @@ class BadSchemaNodeType(SchemaNodeException):
     def __str__(self) -> str:
         return super().__str__() + " is not a " + self.expected
 
+class BadLeafrefPath(SchemaNodeException):
+    """Exception to be raised when a leafref path is wrong."""
+    pass
+
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
 
@@ -1092,5 +1120,5 @@ class SemanticError(ValidationError):
     """Exception to be raised when an instance violates thes schema."""
     pass
 
-from .xpathast import Expr
+from .xpathast import Expr, LocationPath, Step
 from .instance import InstanceNode, ArrayEntry, NonexistentInstance

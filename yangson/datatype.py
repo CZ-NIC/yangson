@@ -98,10 +98,6 @@ class DataType:
             [ to_num(r) for r in ran[1:-1] ] +
             [[parser(ran[-1][0]), hi]])
 
-    def __str__(self) -> str:
-        """String representation of the receiver type."""
-        return self.__class__.__name__.lower()
-
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         return []
 
@@ -152,7 +148,7 @@ class DataType:
         """Return canonical form of a value."""
         return str(val)
 
-    def contains(self, val: Any) -> bool:
+    def contains(self, val: ScalarValue) -> bool:
         """Return ``True`` if the receiver type contains `val`."""
         try:
             return self._constraints(val)
@@ -462,6 +458,7 @@ class LeafrefType(LinkType):
         """Initialize the class instance."""
         super().__init__(mid)
         self.path = None
+        self.ref_type = None
 
     def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
@@ -472,6 +469,15 @@ class LeafrefType(LinkType):
         """
         self.path = XPathParser(
             stmt.find1("path", required=True).argument, mid).parse()
+
+    def _constraints(self, val: ScalarValue) -> bool:
+        return self.ref_type._constraints(val)
+
+    def _convert_raw(self, raw: RawScalar) -> ScalarValue:
+        return self.ref_type._convert_raw(raw)
+
+    def to_raw(self, val: ScalarValue) -> RawScalar:
+        return self.ref_type.to_raw(val)
 
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         ns = self.path.evaluate(node)
