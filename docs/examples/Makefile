@@ -56,10 +56,10 @@ $(baty).dsdl: hello.xml
 $(baty).rng: $(baty).dsdl
 	@xsltproc --output $@ $(rngparms) $<
 
-$(EXAMPLE_BASE)-gdefs-config.rng: $(baty).dsdl
+$(EXAMPLE_BASE)-gdefs.rng: $(baty).dsdl
 	@xsltproc --output $@ --stringparam gdefs-only 1 $(rngparms) $<
 
-$(baty).rnc: $(baty).rng $(EXAMPLE_BASE)-gdefs-config.rng
+$(baty).rnc: $(baty).rng $(EXAMPLE_BASE)-gdefs.rng
 	@trang -I rng -O rnc $< $@
 
 $(baty).json: model.xsl $(baty).xml
