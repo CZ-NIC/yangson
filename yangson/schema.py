@@ -19,7 +19,7 @@ class SchemaNode:
         self.name = None # type: YangIdentifier
         self.ns = None # type: YangIdentifier
         self.parent = None # type: "InternalNode"
-        self.must = [] # type: List["Expr"]
+        self.must = [] # type: List[Tuple["Expr", Optional[str]]]
         self.when = None # type: "Expr"
 
     @property
@@ -128,7 +128,8 @@ class SchemaNode:
         mex = xpp.parse()
         if not xpp.at_end():
             raise WrongArgument(stmt)
-        self.must.append(mex)
+        ems = stmt.find1("error-message")
+        self.must.append((mex, ems.argument if ems else None))
 
     def _when_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         xpp = XPathParser(stmt.argument, mid)
@@ -541,8 +542,9 @@ class DataNode(SchemaNode):
             SemanticError: If a "must" expression evaluates to ``False``.
         """
         for mex in self.must:
-            if not mex.evaluate(inst):
-                raise SemanticError(inst, "'must' expression is false")
+            if not mex[0].evaluate(inst):
+                msg = "'must' expression is false" if mex[1] is None else mex[1]
+                raise SemanticError(inst, msg)
 
     def validate(self, inst: "InstanceNode", content: ContentType) -> None:
         """Extend the superclass method."""
