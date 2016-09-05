@@ -286,6 +286,20 @@ class Context:
         return (loc, cls.namespace(nid))
 
     @classmethod
+    def prefixed_name(cls, qname: QualName, mid: ModuleId) -> PrefName:
+        """Return prefixed name corresponding to a qualified name.
+
+        Args:
+            mid: Identifier of the context module.
+        """
+        did = (qname[1], self.implement[qname[1]])
+        pmap = cls.modules[mid].prefix_map
+        for p in pmap:
+            if pmap[p] == did:
+                return "{}:{}".format(p, qname[0])
+        raise MissingImport(qname[1], mid)
+
+    @classmethod
     def sni2route(cls, sni: SchemaNodeId, mid: ModuleId) -> SchemaRoute:
         """Translate a schema node identifier to a schema route.
 
@@ -518,6 +532,16 @@ class UnknownPrefix(YangsonException):
 
     def __str__(self) -> str:
         return self.prefix
+
+class MissingImport(YangsonException):
+    """A module isn't imported but its identifier is used."""
+
+    def __init__(self, imported: YangIdentifier, mid: ModuleId) -> None:
+        self.imported = imported
+        self.mid = mid
+
+    def __str__(self) -> str:
+        return "{} from {}".format(self.imported, self.mid)
 
 class InvalidFeatureExpression(ParserException):
     """Invalid **if-feature** expression."""
