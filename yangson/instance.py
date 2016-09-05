@@ -164,6 +164,10 @@ class InstanceNode:
             if val is None: return None
         return val
 
+    def _peek_schema_route(self, sroute: SchemaRoute) -> Value:
+        return self.peek(
+            InstanceRoute.from_schema_route(self.schema_node, sroute))
+
     def member(self, name: InstanceName) -> "ObjectMember":
         """Return an instance node corresponding to a receiver's member.
 
@@ -689,6 +693,27 @@ class ArrayEntry(InstanceNode):
         """XPath - return the receiver's parent as a singleton list."""
         return [self.up().up()]
 
+class InstanceRoute(list):
+
+    @classmethod
+    def from_schema_route(cls, start: "SchemaNode",
+                          sroute: SchemaRoute) -> "InstanceRoute":
+        """Return instance route constructed from a schema route.
+
+        Args:
+            start: Schema Node fron which the schema route starts.
+            sroute: Schema route.
+        """
+        res = cls()
+        sn = start
+        for qn in sroute:
+            sn = sn.get_child(*qn)
+            if sn is None:
+                raise NonexistentSchemaNode(*qn)
+            if isinstance(sn, DataNode):
+                res.append(MemberName(sn.iname()))
+        return res
+
 class InstanceSelector:
     """Components of instance identifers."""
     pass
@@ -860,10 +885,10 @@ class InstancePathParser(Parser):
 class ResourceIdParser(InstancePathParser):
     """Parser for RESTCONF resource identifiers."""
 
-    def parse(self) -> "InstanceRoute":
+    def parse(self) -> InstanceRoute:
         """Parse resource identifier."""
         if self.peek() == "/": self.offset += 1
-        res = []
+        res = InstanceRoute()
         sn = Context.schema
         while True:
             mnam, cn = self._member_name(sn)
@@ -904,9 +929,9 @@ class ResourceIdParser(InstancePathParser):
 class InstanceIdParser(InstancePathParser):
     """Parser for YANG instance identifiers."""
 
-    def parse(self) -> "InstanceRoute":
+    def parse(self) -> InstanceRoute:
         """Parse instance identifier."""
-        res = []
+        res = InstanceRoute()
         sn = Context.schema
         while True:
             self.char("/")
@@ -1047,8 +1072,6 @@ class MaxElements(InstanceException):
     def __str__(self):
         return "{} more than {} entries".format(
             super().__str__(), self.instance.schema_node.max_elements)
-
-InstanceRoute = List[InstanceSelector]
 
 from .schema import (AnydataNode, CaseNode, ChoiceNode, DataNode, InternalNode,
                      LeafNode, LeafListNode, ListNode,

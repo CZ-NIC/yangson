@@ -780,6 +780,21 @@ class ListNode(SequenceNode, InternalNode):
             if kval in ukeys:
                 raise SchemaError(inst, "non-unique list key")
             ukeys.add(kval)
+        for u in self.unique:
+            uvals = set()
+            try:
+                en = inst.entry(0)
+                while True:
+                    den = en.add_defaults()
+                    uval = tuple([den._peek_schema_route(sr) for sr in u])
+                    if None not in uval:
+                        if uval in uvals:
+                            raise SemanticError(inst, "unique property violated")
+                        else:
+                            uvals.add(uval)
+                    en = en.next()
+            except NonexistentInstance:
+                continue
 
     def _add_default_child(self, node: SchemaNode) -> None:
         if node.qual_name not in self.keys:
@@ -803,13 +818,6 @@ class ListNode(SequenceNode, InternalNode):
     def _unique_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.unique.append(
             [Context.sni2route(sid, mid) for sid in stmt.argument.split()])
-
-    def _sni2dni(self, sni: SchemaNodeId, mid: Module) -> str:
-        """Leave only components corresponding to data nodes."""
-        res = []
-        sn = self
-        for c in sni.split("/"):
-            sn.get
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
