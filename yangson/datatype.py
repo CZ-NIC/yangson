@@ -189,7 +189,7 @@ class UnionType(DataType):
             if t.contains(val):
                 return t.to_raw(val)
 
-    def canonical_string(self, val: ScalarValue) -> RawScalar:
+    def canonical_string(self, val: ScalarValue) -> str:
         for t in self.types:
             if t.contains(val):
                 return t.canonical_string(val)
@@ -469,6 +469,9 @@ class LeafrefType(LinkType):
         """
         self.path = XPathParser(
             stmt.find1("path", required=True).argument, mid).parse()
+
+    def canonical_string(self, val: ScalarValue) -> str:
+        return self.ref_type.canonical_string(val)
 
     def _constraints(self, val: ScalarValue) -> bool:
         return self.ref_type._constraints(val)
