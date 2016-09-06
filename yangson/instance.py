@@ -15,14 +15,7 @@ The module defines the following exceptions:
   on instance nodes.
 * NonexistentInstance: Attempt to access an instance node that doesn't
   exist.
-* InstanceTypeError: A method is called for a wrong type of instance
-  node.
-* DuplicateMember: Attempt to create a member that already exists.
-* MandatoryMember: Attempt to remove a mandatory member.
-* MinElements: An array becomes shorter than the minimum number of
-  elements specified in the data model..
-* MaxElements: An array becomes longer than the maximum number of
-  elements specified in the data model.
+* InstanceValueError: The instance value is incompatible with the called method.
 """
 
 from datetime import datetime
@@ -144,7 +137,8 @@ class InstanceNode:
             The instance node corresponding to the target instance.
 
         Raises:
-            InstanceTypeError: If `iroute` is incompatible with the schema.
+            InstanceValueError: If `iroute` is incompatible with the receiver's
+                value.
             NonexistentInstance: If the instance node doesn't exist.
         """
         inst = self
@@ -226,7 +220,6 @@ class InstanceNode:
         if name not in self.value:
             raise NonexistentInstance(self, "member " + name) from None
         csn = self._member_schema_node(name)
-        if validate and csn.mandatory: raise MandatoryMember(self, name)
         newval = self.value.copy()
         del newval[name]
         ts = datetime.now()
@@ -239,12 +232,12 @@ class InstanceNode:
             index: Index of the entry.
 
         Raises:
-            InstanceTypeError: If the receiver's value is not an array.
+            InstanceValueError: If the receiver's value is not an array.
             NonexistentInstance: If entry `index` is not present.
         """
         val = self.value
         if not isinstance(val, ArrayValue):
-            raise InstanceTypeError(self, "entry of non-array")
+            raise InstanceValueError(self, "entry of non-array")
         try:
             return ArrayEntry(val[:index], val[index+1:], val[index], self,
                               self.schema_node, val.timestamp)
@@ -255,12 +248,12 @@ class InstanceNode:
         """Return an instance node corresponding to the last entry of the receiver.
 
         Raises:
-            InstanceTypeError: If the receiver's value isn't an array.
+            InstanceValueError: If the receiver's value is not an array.
             NonexistentInstance: If the receiver's value is an empty array.
         """
         val = self.value
         if not isinstance(val, ArrayValue):
-            raise InstanceTypeError(self, "last entry of non-array")
+            raise InstanceValueError(self, "last entry of non-array")
         try:
             return ArrayEntry(val[:-1], [], val[-1], self,
                               self.schema_node, val.timestamp)
@@ -274,12 +267,12 @@ class InstanceNode:
             index: Index of the deleted entry.
 
         Raises:
-            InstanceTypeError: If the receiver value is not an array.
+            InstanceValueError: If the receiver's value is not an array.
             NonexistentInstance: If entry `index` is not present.
         """
         val = self.value
         if not isinstance(val, ArrayValue):
-            raise InstanceTypeError(self, "entry of non-array")
+            raise InstanceValueError(self, "entry of non-array")
         if index >= len(val):
             raise NonexistentInstance(self, "entry " + str(index)) from None
         ts = datetime.now()
@@ -292,11 +285,11 @@ class InstanceNode:
             keys: Dictionary of list keys and their values.
 
         Raises:
-            InstanceTypeError: If the receiver is not a YANG list.
+            InstanceValueError: If the receiver's value is not a YANG list.
             NonexistentInstance: If no entry with matching keys exists.
         """
         if not isinstance(self.value, ArrayValue):
-            raise InstanceTypeError(self, "lookup on non-list")
+            raise InstanceValueError(self, "lookup on non-list")
         try:
             for i in range(len(self.value)):
                 en = self.value[i]
@@ -310,7 +303,7 @@ class InstanceNode:
         except KeyError:
             raise NonexistentInstance(self, "entry lookup failed") from None
         except TypeError:
-            raise InstanceTypeError(self, "lookup on non-list") from None
+            raise InstanceValueError(self, "lookup on non-list") from None
 
     def raw_value(self) -> RawValue:
         """Return receiver's value in a raw form (ready for JSON encoding)."""
@@ -1029,7 +1022,7 @@ class NonexistentInstance(InstanceException):
     def __str__(self):
         return "{} {}".format(super().__str__(), self.detail)
 
-class InstanceTypeError(InstanceException):
+class InstanceValueError(InstanceException):
     """A method is called for a wrong type of instance node."""
 
     def __init__(self, inst: InstanceNode, detail: str) -> None:
@@ -1038,40 +1031,6 @@ class InstanceTypeError(InstanceException):
 
     def __str__(self):
         return "{} {}".format(super().__str__(), self.detail)
-
-class DuplicateMember(InstanceException):
-    """Attempt to create a member that already exists."""
-
-    def __init__(self, inst: InstanceNode, name: InstanceName) -> None:
-        super().__init__(inst)
-        self.name = name
-
-    def __str__(self):
-        return "{} duplicate member {}".format(super().__str__(), self.name)
-
-class MandatoryMember(InstanceException):
-    """Attempt to remove a mandatory member."""
-
-    def __init__(self, inst: InstanceNode, name: InstanceName) -> None:
-        super().__init__(inst)
-        self.name = name
-
-    def __str__(self):
-        return "{} member {}".format(super().__str__(), self.name)
-
-class MinElements(InstanceException):
-    """An array becomes shorter than min-elements."""
-
-    def __str__(self):
-        return "{} less than {} entries".format(
-            super().__str__(), self.instance.schema_node.min_elements)
-
-class MaxElements(InstanceException):
-    """An array becomes shorter than max-elements."""
-
-    def __str__(self):
-        return "{} more than {} entries".format(
-            super().__str__(), self.instance.schema_node.max_elements)
 
 from .schema import (AnydataNode, CaseNode, ChoiceNode, DataNode, InternalNode,
                      LeafNode, LeafListNode, ListNode,
