@@ -9,6 +9,7 @@ module example-2 {
   container top {
     list foo {
       key "number";
+      unique "in-words";
       leaf number {
         type uint8;
       }
