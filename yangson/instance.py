@@ -427,7 +427,7 @@ class InstanceNode:
         return [self.up()]
 
     def _deref(self) -> List["InstanceNode"]:
-        """XPath - return the list of nodes that the receiver refers to."""
+        """XPath: return the list of nodes that the receiver refers to."""
         return ([] if self.is_structured() else
                 self.schema_node.type._deref(self))
 

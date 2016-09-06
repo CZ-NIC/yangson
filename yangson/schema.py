@@ -3,7 +3,7 @@
 from typing import Dict, List, MutableSet, Optional, Set, Tuple, Union
 from .exceptions import YangsonException
 from .context import Context
-from .datatype import DataType, LeafrefType, RawScalar
+from .datatype import DataType, LeafrefType, LinkType, RawScalar
 from .enumerations import Axis, ContentType, DefaultDeny
 from .instvalue import ArrayValue, EntryValue, ObjectValue, Value
 from .schpattern import *
@@ -596,7 +596,10 @@ class TerminalNode(SchemaNode):
             SchemaError: If the instance value doesn't match the type.
         """
         if not self.type.contains(inst.value):
-            raise SchemaError(inst, "invalid type")
+            raise SchemaError(inst, "invalid type: " + repr(inst.value))
+        if (isinstance(self.type, LinkType) and self.type.require_instance and
+            not inst._deref()):
+            raise SemanticError(inst, "required instance missing")
 
     def _post_process(self) -> None:
         super()._post_process()
