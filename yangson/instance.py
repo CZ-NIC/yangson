@@ -67,7 +67,7 @@ class InstanceNode:
             content: Receiver's content type (config/all).
 
         Raises:
-            SchemaError`: If the value doesn't conform to the schema.
+            SchemaError: If the value doesn't conform to the schema.
             SemanticError: If the value violates a semantic constraint.
         """
         self.schema_node.validate(self, content)

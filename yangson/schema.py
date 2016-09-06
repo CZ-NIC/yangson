@@ -702,10 +702,14 @@ class SequenceNode(DataNode):
             SchemaError: It the cardinality of `inst` isn't correct.
         """
         if len(inst.value) < self.min_elements:
-            raise SchemaError(inst, "number of entries < min-elements")
+            raise SemanticError(inst,
+                              "number of entries < min-elements ({})".format(
+                                  self.min_elements))
         if (self.max_elements is not None and
             len(inst.value) > self.max_elements):
-            raise SchemaError(inst, "number of entries > max-elements")
+            raise SemanticError(inst,
+                              "number of entries > max-elements ({})".format(
+                                  self.max_elements))
 
     def validate(self, inst: "InstanceNode", content: ContentType) -> None:
         """Extend the superclass method."""
@@ -781,7 +785,7 @@ class ListNode(SequenceNode, InternalNode):
         for en in inst.value:
             kval = tuple([en[k] for k in self._key_members])
             if kval in ukeys:
-                raise SchemaError(inst, "non-unique list key")
+                raise SchemaError(inst, "non-unique list key: " + repr(kval))
             ukeys.add(kval)
         for u in self.unique:
             uvals = set()
@@ -792,7 +796,8 @@ class ListNode(SequenceNode, InternalNode):
                     uval = tuple([den._peek_schema_route(sr) for sr in u])
                     if None not in uval:
                         if uval in uvals:
-                            raise SemanticError(inst, "unique property violated")
+                            raise SemanticError(
+                                inst, "unique constraint violated")
                         else:
                             uvals.add(uval)
                     en = en.next()
@@ -1024,8 +1029,8 @@ class LeafListNode(SequenceNode, TerminalNode):
         self.max_elements = None # type: Optional[int]
 
     def _check_unique(self, inst: "InstanceNode") -> None:
-        if len(set(inst.value)) < len(inst.value):
-            raise SchemaError(inst, "non-unique leaf-list values")
+        if self.config and len(set(inst.value)) < len(inst.value):
+            raise SemanticError(inst, "non-unique leaf-list values")
 
     def _post_process(self) -> None:
         super()._post_process()
