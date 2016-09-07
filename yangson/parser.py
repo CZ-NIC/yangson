@@ -1,4 +1,15 @@
-"""Simple parser class."""
+"""Simple recursive-descent parser.
+
+This module implements the following class:
+
+* Parser: Recursive-descent parser.
+
+This module defines the following exceptions:
+
+* EndOfInput: Unexpected end of input.
+* ParserException: Base class for parser exceptions.
+* UnexpectedInput: Unexpected input.
+"""
 
 import re
 from typing import Any, Callable, List, Dict, Optional, Tuple
@@ -12,7 +23,7 @@ TransitionTable = List[Dict[str, Callable[[], int]]]
 
 class Parser:
 
-    """Recursive-descent parser."""
+    """Recursive-descent parser with support for YANG syntactic elements."""
 
     # Regular expressions
 
@@ -44,26 +55,14 @@ class Parser:
         """Return string representation of the parser state."""
         return self.input[:self.offset] + "§" + self.input[self.offset:]
 
-    def remaining(self) -> str:
-        """Return the remaining part of the input string."""
-        res = self.input[self.offset:]
-        self.offset = len(self.input)
-        return res
+    def adv_skip_ws(self) -> bool:
+        """Advance offset and skip optional whitespace."""
+        self.offset += 1
+        return self.skip_ws()
 
     def at_end(self) -> bool:
         """Return ``True`` if at end of input."""
         return self.offset >= len(self.input)
-
-    def peek(self) -> str:
-        """Return the next character without advancing offset.
-
-        Raises:
-            EndOfInput: If past the end of `self.input`.
-        """
-        try:
-            return self.input[self.offset]
-        except IndexError:
-            raise EndOfInput(self)
 
     def char(self, c: str) -> None:
         """Parse the specified character.
@@ -79,51 +78,6 @@ class Parser:
             self.offset += 1
         else:
             raise UnexpectedInput(self, "char " + c)
-
-    def test_string(self, string: str) -> bool:
-        """If `string` comes next, return ``True`` and advance offset.
-
-        Args:
-            string: string to test
-        """
-        if self.input.startswith(string, self.offset):
-            self.offset += len(string)
-            return True
-        return False
-
-    def one_of(self, chset: str) -> str:
-        """Parse one character form the specified set.
-
-        Args:
-            chset: string of characters to try as alternatives.
-
-        Returns:
-            The character that was actually matched.
-
-        Raises:
-            UnexpectedInput: If the next character is not in `chset`.
-        """
-        res = self.peek()
-        if res in chset:
-            self.offset += 1
-            return res
-        raise UnexpectedInput(self, "one of " + chset)
-
-    def up_to(self, term: str) -> str:
-        """Parse and return segment terminated by the first occurence of a string.
-
-        Args:
-            term: Terminating string.
-
-        Raises:
-            EndOfInput: If `term` does not occur in the rest of the input text.
-        """
-        end = self.input.find(term, self.offset)
-        if end < 0:
-            raise EndOfInput(self)
-        res = self.input[self.offset:end]
-        self.offset = end + 1
-        return res
 
     def dfa(self, ttab: TransitionTable, init: int = 0) -> int:
         """Run a DFA and return the final (negative) state.
@@ -170,24 +124,37 @@ class Parser:
         if required:
             raise UnexpectedInput(self, meaning)
 
-    def unsigned_integer(self) -> int:
-        """Parse and return an unsigned integer."""
-        return int(self.match_regex(self.uint_re, True, "unsigned integer"))
+    def one_of(self, chset: str) -> str:
+        """Parse one character form the specified set.
 
-    def unsigned_float(self) -> float:
-        """Parse and return unsigned floating-point number."""
-        return float(self.match_regex(self.ufloat_re, True, "unsigned float"))
+        Args:
+            chset: string of characters to try as alternatives.
 
-    def yang_identifier(self) -> YangIdentifier:
-        """Parse and return YANG identifier.
+        Returns:
+            The character that was actually matched.
 
         Raises:
-            UnexpectedInput: If no syntactically correct keyword is found.
+            UnexpectedInput: If the next character is not in `chset`.
         """
-        return self.match_regex(self.ident_re, True, "YANG identifier")
+        res = self.peek()
+        if res in chset:
+            self.offset += 1
+            return res
+        raise UnexpectedInput(self, "one of " + chset)
+
+    def peek(self) -> str:
+        """Return the next character without advancing offset.
+
+        Raises:
+            EndOfInput: If past the end of `self.input`.
+        """
+        try:
+            return self.input[self.offset]
+        except IndexError:
+            raise EndOfInput(self)
 
     def prefixed_name(self) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
-        """Parse name with an optional colon-separated prefix."""
+        """Parse identifier with an optional colon-separated prefix."""
         i1 = self.yang_identifier()
         try:
             next = self.peek()
@@ -197,14 +164,58 @@ class Parser:
         self.offset += 1
         return (self.yang_identifier(), i1)
 
+    def remaining(self) -> str:
+        """Return the remaining part of the input string."""
+        res = self.input[self.offset:]
+        self.offset = len(self.input)
+        return res
+
     def skip_ws(self) -> bool:
         """Skip optional whitespace."""
         return len(self.match_regex(self.ws_re)) > 0
 
-    def adv_skip_ws(self) -> bool:
-        """Advance offset and skip optional whitespace."""
-        self.offset += 1
-        return self.skip_ws()
+    def test_string(self, string: str) -> bool:
+        """If `string` comes next, return ``True`` and advance offset.
+
+        Args:
+            string: string to test
+        """
+        if self.input.startswith(string, self.offset):
+            self.offset += len(string)
+            return True
+        return False
+
+    def unsigned_integer(self) -> int:
+        """Parse and return an unsigned integer."""
+        return int(self.match_regex(self.uint_re, True, "unsigned integer"))
+
+    def unsigned_float(self) -> float:
+        """Parse and return unsigned floating-point number."""
+        return float(self.match_regex(self.ufloat_re, True, "unsigned float"))
+
+    def up_to(self, term: str) -> str:
+        """Parse and return segment terminated by the first occurence of a string.
+
+        Args:
+            term: Terminating string.
+
+        Raises:
+            EndOfInput: If `term` does not occur in the rest of the input text.
+        """
+        end = self.input.find(term, self.offset)
+        if end < 0:
+            raise EndOfInput(self)
+        res = self.input[self.offset:end]
+        self.offset = end + 1
+        return res
+
+    def yang_identifier(self) -> YangIdentifier:
+        """Parse and return YANG identifier.
+
+        Raises:
+            UnexpectedInput: If no syntactically correct keyword is found.
+        """
+        return self.match_regex(self.ident_re, True, "YANG identifier")
 
 class ParserException(YangsonException):
     """Base class for parser exceptions."""

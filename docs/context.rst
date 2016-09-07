@@ -26,19 +26,20 @@ This module implements the following classes:
 
 The module defines the following exceptions:
 
-* :exc:`ModuleNotFound`: A module or submodule registered in YANG library is not found.
-* :exc:`ModuleNotRegistered`: An imported module is not registered in YANG library.
-* :exc:`BadYangLibraryData`: Broken YANG library data.
 * :exc:`BadPath`: Invalid :term:`schema path` or :term:`data path`.
-* :exc:`UnknownPrefix`: Unknown namespace prefix.
-* :exc:`InvalidFeatureExpression`: Invalid **if-feature** expression.
-* :exc:`FeaturePrerequisiteError`: Pre-requisite feature is not supported.
-* :exc:`MultipleImplementedRevisions`: A module has multiple implemented revisions.
+* :exc:`BadYangLibraryData`: Broken YANG library data.
 * :exc:`CyclicImports`: YANG modules are imported in a cyclic fashion.
+* :exc:`FeaturePrerequisiteError`: Pre-requisite feature is not supported.
+* :exc:`InvalidFeatureExpression`: Invalid **if-feature** expression.
+* :exc:`ModuleNotFound`: A module or submodule registered in YANG library is not found.
+* :exc:`ModuleNotImported`: A module is not imported.
+* :exc:`ModuleNotRegistered`: An imported module is not registered in YANG library.
+* :exc:`MultipleImplementedRevisions`: A module has multiple implemented revisions.
+* :exc:`UnknownPrefix`: Unknown namespace prefix.
 
 .. class:: ModuleData(main_module: YangIdentifier)
 
-   Objects of this class contain data related to a single module or
+   An object of this class contains data related to a single module or
    submodule that is a part of the data model. Such objects are values
    of the dictionary :attr:`Context.modules`.
 
@@ -47,26 +48,26 @@ The module defines the following exceptions:
 
    .. rubric:: Instance Attributes
 
+   .. attribute:: features
+
+      Set of features defined in the receiver module that are
+      supported by the data model.
+
    .. attribute:: main_module
 
       This attribute contains the :term:`module identifier` of the
       main module corresponding to the receiver.
-
-   .. attribute:: statement
-
-      The **module** or **submodule** statement corresponding to the
-      receiver. It is the entry point to the hierarchy of the
-      (sub)module statements.
 
    .. attribute:: prefix_map
 
       Dictionary that maps prefixes declared in the receiver module
       to :term:`module identifier`\ s.
 
-   .. attribute:: features
+   .. attribute:: statement
 
-      Set of features defined in the receiver module that are
-      supported by the data model.
+      The **module** or **submodule** statement corresponding to the
+      receiver. It is the entry point to the hierarchy of the
+      (sub)module statements.
 
    .. attribute:: submodules
 
@@ -75,9 +76,9 @@ The module defines the following exceptions:
 
 .. class:: Context
 
-   This class serves as a global repository of the data model schema and
-   several other important data structures that are stored as class
-   attributes. This means that
+   This class serves as a global repository for the data model schema
+   and several other important data structures that are stored as
+   class attributes. This means that
 
    * it is possible to work with only one data model at a time,
 
@@ -92,10 +93,37 @@ The module defines the following exceptions:
    .. doctest::
 
       >>> from yangson.context import Context
-      >>> dm = DataModel.from_file("yang-library-ex3.json",
-      ...   [".", "../../../examples/ietf"])
+      >>> dm = DataModel.from_file("yang-library-ex3.json", [".", "../../../examples/ietf"])
 
    .. rubric:: Class Attributes
+
+   .. attribute:: identity_bases
+
+      Dictionary of identity bases.
+
+      The keys are :term:`qualified name`\ s of identities, and each
+      value is a set of :term:`qualified name`\ s of identities that
+      are defined as bases for the key identity.
+
+      .. doctest::
+
+	 >>> sorted(Context.identity_bases[('idZ', 'example-3-b')])
+	 [('idX', 'example-3-a'), ('idY', 'example-3-b')]
+
+   .. attribute:: implement
+
+      Dictionary of implemented modules. They correspond to YANG
+      library entries that have conformance type ``implement``. For
+      each module, only one revision can be implemented – other
+      revisions may be present but only with conformance type ``import``.
+
+      The keys of this dictionary are module names, and the values are
+      revision dates.
+
+      .. doctest::
+
+	 >>> Context.implement['example-3-b']
+	 '2016-08-22'
 
    .. attribute:: module_search_path
 
@@ -129,35 +157,7 @@ The module defines the following exceptions:
 	 >>> sorted(Context.modules[('example-3-a', '2016-06-18')].features)
 	 ['fea1', 'fea2']
 
-   .. attribute:: implement
-
-      Dictionary of implemented modules. They correspond to YANG
-      library entries that have conformance type ``implement``. For
-      each module, only one revision can be implemented – other
-      revisions may be present but only with conformance type ``import``.
-
-      The keys of this dictionary are module names, and the values are
-      revision dates.
-
-      .. doctest::
-
-	 >>> Context.implement['example-3-b']
-	 '2016-08-22'
-
-   .. attribute:: identity_bases
-
-      Dictionary of identity bases.
-
-      The keys are :term:`qualified name`\ s of identities, and each
-      value is a set of :term:`qualified name`\ s of identities that
-      are defined as bases for the key identity.
-
-      .. doctest::
-
-	 >>> sorted(Context.identity_bases[('idZ', 'example-3-b')])
-	 [('idX', 'example-3-a'), ('idY', 'example-3-b')]
-
-   .. rubric:: Methods
+   .. rubric:: Public Methods
 
    .. classmethod:: namespace(mid: ModuleId) -> YangIdentifier
 
@@ -165,8 +165,8 @@ The module defines the following exceptions:
       argument *mid* is the :term:`module identifier` of the
       (sub)module.
 
-      *Yangson* uses main module module names rather than URIs as namespace
-      identifiers.
+      Note that *Yangson* uses main module module names rather than
+      URIs as namespace identifiers.
 
       This method raises :exc:`ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model.
@@ -192,9 +192,9 @@ The module defines the following exceptions:
    .. classmethod:: prefix2ns(prefix: YangIdentifier, mid: ModuleId) \
 		    -> YangIdentifier
 
-      Return namespace identifier corresponding *prefix*. The module
-      context, in which the prefix is resolved, is specified by the
-      *mid* argument.
+      Return namespace identifier corresponding to *prefix*. The
+      module or submodule context, in which the prefix is resolved, is
+      specified by the *mid* argument.
 
       This method raises :exc:`ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
@@ -209,10 +209,11 @@ The module defines the following exceptions:
    .. classmethod:: resolve_pname(pname: PrefName, mid: ModuleId) \
 		    -> Tuple[YangIdentifier, ModuleId]
 
-      Resolve *pname* and return a tuple consisting of an unprefixed
-      name and a :term:`module identifier` of the (sub)module in which
-      that name is defined. The argument *mid* specifies the
-      (sub)module in which *pname* is to be resolved.
+      Resolve :term:`prefixed name` *pname* and return a tuple
+      consisting of an unprefixed name and a :term:`module identifier`
+      of the (sub)module in which that name is defined. The argument
+      *mid* specifies the (sub)module in which *pname* is to be
+      resolved.
 
       This method raises :exc:`ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
@@ -228,9 +229,9 @@ The module defines the following exceptions:
    .. classmethod:: translate_pname(pname: PrefName, mid: ModuleId) \
 		    -> QualName
 
-      Translate :term:`prefixed name` in the *pname* argument to a
-      :term:`qualified name`. The argument *mid* specifies the
-      (sub)module in which *pname* is to be resolved.
+      Translate :term:`prefixed name` *pname* to a :term:`qualified
+      name`. The argument *mid* specifies the (sub)module in which
+      *pname* is to be resolved.
 
       This method raises :exc:`ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
@@ -242,11 +243,32 @@ The module defines the following exceptions:
 	 >>> Context.translate_pname('oin:port-number', ('example-3-b', '2016-08-22'))
 	 ('port-number', 'ietf-inet-types')
 
+   .. classmethod:: prefix(imod: YangIdentifier, mid: ModuleId) -> \
+		    YangIdentifier
+
+      Return namespace prefix declared for :term:`implemented module`
+      *imod* in the module or submodule whose :term:`module
+      identifier` is *mid*.
+
+      This method may raise the following exceptions:
+
+      * :exc:`ModuleNotImplemented` – if module *imod* is not
+	implemented.
+      * :exc:`ModuleNotRegistered` – if (sub)module identified by
+	*mid* is not registered in YANG library.
+      * :exc:`ModuleNotImported` – if *imod* is not imported in the
+	(sub)module identified by *mid*.
+
+      .. doctest::
+
+	 >>> Context.prefix("example-3-a", ("example-3-b", "2016-08-22"))
+	 'ex3a'
+
    .. classmethod:: sni2route(sni: SchemaNodeId, mid: ModuleId) \
 		    -> SchemaRoute
 
-      Translate :term:`schema node identifier` in the *sni* argument
-      to a :term:`schema route`.  The argument *mid* specifies the
+      Translate :term:`schema node identifier` *sni* to a
+      :term:`schema route`.  The argument *mid* specifies the
       (sub)module in which *sni* is to be resolved.
 
       This method raises :exc:`ModuleNotRegistered` if the (sub)module
@@ -312,8 +334,7 @@ The module defines the following exceptions:
 
       Return ``True`` if the identity specified in the *identity*
       argument is derived (directly or transitively) from the identity
-      *base*, otherwise return ``False``. Both *identity* and *base*
-      has to be a :term:`qualified name`.
+      *base*, otherwise return ``False``.
 
       .. doctest::
 
@@ -324,7 +345,7 @@ The module defines the following exceptions:
 
       Evaluate all **if-feature** statements that are substatements of
       *stmt*. Return ``False`` if any of them is false, otherwise
-      return ``True``. If the statement `stmt` has no **if-feature**
+      return ``True``. If the statement *stmt* has no **if-feature**
       substatements, ``True`` is returned. The argument *mid*
       specifies the (sub)module in which features names are to be
       resolved.
@@ -353,25 +374,25 @@ The module defines the following exceptions:
 
    The arguments of the class constructor are:
 
-   * *text* – text to parse.
-   * *mid* – :term:`module identifier` of the (sub)module that
-     provides context for parsing and evaluating the feature
-     expression.
+   * *text* – text to parse,
+   * *mid* – value for :attr:`mid` attribute.
 
    The constructor may raise :exc:`ModuleNotRedistered` if the
    (sub)module identified by *mid* is not part of the data model.
 
    .. rubric:: Instance Attributes
 
-   .. attribute:: mdata
+   .. attribute:: mid
 
-      :class:`ModuleData` object correpsonding to the (sub)module
-      identified by the *mid* argument of the class constructor.
+      This attribute is a :term:`module identifier` of the (sub)module
+      that provides context for parsing and evaluating the feature
+      expression.
 
-      Two other instance variables are inherited from the
-      :class:`Parser` class.
+   Two other instance variables (:attr:`~.Parser.input` and
+   :attr:`~.Parser.offset`) are inherited from the :class:`Parser`
+   class.
 
-   .. rubric:: Methods
+   .. rubric:: Public Methods
 
    .. method:: parse() -> bool
 
@@ -391,45 +412,53 @@ The module defines the following exceptions:
 	 ... ('example-3-a', '2016-06-18')).parse()
 	 False
 
-.. autoexception:: ModuleNotFound
-
-   The *name* and *rev* arguments give the name and revision of the
-   non-existent (sub)module.
-
-.. autoexception:: ModuleNotRegistered
-
-   The *name* and *rev* arguments give the name and revision of the
-   module that is missing in YANG library.
-
-.. autoexception:: BadYangLibraryData
-
-   The *reason* argument is a text describing the problem.
-
-.. autoexception:: BadPath
+.. autoexception:: BadPath(path: str)
 
    The *path* argument contains the invalid path.
 
-.. autoexception:: UnknownPrefix
+.. autoexception:: BadYangLibraryData(reason: str)
 
-   The *prefix* argument contains the unknown prefix.
+   The *reason* argument is a text describing the problem.
 
-.. autoexception:: InvalidFeatureExpression
-   :show-inheritance:
+.. autoexception:: CyclicImports
 
-.. autoexception:: FeaturePrerequisiteError
+   See sec. `5.1`_ of [RFC7950]_ for further explanation.
+
+.. autoexception:: FeaturePrerequisiteError(name: YangIdentifier, ns: \
+		   YangIdentifier)
 
    The *name* and *ns* arguments contain the name and namespace of the
    feature for which a pre-requisite feature is not supported by the
    data model.
 
-.. autoexception:: MultipleImplementedRevisions
+.. autoexception:: MissingImport(imported: YangIdentifier, mid: \
+		   ModuleId)
+
+   Module *imported* is expected to be imported from a module or
+   submodule whose :term:`module identifier` is *mid*.
+
+.. autoexception:: ModuleNotFound(name: YangIdentifier, rev: str = "")
+
+   The *name* and *rev* arguments give the name and revision of the
+   non-existent (sub)module.
+
+.. autoexception:: ModuleNotRegistered(name: YangIdentifier, rev: str \
+		   = "")
+
+   The *name* and *rev* arguments give the name and revision of the
+   module that is missing in YANG library.
+
+.. autoexception:: MultipleImplementedRevisions(module: YangIdentifier)
 
    See sec. `5.6.5`_ of [RFC7950]_ for further explanation. The *module*
    argument contains the name of the module with multiple implemented revisions.
 
-.. autoexception:: CyclicImports
+.. autoexception:: UnknownPrefix(prefix: str)
 
-   See sec. `5.1`_ of [RFC7950]_ for further explanation.
+   The *prefix* argument contains the unknown prefix.
+
+.. autoexception:: InvalidFeatureExpression
+   :show-inheritance:
 
 .. _5.6.5: https://tools.ietf.org/html/rfc7950#section-5.6.5
 .. _5.1: https://tools.ietf.org/html/rfc7950#section-5.1

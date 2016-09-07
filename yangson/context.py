@@ -7,19 +7,17 @@ This module implements the following classes:
 * Context: Repository of data model structures and methods.
 * FeatureExprParser: Parser for if-feature expressions.
 
-The module defines the following exceptions:
+This module defines the following exceptions:
 
 * BadPath: Invalid schema path
 * BadYangLibraryData: Invalid YANG library data.
 * CyclicImports: Imports of YANG modules form a cycle.
-* FeaturePrerequisiteError: A supported feature depends on
-  another that isn't supported.
+* FeaturePrerequisiteError: Pre-requisite feature isn't supported.
 * InvalidFeatureExpression: Invalid if-feature expression.
 * ModuleNotFound: YANG module not found.
 * ModuleNotImported: YANG module is not imported.
 * ModuleNotRegistered: Module is not registered in YANG library.
-* MultipleImplementedRevisions: YANG library specifies multiple
-  revisions of an implemented module.
+* MultipleImplementedRevisions: A module has multiple implemented revisions.
 * UnknownPrefix: Unknown namespace prefix.
 """
 
@@ -34,14 +32,14 @@ class ModuleData:
 
     def __init__(self, main_module: YangIdentifier):
         """Initialize the class instance."""
-        self.main_module = main_module # type: ModuleId
-        """Main module of the receiver."""
-        self.statement = None # type: Statement
-        """Corresponding (sub)module statements."""
-        self.prefix_map = {} # type: Dict[YangIdentifier, ModuleId]
-        """Map of prefixes to module identifiers."""
         self.features = set() # type: MutableSet[YangIdentifier]
         """Set of supported features."""
+        self.main_module = main_module # type: ModuleId
+        """Main module of the receiver."""
+        self.prefix_map = {} # type: Dict[YangIdentifier, ModuleId]
+        """Map of prefixes to module identifiers."""
+        self.statement = None # type: Statement
+        """Corresponding (sub)module statements."""
         self.submodules = set() # type: MutableSet[ModuleId]
         """Set of submodules."""
 
@@ -51,14 +49,14 @@ class Context:
     @classmethod
     def _initialize(cls) -> None:
         """Initialize the data model structures."""
+        cls.identity_bases = {} # type: Dict[QualName, MutableSet[QualName]]
+        """Dictionary of identity bases."""
+        cls.implement = {} # type: Dict[YangIdentifier, RevisionDate]
+        """Dictionary of implemented revisions."""
         cls.module_search_path = [] # type: List[str]
         """List of directories where to look for YANG modules."""
         cls.modules = {} # type: Dict[ModuleId, ModuleData]
         """Dictionary of module data."""
-        cls.implement = {} # type: Dict[YangIdentifier, RevisionDate]
-        """Dictionary of implemented revisions."""
-        cls.identity_bases = {} # type: Dict[QualName, MutableSet[QualName]]
-        """Dictionary of identity bases."""
         cls._module_sequence = [] # type: List[ModuleId]
         """List that defines the order of module processing."""
 
@@ -212,17 +210,17 @@ class Context:
         return mdata.main_module[0]
 
     @classmethod
-    def last_revision(cls, name: YangIdentifier) -> ModuleId:
+    def last_revision(cls, mod: YangIdentifier) -> ModuleId:
         """Return the last revision of a module that's part of the data model.
 
         Args:
-            name: Name of a module or submodule.
+            mod: Name of a module or submodule.
 
         Raises:
-            ModuleNotRegistered: If the module `name` is not present in the
+            ModuleNotRegistered: If the module `mod` is not present in the
                 data model.
         """
-        revs = [mn for mn in cls.modules if mn[0] == name]
+        revs = [mn for mn in cls.modules if mn[0] == mod]
         if not revs:
             raise ModuleNotRegistered(impn)
         return sorted(revs, key=lambda x: x[1])[-1]
@@ -314,7 +312,7 @@ class Context:
 
     @classmethod
     def sni2route(cls, sni: SchemaNodeId, mid: ModuleId) -> SchemaRoute:
-        """Translate a schema node identifier to a schema route.
+        """Translate schema node identifier to a schema route.
 
         Args:
             sni: Schema node identifier (absolute or relative).

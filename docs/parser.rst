@@ -18,11 +18,11 @@ This module implements the following class:
 
 This module defines the following exceptions:
 
-* :exc:`ParserException`: Base class for parser exceptions.
 * :exc:`EndOfInput`: Unexpected end of input.
+* :exc:`ParserException`: Base class for parser exceptions.
 * :exc:`UnexpectedInput`: Unexpected input.
 
-.. rubric:: Type alias
+.. rubric:: Type Alias
 
 .. autodata:: TransitionTable
 
@@ -37,7 +37,7 @@ This module defines the following exceptions:
    text to be parsed.
 
    Concrete parsers should be implemented as a subclass of
-   :class:`Parser`. By convention, such a parser should define
+   :class:`Parser`. By convention, such a parser class should define
    the :meth:`parse` method.
 
    .. doctest::
@@ -55,13 +55,14 @@ This module defines the following exceptions:
 
       Current position in the input text.
 
-   .. rubric:: Methods
+   .. rubric:: Public Methods
 
    .. method:: __str__() -> str
 
       String representation of a parser instance is the :attr:`input`
       string with the character ``§`` inserted at the position of
-      :attr:`offset`.
+      :attr:`offset`. In the following example, the position is right
+      at the start of the input text.
 
       .. doctest:
 

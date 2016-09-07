@@ -16,14 +16,18 @@ Data Model
    os.chdir("../..")
    del DataModel._instances[DataModel]
 
-This module provides the :class:`DataModel` class that serves as the basic
-user-level entry point to the *Yangson* library.
+This module implements the following classes:
+
+* :class:`DataModel`: basic user-level entry point to YANG data model
+  information.
 
 .. class:: DataModel(yltxt: str, mod_path: List[str])
 
-   Build the data model from YANG library data [RFC7895]_ and YANG
-   modules. The *yltxt* argument is a string with JSON-encoded YANG
-   library data, and the *mod_path* argument is a list of filesystem
+   This class provides a basic user-level entry point to the *Yangson*
+   library.
+
+   The constructor argument *yltxt* is a string with JSON-encoded YANG
+   library data [RFC7895]_, and *mod_path* is a list of filesystem
    directories in which *Yangson* searches for YANG modules.
 
    :class:`DataModel` is a *singleton* class which means that only one
@@ -50,7 +54,7 @@ user-level entry point to the *Yangson* library.
 
       >>> from yangson import DataModel
 
-   .. rubric:: Methods
+   .. rubric:: Public Methods
 
    .. classmethod:: from_file(name: str, mod_path: List[str] = ["."] ) \
 		    -> DataModel

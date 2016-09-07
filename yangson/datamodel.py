@@ -1,4 +1,9 @@
-"""Basic access to the YANG data model."""
+"""Basic access to the Yangson library.
+
+This module implements the following class:
+
+* DataModel: Basic entry point to the YANG data model.
+"""
 
 import hashlib
 import json
@@ -12,7 +17,7 @@ from .typealiases import *
 from .typealiases import _Singleton
 
 class DataModel(metaclass=_Singleton):
-    """Basic entry point to the YANG data model.
+    """Basic user-level entry point to Yangson library.
 
     It is a singleton class, which means that only one instance can be
     created.
