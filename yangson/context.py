@@ -9,17 +9,18 @@ This module implements the following classes:
 
 The module defines the following exceptions:
 
-* ModuleNotFound: YANG module not found.
-* ModuleNotRegistered: Module is not registered in YANG library.
-* BadYangLibraryData: Invalid YANG library data.
 * BadPath: Invalid schema path
-* UnknownPrefix: Unknown namespace prefix.
-* InvalidFeatureExpression: Invalid if-feature expression.
+* BadYangLibraryData: Invalid YANG library data.
+* CyclicImports: Imports of YANG modules form a cycle.
 * FeaturePrerequisiteError: A supported feature depends on
   another that isn't supported.
+* InvalidFeatureExpression: Invalid if-feature expression.
+* ModuleNotFound: YANG module not found.
+* ModuleNotImported: YANG module is not imported.
+* ModuleNotRegistered: Module is not registered in YANG library.
 * MultipleImplementedRevisions: YANG library specifies multiple
   revisions of an implemented module.
-* CyclicImports: Imports of YANG modules form a cycle.
+* UnknownPrefix: Unknown namespace prefix.
 """
 
 from typing import Dict, List, MutableSet, Optional, Tuple
@@ -245,7 +246,7 @@ class Context:
         try:
             return mdata.prefix_map[prefix][0]
         except KeyError:
-            raise UnknownPrefix(prefix) from None
+            raise UnknownPrefix(prefix, mid) from None
 
     @classmethod
     def resolve_pname(cls, pname: PrefName,
@@ -268,7 +269,7 @@ class Context:
         try:
             return (loc, mdata.prefix_map[p]) if s else (p, mdata.main_module)
         except KeyError:
-            raise UnknownPrefix(p) from None
+            raise UnknownPrefix(p, mid) from None
 
     @classmethod
     def translate_pname(cls, pname: PrefName, mid: ModuleId) -> QualName:
@@ -286,18 +287,30 @@ class Context:
         return (loc, cls.namespace(nid))
 
     @classmethod
-    def prefixed_name(cls, qname: QualName, mid: ModuleId) -> PrefName:
-        """Return prefixed name corresponding to a qualified name.
+    def prefix(cls, imod: YangIdentifier, mid: ModuleId) -> YangIdentifier:
+        """Return the prefix corresponding to an implemented module.
 
         Args:
+            imod: Name of an implemented module.
             mid: Identifier of the context module.
+
+        Raises:
+            ModuleNotImplemented: If `imod` is not implemented.
+            ModuleNotRegistered: If `mid` is not registered in YANG library.
+            ModuleNotImported: If `imod` is not imported in `mid`.
         """
-        did = (qname[1], self.implement[qname[1]])
-        pmap = cls.modules[mid].prefix_map
+        try:
+            did = (imod, cls.implement[imod])
+        except KeyError:
+            raise ModuleNotImplemented(imod) from None
+        try:
+            pmap = cls.modules[mid].prefix_map
+        except KeyError:
+            raise ModuleNotRegistered(*mid) from None
         for p in pmap:
             if pmap[p] == did:
-                return "{}:{}".format(p, qname[0])
-        raise MissingImport(qname[1], mid)
+                return p
+        raise ModuleNotImported(imod, mid)
 
     @classmethod
     def sni2route(cls, sni: SchemaNodeId, mid: ModuleId) -> SchemaRoute:
@@ -425,10 +438,7 @@ class FeatureExprParser(Parser):
             ModuleNotRegistered: If `mid` is not registered in the data model.
         """
         super().__init__(text)
-        try:
-            self.mdata = Context.modules[mid]
-        except KeyError:
-            raise ModuleNotRegistered(*mid) from None
+        self.mid = mid
 
     def parse(self) -> bool:
         """Parse and evaluate a complete feature expression.
@@ -477,13 +487,17 @@ class FeatureExprParser(Parser):
             return res
         n, p = self.prefixed_name()
         self.skip_ws()
+        try:
+            mdata = Context.modules[self.mid]
+        except KeyError:
+            raise ModuleNotRegistered(*self.mid) from None
         if p is None:
-            fid = self.mdata.main_module
+            fid = mdata.main_module
         else:
             try:
-                fid = self.mdata.prefix_map[p]
+                fid = mdata.prefix_map[p]
             except KeyError:
-                raise UnknownPrefix(p) from None
+                raise UnknownPrefix(p, self.mid) from None
         return n in Context.modules[fid].features
 
 class _MissingModule(YangsonException):
@@ -503,7 +517,11 @@ class ModuleNotFound(_MissingModule):
     pass
 
 class ModuleNotRegistered(_MissingModule):
-    """An imported module is not registered in YANG library."""
+    """A module is not registered in YANG library."""
+    pass
+
+class ModuleNotImplemented(_MissingModule):
+    """A module is not implemented."""
     pass
 
 class BadYangLibraryData(YangsonException):
@@ -527,21 +545,22 @@ class BadPath(YangsonException):
 class UnknownPrefix(YangsonException):
     """Unknown namespace prefix."""
 
-    def __init__(self, prefix: str) -> None:
+    def __init__(self, prefix: YangIdentifier, mid: ModuleId) -> None:
         self.prefix = prefix
-
-    def __str__(self) -> str:
-        return self.prefix
-
-class MissingImport(YangsonException):
-    """A module isn't imported but its identifier is used."""
-
-    def __init__(self, imported: YangIdentifier, mid: ModuleId) -> None:
-        self.imported = imported
         self.mid = mid
 
     def __str__(self) -> str:
-        return "{} from {}".format(self.imported, self.mid)
+        return "prefix {} is not defined in {}".format(self.prefix, self.mid)
+
+class ModuleNotImported(YangsonException):
+    """Module is not imported."""
+
+    def __init__(self, mod: YangIdentifier, mid: ModuleId) -> None:
+        self.mod = mod
+        self.mid = mid
+
+    def __str__(self) -> str:
+        return "{} not imported in {}".format(self.mod, self.mid)
 
 class InvalidFeatureExpression(ParserException):
     """Invalid **if-feature** expression."""
