@@ -21,6 +21,11 @@ Glossary
       to their types, while objects and arrays are instances of a
       subclass of :class:`Instance`.
 
+   canonical representation
+
+      A normalized string value that [RFC7950]_ defines for most
+      scalar types.
+
    qualified name
 
        A tuple in the form *(name, module)* where *name* is the name
@@ -103,13 +108,6 @@ Glossary
        keys and member names in JSON serialization. See [RFC7951]_,
        sec. `4`_ for details. Python type alias for the instance name
        is :const:`InstanceName`.
-
-   instance route
-
-       A list of :term:`instance name`\ s that specifies a route
-       between a context node in the instance data tree and its
-       descendant node. Python type alias for the instance route is
-       :const:`InstanceRoute`.
 
    instance identifier
 

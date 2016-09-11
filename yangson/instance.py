@@ -6,6 +6,7 @@ This module implements the following classes:
 * RootNode: Root of the data tree.
 * ObjectMember: Instance node that is an object member.
 * ArrayEntry: Instance node that is an array entry.
+* InstanceRoute: Route into an instance value.
 * ResourceIdParser: Parser for RESTCONF resource identifiers.
 * InstanceIdParser: Parser for instance identifiers.
 
@@ -13,9 +14,9 @@ The module defines the following exceptions:
 
 * InstanceException: Base class for exceptions related to operations
   on instance nodes.
+* InstanceValueError: The instance value is incompatible with the called method.
 * NonexistentInstance: Attempt to access an instance node that doesn't
   exist.
-* InstanceValueError: The instance value is incompatible with the called method.
 """
 
 from datetime import datetime
@@ -24,7 +25,7 @@ from urllib.parse import unquote
 from .exceptions import YangsonException
 from .context import Context
 from .enumerations import ContentType
-from .instvalue import ArrayValue, ObjectValue, Value
+from .instvalue import *
 from .parser import EndOfInput, Parser, UnexpectedInput
 from .typealiases import *
 
@@ -34,43 +35,34 @@ class InstanceNode:
     def __init__(self, value: Value, parinst: Optional["InstanceNode"],
                  schema_node: "DataNode", timestamp: datetime) -> None:
         """Initialize the class instance."""
-        self.value = value             # type: Value
-        """Value of the receiver."""
         self.parinst = parinst         # type: Optional["InstanceNode"]
         """Parent instance node, or ``None`` for the root node."""
         self.schema_node = schema_node # type: DataNode
         """Data node corresponding to the instance node."""
         self.timestamp = timestamp     # type: datetime
         """Time of the receiver's last modification."""
-
-    def __str__(self):
-        """Return string representation of the receiver's value."""
-        sn = self.schema_node
-        if not self.is_structured():
-            return sn.type.canonical_string(self.value)
-        return str(self.value)
-
-    @property
-    def qualName(self) -> Optional[QualName]:
-        """The receiver's qualified name."""
-        return None
+        self.value = value             # type: Value
+        """Value of the receiver."""
 
     @property
     def namespace(self) -> Optional[YangIdentifier]:
         """The receiver's namespace."""
         return self.schema_node.ns
 
-    def validate(self, content: ContentType = ContentType.config) -> None:
-        """Validate the receiver.
+    @property
+    def qual_name(self) -> Optional[QualName]:
+        """The receiver's qualified name."""
+        return None
 
-        Args:
-            content: Receiver's content type (config/all).
+    def __str__(self) -> str:
+        """Return string representation of the receiver's value."""
+        sn = self.schema_node
+        return (str(self.value) if isinstance(self.value, StructuredValue) else
+                sn.type.canonical_string(self.value))
 
-        Raises:
-            SchemaError: If the value doesn't conform to the schema.
-            SemanticError: If the value violates a semantic constraint.
-        """
-        self.schema_node.validate(self, content)
+    def is_internal(self) -> bool:
+        """Return ``True`` if the receiver is an instance of an internal node."""
+        return isinstance(self.schema_node, InternalNode)
 
     def json_pointer(self) -> str:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
@@ -81,87 +73,6 @@ class InstanceNode:
             inst = inst.parinst
         return "/" + "/".join([i._pointer_fragment() for i in parents[::-1]])
 
-    def update(self, value: Value) -> "InstanceNode":
-        """Update the receiver's value.
-
-        Args:
-            value: New value.
-
-        Returns:
-            Copy of the receiver with the updated value.
-        """
-        return self._copy(value, datetime.now())
-
-    def update_from_raw(self, rvalue: RawValue) -> "InstanceNode":
-        """Update the receiver's value from a raw value.
-
-        Args:
-            rvalue: New raw value.
-
-        Returns:
-            Copy of the receiver with the updated value.
-        """
-        newval = self.schema_node.from_raw(rvalue)
-        return self.update(newval)
-
-    def up(self) -> "InstanceNode":
-        """Move the focus to the parent instance node.
-
-        Returns:
-            An instance node that is the parent of the receiver.
-
-        Raises:
-            NonexistentInstance: If there is no parent.
-        """
-        ts = max(self.timestamp, self.parinst.timestamp)
-        return self.parinst._copy(self._zip(), ts)
-
-    def top(self) -> "InstanceNode":
-        """Move the focus to the root instance node.
-
-        Returns:
-            The root instance node.
-        """
-        inst = self
-        while inst.parinst:
-            inst = inst.up()
-        return inst
-
-    def goto(self, iroute: "InstanceRoute") -> "InstanceNode":
-        """Move the focus to an instance inside the receiver's value.
-
-        Args:
-            iroute: Instance route (relative to the receiver).
-
-        Returns:
-            The instance node corresponding to the target instance.
-
-        Raises:
-            InstanceValueError: If `iroute` is incompatible with the receiver's
-                value.
-            NonexistentInstance: If the instance node doesn't exist.
-        """
-        inst = self
-        for sel in iroute:
-            inst = sel.goto_step(inst)
-        return inst
-
-    def peek(self, iroute: "InstanceRoute") -> Optional[Value]:
-        """Return a value within the receiver's subtree.
-
-        Args:
-            iroute: Instance route (relative to the receiver).
-        """
-        val = self.value
-        for sel in iroute:
-            val = sel.peek_step(val)
-            if val is None: return None
-        return val
-
-    def _peek_schema_route(self, sroute: SchemaRoute) -> Value:
-        return self.peek(
-            InstanceRoute.from_schema_route(self.schema_node, sroute))
-
     def member(self, name: InstanceName) -> "ObjectMember":
         """Return an instance node corresponding to a receiver's member.
 
@@ -170,9 +81,12 @@ class InstanceNode:
 
         Raises:
             NonexistentSchemaNode: If the member isn't permitted by the schema.
-            NonexistentInstance: If receiver's value doesn't contain member of
-                that name.
+            NonexistentInstance: If receiver's value doesn't contain member
+                `name`.
+            InstanceValueError: If the receiver's value is not an object.
         """
+        if not isinstance(self.value, ObjectValue):
+            raise InstanceValueError(self, "member of non-object")
         csn = self._member_schema_node(name)
         sibs = self.value.copy()
         try:
@@ -192,8 +106,12 @@ class InstanceNode:
             value: New value of the member.
 
         Raises:
-            NonexistentSchemaNode: If the member isn't permitted by the schema.
+            NonexistentSchemaNode: If member `name` is not permitted by the
+                schema.
+            InstanceValueError: If the receiver's value is not an object.
         """
+        if not isinstance(self.value, ObjectValue):
+            raise InstanceValueError(self, "member of non-object")
         csn = self._member_schema_node(name)
         newval = self.value.copy()
         newval[name] = value
@@ -213,17 +131,46 @@ class InstanceNode:
             name: Instance name of the member.
 
         Raises:
-            NonexistentSchemaNode: If the member isn't permitted by the schema.
-            NonexistentInstance: If receiver's value doesn't contain member of
-                that name.
+            NonexistentInstance: If receiver's value doesn't contain member
+                `name`.
+            InstanceValueError: If the receiver's value is not an object.
         """
-        if name not in self.value:
-            raise NonexistentInstance(self, "member " + name) from None
-        csn = self._member_schema_node(name)
+        if not isinstance(self.value, ObjectValue):
+            raise InstanceValueError(self, "member of non-object")
         newval = self.value.copy()
-        del newval[name]
+        try:
+            del newval[name]
+        except KeyError:
+            raise NonexistentInstance(self, "member " + name) from None
         ts = datetime.now()
         return self._copy(ObjectValue(newval, ts), ts)
+
+    def look_up(self, keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
+        """Return the entry with matching keys.
+
+        Args:
+            keys: Dictionary of list keys and their values.
+
+        Raises:
+            InstanceValueError: If the receiver's value is not a YANG list.
+            NonexistentInstance: If no entry with matching keys exists.
+        """
+        if not isinstance(self.value, ArrayValue):
+            raise InstanceValueError(self, "lookup on non-list")
+        try:
+            for i in range(len(self.value)):
+                en = self.value[i]
+                flag = True
+                for k in keys:
+                    if en[k] != keys[k]:
+                        flag = False
+                        break
+                if flag: return self.entry(i)
+            raise NonexistentInstance(self, "entry lookup failed")
+        except KeyError:
+            raise NonexistentInstance(self, "entry lookup failed") from None
+        except TypeError:
+            raise InstanceValueError(self, "lookup on non-list") from None
 
     def entry(self, index: int) -> "ArrayEntry":
         """Return an instance node corresponding to a receiver's entry.
@@ -245,7 +192,7 @@ class InstanceNode:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
     def last_entry(self) -> "ArrayEntry":
-        """Return an instance node corresponding to the last entry of the receiver.
+        """Return an instance node corresponding to the receiver's last entry.
 
         Raises:
             InstanceValueError: If the receiver's value is not an array.
@@ -278,51 +225,87 @@ class InstanceNode:
         ts = datetime.now()
         return self._copy(ArrayValue(val[:index] + val[index+1:], ts), ts)
 
-    def look_up(self, keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
-        """Return the entry with matching keys.
-
-        Args:
-            keys: Dictionary of list keys and their values.
+    def up(self) -> "InstanceNode":
+        """Return an instance node corresponding to the receiver's parent.
 
         Raises:
-            InstanceValueError: If the receiver's value is not a YANG list.
-            NonexistentInstance: If no entry with matching keys exists.
+            NonexistentInstance: If there is no parent.
         """
-        if not isinstance(self.value, ArrayValue):
-            raise InstanceValueError(self, "lookup on non-list")
-        try:
-            for i in range(len(self.value)):
-                en = self.value[i]
-                flag = True
-                for k in keys:
-                    if en[k] != keys[k]:
-                        flag = False
-                        break
-                if flag: return self.entry(i)
-            raise NonexistentInstance(self, "entry lookup failed")
-        except KeyError:
-            raise NonexistentInstance(self, "entry lookup failed") from None
-        except TypeError:
-            raise InstanceValueError(self, "lookup on non-list") from None
+        ts = max(self.timestamp, self.parinst.timestamp)
+        return self.parinst._copy(self._zip(), ts)
 
-    def raw_value(self) -> RawValue:
-        """Return receiver's value in a raw form (ready for JSON encoding)."""
-        if isinstance(self.value, ObjectValue):
-            res = {}
-            for m in self.value:
-                res[m] = self.member(m).raw_value()
-        elif isinstance(self.value, ArrayValue):
-            res = []
-            try:
-                en = self.entry(0)
-                while True:
-                    res.append(en.raw_value())
-                    en = en.next()
-            except NonexistentInstance:
-                pass
-        else:
-            res = self.schema_node.type.to_raw(self.value)
-        return res
+    def top(self) -> "InstanceNode":
+        """Return an instance node corresponding to the root of the data tree."""
+        inst = self
+        while inst.parinst:
+            inst = inst.up()
+        return inst
+
+    def update(self, value: Value) -> "InstanceNode":
+        """Update the receiver's value.
+
+        Args:
+            value: New value.
+
+        Returns:
+            Copy of the receiver with the updated value.
+        """
+        return self._copy(value, datetime.now())
+
+    def update_from_raw(self, rvalue: RawValue) -> "InstanceNode":
+        """Update the receiver's value from a raw value.
+
+        Args:
+            rvalue: New raw value.
+
+        Returns:
+            Copy of the receiver with the updated value.
+        """
+        newval = self.schema_node.from_raw(rvalue)
+        return self.update(newval)
+
+    def goto(self, iroute: "InstanceRoute") -> "InstanceNode":
+        """Move the focus to an instance inside the receiver's value.
+
+        Args:
+            iroute: Instance route (relative to the receiver).
+
+        Returns:
+            The instance node corresponding to the target instance.
+
+        Raises:
+            InstanceValueError: If `iroute` is incompatible with the receiver's
+                value.
+            NonexistentInstance: If the instance node doesn't exist.
+        """
+        inst = self
+        for sel in iroute:
+            inst = sel.goto_step(inst)
+        return inst
+
+    def peek(self, iroute: "InstanceRoute") -> Optional[Value]:
+        """Return a value within the receiver's subtree.
+
+        Args:
+            iroute: Instance route (relative to the receiver).
+        """
+        val = self.value
+        for sel in iroute:
+            val = sel.peek_step(val)
+            if val is None: return None
+        return val
+
+    def validate(self, content: ContentType = ContentType.config) -> None:
+        """Perform schema validation of the receiver's value.
+
+        Args:
+            content: Receiver's content type (config/all).
+
+        Raises:
+            SchemaError: If the value doesn't conform to the schema.
+            SemanticError: If the value violates a semantic constraint.
+        """
+        self.schema_node.validate(self, content)
 
     def add_defaults(self) -> "InstanceNode":
         """Return a copy of the receiver with defaults added to its value."""
@@ -348,6 +331,29 @@ class InstanceNode:
             sn._apply_defaults(res.value)
             return res
         return self
+
+    def raw_value(self) -> RawValue:
+        """Return receiver's value in a raw form (ready for JSON encoding)."""
+        if isinstance(self.value, ObjectValue):
+            res = {}
+            for m in self.value:
+                res[m] = self.member(m).raw_value()
+        elif isinstance(self.value, ArrayValue):
+            res = []
+            try:
+                en = self.entry(0)
+                while True:
+                    res.append(en.raw_value())
+                    en = en.next()
+            except NonexistentInstance:
+                pass
+        else:
+            res = self.schema_node.type.to_raw(self.value)
+        return res
+
+    def _peek_schema_route(self, sroute: SchemaRoute) -> Value:
+        return self.peek(
+            InstanceRoute.from_schema_route(sroute, self.schema_node))
 
     def _member_schema_node(self, name: InstanceName) -> "DataNode":
         qname = self.schema_node.iname2qname(name)
@@ -404,10 +410,10 @@ class InstanceNode:
     def _descendants(self, qname: Union[QualName, bool] = None,
                     with_self: bool = False) -> List["InstanceNode"]:
         """XPath - return the list of receiver's descendants."""
-        res = ([] if not with_self or (qname and self.qualName != qname)
+        res = ([] if not with_self or (qname and self.qual_name != qname)
                else [self])
         for c in self._children():
-            if not qname or c.qualName == qname:
+            if not qname or c.qual_name == qname:
                 res.append(c)
             res += c._descendants(qname)
         return res
@@ -428,7 +434,7 @@ class InstanceNode:
 
     def _deref(self) -> List["InstanceNode"]:
         """XPath: return the list of nodes that the receiver refers to."""
-        return ([] if self.is_structured() else
+        return ([] if self.is_internal() else
                 self.schema_node.type._deref(self))
 
 class RootNode(InstanceNode):
@@ -453,10 +459,6 @@ class RootNode(InstanceNode):
         return RootNode(newval if newval else self.value, self.schema_node,
                           newts if newts else self._timestamp)
 
-    def is_structured(self):
-        """Return ``True`` if the receiver has a structured value."""
-        return True
-
     def _ancestors_or_self(
             self, qname: Union[QualName, bool] = None) -> List["RootNode"]:
         """XPath - return the list of receiver's ancestors including itself."""
@@ -480,30 +482,10 @@ class ObjectMember(InstanceNode):
         """Sibling members within the parent object."""
 
     @property
-    def qualName(self) -> Optional[QualName]:
+    def qual_name(self) -> Optional[QualName]:
         """Return the receiver's qualified name."""
         p, s, loc = self.name.partition(":")
         return (loc, p) if s else (p, self.namespace)
-
-    def _zip(self) -> ObjectValue:
-        """Zip the receiver into an object and return it."""
-        res = ObjectValue(self.siblings.copy(), self.timestamp)
-        res[self.name] = self.value
-        return res
-
-    def is_structured(self) -> bool:
-        """Return ``True`` if the receiver has a structured value."""
-        return not isinstance(self.schema_node, LeafNode)
-
-    def _pointer_fragment(self) -> str:
-        return self.name
-
-    def _copy(self, newval: Value = None,
-              newts: datetime = None) -> "ObjectMember":
-        return ObjectMember(self.name, self.siblings,
-                           newval if newval else self.value,
-                           self.parinst, self.schema_node,
-                           newts if newts else self._timestamp)
 
     def sibling(self, name: InstanceName) -> "ObjectMember":
         """Return an instance node corresponding to a sibling member.
@@ -525,10 +507,26 @@ class ObjectMember(InstanceNode):
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
 
+    def _zip(self) -> ObjectValue:
+        """Zip the receiver into an object and return it."""
+        res = ObjectValue(self.siblings.copy(), self.timestamp)
+        res[self.name] = self.value
+        return res
+
+    def _pointer_fragment(self) -> str:
+        return self.name
+
+    def _copy(self, newval: Value = None,
+              newts: datetime = None) -> "ObjectMember":
+        return ObjectMember(self.name, self.siblings,
+                           newval if newval else self.value,
+                           self.parinst, self.schema_node,
+                           newts if newts else self._timestamp)
+
     def _ancestors_or_self(
             self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """XPath - return the list of receiver's ancestors including itself."""
-        res = [] if qname and self.qualName != qname else [self]
+        res = [] if qname and self.qual_name != qname else [self]
         return res + self.up()._ancestors_or_self(qname)
 
     def _ancestors(
@@ -549,19 +547,19 @@ class ArrayEntry(InstanceNode):
         """Following entries of the parent array."""
 
     @property
+    def index(self) -> int:
+        """Return the receiver's index."""
+        return len(self.before)
+
+    @property
     def name(self) -> InstanceName:
         """Return the name of the receiver."""
         return self.parinst.name
 
     @property
-    def qualName(self) -> Optional[QualName]:
+    def qual_name(self) -> Optional[QualName]:
         """Return the receiver's qualified name."""
-        return self.parinst.qualName
-
-    @property
-    def index(self) -> int:
-        """Return the receiver's index."""
-        return len(self.before)
+        return self.parinst.qual_name
 
     def update_from_raw(self, value: RawValue) -> "ArrayEntry":
         """Update the receiver's value from a raw value.
@@ -569,40 +567,6 @@ class ArrayEntry(InstanceNode):
         This method overrides the superclass method.
         """
         return self.update(super(SequenceNode, self.schema_node).from_raw(value))
-
-    def _zip(self) -> ArrayValue:
-        """Zip the receiver into an array and return it."""
-        res = ArrayValue(self.before.copy(), self.timestamp)
-        res.append(self.value)
-        res += self.after
-        return res
-
-    def is_structured(self) -> bool:
-        """Return ``True`` if the receiver has a structured value."""
-        return not isinstance(self.schema_node, LeafListNode)
-
-    def _pointer_fragment(self) -> int:
-        return str(len(self.before))
-
-    def _copy(self, newval: Value = None,
-              newts: datetime = None) -> "ArrayEntry":
-        return ArrayEntry(self.before, self.after,
-                          newval if newval else self.value,
-                          self.parinst, self.schema_node,
-                          newts if newts else self._timestamp)
-
-    def next(self) -> "ArrayEntry":
-        """Return an instance node corresponding to the next entry.
-
-        Raises:
-            NonexistentInstance: If the receiver is the last entry of the parent array.
-        """
-        try:
-            newval = self.after[0]
-        except IndexError:
-            raise NonexistentInstance(self, "next of last") from None
-        return ArrayEntry(self.before + [self.value], self.after[1:], newval,
-                          self.parinst, self.schema_node, self.timestamp)
 
     def previous(self) -> "ArrayEntry":
         """Return an instance node corresponding to the previous entry.
@@ -615,6 +579,19 @@ class ArrayEntry(InstanceNode):
         except IndexError:
             raise NonexistentInstance(self, "previous of first") from None
         return ArrayEntry(self.before[:-1], [self.value] + self.after, newval,
+                          self.parinst, self.schema_node, self.timestamp)
+
+    def next(self) -> "ArrayEntry":
+        """Return an instance node corresponding to the next entry.
+
+        Raises:
+            NonexistentInstance: If the receiver is the last entry of the parent array.
+        """
+        try:
+            newval = self.after[0]
+        except IndexError:
+            raise NonexistentInstance(self, "next of last") from None
+        return ArrayEntry(self.before + [self.value], self.after[1:], newval,
                           self.parinst, self.schema_node, self.timestamp)
 
     def insert_before(self, value: Value) -> "ArrayEntry":
@@ -641,10 +618,27 @@ class ArrayEntry(InstanceNode):
         return ArrayEntry(self.before + [self.value], self.after, value,
                           self.parinst, self.schema_node, datetime.now())
 
+    def _zip(self) -> ArrayValue:
+        """Zip the receiver into an array and return it."""
+        res = ArrayValue(self.before.copy(), self.timestamp)
+        res.append(self.value)
+        res += self.after
+        return res
+
+    def _pointer_fragment(self) -> int:
+        return str(len(self.before))
+
+    def _copy(self, newval: Value = None,
+              newts: datetime = None) -> "ArrayEntry":
+        return ArrayEntry(self.before, self.after,
+                          newval if newval else self.value,
+                          self.parinst, self.schema_node,
+                          newts if newts else self._timestamp)
+
     def _ancestors_or_self(
             self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """XPath - return the list of receiver's ancestors including itself."""
-        res = [] if qname and self.qualName != qname else [self]
+        res = [] if qname and self.qual_name != qname else [self]
         return res + self.up()._ancestors(qname)
 
     def _ancestors(
@@ -652,8 +646,11 @@ class ArrayEntry(InstanceNode):
         """XPath - return the list of receiver's ancestors."""
         return self.up()._ancestors(qname)
 
-    def preceding_entries(self) -> List["ArrayEntry"]:
-        """Return the list of entries preceding the receiver."""
+    def _preceding_siblings(
+            self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
+        """XPath - return the list of receiver's preceding siblings."""
+        if qname and self.qual_name != qname:
+            return []
         res = []
         ent = self
         for i in range(len(self.before)):
@@ -661,8 +658,11 @@ class ArrayEntry(InstanceNode):
             res.append(ent)
         return res
 
-    def following_entries(self) -> List["ArrayEntry"]:
-        """Return the list of entries following the receiver."""
+    def _following_siblings(
+            self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
+        """XPath - return the list of receiver's following siblings."""
+        if qname and self.qual_name != qname:
+            return []
         res = []
         ent = self
         for i in range(len(self.after)):
@@ -670,32 +670,24 @@ class ArrayEntry(InstanceNode):
             res.append(ent)
         return res
 
-    def _preceding_siblings(
-            self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
-        """XPath - return the list of receiver's preceding siblings."""
-        return ([] if qname and self.qualName != qname
-                else self.preceding_entries())
-
-    def _following_siblings(
-            self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
-        """XPath - return the list of receiver's following siblings."""
-        return ([] if qname and self.qualName != qname
-                else self.following_entries())
-
     def _parent(self) -> List["InstanceNode"]:
         """XPath - return the receiver's parent as a singleton list."""
         return [self.up().up()]
 
 class InstanceRoute(list):
+    """This class represents a route into an instance value."""
 
     @classmethod
-    def from_schema_route(cls, start: "SchemaNode",
-                          sroute: SchemaRoute) -> "InstanceRoute":
+    def from_schema_route(cls, sroute: SchemaRoute,
+                          start: "SchemaNode") -> "InstanceRoute":
         """Return instance route constructed from a schema route.
 
         Args:
-            start: Schema Node fron which the schema route starts.
             sroute: Schema route.
+            start: Schema Node from which the schema route starts.
+        Raises:
+            NonexistentSchemaNode: If either `start` or one of the
+                nodes in `sroute` doesn't exist.
         """
         res = cls()
         sn = start
@@ -1012,8 +1004,8 @@ class InstanceException(YangsonException):
     def __str__(self):
         return "[" + self.instance.json_pointer() + "]"
 
-class NonexistentInstance(InstanceException):
-    """Attempt to access an instance node that doesn't exist."""
+class InstanceValueError(InstanceException):
+    """A method is called for a wrong type of instance node."""
 
     def __init__(self, inst: InstanceNode, detail: str) -> None:
         super().__init__(inst)
@@ -1022,8 +1014,8 @@ class NonexistentInstance(InstanceException):
     def __str__(self):
         return "{} {}".format(super().__str__(), self.detail)
 
-class InstanceValueError(InstanceException):
-    """A method is called for a wrong type of instance node."""
+class NonexistentInstance(InstanceException):
+    """Attempt to access an instance node that doesn't exist."""
 
     def __init__(self, inst: InstanceNode, detail: str) -> None:
         super().__init__(inst)

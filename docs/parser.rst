@@ -44,7 +44,7 @@ This module defines the following exceptions:
 
       >>> p = Parser("x \t #quu0a,foo:bar< qwerty")
 
-   .. rubric:: Instance Variables
+   .. rubric:: Instance Attributes
 
    .. attribute:: input
 

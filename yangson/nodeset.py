@@ -12,7 +12,7 @@ def comparison(meth):
     def wrap(self, arg):
         if isinstance(arg, NodeSet):
             for n in arg:
-                if n.is_structured(): continue
+                if n.is_internal(): continue
                 if meth(self, str(n)):
                     return True
             return False
@@ -41,7 +41,7 @@ class NodeSet(list):
     def __eq__(self, val: XPathValue) -> bool:
         is_str = isinstance(val, str)
         for n in self:
-            if n.is_structured(): continue
+            if n.is_internal(): continue
             if is_str:
                 if str(n) == val:
                     return True
@@ -53,7 +53,7 @@ class NodeSet(list):
     def __ne__(self, val: XPathValue) -> bool:
         is_str = isinstance(val, str)
         for n in self:
-            if n.is_structured(): continue
+            if n.is_internal(): continue
             if is_str:
                 if str(n) != val:
                     return True

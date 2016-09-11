@@ -309,12 +309,12 @@ class Step(Expr):
             Axis.following_sibling:
                 lambda n, qn=self.qname: n._following_siblings(qn),
             Axis.parent: (
-                lambda n, qn=self.qname: [] if qn and qn != n.parent.qualName
+                lambda n, qn=self.qname: [] if qn and qn != n.parent.qual_name
                 else n._parent()),
             Axis.preceding_sibling:
                 lambda n, qn=self.qname: n._preceding_siblings(qn),
             Axis.self:
-                lambda n, qn=self.qname: [] if qn and qn != n.qualName else [n],
+                lambda n, qn=self.qname: [] if qn and qn != n.qual_name else [n],
                 }[self.axis]
 
     def _eval(self, xctx: XPathContext):

@@ -11,7 +11,7 @@
    import os
    from yangson import DataModel
    from yangson.instance import InstanceIdParser
-   os.chdir("examples/ex1")
+   os.chdir("examples/ex2")
 
 .. testcleanup::
 
@@ -28,6 +28,7 @@ This module implements the following classes:
 * :class:`RootNode`: Root of the data tree.
 * :class:`ObjectMember`: Instance node that is an object member.
 * :class:`ArrayEntry`: Instance node that is an array entry.
+* :class:`InstanceRoute`: Route into an instance value.
 * :class:`ResourceIdParser`: Parser for RESTCONF :term:`resource
   identifier`\ s.
 * :class:`InstanceIdParser`: Parser for :term:`instance identifier`\ s.
@@ -36,16 +37,10 @@ The module defines the following exceptions:
 
 * :exc:`InstanceException`: Base class for exceptions related to
   operations on instance nodes.
+* :exc:`InstanceValueError`: The instance value is incompatible with
+  the called method.
 * :exc:`NonexistentInstance`: Attempt to access an instance node that
   doesn't exist.
-* :exc:`InstanceTypeError`: A method is called for a wrong type of
-  instance node.
-* :exc:`DuplicateMember`: Attempt to create a member that already exists.
-* :exc:`MandatoryMember`: Attempt to remove a mandatory member.
-* :exc:`MinElements`: An array becomes shorter than the minimum number
-  of elements specified in the data model..
-* :exc:`MaxElements`: An array becomes longer than the maximum number
-  of elements specified in the data model.
 
 .. class:: InstanceNode(value: Value, parinst: Optional[InstanceNode], \
 	   schema_node: DataNode, timestamp: datetime.datetime)
@@ -71,6 +66,12 @@ The module defines the following exceptions:
    :class:`InstanceNode` class and its subclasses – leave other
    instance nodes intact.
 
+   Most methods for moving the focus inside the zipper structure and
+   updating the value of an instance node are defined in the
+   :class:`InstanceNode`, additional methods that are specific to an
+   :class:`ObjectMember` or :class:`ArrayEntry` are defined in the
+   respective class.
+
    The easiest way to create an :class:`InstanceNode` is to use the
    :meth:`.DataModel.from_raw` method:
 
@@ -84,7 +85,7 @@ The module defines the following exceptions:
    The arguments of the :class:`InstanceNode` constructor provide
    values for instance variables of the same name.
 
-   .. rubric:: Instance Variables
+   .. rubric:: Instance Attributes
 
    .. attribute:: parinst
 
@@ -104,12 +105,12 @@ The module defines the following exceptions:
 
       .. doctest::
 
-      >>> inst.value['example-2:top']['bar']
-      True
-      >>> inst.value['example-2:top']['baz']
-      Traceback (most recent call last):
-      ...
-      KeyError: 'baz'
+	 >>> inst.value['example-2:top']['bar']
+	 True
+	 >>> inst.value['example-2:top']['baz']
+	 Traceback (most recent call last):
+	 ...
+	 KeyError: 'baz'
 
    .. rubric:: Properties
 
@@ -118,21 +119,44 @@ The module defines the following exceptions:
       The :term:`namespace identifier` of the instance node. For the root
       node it is ``None``.
 
-   .. attribute:: qualName
+   .. attribute:: qual_name
 
-      The :term:`qualified name` of the instance node. For the root it is ``None``.
+      The :term:`qualified name` of the receiver. For the root node it
+      is ``None``.
 
-   .. rubric:: Methods
+   .. rubric:: Public Methods
+
+   .. automethod:: __str__
+
+      If the receiver's value is a scalar, then the result is the
+      :term:`canonical representation` of the value, if it is defined
+      for the value's type (see sec. `9`_ in [RFC7950]_). Otherwise,
+      the result is the value returned by Python standard function
+      :class:`str`.
+
+   .. method:: is_internal() -> bool
+
+      Return ``True`` if the receiver is an instance of an internal
+      schema node, i.e. its :attr:`schema_node` is an
+      :class:`~.schema.InternalNode`. Otherwise return ``False``.
+
+   .. automethod:: json_pointer
+
+      This method is used in several *doctest* examples below.
 
    .. method:: member(name: InstanceName) -> ObjectMember
 
       Return an instance node corresponding to the receiver's
       member *name*.
 
-      This method raises :exc:`NonexistentSchemaNode` if the schema
-      doesn't permit a member of that name (or any member at all), and
-      :exc:`NonexistentInstance` if that member isn't present in the
-      actual receiver's value.
+      This method may raise the following exceptions:
+
+      * :exc:`InstanceValueError` – if receiver's value is not an
+	object.
+      * :exc:`NonexistentSchemaNode` – if the schema doesn't permit
+	member *name*,
+      * :exc:`NonexistentInstance` – if member *name* isn't present in
+	the actual receiver's value,
 
       .. doctest::
 
@@ -152,8 +176,9 @@ The module defines the following exceptions:
       *value* argument. If that member doesn't exist in the receiver's
       value, it is created (provided that the schema permits it).
 
-      :exc:`NonexistentSchemaNode` is raised if the schema doesn't
-      permit such a member.
+      This method raises :exc:`InstanceValueError` if the receiver's
+      value is not an object, and :exc:`NonexistentSchemaNode` if the
+      schema doesn't permit member *name*.
 
       .. doctest::
 
@@ -170,36 +195,90 @@ The module defines the following exceptions:
 	 ...
 	 yangson.schema.NonexistentSchemaNode: quux in module example-2
 
-   .. method:: delete_member(name: InstanceName, validate: bool = \
-	       True) -> InstanceNode
+   .. method:: delete_member(name: InstanceName) -> InstanceNode
 
       Return a new instance node that is an exact copy of the
-      receiver, except that its member *name* is deleted. The
-      *validate* flag controls whether the returned value is required
-      to be valid. If it is set to ``False``, the member will be
-      removed even if it violates the schema.
+      receiver, except that member *name* is deleted from its value.
 
-      This method may raise the following exceptions:
-
-      * :exc:`NonexistentSchemaNode` – if member *name* is not
-	permitted by the schema.
-      * :exc:`NonexistentInstance` – if member *name* is not present
-	in the receiver's value.
-      * :exc:`MandatoryMember` – if removing member *name* isn't
-	permitted by the schema, i.e. it is a mandatory node.
+      This method raises :exc:`InstanceValueError` if the receiver's
+      value is not an object, and:exc:`NonexistentInstance` if member
+      *name* isn't present in the actual receiver's value.
 
       .. doctest::
 
 	 >>> xtop = e2top.delete_member('baz')
 	 >>> sorted(xtop.value.keys())
 	 ['bar', 'foo']
-	 >>> top.delete_member('bar')
+
+   .. method:: look_up(keys: Dict[InstanceName, ScalarValue]) -> ArrayEntry
+
+      Return an instance node corresponding to the receiver's entry
+      with keys specified by *keys*. The receiver must be a YANG list.
+
+      The argument *keys* is a dictionary whose keys are
+      :term:`instance name`\ s of the list keys, and values are the
+      corresponding list key values.
+
+      This method raises :exc:`InstanceValueError` if the receiver is
+      not a YANG list, and :exc:`NonexistentInstance` if no entry with
+      matching keys exists.
+
+   .. method:: entry(index: int) -> ArrayEntry
+
+      Return an instance node corresponding to the receiver's entry
+      whose index is specified by the *index* argument.
+
+      This method raises :exc:`InstanceValueError` if the receiver's
+      value is not an array, and :exc:`NonexistentInstance` if entry
+      *index* is not present in the receiver's value.
+
+      .. doctest::
+
+	 >>> foo0 = foo.entry(0)
+	 >>> foo0.value['number']
+	 6
+
+   .. method:: last_entry() -> ArrayEntry
+
+      Return an instance node corresponding to the receiver's last entry.
+
+      :exc:`InstanceValueError` is raised if the receiver's value is
+      not an array, and :exc:`NonexistentInstance` is raised if the
+      receiver is an empty array.
+
+      .. doctest::
+
+	 >>> foo1 = foo.last_entry()
+	 >>> foo1.value['number']
+	 3
+
+   .. method:: delete_entry(index: int) -> InstanceNode
+
+      Return a new instance node that is an exact copy of the
+      receiver, except that the entry specified by *index* is deleted
+      from its value.
+
+      This method raises :exc:`InstanceValueError` if the receiver is
+      not an array, and :exc:`NonexistentInstance` if entry *index* is
+      not present in the actual receiver's value.
+
+   .. method:: up() -> InstanceNode
+
+      Return an instance node corresponding to the receiver's parent.
+
+      This method raises :exc:`NonexistentInstance` if the receiver is
+      the root of the data tree and thus has no parent.
+
+      .. doctest::
+
+	 >>> foo1.up().json_pointer()
+	 '/example-2:top/foo'
+	 >>> inst.up()
 	 Traceback (most recent call last):
 	 ...
-	 yangson.instance.MandatoryMember: [/example-2:top] member bar
-	 >>> itop = top.delete_member('bar', validate=False)
-	 >>> sorted(itop.value.keys())
-	 ['foo']
+	 yangson.instance.NonexistentInstance: [/] up of top
+
+   .. automethod:: top() -> InstanceNode
 
    .. method:: update(value: Value) -> InstanceNode
 
@@ -215,91 +294,25 @@ The module defines the following exceptions:
       Return a new instance node that is a copy of the receiver with
       the value constructed from the *rvalue* argument.
 
-      This method is similar to :meth:`update`, only *rvalue* is
-      “cooked” first (see :mod:`instvalue`).
-
-   .. method:: entry(index: int) -> ArrayEntry
-
-      Return an instance node corresponding to the receiver's entry
-      whose index is specified by the *index* argument.
-
-      :exc:`InstanceTypeError` is raised if the receiver's value is
-      not an array, and :exc:`NonexistentInstance` is raised if entry
-      *index* is not present in the receiver's value.
-
-      .. doctest::
-
-	 >>> foo0 = foo.entry(0)
-	 >>> foo0.value['number']
-	 6
-
-   .. method:: last_entry() -> ArrayEntry
-
-      Return an instance node corresponding to the receiver's last entry.
-
-      :exc:`InstanceTypeError` is raised if the receiver's value is
-      not an array, and :exc:`NonexistentInstance` is raised if the
-      receiver is an empty array.
-
-      .. doctest::
-
-	 >>> foo1 = foo.last_entry()
-	 >>> foo1.value['number']
-	 3
-
-   .. automethod:: json_pointer
-
-      .. doctest::
-
-	 >>> foo1.json_pointer()
-	 '/example-2:top/foo/1'
-
-   .. method:: up() -> InstanceNode
-
-      Move the focus to the parent instance node. If the receiver is
-      the root of the data tree, exception :exc:`NonexistentInstance`
-      is raised.
-
-      .. doctest::
-
-	 >>> foo1.up().json_pointer()
-	 '/example-2:top/foo'
-	 >>> inst.up()
-	 Traceback (most recent call last):
-	 ...
-	 yangson.instance.NonexistentInstance: [/] up of top
-
-   .. method:: add_defaults() -> InstanceNode
-
-      Return a new instance node that is a copy of the receiver
-      extended with default values from the data model. Only default
-      values that are “in use” are added, see sections `7.6.1`_ and
-      `7.7.2`_ in [RFC7950]_.
-
-      .. doctest::
-
-	 >>> wd = inst.add_defaults()
-	 >>> wd.value['example-2:top']['baz']
-	 'hi!'
+      This method is similar to :meth:`update`, only the argument
+      *rvalue* is a :term:`raw value` that needs to be “cooked” first
+      (see :mod:`instvalue`).
 
    .. method:: goto(iroute: InstanceRoute) -> InstanceNode
 
-      Move the focus to an :class:`InstanceNode` inside the receiver's
-      value. The argument *iroute* is an :term:`instance route`
-      (relative to the receiver) that identifies the target
-      instance.
+      Return an :class:`InstanceNode` corresponding to a target
+      instance arbitrarily deep inside the receiver's value. The
+      argument *iroute* is an :class:`InstanceRoute` (relative to the
+      receiver) that identifies the target instance.
 
-      The easiest way for obtaining an instance route is to parse it
-      from a :term:`instance identifier` (see
+      The easiest way for obtaining an :class:`InstanceRoute` is to
+      parse it from an :term:`instance identifier` (see
       :class:`InstanceIdParser`) or :term:`resource identifier` (see
       :class:`ResourceIdParser`).
 
-      The instance node corresponding to the target instance
-      is returned, or one of the following exceptions is raised:
-
-      * :exc:`InstanceTypeError` – if *iroute* isn't compatible with
-	the schema.
-      * :exc:`NonexistentInstance` – if the target instance doesn't exist.
+      This method raises :exc:`InstanceValueError` if *iroute* isn't
+      compatible with the schema, and :exc:`NonexistentInstance` if
+      the target instance doesn't exist in the receiver's value.
 
       .. doctest::
 
@@ -311,56 +324,26 @@ The module defines the following exceptions:
 	 ...
 	 yangson.instance.NonexistentInstance: [/example-2:top] member baz
 
-   .. method:: delete_entry(index: int, validate: bool = True) -> \
-	       InstanceNode
-
-      Return a new instance node that is an exact copy of the
-      receiver, except that its entry specified by *index* is
-      deleted. The *validate* flag controls whether the returned value
-      is required to be valid. If it is set to ``False``, the entry
-      will be removed even if it violates the schema.
-
-      This method may raise the following exceptions:
-
-      * :exc:`InstanceTypeError` – if the receiver is not an array.
-      * :exc:`NonexistentInstance` – if entry *index* is not present
-	in the receiver's value.
-      * :exc:`MinElements` – if after removing the entry the number of
-	entries would drop below the minimum value specified by
-	**min-elements**.
-
-   .. method:: look_up(keys: Dict[InstanceName, ScalarValue]) -> ArrayEntry
-
-      Return an instance node corresponding to the receiver's entry
-      with keys specified by the argument *keys*.
-
-      This method may raise the following exceptions:
-
-      * :exc:`InstanceTypeError` – if the receiver is not a YANG list.
-      * :exc:`NonexistentInstance` – if no entry with matching keys exists.
-
    .. method:: peek(iroute: InstanceRoute) -> Optional[Value]
 
-      Return a value inside the receiver's subtree. The argument
-      *iroute* is an :term:`instance route` (relative to the receiver)
-      that identifies the target instance. ``None`` is returned if the
+      Return the value of a target instance arbitrarily deep inside
+      the receiver's value. The argument *iroute* is an
+      :class:`InstanceRoute` (relative to the receiver) that
+      identifies the target instance. ``None`` is returned if the
       target instance doesn't exist.
 
-      .. CAUTION::
-      This method doesn't create a new instance, so the
+      .. CAUTION:: This method doesn't create a new instance, so the
       access to the returned value should in general be read-only,
       because any modifications of the returned value would also
-      affect the receiver, hence destroy the persistence property.
-
-   .. method:: top() -> InstanceNode
-
-      Return a root instance node.
+      affect the receiver, so the persistence property would be
+      violated.
 
    .. method:: validate(content: ContentType = ContentType.config) -> None
 
-      Validate the receiver's value. The *content* argument specifies
-      whether the value is configuration (``Content.config``) or both
-      configuration and state data.
+      Perform schema validation on the receiver's value. The *content*
+      argument specifies whether the value is configuration
+      (``Content.config``) or both configuration and state data
+      (``Content.all``).
 
       The method returns ``None`` if the validation succeeds,
       otherwise one of the following exceptions is raised:
@@ -379,16 +362,25 @@ The module defines the following exceptions:
 	 ...
 	 yangson.schema.SchemaError: [/example-2:top] not allowed: member 'baz'
 
-   .. method:: is_structured() -> bool
+   .. method:: add_defaults() -> InstanceNode
 
-      Return ``True`` if the receiver's value is structured, i.e. it
-      is an :class:`~.instvalue.ArrayValue` or
-      :class:`~.instvalue.ObjectValue`.
+      Return a new instance node that is a copy of the receiver
+      extended with default values specified the data model. Only
+      default values that are “in use” are added, see sections
+      `7.6.1`_ and `7.7.2`_ in [RFC7950]_.
+
+      .. doctest::
+
+	 >>> wd = inst.add_defaults()
+	 >>> wd.value['example-2:top']['baz']
+	 'hi!'
+
+   .. automethod:: raw_value() -> RawValue
 
 .. autoclass:: RootNode
    :show-inheritance:
 
-   .. rubric:: Instance Variables
+   .. rubric:: Instance Attributes
 
    .. attribute:: name
 
@@ -396,16 +388,16 @@ The module defines the following exceptions:
 
 .. class:: ObjectMember(name: InstanceName, siblings: \
 	   Dict[InstanceName, Value], value: Value, parinst: \
-	   Optional[InstanceNode], schema_node: DataNode, timestamp: \
+	   InstanceNode, schema_node: DataNode, timestamp: \
 	   datetime.datetime)
 
    This class represents an instance node that is a member of an
    object. It is a subclass of :class:`InstanceNode`. The additional
-   constructor arguments *name* and *siblings* provide
-   values for instance variables of the same name. Other arguments
-   have the same meaning as in :class:`InstanceNode`.
+   constructor arguments *name* and *siblings* provide values for
+   instance variables of the same name. Other arguments of the
+   constructor have the same meaning as in :class:`InstanceNode`.
 
-   .. rubric:: Instance Variables
+   .. rubric:: Instance Attributes
 
    .. attribute:: name
 
@@ -416,24 +408,19 @@ The module defines the following exceptions:
       Dictionary of the receiver's siblings (other members of the
       parent object).
 
-   .. rubric:: Properties
-
-   .. attribute:: qualName
-
-      The :term:`qualified name` of the receiver.
-
-   .. rubric:: Methods
+   .. rubric:: Public Methods
 
    .. method:: sibling(name: InstanceName) -> ObjectMember
 
       Return the instance node corresponding to sibling member *name*.
 
-      :exc:`NonexistentSchemaNode` is raised if member *name* is not
-      permitted by the parent's schema, and :exc:`NonexistentInstance`
-      is raised if such sibling member *name* doesn't exist.
+      This method raises :exc:`NonexistentSchemaNode` if member *name*
+      is not permitted by the parent's schema, and
+      :exc:`NonexistentInstance` if sibling member *name* doesn't
+      exist.
 
 .. class:: ArrayEntry(before: List[Value], after: List[Value], value: \
-	   Value, parinst: Optional[InstanceNode], schema_node: \
+	   Value, parinst: InstanceNode, schema_node: \
 	   DataNode, timestamp: datetime.datetime)
 
    This class is a subclass of :class:`InstanceNode`, and represents
@@ -443,7 +430,7 @@ The module defines the following exceptions:
    name. Other arguments have the same meaning as in
    :class:`InstanceNode`.
 
-   .. rubric:: Instance Variables
+   .. rubric:: Instance Attributes
 
    .. attribute:: before
 
@@ -464,56 +451,55 @@ The module defines the following exceptions:
       The :term:`instance name` of an array entry is by definition the
       same as the instance name of the parent array.
 
-   .. attribute:: qualName
-
-      The :term:`qualified name` of an array entry is by definition
-      the same as the qualified name of the parent array.
-
-   .. rubric:: Methods
-
-   .. method:: following_entries() -> List["ArrayEntry"]
-
-      Return the list of entries following the receiver in the parent array.
-
-   .. method:: insert_after(value: Value, validate: bool = True) -> ArrayEntry
-
-      Insert a new entry after the receiver and return an instance
-      node of the new entry. The *value* argument specifies the value
-      of the new entry. The *validate* flag controls whether the
-      parent array is required to be valid after the new entry is
-      inserted.
-
-      :exc:`MaxElements` is raised if *validate* is ``True`` and the
-      number of entries would exceed the limit specified by
-      **max-elements**.
-
-   .. method:: insert_before(value: Value, validate: bool = True) -> ArrayEntry
-
-      Insert a new entry before the receiver and return an
-      instance node of the new entry. The *value* argument specifies
-      the value of the new entry. The *validate* flag controls whether
-      the parent array is required to be valid after the new entry is
-      inserted.
-
-      :exc:`MaxElements` is raised if *validate* is ``True`` and the
-      number of entries would exceed the limit specified by
-      **max-elements**.
-
-   .. method:: next() -> ArrayEntry
-
-      Return an instance node corresponding to the next entry in the
-      parent array. :exc:`NonexistentInstance` is raised if the
-      receiver is the last entry of the parent array.
-
-   .. method:: preceding_entries() -> List["ArrayEntry"]
-
-      Return the list of entries preceding the receiver in the parent array.
+   .. rubric:: Public Methods
 
    .. method:: previous() -> ArrayEntry
 
       Return an instance node corresponding to the previous entry in
-      the parent array. :exc:`NonexistentInstance` is raised if the
-      receiver is the first entry of the parent array.
+      the parent array.
+
+      This method raises :exc:`NonexistentInstance` if the receiver
+      is the first entry of the parent array.
+
+   .. method:: next() -> ArrayEntry
+
+      Return an instance node corresponding to the next entry in the
+      parent array.
+
+      This method raises :exc:`NonexistentInstance` if the receiver is
+      the last entry of the parent array.
+
+   .. method:: insert_before(value: Value) -> ArrayEntry
+
+      Insert a new entry before the receiver and return an instance
+      node corresponding to the new entry. The *value* argument
+      specifies the value of the new entry.
+
+   .. method:: insert_after(value: Value, validate: bool = True) -> ArrayEntry
+
+      Insert a new entry after the receiver and return an instance
+      node corresponding to the new entry. The *value* argument
+      specifies the value of the new entry.
+
+.. autoclass:: InstanceRoute
+   :show-inheritance:
+
+   Instances are expected to be created by using either the class
+   method :meth:`from_schema_route` or one of the parser classes
+   :class:`ResourceIdParser` and :class:`InstanceIdParser`.
+
+   .. rubric:: Public Methods
+
+   .. classmethod:: from_schema_route(sroute: SchemaRoute, start: \
+		    SchemaNode) -> InstanceRoute
+
+      Return an :class:`InstanceRoute` constructed from the
+      :term:`schema route` *sroute*. The *start* argument is the
+      :class:`~.schema.SchemaNode` from which the schema route starts.
+
+      This method raises :exc:`~.schema.NonexistentSchemaNode` if
+      either *start* or one of the components of *sroute* doesn't
+      exist in the schema tree.
 
 .. class:: ResourceIdParser(text: str)
 
@@ -522,13 +508,15 @@ The module defines the following exceptions:
    identifier`\ s. The constructor argument *text* is the resource
    identifier to be parsed.
 
-   .. rubric:: Methods
+   .. rubric:: Public Methods
 
    .. method:: parse() -> InstanceRoute
 
-      Parse a :term:`resource identifier` into an :term:`instance
-      route` that can be used as an argument for the methods
-      :meth:`InstanceNode.goto` and :meth:`InstanceNode.peek`.
+      Return an :class:`InstanceRoute` by parsing a :term:`resource
+      identifier` contained in the instance attribute :attr:`text`.
+
+      The returned value can be passed as the argument to
+      :meth:`InstanceNode.goto` and :meth:`InstanceNode.peek` methods.
 
 .. class:: InstanceIdParser(text: str)
 
@@ -537,13 +525,15 @@ The module defines the following exceptions:
    constructor argument *text* is the instance identifier to be
    parsed.
 
-   .. rubric:: Methods
+   .. rubric:: Public Methods
 
    .. method:: parse() -> InstanceRoute
 
-      Parse an :term:`instance identifier` into an :term:`instance
-      route` that can be used as an argument for the methods
-      :meth:`InstanceNode.goto` and :meth:`InstanceNode.peek`.
+      Return an :class:`InstanceRoute` by parsing an :term:`instance
+      identifier` contained in the instance attribute :attr:`text`.
+
+      The returned value can be passed as the argument to
+      :meth:`InstanceNode.goto` and :meth:`InstanceNode.peek` methods.
 
 .. autoexception:: InstanceException(inst: InstanceNode)
    :show-inheritance:
@@ -551,31 +541,17 @@ The module defines the following exceptions:
    The *inst* argument is the initial instance from which the failed
    operation was attempted.
 
+.. autoexception:: InstanceValueError
+   :show-inheritance:
+
+   The *detail* argument gives details about the value mismatch.
+
 .. autoexception:: NonexistentInstance
    :show-inheritance:
 
-   The *detail* argument gives details about why the instance doesn't exist.
-
-.. autoexception:: InstanceTypeError
-   :show-inheritance:
-
-   The *detail* argument gives details about the type mismatch.
-
-.. autoexception:: DuplicateMember
-   :show-inheritance:
-
-   The *name* argument is the instance name of the duplicate member.
-
-.. autoexception:: MandatoryMember
-   :show-inheritance:
-
-   The *name* argument is the instance name of the mandatory member.
-
-.. autoexception:: MinElements
-   :show-inheritance:
-
-.. autoexception:: MaxElements
-   :show-inheritance:
+   The *detail* argument gives details about why the instance doesn't
+   exist.
 
 .. _7.6.1: https://tools.ietf.org/html/rfc7950#section-7.6.1
 .. _7.7.2: https://tools.ietf.org/html/rfc7950#section-7.7.2
+.. _9: https://tools.ietf.org/html/rfc7950#section-9
