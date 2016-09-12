@@ -18,8 +18,9 @@ Glossary
 
       An instance value that is in the internal form prescribed for
       that instance. That is, scalar values are represented according
-      to their types, while objects and arrays are instances of a
-      subclass of :class:`Instance`.
+      to their types, while objects and arrays become instances of of
+      :class:`.instvalue.ObjectValue` and
+      :class:`.instvalue.ArrayValue`, respectively.
 
    canonical representation
 
