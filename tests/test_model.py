@@ -9,7 +9,7 @@ from yangson.enumerations import ContentType
 from yangson.instance import (InstanceIdParser, NonexistentInstance,
                               ResourceIdParser)
 from yangson.instvalue import ArrayValue, ObjectValue
-from yangson.schema import SequenceNode, NonexistentSchemaNode
+from yangson.schema import SequenceNode, NonexistentSchemaNode, SchemaError
 from yangson.xpathast import XPathTypeError
 from yangson.xpathparser import InvalidXPath, NotSupported, XPathParser
 
@@ -468,20 +468,20 @@ def test_instance_paths(data_model, instance):
 def test_edits(data_model, instance):
     laii = InstanceIdParser("/test:contA/listA").parse()
     la = instance.goto(laii)
-    inst1 = la.entry(1).update_from_raw(
-        {"leafE": "B00F", "leafF": False}).top()
+    inst1 = la.entry(1).update(
+        {"leafE": "B00F", "leafF": False}, raw=True).top()
     assert instance.peek(laii)[1]["leafE"] == "ABBA"
     assert inst1.peek(laii)[1]["leafE"] == "B00F"
-    inst2 = instance.put_member("testb:leafQ", "ABBA").top()
-    with pytest.raises(NonexistentInstance):
-        inst2.member("test:llistB")
     modla = la.delete_entry(1)
     assert len(modla.value) == 1
     llb1 = instance.member("test:llistB").entry(1)
-    modllb = llb1.update_from_raw("2001:db8:0:2::1").up()
+    modllb = llb1.update("2001:db8:0:2::1", raw=True).up()
     assert modllb.value == ArrayValue(["::1", "2001:db8:0:2::1"])
     with pytest.raises(YangTypeError):
-        llb1.update_from_raw("2001::2::1")
+        llb1.update("2001::2::1", raw=True)
 
 def test_validation(instance):
     assert instance.validate(ContentType.all) is None
+    inst2 = instance.put_member("testb:leafQ", "ABBA").top()
+    with pytest.raises(SchemaError):
+        inst2.validate(ContentType.all)

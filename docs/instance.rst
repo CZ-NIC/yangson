@@ -11,6 +11,7 @@
    import os
    from yangson import DataModel
    from yangson.instance import InstanceIdParser
+   from yangson.instance import ResourceIdParser
    os.chdir("examples/ex2")
 
 .. testcleanup::
@@ -77,8 +78,8 @@ The module defines the following exceptions:
 
    .. doctest::
 
-      >>> dm = DataModel.from_file("yang-library-ex2.json")
-      >>> with open("example-data.json") as infile:
+      >>> dm = DataModel.from_file('yang-library-ex2.json')
+      >>> with open('example-data.json') as infile:
       ...   ri = json.load(infile)
       >>> inst = dm.from_raw(ri)
 
@@ -102,15 +103,6 @@ The module defines the following exceptions:
    .. attribute:: value
 
       Scalar or structured value of the node, see module :mod:`instvalue`.
-
-      .. doctest::
-
-	 >>> inst.value['example-2:top']['bar']
-	 True
-	 >>> inst.value['example-2:top']['baz']
-	 Traceback (most recent call last):
-	 ...
-	 KeyError: 'baz'
 
    .. rubric:: Properties
 
@@ -140,9 +132,12 @@ The module defines the following exceptions:
       schema node, i.e. its :attr:`schema_node` is an
       :class:`~.schema.InternalNode`. Otherwise return ``False``.
 
-   .. automethod:: json_pointer
+      .. doctest::
 
-      This method is used in several *doctest* examples below.
+	 >>> inst.is_internal()
+	 True
+
+   .. automethod:: json_pointer
 
    .. method:: member(name: InstanceName) -> ObjectMember
 
@@ -160,21 +155,25 @@ The module defines the following exceptions:
 
       .. doctest::
 
-	 >>> top = inst.member('example-2:top')
-	 >>> foo = top.member('foo')
-	 >>> foo.value[0]['number']
-	 6
-	 >>> top.member('baz')
+	 >>> bag = inst.member('example-2:bag')
+	 >>> foo = bag.member('foo')
+	 >>> foo.json_pointer()
+	 '/example-2:bag/foo'
+	 >>> bag.member('baz')
 	 Traceback (most recent call last):
 	 ...
-	 yangson.instance.NonexistentInstance: [/example-2:top] member baz
+	 yangson.instance.NonexistentInstance: [/example-2:bag] member baz
 
-   .. method:: put_member(name: InstanceName, value: Value) -> InstanceNode
+   .. method:: put_member(name: InstanceName, value: Union[RawValue, \
+	       Value], raw: bool = False) -> InstanceNode
 
       Return a new instance node that is an exact copy of the
       receiver, except that its member *name* gets the value from the
-      *value* argument. If that member doesn't exist in the receiver's
-      value, it is created (provided that the schema permits it).
+      *value* argument. The *raw* flag has to be set to ``True`` if
+      *value* is a :term:`raw value`.
+
+      If member *name* doesn't exist in the receiver's value, it is
+      created (provided that the schema permits it).
 
       This method raises :exc:`InstanceValueError` if the receiver's
       value is not an object, and :exc:`NonexistentSchemaNode` if the
@@ -182,15 +181,15 @@ The module defines the following exceptions:
 
       .. doctest::
 
-	 >>> etop = top.put_member("bar", False)
-	 >>> etop.value['bar']
+	 >>> ebag = bag.put_member('bar', False)
+	 >>> ebag.value['bar']
 	 False
-	 >>> top.value['bar']                       # top is unchanged
+	 >>> bag.value['bar']                       # bag is unchanged
 	 True
-	 >>> e2top = top.put_member("baz", "hola")  # member baz is created
-	 >>> sorted(e2top.value.keys())
+	 >>> e2bag = bag.put_member('baz', 3.1415926)  # member baz is created
+	 >>> sorted(e2bag.value.keys())
 	 ['bar', 'baz', 'foo']
-	 >>> top.put_member("quux", 0)
+	 >>> bag.put_member('quux', 0)
 	 Traceback (most recent call last):
 	 ...
 	 yangson.schema.NonexistentSchemaNode: quux in module example-2
@@ -206,8 +205,8 @@ The module defines the following exceptions:
 
       .. doctest::
 
-	 >>> xtop = e2top.delete_member('baz')
-	 >>> sorted(xtop.value.keys())
+	 >>> xbag = e2bag.delete_member('baz')
+	 >>> sorted(xbag.value.keys())
 	 ['bar', 'foo']
 
    .. method:: look_up(keys: Dict[InstanceName, ScalarValue]) -> ArrayEntry
@@ -223,6 +222,12 @@ The module defines the following exceptions:
       not a YANG list, and :exc:`NonexistentInstance` if no entry with
       matching keys exists.
 
+      .. doctest::
+
+	 >>> foo3 = foo.look_up({'number': 3})
+	 >>> foo3.json_pointer()
+	 '/example-2:bag/foo/1'
+
    .. method:: entry(index: int) -> ArrayEntry
 
       Return an instance node corresponding to the receiver's entry
@@ -234,8 +239,8 @@ The module defines the following exceptions:
 
       .. doctest::
 
-	 >>> foo0 = foo.entry(0)
-	 >>> foo0.value['number']
+	 >>> foo6 = foo.entry(0)
+	 >>> foo6.value['number']
 	 6
 
    .. method:: last_entry() -> ArrayEntry
@@ -248,9 +253,8 @@ The module defines the following exceptions:
 
       .. doctest::
 
-	 >>> foo1 = foo.last_entry()
-	 >>> foo1.value['number']
-	 3
+	 >>> foo.last_entry().json_pointer()
+	 '/example-2:bag/foo/1'
 
    .. method:: delete_entry(index: int) -> InstanceNode
 
@@ -262,6 +266,12 @@ The module defines the following exceptions:
       not an array, and :exc:`NonexistentInstance` if entry *index* is
       not present in the actual receiver's value.
 
+      >>> xfoo = foo.delete_entry(0)
+      >>> len(xfoo.value)
+      1
+      >>> len(foo.value)
+      2
+
    .. method:: up() -> InstanceNode
 
       Return an instance node corresponding to the receiver's parent.
@@ -271,8 +281,8 @@ The module defines the following exceptions:
 
       .. doctest::
 
-	 >>> foo1.up().json_pointer()
-	 '/example-2:top/foo'
+	 >>> foo.up().name
+	 'example-2:bag'
 	 >>> inst.up()
 	 Traceback (most recent call last):
 	 ...
@@ -280,23 +290,34 @@ The module defines the following exceptions:
 
    .. automethod:: top() -> InstanceNode
 
-   .. method:: update(value: Value) -> InstanceNode
+      .. doctest::
 
-      Return a new instance node that is a copy of the receiver with
-      a value specified by the *value* argument.
+	 >>> e2inst = e2bag.top()
+	 >>> e2inst.value['example-2:bag']['baz']
+	 3.1415926
+
+   .. method:: update(value: Union[RawValue, Value], raw: bool = \
+	       False) -> InstanceNode
+
+      Return a new instance node that is a copy of the receiver with a
+      value specified by the *value* argument. The *raw* flag has to
+      be set to ``True`` if *value* is a :term:`raw value`.
 
       .. doctest::
 
+	 >>> ebar = bag.member('bar').update(False)
+	 >>> ebar.value
+	 False
 
+      In the following example, the string ``'2.7182818'`` is an
+      acceptable :term:`raw value` for the *baz* leaf whose type is
+      **decimal64** (see sec. `6.1`_ in [RFC7951]_). Since the *raw*
+      flag is set, the :meth:`update` method “cooks” the raw value
+      first into the Python's :class:`decimal.Decimal` type.
 
-   .. method:: update_from_raw(rvalue: RawValue) -> InstanceNode
-
-      Return a new instance node that is a copy of the receiver with
-      the value constructed from the *rvalue* argument.
-
-      This method is similar to :meth:`update`, only the argument
-      *rvalue* is a :term:`raw value` that needs to be “cooked” first
-      (see :mod:`instvalue`).
+      >>> e3baz = e2bag.member('baz').update_from_raw('2.7182818')
+      >>> e3baz.value
+      Decimal('2.7182818')
 
    .. method:: goto(iroute: InstanceRoute) -> InstanceNode
 
@@ -306,9 +327,18 @@ The module defines the following exceptions:
       receiver) that identifies the target instance.
 
       The easiest way for obtaining an :class:`InstanceRoute` is to
-      parse it from an :term:`instance identifier` (see
-      :class:`InstanceIdParser`) or :term:`resource identifier` (see
-      :class:`ResourceIdParser`).
+      parse it either from a :term:`resource identifier` (see
+      :class:`ResourceIdParser`) or an :term:`instance identifier`
+      (see :class:`InstanceIdParser`).
+
+      .. doctest::
+
+	 >>> irt = ResourceIdParser('/example-2:bag/foo=3/in-words').parse()
+	 >>> str(irt)
+	 '/example-2:bag/foo[number=3]/in-words'
+	 >>> irt2 = InstanceIdParser('/example-2:bag/baz').parse()
+	 >>> str(irt2)
+	 '/example-2:bag/baz'
 
       This method raises :exc:`InstanceValueError` if *iroute* isn't
       compatible with the schema, and :exc:`NonexistentInstance` if
@@ -316,13 +346,12 @@ The module defines the following exceptions:
 
       .. doctest::
 
-	 >>> lbaz = wd.goto(InstanceIdParser('/example-2:top/baz').parse())
-	 >>> lbaz.value
-	 'hi!'
-	 >>> inst.goto(InstanceIdParser('/example-2:top/baz').parse())
+	 >>> inst.goto(irt).value
+	 'three'
+	 >>> inst.goto(irt2)
 	 Traceback (most recent call last):
 	 ...
-	 yangson.instance.NonexistentInstance: [/example-2:top] member baz
+	 yangson.instance.NonexistentInstance: [/example-2:bag] member baz
 
    .. method:: peek(iroute: InstanceRoute) -> Optional[Value]
 
@@ -332,11 +361,23 @@ The module defines the following exceptions:
       identifies the target instance. ``None`` is returned if the
       target instance doesn't exist.
 
+      .. doctest::
+
+	 >>> inst.peek(irt)
+	 'three'
+
       .. CAUTION:: This method doesn't create a new instance, so the
-      access to the returned value should in general be read-only,
-      because any modifications of the returned value would also
-      affect the receiver, so the persistence property would be
-      violated.
+      access to the returned value should in general be read-only.
+      Any modifications of the returned value also
+      affect the receiver, as shown in the next example. This means
+      that the persistence property for the receiver is lost.
+
+      .. doctest::
+
+	 >>> irt3 = ResourceIdParser('/example-2:bag/foo=3').parse()
+	 >>> e2inst.peek(irt3)['in-words'] = 'tres'
+	 >>> e2inst.value['example-2:bag']['foo'][1]['in-words'] # changed!
+	 'tres'
 
    .. method:: validate(content: ContentType = ContentType.config) -> None
 
@@ -355,12 +396,26 @@ The module defines the following exceptions:
 
       .. doctest::
 
-	 >>> inst.validate()
-	 >>> inst.value['example-2:top']['baz'] = "ILLEGAL"
-	 >>> inst.validate()
+	 >>> inst.validate() # no output means OK
+	 >>> badinst = bag.put_member('baz', 'ILLEGAL').top()
+	 >>> badinst.validate()
 	 Traceback (most recent call last):
 	 ...
-	 yangson.schema.SchemaError: [/example-2:top] not allowed: member 'baz'
+	 yangson.schema.SchemaError: [/example-2:bag/baz] invalid type: 'ILLEGAL'
+
+      In the following example, member ``baz`` is not allowed because
+      it is a conditional leaf and its **when** constraint evaluates
+      to ``False``.
+
+      .. doctest::
+
+	 >>> e2foo6 = e2bag.member('foo').entry(0)
+	 >>> bad2 = e2foo6.update(
+	 ... {'number': 42, 'in-words': 'forty-two'}, raw=True).top()
+	 >>> bad2.validate()
+	 Traceback (most recent call last):
+	 ...
+	 yangson.schema.SchemaError: [/example-2:bag] not allowed: member 'baz'
 
    .. method:: add_defaults() -> InstanceNode
 
@@ -372,10 +427,15 @@ The module defines the following exceptions:
       .. doctest::
 
 	 >>> wd = inst.add_defaults()
-	 >>> wd.value['example-2:top']['baz']
-	 'hi!'
+	 >>> wd.value['example-2:bag']['baz']
+	 Decimal('0E-7')
 
    .. automethod:: raw_value() -> RawValue
+
+      .. doctest::
+
+	 >>> wd.member('example-2:bag').member('baz').raw_value()
+	 '0.0'
 
 .. autoclass:: RootNode
    :show-inheritance:
@@ -419,6 +479,11 @@ The module defines the following exceptions:
       :exc:`NonexistentInstance` if sibling member *name* doesn't
       exist.
 
+      .. doctest::
+
+	 >>> foo.sibling('bar').json_pointer()
+	 '/example-2:bag/bar'
+
 .. class:: ArrayEntry(before: List[Value], after: List[Value], value: \
 	   Value, parinst: InstanceNode, schema_node: \
 	   DataNode, timestamp: datetime.datetime)
@@ -446,10 +511,20 @@ The module defines the following exceptions:
 
       The receiver's index within the parent array.
 
+      .. doctest::
+
+	 >>> foo6.index
+	 0
+
    .. attribute:: name
 
       The :term:`instance name` of an array entry is by definition the
       same as the instance name of the parent array.
+
+      .. doctest::
+
+	 >>> foo6.name
+	 'foo'
 
    .. rubric:: Public Methods
 
@@ -461,6 +536,15 @@ The module defines the following exceptions:
       This method raises :exc:`NonexistentInstance` if the receiver
       is the first entry of the parent array.
 
+      .. doctest::
+
+	 >>> foo3.previous().json_pointer()
+	 '/example-2:bag/foo/0'
+	 >>> foo6.previous()
+	 Traceback (most recent call last):
+	 ...
+	 yangson.instance.NonexistentInstance: [/example-2:bag/foo/0] previous of first
+
    .. method:: next() -> ArrayEntry
 
       Return an instance node corresponding to the next entry in the
@@ -469,17 +553,42 @@ The module defines the following exceptions:
       This method raises :exc:`NonexistentInstance` if the receiver is
       the last entry of the parent array.
 
-   .. method:: insert_before(value: Value) -> ArrayEntry
+      .. doctest::
+
+	 >>> foo6.next().json_pointer()
+	 '/example-2:bag/foo/1'
+	 >>> foo3.next()
+	 Traceback (most recent call last):
+	 ...
+	 yangson.instance.NonexistentInstance: [/example-2:bag/foo/1] next of last
+
+   .. method:: insert_before(value: Union[RawValue, Value], raw: bool \
+	       = False) -> ArrayEntry
 
       Insert a new entry before the receiver and return an instance
       node corresponding to the new entry. The *value* argument
-      specifies the value of the new entry.
+      specifies the value of the new entry, and the *raw* flag has to be
+      set to ``True`` if *value* is a :term:`raw value`.
 
-   .. method:: insert_after(value: Value, validate: bool = True) -> ArrayEntry
+      .. doctest::
+
+	 >>> foo4 = foo3.insert_before({'number': 4, 'in-words': 'four'}, raw=True)
+	 >>> [en['number'] for en in foo4.up().value]
+	 [6, 4, 3]
+
+   .. method:: insert_after(value: Union[RawValue, Value], raw: bool \
+	       = False) -> ArrayEntry
 
       Insert a new entry after the receiver and return an instance
       node corresponding to the new entry. The *value* argument
-      specifies the value of the new entry.
+      specifies the value of the new entry, and the *raw* flag has to
+      be set to ``True`` if *value* is a :term:`raw value`.
+
+      .. doctest::
+
+	 >>> foo5 = foo4.insert_after({'number': 5, 'in-words': 'five'}, raw=True)
+	 >>> [en['number'] for en in foo5.up().value]
+	 [6, 4, 5, 3]
 
 .. autoclass:: InstanceRoute
    :show-inheritance:
@@ -500,6 +609,8 @@ The module defines the following exceptions:
       This method raises :exc:`~.schema.NonexistentSchemaNode` if
       either *start* or one of the components of *sroute* doesn't
       exist in the schema tree.
+
+   .. automethod:: __str__
 
 .. class:: ResourceIdParser(text: str)
 
@@ -552,6 +663,7 @@ The module defines the following exceptions:
    The *detail* argument gives details about why the instance doesn't
    exist.
 
+.. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
 .. _7.6.1: https://tools.ietf.org/html/rfc7950#section-7.6.1
 .. _7.7.2: https://tools.ietf.org/html/rfc7950#section-7.7.2
 .. _9: https://tools.ietf.org/html/rfc7950#section-9

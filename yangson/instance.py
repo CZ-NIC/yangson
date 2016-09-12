@@ -95,7 +95,8 @@ class InstanceNode:
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
 
-    def put_member(self, name: InstanceName, value: Value) -> "InstanceNode":
+    def put_member(self, name: InstanceName, value: Value,
+                   raw: bool = False) -> "InstanceNode":
         """Return a copy of the receiver with a new value of a member.
 
         If the member is permitted by the schema but doesn't exist, it
@@ -104,6 +105,7 @@ class InstanceNode:
         Args:
             name: Instance name of the member.
             value: New value of the member.
+            raw: Flag to be set if `value` is raw.
 
         Raises:
             NonexistentSchemaNode: If member `name` is not permitted by the
@@ -114,13 +116,7 @@ class InstanceNode:
             raise InstanceValueError(self, "member of non-object")
         csn = self._member_schema_node(name)
         newval = self.value.copy()
-        newval[name] = value
-        sn = csn
-        while sn is not self.schema_node:
-            if isinstance(sn, CaseNode):
-                for ci in sn.competing_instances():
-                    newval.pop(ci, None)
-            sn = sn.parent
+        newval[name] = csn.from_raw(value) if raw else value
         ts = datetime.now()
         return self._copy(ObjectValue(newval, ts) , ts)
 
@@ -241,28 +237,19 @@ class InstanceNode:
             inst = inst.up()
         return inst
 
-    def update(self, value: Value) -> "InstanceNode":
+    def update(self, value: Union[RawValue, Value],
+               raw: bool = False) -> "InstanceNode":
         """Update the receiver's value.
 
         Args:
             value: New value.
+            raw: Flag to be set if `value` is raw.
 
         Returns:
             Copy of the receiver with the updated value.
         """
-        return self._copy(value, datetime.now())
-
-    def update_from_raw(self, rvalue: RawValue) -> "InstanceNode":
-        """Update the receiver's value from a raw value.
-
-        Args:
-            rvalue: New raw value.
-
-        Returns:
-            Copy of the receiver with the updated value.
-        """
-        newval = self.schema_node.from_raw(rvalue)
-        return self.update(newval)
+        newval = self.schema_node.from_raw(value) if raw else value
+        return self._copy(newval, datetime.now())
 
     def goto(self, iroute: "InstanceRoute") -> "InstanceNode":
         """Move the focus to an instance inside the receiver's value.
@@ -519,7 +506,7 @@ class ObjectMember(InstanceNode):
     def _copy(self, newval: Value = None,
               newts: datetime = None) -> "ObjectMember":
         return ObjectMember(self.name, self.siblings,
-                           newval if newval else self.value,
+                           self.value if newval is None else newval,
                            self.parinst, self.schema_node,
                            newts if newts else self._timestamp)
 
@@ -561,12 +548,13 @@ class ArrayEntry(InstanceNode):
         """Return the receiver's qualified name."""
         return self.parinst.qual_name
 
-    def update_from_raw(self, value: RawValue) -> "ArrayEntry":
-        """Update the receiver's value from a raw value.
+    def update(self, value: Union[RawValue, Value],
+               raw: bool = False) -> "ArrayEntry":
+        """Update the receiver's value.
 
         This method overrides the superclass method.
         """
-        return self.update(super(SequenceNode, self.schema_node).from_raw(value))
+        return super().update(self._cook_value(value, raw), False)
 
     def previous(self) -> "ArrayEntry":
         """Return an instance node corresponding to the previous entry.
@@ -594,29 +582,39 @@ class ArrayEntry(InstanceNode):
         return ArrayEntry(self.before + [self.value], self.after[1:], newval,
                           self.parinst, self.schema_node, self.timestamp)
 
-    def insert_before(self, value: Value) -> "ArrayEntry":
+    def insert_before(self, value: Union[RawValue, Value],
+                      raw: bool = False) -> "ArrayEntry":
         """Insert a new entry before the receiver.
 
         Args:
             value: The value of the new entry.
+            raw: Flag to be set if `value` is raw.
 
         Returns:
             An instance node of the new inserted entry.
         """
-        return ArrayEntry(self.before, [self.value] + self.after, value,
-                          self.parinst, self.schema_node, datetime.now())
+        return ArrayEntry(self.before, [self.value] + self.after,
+                          self._cook_value(value, raw), self.parinst,
+                          self.schema_node, datetime.now())
 
-    def insert_after(self, value: Value) -> "ArrayEntry":
+    def insert_after(self, value: Union[RawValue, Value],
+                     raw: bool = False) -> "ArrayEntry":
         """Insert a new entry after the receiver.
 
         Args:
             value: The value of the new entry.
+            raw: Flag to be set if `value` is raw.
 
         Returns:
             An instance node of the newly inserted entry.
         """
-        return ArrayEntry(self.before + [self.value], self.after, value,
-                          self.parinst, self.schema_node, datetime.now())
+        return ArrayEntry(self.before + [self.value], self.after,
+                          self._cook_value(value, raw), self.parinst,
+                          self.schema_node, datetime.now())
+
+    def _cook_value(self, value: Union[RawValue, Value], raw: bool) -> Value:
+        return (super(SequenceNode, self.schema_node).from_raw(value) if raw
+                else value)
 
     def _zip(self) -> ArrayValue:
         """Zip the receiver into an array and return it."""
@@ -698,6 +696,10 @@ class InstanceRoute(list):
             if isinstance(sn, DataNode):
                 res.append(MemberName(sn.iname()))
         return res
+
+    def __str__(self) -> str:
+        """Return a string representation of the receiver."""
+        return "".join([str(c) for c in self])
 
 class InstanceSelector:
     """Components of instance identifers."""
