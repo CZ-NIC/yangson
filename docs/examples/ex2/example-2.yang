@@ -6,7 +6,7 @@ module example-2 {
 
   prefix "ex2";
 
-  container top {
+  container bag {
     list foo {
       key "number";
       unique "in-words";
@@ -24,9 +24,11 @@ module example-2 {
       mandatory "true";
     }
     leaf baz {
-      when "not(../foo/in-words = 'fourty-two')";
-      type string;
-      default "hi!";
+      when "not(../foo/in-words = 'forty-two')";
+      type decimal64 {
+        fraction-digits "7";
+      }
+      default "0";
     }
   }
 }
