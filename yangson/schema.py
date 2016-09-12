@@ -919,14 +919,6 @@ class ChoiceNode(InternalNode):
 class CaseNode(InternalNode):
     """Case node."""
 
-    def competing_instances(self) -> List[InstanceName]:
-        """Return list of names of all instances from sibling cases."""
-        res = []
-        for case in self.parent.children:
-            if case is not self:
-                res.extend([c.iname() for c in case.data_children()])
-        return res
-
     def _add_default_child(self, node: SchemaNode) -> None:
         """Extend the superclass method."""
         if not self.default_children:
@@ -1014,7 +1006,7 @@ class LeafNode(TerminalNode, DataNode):
 
     def default_value(self) -> Optional[ScalarValue]:
         """Return the default value of the receiver or its type."""
-        return self.default if self.default else self.type.default
+        return self.type.default if self.default is None else self.default
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self.default = self.type.from_yang(stmt.argument, mid)
@@ -1039,7 +1031,7 @@ class LeafListNode(SequenceNode, TerminalNode):
 
     def default_value(self) -> Optional[ArrayValue]:
         """Return the default value of the receiver or its type."""
-        if self.default:
+        if self.default is not None:
             return self.default
         if self.type.default is not None:
             return ArrayValue([self.type.default])
