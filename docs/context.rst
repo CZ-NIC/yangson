@@ -278,7 +278,7 @@ The module defines the following exceptions:
 
       .. doctest::
 
-	 >>> Context.sid2route('/ex3a:top/ex3a:bar', ('example-3-b', '2016-08-22'))
+	 >>> Context.sni2route('/ex3a:top/ex3a:bar', ('example-3-b', '2016-08-22'))
 	 [('top', 'example-3-a'), ('bar', 'example-3-a')]
 
    .. classmethod:: path2route(path: SchemaPath) -> SchemaRoute
