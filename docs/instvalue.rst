@@ -1,70 +1,115 @@
-****************
- Instance Values
-****************
+***********************************
+Structured Values of Instance Nodes
+***********************************
 
 .. module:: yangson.instvalue
-   :synopsis: Cooked instance values.
-.. moduleauthor:: Ladislav Lhotka <lhotka@nic.cz>
+   :synopsis: Structured instance node values.
 
-.. autodata:: Value
+.. testsetup::
 
- The standard library function :func:`json.load` parses JSON text into
-convenient Python values – scalars, lists and dictionaries. For JSON-encoded
-YANG data instances, we need to add a bit of extra processing and more
-intelligent data structures. The reasons are as follows:
+   import time
+   from yangson.instvalue import ArrayValue, ObjectValue
+
+This module implements the following classes:
+
+* :class:`StructuredValue`: Abstract class for “cooked” structured
+  values of an instance node.
+* :class:`ArrayValue`: Cooked array value of an instance node.
+* :class:`ObjectValue`: Cooked object value of an instance node.
+
+The standard Python library function :func:`json.load` parses JSON
+arrays and objects into native data structures – lists and
+dictionaries, respectively. In order to use them effectively in the
+*Yangson* library, we need to “cook” them first, i.e. extend these
+data structures with additional attributs and methods:
 
 * In order to be able to generate entity tags for HTTP ``ETag``
-  headers, we need a hash value for every scalar, array or
-  object. Unlike scalars, though, we can't use the built-in
-  :func:`hash` function to compute such a value for :class:`list` and
-  :class:`dict` instances, so we need to *subclass* those two built-in
-  classes and implement the :meth:`__hash__` method in the subclasses.
+  headers, we need to be able to compute a hash value for arrays and
+  objects. Standard Python lists and dictionaries do not implement the
+  :meth:`__hash__` method.
 
-* We also need each array and object to keep the time stamp of its
-  last modification (to be used in HTTP ``Last-Modified`` headers).
+* For each array and object, we also need to record the time stamp of
+  its last modification (to be used in HTTP ``Last-Modified``
+  headers).
 
-* All 64-bit numbers (of YANG types ``int64``, ``uint64`` and
-  ``decimal64``) are encoded as JSON strings [RFC7951]_, so we need to
-  convert them to :class:`int` and :class:`decimal.decimal` values.
+.. data:: Value
 
-This module defines a type alias representing an union of possible
-types of instance values.
+   This type alias covers all possible types of cooked values of an
+   instance node, both scalar and structured.
 
-.. class:: StructuredValue
+.. data:: EntryValue
 
-   This class is an abstract superclass of both :class:`ArrayValue` and
-   :class:`ObjectValue`. Its constructor method has one argument, *ts*
-   (:class:`datetime.datetime`) that is used to set the
-   *last_modified* attribute.
+   This type alias covers possible types of values of a list of
+   leaf-list entry.
 
-   .. attribute:: last_modified
+.. class:: StructuredValue(ts: datetime.datetime = None)
+
+   This class is an abstract superclass for structured values of
+   instance nodes. The constructor argument *ts* contains the initial
+   value of the *timestamp* attribute. If it is ``None``, then
+   current time is used.
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: timestamp
 
       This attribute contains a :class:`datetime.datetime` that
-      records the date and time when the :class:StructuredValue
-      instance was last modified.
+      records the date and time of the last modification.
 
-   .. automethod:: time_stamp
+   .. rubric:: Public Methods
 
-   .. automethod:: __eq__
+   .. method:: copy() -> StructuredValue
 
-.. class:: ArrayValue
+      Return a shallow copy of the receiver with :attr:`last_modified`
+      set to current time.
 
-   This class is a subclass of both :class:`StructuredValue` and
-   :class:`list`, and corresponds to a JSON array.
+   .. automethod:: stamp
 
-   .. automethod:: __hash__
+   .. method:: __eq__(val: StructuredValue) -> bool
 
-.. class:: ObjectValue
-
-   This class is a subclass of both :class:`StructuredValue` and
-   :class:`dict`, and corresponds to a JSON object.
-
-   All member names must be identifiers of YANG data nodes. Such a
-   name must be qualified with the YANG module module name in which
-   the node is defined if and only if either
-
-   * the data node is the root of a data tree, i.e. has no parent data
-     nodes, or
-   * the data node's parent is defined in the same module.
+      Return ``True`` if the receiver is equal to *val*. The equality
+      test is based on their hash values.
 
    .. automethod:: __hash__
+
+      .. CAUTION:: The hash values are guaranteed to be stable only
+         within the same Python interpreter process. This is because hash
+         values of Python strings change from one invocation to another.
+
+.. autoclass:: ArrayValue(val: List[EntryValue] = [], ts: datetime.datetime = None)
+   :show-inheritance:
+
+   The additional constructor argument *val* contains a list that the
+   :class:`ArrayValue` instance will hold.
+
+   .. doctest::
+
+      >>> ary = ArrayValue([1, 2, 3])
+      >>> time.sleep(0.1)
+      >>> ac = ary.copy()
+      >>> ary.timestamp < ac.timestamp
+      True
+      >>> ary == ac
+      True
+      >>> ac[2] = 4
+      >>> ary == ac
+      False
+
+.. autoclass:: ObjectValue(val: Dict[InstanceName, Value] = {}, ts: datetime.datetime = None)
+   :show-inheritance:
+
+   The additional constructor argument *val* contains a dictionary
+   that the :class:`ObjectValue` instance will hold.
+
+   .. doctest::
+
+      >>> obj = ObjectValue({'one': 1, 'two': 2})
+      >>> time.sleep(0.1)
+      >>> oc = obj.copy()
+      >>> obj.timestamp < oc.timestamp
+      True
+      >>> obj == oc
+      True
+      >>> oc['three'] = 3
+      >>> obj == oc
+      False

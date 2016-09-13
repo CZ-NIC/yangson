@@ -6,3 +6,4 @@ Basic Interaction
 
    datamodel
    instance
+   instvalue

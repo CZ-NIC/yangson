@@ -1,12 +1,22 @@
-"""This module contains classes for representing instance node values."""
+"""Structured values of instance nodes.
+
+This module implements the following classes:
+
+* StructuredValue: Abstract class for structured values of instance nodes.
+* ArrayValue: Cooked array value of an instance node.
+* ObjectValue: Cooked object value of an instance node.
+"""
 
 from datetime import datetime
 from typing import Dict, List, Union
 from .typealiases import *
 
-#: Type alias covers all possible instance node values.
+# Type aliases
 Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
+"""All possible types of cooked values (scalar and structured)."""
+
 EntryValue = Union[ScalarValue, "ObjectValue"]
+"""Type of the value a list ot leaf-list entry."""
 
 class StructuredValue:
     """Abstract class for array and object values."""
@@ -35,19 +45,23 @@ class StructuredValue:
         """
         return self.__class__ == val.__class__ and hash(self) == hash(val)
 
-class ArrayValue(StructuredValue, list):
-    """Array values corresponding to YANG lists and leaf-lists."""
+    def __hash__(self) -> int:
+        """Return hash value for the receiver."""
+        raise NotImplementedError()
 
-    def __init__(self, val: List[Value] = [], ts: datetime=None):
+class ArrayValue(StructuredValue, list):
+    """This class represents cooked array values."""
+
+    def __init__(self, val: List[EntryValue] = [], ts: datetime=None):
         StructuredValue.__init__(self, ts)
         list.__init__(self, val)
 
     def __hash__(self) -> int:
-        """Return integer hash value for the receiver."""
+        """Return hash value for the receiver."""
         return tuple([ x.__hash__() for x in self]).__hash__()
 
 class ObjectValue(StructuredValue, dict):
-    """Array values corresponding to YANG container."""
+    """This class represents cooked object values."""
 
     def __init__(self, val: Dict[InstanceName, Value] = {},
                  ts: datetime = None):
@@ -55,6 +69,6 @@ class ObjectValue(StructuredValue, dict):
         dict.__init__(self, val)
 
     def __hash__(self) -> int:
-        """Return integer hash value for the receiver."""
+        """Return hash value for the receiver."""
         sks = sorted(self.keys())
         return tuple([ (k, self[k].__hash__()) for k in sks ]).__hash__()
