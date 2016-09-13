@@ -10,18 +10,14 @@
    import json
    import os
    from yangson import DataModel
-   from yangson.instance import InstanceIdParser
-   from yangson.instance import ResourceIdParser
+   from yangson.instance import (InstanceIdParser, InstanceRoute,
+                                 ResourceIdParser)
    os.chdir("examples/ex2")
 
 .. testcleanup::
 
    os.chdir("../..")
    del DataModel._instances[DataModel]
-
-Instance data represented as a `persistent structure`__.
-
-__ https://en.wikipedia.org/wiki/Persistent_data_structure
 
 This module implements the following classes:
 
@@ -334,11 +330,7 @@ The module defines the following exceptions:
       .. doctest::
 
 	 >>> irt = ResourceIdParser('/example-2:bag/foo=3/in-words').parse()
-	 >>> str(irt)
-	 '/example-2:bag/foo[number=3]/in-words'
 	 >>> irt2 = InstanceIdParser('/example-2:bag/baz').parse()
-	 >>> str(irt2)
-	 '/example-2:bag/baz'
 
       This method raises :exc:`InstanceValueError` if *iroute* isn't
       compatible with the schema, and :exc:`NonexistentInstance` if
@@ -367,10 +359,10 @@ The module defines the following exceptions:
 	 'three'
 
       .. CAUTION:: This method doesn't create a new instance, so the
-      access to the returned value should in general be read-only.
-      Any modifications of the returned value also
-      affect the receiver, as shown in the next example. This means
-      that the persistence property for the receiver is lost.
+         access to the returned value should in general be read-only.
+         Any modifications of the returned value also affect the
+         receiver, as shown in the next example. This means that the
+         persistence property for the receiver is lost.
 
       .. doctest::
 
@@ -599,18 +591,14 @@ The module defines the following exceptions:
 
    .. rubric:: Public Methods
 
-   .. classmethod:: from_schema_route(sroute: SchemaRoute, start: \
-		    SchemaNode) -> InstanceRoute
-
-      Return an :class:`InstanceRoute` constructed from the
-      :term:`schema route` *sroute*. The *start* argument is the
-      :class:`~.schema.SchemaNode` from which the schema route starts.
-
-      This method raises :exc:`~.schema.NonexistentSchemaNode` if
-      either *start* or one of the components of *sroute* doesn't
-      exist in the schema tree.
-
    .. automethod:: __str__
+
+      .. doctest::
+
+	 >>> str(irt)
+	 '/example-2:bag/foo[number=3]/in-words'
+	 >>> str(irt2)
+	 '/example-2:bag/baz'
 
 .. class:: ResourceIdParser(text: str)
 

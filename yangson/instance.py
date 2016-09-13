@@ -339,8 +339,15 @@ class InstanceNode:
         return res
 
     def _peek_schema_route(self, sroute: SchemaRoute) -> Value:
-        return self.peek(
-            InstanceRoute.from_schema_route(sroute, self.schema_node))
+        irt = InstanceRoute()
+        sn = self.schema_node
+        for qn in sroute:
+            sn = sn.get_child(*qn)
+            if sn is None:
+                raise NonexistentSchemaNode(*qn)
+            if isinstance(sn, DataNode):
+                irt.append(MemberName(sn.iname()))
+        return self.peek(irt)
 
     def _member_schema_node(self, name: InstanceName) -> "DataNode":
         qname = self.schema_node.iname2qname(name)
@@ -674,28 +681,6 @@ class ArrayEntry(InstanceNode):
 
 class InstanceRoute(list):
     """This class represents a route into an instance value."""
-
-    @classmethod
-    def from_schema_route(cls, sroute: SchemaRoute,
-                          start: "SchemaNode") -> "InstanceRoute":
-        """Return instance route constructed from a schema route.
-
-        Args:
-            sroute: Schema route.
-            start: Schema Node from which the schema route starts.
-        Raises:
-            NonexistentSchemaNode: If either `start` or one of the
-                nodes in `sroute` doesn't exist.
-        """
-        res = cls()
-        sn = start
-        for qn in sroute:
-            sn = sn.get_child(*qn)
-            if sn is None:
-                raise NonexistentSchemaNode(*qn)
-            if isinstance(sn, DataNode):
-                res.append(MemberName(sn.iname()))
-        return res
 
     def __str__(self) -> str:
         """Return a string representation of the receiver."""
