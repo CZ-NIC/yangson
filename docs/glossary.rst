@@ -4,6 +4,9 @@
 Glossary
 ========
 
+Many important terms are also defined in the YANG
+specification, see section `3`_ of [RFC7950]_.
+
 .. glossary::
    :sorted:
 
@@ -143,7 +146,26 @@ Glossary
        is identical to the module name whereas for submodules it is
        the name of the main module to which the submodule belongs.
 
+   schema error
+
+      The value of instance node violates a schema constraint, i.e.
+      one of the following: grammar defined by the hierarchy of schema
+      nodes (also taking into account conditions specified by **when**
+      and **if-feature** statements), type of the value, presence and
+      uniqueness of list keys.
+
+   semantic error
+
+      The value of an instance node violates a semantic rule, i.e. one
+      of the following: **must** expression, referential integrity
+      constraint (for **leaf** nodes with *leafref* or
+      *instance-identifier* type), number of list entries prescribed
+      by **min-elements** and **max-elements** statements, **unique**
+      constraint specified for a **list** node, non-unique values of a
+      **leaf-list** node that represents configuration.
+
 .. _2.2: https://tools.ietf.org/html/rfc7895#section-2.2
+.. _3: https://tools.ietf.org/html/rfc7950#section-3
 .. _3.5.1: https://tools.ietf.org/html/draft-ietf-netconf-restconf#section-3.5.1
 .. _4: https://tools.ietf.org/html/rfc7951#section-4
 .. _6.2: https://tools.ietf.org/html/rfc7950#section-6.2

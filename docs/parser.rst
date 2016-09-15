@@ -10,13 +10,11 @@ Parser
    import re
    from yangson.parser import Parser
 
-Simple recursive descent-parser with support for common YANG syntactic elements.
-
-This module implements the following class:
+The *parser* module implements the following class:
 
 * :class:`Parser`: Recursive-descent parser.
 
-This module defines the following exceptions:
+This module also defines the following exceptions:
 
 * :exc:`EndOfInput`: Unexpected end of input.
 * :exc:`ParserException`: Base class for parser exceptions.
@@ -282,6 +280,7 @@ This module defines the following exceptions:
 	 'foo-bar'
 
 .. autoexception:: ParserException(p: Parser)
+   :show-inheritance:
 
    The argument *p* is the parser instance that caused the exception.
 

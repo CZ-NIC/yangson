@@ -2,15 +2,14 @@
 References
 **********
 
-.. [BBW16] Bierman, A.; Bjorklund, M.; Watsen, K. *RESTCONF
-	   Protocol.* `draft-ietf-netconf-restconf`__, Internet
-	   Engineering Task Force, 2016.
+.. [BBW16] Bierman, A.; Bjorklund, M.; Watsen, K. *RESTCONF Protocol.*
+	   `draft-ietf-netconf-restconf`__, IETF, 2016.
 
 __ https://tools.ietf.org/html/draft-ietf-netconf-restconf
 
 .. [Bie16] Bierman, A. *Guidelines for Authors and Reviewers of YANG
 	   Data Model Documents*. `draft-ietf-netmod-rfc6087bis`__,
-	   Internet Engineering Task Force, 2016.
+	   IETF, 2016.
 
 __ https://tools.ietf.org/html/draft-ietf-netmod-rfc6087bis
 
@@ -26,9 +25,15 @@ __ https://www.python.org/dev/peps/pep-0484
 
 .. [RFC3986] Berners-Lee, T.; Fielding, R.; Masinter, L. *Uniform
 	     Resource Identifier (URI): Generic Syntax*. `RFC 3986`__,
-	     Internet Engineering Task Force, 2005.
+	     IETF, 2005. 61 p.
 
 __ https://tools.ietf.org/html/rfc3986
+
+.. [RFC6536] Bierman, A.; Bjorklund, M. *Network Configuration
+	     Protocol (NETCONF) Access Control Model.* `RFC 6536`__,
+	     IETF, 2012, 49 p. ISSN 2070-1721.
+
+__ https://tools.ietf.org/html/rfc6536
 
 .. [RFC6901] Bryan, P. (ed.); Zyp, K.; Nottingham, M. *JavaScript
 	     Object Notation (JSON) Pointer*. `RFC 6901`__,

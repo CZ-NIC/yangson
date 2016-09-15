@@ -16,7 +16,7 @@ Data Model
    os.chdir("../..")
    del DataModel._instances[DataModel]
 
-This module implements the following classes:
+The *datamodel* module implements the following class:
 
 * :class:`DataModel`: basic user-level entry point to YANG data model
   information.

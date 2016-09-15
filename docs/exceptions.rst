@@ -1,13 +1,9 @@
-************************
-Common Exception Classes
-************************
+********************
+Base Exception Class
+********************
 
 .. module:: yangson.exceptions
-   :synopsis: Common exception classes
+   :synopsis: Base exception class
 
 .. autoexception:: YangsonException
-
-.. autoexception:: NonexistentSchemaNode
-
-   The constructor arguments *name* and *ns* give the name and namespace (module) of the
-   non-existent schema node.
+   :show-inheritance:

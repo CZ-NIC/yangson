@@ -10,7 +10,7 @@ Structured Values of Instance Nodes
    import time
    from yangson.instvalue import ArrayValue, ObjectValue
 
-This module implements the following classes:
+The *instvalue* module implements the following classes:
 
 * :class:`StructuredValue`: Abstract class for “cooked” structured
   values of an instance node.

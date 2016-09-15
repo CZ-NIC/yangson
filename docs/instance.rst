@@ -19,7 +19,7 @@
    os.chdir("../..")
    del DataModel._instances[DataModel]
 
-This module implements the following classes:
+The *instance* module implements the following classes:
 
 * :class:`InstanceNode`: Abstract class for instance nodes.
 * :class:`RootNode`: Root of the data tree.
@@ -30,7 +30,7 @@ This module implements the following classes:
   identifier`\ s.
 * :class:`InstanceIdParser`: Parser for :term:`instance identifier`\ s.
 
-The module defines the following exceptions:
+This module also defines the following exceptions:
 
 * :exc:`InstanceException`: Base class for exceptions related to
   operations on instance nodes.
@@ -373,9 +373,11 @@ The module defines the following exceptions:
 
    .. method:: validate(content: ContentType = ContentType.config) -> None
 
-      Perform schema validation on the receiver's value. The *content*
-      argument specifies whether the value is configuration
-      (``Content.config``) or both configuration and state data
+      Perform schema validation on the receiver's value. The value of
+      the *content* argument belongs to the
+      :data:`~.enumerations.ContentType` enumeration and specifies
+      whether the receiver's value is to be validated as configuration
+      (``Content.config``) or as both configuration and state data
       (``Content.all``).
 
       The method returns ``None`` if the validation succeeds,
