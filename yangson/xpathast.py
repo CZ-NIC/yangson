@@ -270,18 +270,15 @@ class FilterExpr(Expr):
 
 class LocationPath(BinaryExpr):
 
-    def __init__(self, left: Expr, right: Expr, absolute: bool = False) -> None:
-        super().__init__(left, right)
-        self.absolute = absolute
-
-    def _properties_str(self):
-        return "ABS" if self.absolute else "REL"
-
     def _eval(self, xctx: XPathContext):
-        nctx = xctx.update_cnode(xctx.cnode.top()) if self.absolute else xctx
-        lres = self.left._eval(nctx)
+        lres = self.left._eval(xctx)
         ns = lres.bind(self.right._node_trans())
-        return self.right._apply_predicates(ns, nctx)
+        return self.right._apply_predicates(ns, xctx)
+
+class Root(Expr):
+
+    def _eval(self, xctx: XPathContext) -> NodeSet:
+        return NodeSet([xctx.cnode.top()])
 
 class Step(Expr):
 

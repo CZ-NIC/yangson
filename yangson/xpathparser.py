@@ -139,19 +139,19 @@ class XPathParser(Parser):
         try:
             fname = self.yang_identifier()
         except UnexpectedInput:
-            return self._location_path()
+            return self._location_path(self.peek() == "/")
         self.skip_ws()
         if self.test_string("(") and fname not in (
                 "node", "comment", "processing-instruction", "text"):
             self.skip_ws()
             return self._path_expr(fname)
         self.offset = start
-        return self._relative_location_path()
+        return self._location_path()
 
     def _path_expr(self, fname: str) -> Expr:
         fexpr = self._filter_expr(fname)
         if self.test_string("/"):
-            return PathExpr(fexpr, self._relative_location_path())
+            return PathExpr(fexpr, self._location_path())
         return fexpr
 
     def _filter_expr(self, fname: str) -> Expr:
@@ -178,15 +178,8 @@ class XPathParser(Parser):
             self.skip_ws()
         return res
 
-    def _location_path(self) -> LocationPath:
-        if self.test_string("/"):
-            path = self._relative_location_path()
-            path.absolute = True
-            return path
-        return self._relative_location_path()
-
-    def _relative_location_path(self) -> LocationPath:
-        op1 = self._step()
+    def _location_path(self, root: bool = False) -> LocationPath:
+        op1 = Root() if root else self._step()
         while self.test_string("/"):
             self.skip_ws()
             op2 = self._step()

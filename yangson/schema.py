@@ -111,6 +111,8 @@ class SchemaNode:
             elif xpath.axis == Axis.child:
                 if isinstance(self, InternalNode) and xpath.qname:
                     return self.get_data_child(*xpath.qname)
+        elif isinstance(xpath, Root):
+            return Context.schema
         return None
 
     def state_roots(self) -> List[DataPath]:
@@ -641,8 +643,7 @@ class TerminalNode(SchemaNode):
     def _post_process(self) -> None:
         super()._post_process()
         if isinstance(self.type, LeafrefType):
-            start = Context.schema if self.type.path.absolute else self
-            ref = start.follow_leafref(self.type.path)
+            ref = self.follow_leafref(self.type.path)
             if ref is None:
                 raise BadLeafrefPath(self)
             self.type.ref_type = ref.type
