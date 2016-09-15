@@ -350,7 +350,7 @@ class InstanceNode:
         return self.peek(irt)
 
     def _member_schema_node(self, name: InstanceName) -> "DataNode":
-        qname = self.schema_node.iname2qname(name)
+        qname = self.schema_node._iname2qname(name)
         res = self.schema_node.get_data_child(*qname)
         if res is None:
             raise NonexistentSchemaNode(*qname)
@@ -387,7 +387,7 @@ class InstanceNode:
         res = []
         for cn in sn.children:
             if isinstance(cn, ChoiceNode):
-                cin = cn.child_inst_names().intersection(self.value)
+                cin = cn._child_inst_names().intersection(self.value)
                 if cin:
                     for i in cin:
                         res.extend(self.member(i)._node_set())
@@ -983,7 +983,7 @@ class InstanceIdParser(InstancePathParser):
         return EntryKeys(sel)
 
 class InstanceException(YangsonException):
-    """Base class for exceptions related to operations on instance nodes."""
+    """Abstract class for exceptions related to operations on instance nodes."""
 
     def __init__(self, inst: InstanceNode):
         self.instance = inst
@@ -992,7 +992,7 @@ class InstanceException(YangsonException):
         return "[" + self.instance.json_pointer() + "]"
 
 class InstanceValueError(InstanceException):
-    """A method is called for a wrong type of instance node."""
+    """The instance value is incompatible with the called method."""
 
     def __init__(self, inst: InstanceNode, detail: str) -> None:
         super().__init__(inst)
