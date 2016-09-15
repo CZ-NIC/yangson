@@ -344,7 +344,7 @@ class InstanceNode:
         for qn in sroute:
             sn = sn.get_child(*qn)
             if sn is None:
-                raise NonexistentSchemaNode(*qn)
+                raise NonexistentSchemaNode(sn, *qn)
             if isinstance(sn, DataNode):
                 irt.append(MemberName(sn.iname()))
         return self.peek(irt)
@@ -353,7 +353,7 @@ class InstanceNode:
         qname = self.schema_node._iname2qname(name)
         res = self.schema_node.get_data_child(*qname)
         if res is None:
-            raise NonexistentSchemaNode(*qname)
+            raise NonexistentSchemaNode(self.schema_node, *qname)
         return res
 
     def _node_set(self) -> List["InstanceNode"]:
@@ -851,7 +851,7 @@ class InstancePathParser(Parser):
         name, ns = self.prefixed_name()
         cn = sn.get_data_child(name, ns if ns else sn.ns)
         if cn is None:
-            raise NonexistentSchemaNode(name, ns)
+            raise NonexistentSchemaNode(sn, name, ns)
         return (MemberName(cn.iname()), cn)
 
 class ResourceIdParser(InstancePathParser):

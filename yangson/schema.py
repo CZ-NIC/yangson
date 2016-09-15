@@ -348,7 +348,7 @@ class InternalNode(SchemaNode):
             cn = self._iname2qname(qn)
             ch = self.get_data_child(*cn)
             if ch is None:
-                raise NonexistentSchemaNode(*cn)
+                raise NonexistentSchemaNode(self, *cn)
             res[ch.iname()] = ch.from_raw(rval[qn])
         return res
 
@@ -1128,8 +1128,8 @@ class NonexistentSchemaNode(SchemaNodeException):
         self.ns = ns
 
     def __str__(self) -> str:
-        return "under {} – name {}, namespace {}".format(super().__str__(),
-                                                         self.name, self.ns)
+        return "under {} – name '{}', namespace '{}'".format(
+            super().__str__(), self.name, self.ns)
 
 class BadSchemaNodeType(SchemaNodeException):
     """A schema node is of a wrong type."""
