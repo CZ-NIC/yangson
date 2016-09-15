@@ -475,6 +475,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:type"/>
       <apply-templates select="yin:units"/>
       <apply-templates select="yin:must"/>
+      <apply-templates select="yin:default"/>
       <apply-templates select="yin:config"/>
       <apply-templates select="yin:min-elements"/>
       <apply-templates select="yin:max-elements"/>
