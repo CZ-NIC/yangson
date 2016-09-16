@@ -1177,5 +1177,5 @@ class SemanticError(ValidationError):
     """An instance violates a semantic rule."""
     pass
 
-from .xpathast import Expr, LocationPath, Step
+from .xpathast import Expr, LocationPath, Step, Root
 from .instance import InstanceNode, ArrayEntry, NonexistentInstance
