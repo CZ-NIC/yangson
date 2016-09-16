@@ -552,6 +552,17 @@ class GroupNode(InternalNode):
     def _state_roots(self) -> List[SchemaNode]:
         return []
 
+    def _handle_child(self, node: SchemaNode, stmt: Statement,
+                     mid: ModuleId) -> None:
+        if not isinstance(self.parent, ChoiceNode) or isinstance(node, CaseNode):
+            super()._handle_child(node, stmt, mid)
+        else:
+            cn = CaseNode()
+            cn.name = stmt.argument
+            cn.ns = self._new_ns if self._new_ns else self.ns
+            self.add_child(cn)
+            cn._handle_child(node, stmt, mid)
+
     def _pattern_entry(self) -> SchemaPattern:
         return super()._schema_pattern()
 
@@ -931,7 +942,7 @@ class ChoiceNode(InternalNode):
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + ("rw" if self.config else "ro")
 
-    def _handle_child(self, node: SchemaNode, stmt: SchemaNode,
+    def _handle_child(self, node: SchemaNode, stmt: Statement,
                      mid: ModuleId) -> None:
         if isinstance(node, CaseNode):
             super()._handle_child(node, stmt, mid)
@@ -959,6 +970,9 @@ class CaseNode(InternalNode):
         if not self.default_children:
             self.parent._add_default_child(self)
         super()._add_default_child(node)
+
+    def _pattern_entry(self) -> SchemaPattern:
+        return super()._schema_pattern()
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
