@@ -5,6 +5,18 @@ Data Model Schema
 .. module:: yangson.schema
    :synopsis: Classes representing YANG schema nodes
 
+.. testsetup::
+
+   import json
+   import os
+   from yangson import DataModel
+   os.chdir("examples/ex4")
+
+.. testcleanup::
+
+   os.chdir("../..")
+   del DataModel._instances[DataModel]
+
 The *schema* module defines the following classes:
 
 * :class:`SchemaNode`: Abstract class for schema nodes.
@@ -41,20 +53,47 @@ This module also defines the following exceptions:
    This class serves as the top-level abstract superclass for all
    schema node classes.
 
+   .. doctest::
+
+      >>> dm = DataModel.from_file('yang-library-ex4.json')
+      >>> fsn = dm.get_schema_node("/example-4-a:bag/foo")
+      >>> type(fsn)
+      <class 'yangson.schema.LeafNode'>
+      >>> rsn = dm.get_schema_node("/example-4-a:bag/opts/example-4-b:fooref/fooref")
+
    .. rubric:: Instance Attributes
 
    .. attribute:: name
 
       Name of the schema node.
 
+      .. doctest::
+
+	 >>> fsn.name
+	 'foo'
+
    .. attribute:: ns
 
       Namespace of the schema node, which is the name of the YANG
       module in which the node is defined.
 
+      .. doctest::
+
+	 >>> fsn.ns
+	 'example-4-a'
+
    .. attribute:: parent
 
       Parent schema node, if there is any.
+
+      .. doctest::
+
+	 >>> type(rsn.parent)
+	 <class 'yangson.schema.CaseNode'>
+	 >>> rsn.parent.name
+	 'fooref'
+	 >>> rsn.parent.ns
+	 'example-4-b'
 
    .. attribute:: must
 
@@ -78,15 +117,30 @@ This module also defines the following exceptions:
 
       :term:`Qualified name` of the schema node.
 
+      .. doctest::
+
+	 >>> fsn.qual_name
+	 ('foo', 'example-4-a')
+
    .. attribute:: config
 
       This boolean property is ``True`` if the receiver represents
       configuration, and ``False`` otherwise.
 
+      .. doctest::
+
+	 >>> rsn.config
+	 True
+
    .. attribute:: mandatory
 
       This boolean property is ``True`` if the receiver is a mandatory
       node, and ``False`` otherwise.
+
+      .. doctest::
+
+	 >>> rsn.mandatory
+	 False
 
    .. rubric:: Public Methods
 
@@ -94,6 +148,12 @@ This module also defines the following exceptions:
 
       Return the closest ancestor schema node that is also a data
       node, or ``None`` if there is no such schema node.
+
+      .. doctest::
+
+	 >>> bsn = rsn.data_parent()
+	 >>> bsn.qual_name
+	 ('bag', 'example-4-a')
 
    .. method:: iname() -> InstanceName
 
