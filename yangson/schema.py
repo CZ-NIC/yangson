@@ -63,13 +63,12 @@ class SchemaNode:
         """Qualified name of the receiver."""
         return (self.name, self.ns)
 
-    @property
-    def config(self) -> bool:
-        """Is the receiver configuration?"""
+    def content_type(self) -> ContentType:
+        """Receiver's content type."""
         try:
-            return self._config
+            return self._ctype
         except AttributeError:
-            return self.parent.config
+            return self.parent.content_type()
 
     @property
     def mandatory(self) -> bool:
@@ -176,7 +175,7 @@ class SchemaNode:
         pass
 
     def _config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        if stmt.argument == "false": self._config = False
+        raise NotImplementedError
 
     def _must_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         xpp = XPathParser(stmt.argument, mid)
@@ -204,6 +203,10 @@ class SchemaNode:
 
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
         return []
+
+    def _tree_line(self) -> str:
+        """Return the receiver's contribution to tree diagram."""
+        return self._tree_line_prefix() + " " + self.iname()
 
     def _tree_line_prefix(self) -> str:
         return "+--"
@@ -385,18 +388,11 @@ class InternalNode(SchemaNode):
     def _schema_pattern(self) -> SchemaPattern:
         todo = [c for c in self.children
                 if not isinstance(c, (RpcActionNode, NotificationNode))]
-        if not todo:
-            return Empty()
-        fst = True
-        for c in todo:
-            if fst:
-                prev = c._pattern_entry()
-                if self.when is not None:
-                    prev = Conditional(prev, True, self.when)
-                fst = False
-            else:
-                prev = Pair.combine(c._pattern_entry(), prev)
-        return prev
+        if not todo: return Empty()
+        prev = todo[0]._pattern_entry()
+        for c in todo[1:]:
+            prev = Pair.combine(c._pattern_entry(), prev)
+        return prev if self.when is None else Conditional(prev, self.when)
 
     def _post_process(self) -> None:
         super()._post_process()
@@ -426,7 +422,8 @@ class InternalNode(SchemaNode):
                     value[cn] = c.default_value()
 
     def _state_roots(self) -> List[SchemaNode]:
-        if not self.config: return [self]
+        if self.content_type() == ContentType.nonconfig:
+            return [self]
         res = []
         for c in self.data_children():
             res.extend(c._state_roots())
@@ -600,15 +597,16 @@ class DataNode(SchemaNode):
                 raise SemanticError(inst, msg)
 
     def _pattern_entry(self) -> SchemaPattern:
-        m = Member(self.iname(), self.config, self.when)
+        m = Member(self.iname(), self.when, self.content_type())
         return m if self.mandatory else SchemaPattern.optional(m)
 
-    def _tree_line(self) -> str:
-        """Return the receiver's contribution to tree diagram."""
-        return self._tree_line_prefix() + " " + self.iname()
-
     def _tree_line_prefix(self) -> str:
-        return super()._tree_line_prefix() + ("rw" if self.config else "ro")
+        return super()._tree_line_prefix() + (
+            "ro" if self.content_type() == ContentType.nonconfig else "rw")
+
+    def _config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        if stmt.argument == "false":
+            self._ctype = ContentType.nonconfig
 
     def _nacm_default_deny_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Set NACM default access."""
@@ -625,6 +623,15 @@ class TerminalNode(SchemaNode):
         super().__init__()
         self.type = None # type: DataType
         self.default = None # type: Optional[Value]
+
+    def content_type(self) -> ContentType:
+        """Override superclass method."""
+        try:
+            return self._ctype
+        except AttributeError:
+            return (ContentType.nonconfig if
+                    self.parent.content_type() == ContentType.nonconfig else
+                    ContentType.config)
 
     def validate(self, inst: "InstanceNode", content: ContentType) -> None:
         """Extend the superclass method."""
@@ -915,17 +922,11 @@ class ChoiceNode(InternalNode):
     def _pattern_entry(self) -> SchemaPattern:
         if not self.children:
             return Empty()
-        fst = True
-        for c in self.children:
-            if fst:
-                prev = c._schema_pattern()
-                if not self.config or self.when:
-                    prev = Conditional(prev, self.config, self.when)
-                fst = False
-            else:
-                prev = Alternative.combine(c._schema_pattern(), prev,
-                                           self.mandatory)
-        return prev
+        prev = self.children[0]._schema_pattern()
+        for c in self.children[1:]:
+            prev = Alternative.combine(c._schema_pattern(), prev,
+                                       self.mandatory, self.content_type())
+        return prev if self.when is None else Conditional(prev, self.when)
 
     def _add_default_child(self, node: "CaseNode") -> None:
         """Extend the superclass method."""
@@ -938,6 +939,10 @@ class ChoiceNode(InternalNode):
         if self._mandatory:
             self.parent._add_mandatory_child(self)
 
+    def _config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        if stmt.argument == "false":
+            self._ctype = ContentType.nonconfig
+
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
         res = []
         if self.default_case is None: return res
@@ -946,7 +951,8 @@ class ChoiceNode(InternalNode):
         return res
 
     def _tree_line_prefix(self) -> str:
-        return super()._tree_line_prefix() + ("rw" if self.config else "ro")
+        return super()._tree_line_prefix() + (
+            "ro" if self.content_type() == ContentType.nonconfig else "rw")
 
     def _handle_child(self, node: SchemaNode, stmt: Statement,
                      mid: ModuleId) -> None:
@@ -1026,7 +1032,8 @@ class LeafListNode(SequenceNode, TerminalNode):
             return ArrayValue([self.type.default])
 
     def _check_unique(self, inst: "InstanceNode") -> None:
-        if self.config and len(set(inst.value)) < len(inst.value):
+        if (self.content_type() == ContentType.config and
+            len(set(inst.value)) < len(inst.value)):
             raise SemanticError(inst, "non-unique leaf-list values")
 
     def _post_process(self) -> None:
@@ -1048,6 +1055,10 @@ class AnydataNode(DataNode):
         """Initialize the class instance."""
         super().__init__()
         self._mandatory = False # type: bool
+
+    def content_type(self) -> ContentType:
+        """Override superclass method."""
+        return TerminalNode.content_type(self)
 
     @property
     def mandatory(self) -> bool:
@@ -1081,10 +1092,18 @@ class AnydataNode(DataNode):
 class RpcActionNode(GroupNode):
     """RPC or action node."""
 
+    def __init__(self) -> None:
+        """Initialize the class instance."""
+        super().__init__()
+        self._ctype = ContentType.nonconfig
+
     def _handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
         self.add_child(InputNode(self.ns))
         self.add_child(OutputNode(self.ns))
         super()._handle_substatements(stmt, mid)
+
+    def _flatten(self) -> List[SchemaNode]:
+        return [self]
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "-x"
@@ -1107,6 +1126,9 @@ class InputNode(GroupNode):
         self.name = "input"
         self.ns = ns
 
+    def _flatten(self) -> List[SchemaNode]:
+        return [self]
+
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
 
@@ -1120,11 +1142,22 @@ class OutputNode(GroupNode):
         self.name = "output"
         self.ns = ns
 
+    def _flatten(self) -> List[SchemaNode]:
+        return [self]
+
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
 
 class NotificationNode(GroupNode):
     """Notification node."""
+
+    def __init__(self) -> None:
+        """Initialize the class instance."""
+        super().__init__()
+        self._ctype = ContentType.nonconfig
+
+    def _flatten(self) -> List[SchemaNode]:
+        return [self]
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "-n"

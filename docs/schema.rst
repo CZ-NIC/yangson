@@ -129,8 +129,8 @@ This module also defines the following exceptions:
 
       .. doctest::
 
-	 >>> rsn.config
-	 True
+	 >>> rsn.content_type().name
+	 'config'
 
    .. attribute:: mandatory
 

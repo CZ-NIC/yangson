@@ -22,6 +22,7 @@ This module defines the following exceptions:
 """
 
 from typing import Dict, List, MutableSet, Optional, Tuple
+from .enumerations import ContentType
 from .exceptions import YangsonException
 from .parser import Parser, ParserException
 from .statement import DefinitionNotFound, ModuleParser, Statement
@@ -83,7 +84,7 @@ class Context:
         """
         cls._initialize()
         cls.module_search_path = mod_path
-        cls.schema._config = True
+        cls.schema._ctype = ContentType.all
         try:
             for item in yang_lib["ietf-yang-library:modules-state"]["module"]:
                 name = item["name"]

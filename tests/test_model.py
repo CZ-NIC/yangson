@@ -42,12 +42,15 @@ tree = """+--rw (test:choiA)?
 |  +--rw testb:leafV
 |  +--rw listA* [leafE leafF]
 |     +--rw contD
+|     |  +---x acA
+|     |  |  +--ro input
+|     |  |  +--ro output
+|     |  |     +--ro leafL
 |     |  +--rw contE!
 |     |  |  +--rw leafJ?
 |     |  |  +--rw leafP?
 |     |  |  +--rw leafU?
 |     |  +--rw leafG?
-|     |  +--ro leafL
 |     +--rw leafE
 |     +--rw leafF
 +--rw test:contT
@@ -65,9 +68,13 @@ tree = """+--rw (test:choiA)?
 |  +--rw uint32?
 |  +--rw uint64?
 |  +--rw uint8?
-+--ro testb:leafK?
-+--rw testb:leafO?
-+--ro testb:llistC*
++---n testb:noA
+|  +--ro testb:leafO?
++---x testb:rpcA
+   +--ro testb:input
+   |  +--ro testb:leafK?
+   +--ro testb:output
+      +--ro testb:llistC*
 """
 
 @pytest.fixture
@@ -162,9 +169,11 @@ def test_schema(data_model):
     assert ll.parent.name == "output"
     assert chb in ca._mandatory_children
     assert ada in ca._mandatory_children
-    assert (ada.config == axa.config == la.config == ca.config ==
-            ld.config == lc.config == lj.config == ln.config == cha.config == True)
-    assert ll.config == False
+    assert (ada.content_type() == axa.content_type() == la.content_type() ==
+            ld.content_type() == lc.content_type() == lj.content_type() ==
+            ln.content_type() == ContentType.config)
+    assert ca.content_type() == cha.content_type() == ContentType.all
+    assert ll.content_type() == ContentType.nonconfig
     assert la.ns == ld.ns
     assert lc.ns == "testb"
     assert la.default_value() == 11
