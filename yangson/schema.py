@@ -824,8 +824,14 @@ class ListNode(SequenceNode, InternalNode):
     def _check_unique(self, inst: "InstanceNode") -> None:
         """Check uniqueness of keys and "unique" properties."""
         ukeys = set()
-        for en in inst.value:
-            kval = tuple([en[k] for k in self._key_members])
+        for i in range(len(inst.value)):
+            en = inst.value[i]
+            try:
+                kval = tuple([en[k] for k in self._key_members])
+            except KeyError as e:
+                raise SchemaError(
+                    inst.entry(i),
+                    "missing list key '{}'".format(e.args[0])) from None
             if kval in ukeys:
                 raise SchemaError(inst, "non-unique list key: " + repr(kval))
             ukeys.add(kval)
