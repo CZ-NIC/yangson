@@ -174,6 +174,7 @@ def test_schema(data_model):
             ln.content_type() == ContentType.config)
     assert ca.content_type() == cha.content_type() == ContentType.all
     assert ll.content_type() == ContentType.nonconfig
+    assert lj.config == ca.config == cha.config == (not ll.config) == True
     assert la.ns == ld.ns
     assert lc.ns == "testb"
     assert la.default_value() == 11

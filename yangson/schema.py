@@ -63,6 +63,11 @@ class SchemaNode:
         """Qualified name of the receiver."""
         return (self.name, self.ns)
 
+    @property
+    def config(self) -> bool:
+        """Does the receiver represent configuration?"""
+        return self.content_type().value & ContentType.config.value != 0
+
     def content_type(self) -> ContentType:
         """Receiver's content type."""
         try:
