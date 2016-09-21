@@ -127,12 +127,12 @@ class SchemaNode:
         """Return default content as defined by the receiver and descendants."""
         raise NotImplementedError
 
-    def validate(self, inst: "InstanceNode", content: ContentType) -> None:
+    def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
         """Validate instance against the receiver.
 
         Args:
             inst: Instance node to be validated.
-            content: Content type of the instance (config/all).
+            ctype: Content type of the instance.
 
         Returns:
             ``None`` if validation succeeds.
@@ -340,14 +340,14 @@ class InternalNode(SchemaNode):
                 res[c.iname()] = dflt
         return res
 
-    def validate(self, inst: "InstanceNode", content: ContentType) -> None:
+    def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
         """Extend the superclass method."""
         if not isinstance(inst.value, ObjectValue):
             raise SchemaError(inst, "non-object value")
-        self._check_schema_pattern(inst, content)
-        super().validate(inst, content)
+        self._check_schema_pattern(inst, ctype)
+        super().validate(inst, ctype)
         for m in inst.value:
-            inst.member(m).validate(content)
+            inst.member(m).validate(ctype)
 
     def from_raw(self, rval: RawObject) -> ObjectValue:
         """Override the superclass method."""
@@ -365,23 +365,26 @@ class InternalNode(SchemaNode):
         return frozenset([c.iname() for c in self.data_children()])
 
     def _check_schema_pattern(self, inst: "InstanceNode",
-                             content: ContentType) -> None:
+                             ctype: ContentType) -> None:
         """Match instance value against receiver's schema pattern.
 
         Args:
             inst: Instance node to be chancked.
-            content: Content type of the instance (config/all).
+            ctype: Content type of the instance.
 
         Raises:
             SchemaError: if `inst` doesn't match the schema pattern.
         """
         p = self.schema_pattern
+        p._eval_when(inst)
         for m in inst.value:
-            p = p.deriv(m, inst, content)
-        if isinstance(p, NotAllowed):
-            raise SchemaError(inst, str(p))
-        if not p.nullable(inst, content):
-            raise SchemaError(inst, "missing " + str(p))
+            p = p.deriv(m, ctype)
+            if isinstance(p, NotAllowed):
+                raise SchemaError(inst, "not allowed: member {}{}".format(
+                    m, ("" if ctype == ContentType.all else
+                        " (" + ctype.name + ")")))
+        if not p.nullable(ctype):
+            raise SchemaError(inst, "missing: " + str(p))
 
     def _make_schema_patterns(self) -> None:
         """Build schema pattern for the receiver and its data descendants."""
@@ -396,8 +399,8 @@ class InternalNode(SchemaNode):
         if not todo: return Empty()
         prev = todo[0]._pattern_entry()
         for c in todo[1:]:
-            prev = Pair.combine(c._pattern_entry(), prev)
-        return prev if self.when is None else Conditional(prev, self.when)
+            prev = Pair(c._pattern_entry(), prev)
+        return ConditionalPattern(prev, self.when) if self.when else prev
 
     def _post_process(self) -> None:
         super()._post_process()
@@ -582,10 +585,10 @@ class DataNode(SchemaNode):
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
-    def validate(self, inst: "InstanceNode", content: ContentType) -> None:
+    def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
         """Extend the superclass method."""
         self._check_must(inst)
-        super().validate(inst, content)
+        super().validate(inst, ctype)
 
     def _check_must(self, inst: "InstanceNode") -> None:
         """Check that all receiver's "must" constraints for the instance.
@@ -602,7 +605,7 @@ class DataNode(SchemaNode):
                 raise SemanticError(inst, msg)
 
     def _pattern_entry(self) -> SchemaPattern:
-        m = Member(self.iname(), self.when, self.content_type())
+        m = Member(self.iname(), self.content_type(), self.when)
         return m if self.mandatory else SchemaPattern.optional(m)
 
     def _tree_line_prefix(self) -> str:
@@ -638,10 +641,10 @@ class TerminalNode(SchemaNode):
                     self.parent.content_type() == ContentType.nonconfig else
                     ContentType.config)
 
-    def validate(self, inst: "InstanceNode", content: ContentType) -> None:
+    def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
         """Extend the superclass method."""
         self._check_type(inst)
-        super().validate(inst, content)
+        super().validate(inst, ctype)
 
     def from_raw(self, rval: RawScalar) -> ScalarValue:
         """Override the superclass method."""
@@ -745,17 +748,17 @@ class SequenceNode(DataNode):
         """Is the receiver a mandatory node?"""
         return self.min_elements > 0
 
-    def validate(self, inst: "InstanceNode", content: ContentType) -> None:
+    def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
         """Extend the superclass method."""
         if isinstance(inst, ArrayEntry):
-            super().validate(inst, content)
+            super().validate(inst, ctype)
         elif isinstance(inst.value, ArrayValue):
             self._check_unique(inst)
             self._check_cardinality(inst)
             try:
                 e = inst.entry(0)
                 while True:
-                    super().validate(e, content)
+                    super().validate(e, ctype)
                     e = e.next()
             except NonexistentInstance:
                 pass
@@ -929,9 +932,11 @@ class ChoiceNode(InternalNode):
             return Empty()
         prev = self.children[0]._schema_pattern()
         for c in self.children[1:]:
-            prev = Alternative.combine(c._schema_pattern(), prev,
-                                       self.mandatory, self.content_type())
-        return prev if self.when is None else Conditional(prev, self.when)
+            prev = ChoicePattern(c._schema_pattern(), prev, self.name)
+        prev.ctype = self.content_type()
+        if not self.mandatory:
+            prev = SchemaPattern.optional(prev)
+        return ConditionalPattern(prev, self.when) if self.when else prev
 
     def _add_default_child(self, node: "CaseNode") -> None:
         """Extend the superclass method."""

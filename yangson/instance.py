@@ -282,17 +282,17 @@ class InstanceNode:
             if val is None: return None
         return val
 
-    def validate(self, content: ContentType = ContentType.config) -> None:
+    def validate(self, ctype: ContentType = ContentType.config) -> None:
         """Perform schema validation of the receiver's value.
 
         Args:
-            content: Receiver's content type (config/all).
+            ctype: Receiver's content type.
 
         Raises:
             SchemaError: If the value doesn't conform to the schema.
             SemanticError: If the value violates a semantic constraint.
         """
-        self.schema_node.validate(self, content)
+        self.schema_node.validate(self, ctype)
 
     def add_defaults(self) -> "InstanceNode":
         """Return a copy of the receiver with defaults added to its value."""

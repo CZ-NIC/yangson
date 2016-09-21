@@ -12,32 +12,35 @@ class SchemaPattern:
     @staticmethod
     def optional(p: "SchemaPattern") -> "SchemaPattern":
         """Make `p` an optional pattern."""
-        if isinstance(p, NotAllowed): return Empty()
-        return Alternative(Empty(), p, False, ContentType.all)
+        return Alternative.combine(Empty(), p)
 
-    def nullable(self, cnode: "InstanceNode", ctype: ContentType) -> bool:
-        """Return ``True`` the receiver is nullable.
-
-        By default, schema patterns are not nullable.
-        """
+    def nullable(self, ctype: ContentType) -> bool:
+        """Return ``True`` the receiver is nullable."""
         return False
+
+    def empty(self) -> bool:
+        """Return ``True`` if the receiver is (conditionally) empty."""
+        return False
+
+    def _eval_when(self, cnode: "InstanceNode") -> None:
+        return
 
 class Empty(SchemaPattern, metaclass=_Singleton):
     """Singleton class representing the empty pattern."""
 
-    def nullable(self, cnode: "InstanceNode", ctype: ContentType) -> bool:
-        """Override the superclass method.
-
-        The empty pattern is nullable.
-        """
+    def nullable(self, ctype: ContentType) -> bool:
+        """Override the superclass method."""
         return True
 
-    def deriv(self, x: str, cnode: "InstanceNode",
-              ctype: ContentType) -> SchemaPattern:
+    def deriv(self, x: str, ctype: ContentType) -> SchemaPattern:
         """Return derivative of the receiver."""
-        return NotAllowed("member '{}'".format(x))
+        return NotAllowed()
 
-    def _tree(self, indent: int = 0):
+    def empty(self) -> bool:
+        """Override the superclass method."""
+        return True
+
+    def tree(self, indent: int = 0):
         return " " * indent + "Empty"
 
     def __str__(self) -> str:
@@ -45,20 +48,33 @@ class Empty(SchemaPattern, metaclass=_Singleton):
 
 class NotAllowed(SchemaPattern):
 
-    def __init__(self, reason: str = "invalid") -> None:
-        """Initialize the class instance."""
-        self.reason = reason
-
-    def deriv(self, x: str, cnode: "InstanceNode",
-              ctype: ContentType) -> SchemaPattern:
+    def deriv(self, x: str, ctype: ContentType) -> SchemaPattern:
         """Return derivative of the receiver."""
         return self
 
-    def _tree(self, indent: int = 0):
-        return " " * indent + "NotAllowed: " + self.reason
+    def tree(self, indent: int = 0):
+        return " " * indent + "NotAllowed"
 
     def __str__(self) -> str:
-        return "not allowed: " + self.reason
+        return "NotAllowed"
+
+class Conditional(SchemaPattern):
+    """Class representing conditional pattern."""
+
+    def __init__(self, when: Expr) -> None:
+        """Initialize the class instance."""
+        self.when = when
+        self._val_when = None # type: bool
+
+    def empty(self) -> bool:
+        """Override the superclass method."""
+        return self.when and not self._val_when
+
+    def _eval_when(self, cnode: "InstanceNode") -> None:
+        self._val_when = bool(self.when.evaluate(cnode))
+
+    def check_when(self) -> bool:
+        return not self.when or self._val_when
 
 class Typeable(SchemaPattern):
     """Multiple content types and their combinations."""
@@ -67,132 +83,156 @@ class Typeable(SchemaPattern):
         """Initialize the class instance."""
         self.ctype = ctype
 
-    def nullable(self, cnode: "InstanceNode", ctype: ContentType) -> bool:
-        return self.ctype.value & ctype.value == 0
+    def match_ctype(self, ctype) -> bool:
+        return self.ctype.value & ctype.value != 0
 
-class Conditional(SchemaPattern):
+class ConditionalPattern(Conditional):
     """Class representing conditional pattern."""
 
     def __init__(self, p: SchemaPattern, when: Expr) -> None:
         """Initialize the class instance."""
+        super().__init__(when)
         self.pattern = p
-        self.when = when
 
-    def nullable(self, cnode: "InstanceNode", ctype: ContentType) -> bool:
+    def _eval_when(self, cnode: "InstanceNode") -> None:
+        super()._eval_when(cnode)
+        self.pattern._eval_when(cnode)
+
+    def nullable(self, ctype: ContentType) -> bool:
         """Override the superclass method."""
-        return (self.when and not self.when.evaluate(cnode)
-                or self.pattern.nullable(cnode, ctype))
+        return (not self.check_when() or self.pattern.nullable(ctype))
 
-    def deriv(self, x: str, cnode: "InstanceNode",
-              ctype: ContentType) -> SchemaPattern:
+    def deriv(self, x: str, ctype: ContentType) -> SchemaPattern:
         """Return derivative of the receiver."""
-        if self.when is None or self.when.evaluate(cnode):
-            return self.pattern.deriv(x, cnode, ctype)
-        return NotAllowed("conditional member '{}'".format(x))
+        return (self.pattern.deriv(x, ctype) if self.check_when() else
+                NotAllowed())
 
-    def _tree(self, indent: int = 0):
+    def tree(self, indent: int = 0):
         return (" " * indent + "Conditional\n" +
-                self.pattern._tree(indent + 2))
+                self.pattern.tree(indent + 2))
 
     def __str__(self) -> str:
         return str(self.pattern)
 
-class Member(Typeable):
+class Member(Typeable, Conditional):
 
-    def __init__(self, name: InstanceName, when: Expr,
-                 ctype: ContentType) -> None:
-        super().__init__(ctype)
+    def __init__(self, name: InstanceName, ctype: ContentType,
+                 when: Expr) -> None:
+        Typeable.__init__(self, ctype)
+        Conditional.__init__(self, when)
         self.name = name
-        self.when = when
 
-    def nullable(self, cnode: "InstanceNode", ctype: ContentType) -> bool:
+    def _eval_when(self, cnode: "InstanceNode") -> None:
+        if self.when:
+            dummy = cnode.put_member(self.name, (None,))
+            super()._eval_when(dummy.member(self.name))
+
+    def nullable(self, ctype: ContentType) -> bool:
         """Override the superclass method."""
-        if super().nullable(cnode,ctype): return True
-        if self.when is None: return False
-        dummy = cnode.put_member(self.name, (None,0))
-        return not self.when.evaluate(dummy.member(self.name))
+        return not (self.match_ctype(ctype) and self.check_when())
 
-    def deriv(self, x: str, cnode: "InstanceNode",
-              ctype: ContentType) -> SchemaPattern:
+    def deriv(self, x: str, ctype: ContentType) -> SchemaPattern:
         """Return derivative of the receiver."""
-        return (Empty() if self.name == x and not self.nullable(cnode, ctype)
-                else NotAllowed("member '{}'".format(x)))
+        return (Empty() if
+                self.name == x and self.match_ctype(ctype) and self.check_when()
+                else NotAllowed())
 
-    def _tree(self, indent: int = 0):
+    def tree(self, indent: int = 0):
         return " " * indent + "Member " + self.name
 
     def __str__(self) -> str:
         return "member '{}'".format(self.name)
 
-class Alternative(Typeable):
+class Alternative(SchemaPattern):
 
     @classmethod
-    def combine(cls, p: SchemaPattern, q: SchemaPattern,
-                 mandatory: bool = False,
-                 ctype: ContentType = ContentType.all):
+    def combine(cls, p: SchemaPattern, q: SchemaPattern) -> "Alternative":
         if isinstance(p, NotAllowed): return q
         if isinstance(q, NotAllowed): return p
-        return cls(p, q, mandatory, ctype)
-
-    def __init__(self, p: SchemaPattern, q: SchemaPattern,
-                 mandatory: bool, ctype: ContentType) -> None:
-        super().__init__(ctype)
-        self.left = p
-        self.right = q
-        self.mandatory = mandatory
-
-    def nullable(self, cnode: "InstanceNode", ctype: ContentType) -> bool:
-        """Override the superclass method."""
-        return (super().nullable(cnode, ctype) or not self.mandatory or
-                self.left.nullable(cnode, ctype) or
-                self.right.nullable(cnode, ctype))
-
-    def deriv(self, x: str, cnode: "InstanceNode",
-              ctype: ContentType) -> SchemaPattern:
-        """Return derivative of the receiver."""
-        return Alternative.combine(self.left.deriv(x, cnode, ctype),
-                                   self.right.deriv(x, cnode, ctype))
-
-    def _tree(self, indent: int = 0):
-        return (" " * indent + "Alternative\n" +
-                self.left._tree(indent + 2) + "\n" +
-                self.right._tree(indent + 2))
-
-    def __str__(self) -> str:
-        return "alternative"
-
-class Pair(SchemaPattern):
-
-    @classmethod
-    def combine(cls, p: SchemaPattern, q: SchemaPattern):
-        if isinstance(p, Empty): return q
-        if isinstance(q, Empty): return p
-        if isinstance(p, NotAllowed):
-                return NotAllowed(p.reason)
-        if isinstance(q, NotAllowed):
-                return NotAllowed(q.reason)
         return cls(p, q)
 
     def __init__(self, p: SchemaPattern, q: SchemaPattern) -> None:
         self.left = p
         self.right = q
 
-    def nullable(self, cnode: "InstanceNode", ctype: ContentType) -> bool:
+    def _eval_when(self, cnode: "InstanceNode") -> None:
+        super()._eval_when(cnode)
+        self.left._eval_when(cnode)
+        self.right._eval_when(cnode)
+
+    def nullable(self, ctype: ContentType) -> bool:
         """Override the superclass method."""
-        return (self.left.nullable(cnode, ctype) and
-                self.right.nullable(cnode, ctype))
+        return self.left.nullable(ctype) or self.right.nullable(ctype)
 
-    def deriv(self, x: str, cnode: "InstanceNode",
-              ctype: ContentType) -> SchemaPattern:
+    def deriv(self, x: str, ctype: ContentType) -> SchemaPattern:
         """Return derivative of the receiver."""
-        return Alternative.combine(
-            Pair.combine(self.left.deriv(x, cnode, ctype), self.right),
-            Pair.combine(self.right.deriv(x, cnode, ctype), self.left))
+        return Alternative.combine(self.left.deriv(x, ctype),
+                                   self.right.deriv(x, ctype))
 
-    def _tree(self, indent: int = 0):
-        return (" " * indent + "Pair\n" +
-                self.left._tree(indent + 2) + "\n" +
-                self.right._tree(indent + 2))
+    def tree(self, indent: int = 0):
+        return (" " * indent + "Alternative\n" +
+                self.left.tree(indent + 2) + "\n" +
+                self.right.tree(indent + 2))
 
     def __str__(self) -> str:
-        return str(self.left)
+        return "alternative"
+
+class ChoicePattern(Alternative, Typeable):
+
+    def __init__(self, p: SchemaPattern, q: SchemaPattern,
+                 name: YangIdentifier) -> None:
+        super().__init__(p, q)
+        self.ctype = ContentType.all # type: ContentType
+        self.name = name
+
+    def nullable(self, ctype: ContentType):
+        return not self.match_ctype(ctype)
+
+    def deriv(self, x: str, ctype: ContentType):
+        return (super().deriv(x, ctype) if self.match_ctype(ctype) else
+                NotAllowed())
+
+    def tree(self, indent: int = 0):
+        return " " * indent + "Choice {}\n{}\n{}".format(
+            self.name,
+            self.left.tree(indent + 2), self.right.tree(indent + 2))
+
+    def __str__(self) -> str:
+        return "choice '" + self.name + "'"
+
+class Pair(SchemaPattern):
+
+    @classmethod
+    def combine(cls, p: SchemaPattern, q: SchemaPattern):
+        if p.empty(): return q
+        if q.empty(): return p
+        if isinstance(p, NotAllowed): return p
+        if isinstance(q, NotAllowed): return q
+        return cls(p, q)
+
+    def __init__(self, p: SchemaPattern, q: SchemaPattern) -> None:
+        self.left = p
+        self.right = q
+
+    def nullable(self, ctype: ContentType) -> bool:
+        """Override the superclass method."""
+        return (self.left.nullable(ctype) and
+                self.right.nullable(ctype))
+
+    def deriv(self, x: str, ctype: ContentType) -> SchemaPattern:
+        """Return derivative of the receiver."""
+        return Alternative.combine(
+            Pair.combine(self.left.deriv(x, ctype), self.right),
+            Pair.combine(self.right.deriv(x, ctype), self.left))
+
+    def _eval_when(self, cnode: "InstanceNode") -> None:
+        self.left._eval_when(cnode)
+        self.right._eval_when(cnode)
+
+    def tree(self, indent: int = 0):
+        return (" " * indent + "Pair\n" +
+                self.left.tree(indent + 2) + "\n" +
+                self.right.tree(indent + 2))
+
+    def __str__(self) -> str:
+        return str(self.left) + ", " + str(self.right)
