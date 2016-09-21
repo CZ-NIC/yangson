@@ -447,8 +447,7 @@ or **uses** statement if this statement is conditional, i.e. has a
    The schema node for which the exception occurred is passed in the
    *sn* argument.
 
-.. autoexception:: NonexistentSchemaNode(sn: SchemaNode, name: \
-		   YangIdentifier, ns: YangIdentifier)
+.. autoexception:: NonexistentSchemaNode(sn: SchemaNode, name: YangIdentifier, ns: YangIdentifier)
    :show-inheritance:
 
    The arguments *name* and *ns* give the name and namespace of the
