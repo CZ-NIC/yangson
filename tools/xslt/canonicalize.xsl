@@ -430,6 +430,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:typedef"/>
       <apply-templates select="yin:grouping"/>
       <call-template name="data-def-stmt"/>
+      <apply-templates select="yin:action"/>
+      <apply-templates select="yin:notification"/>
     </copy>
   </template>
   <template match="yin:container">
@@ -447,6 +449,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:typedef"/>
       <apply-templates select="yin:grouping"/>
       <call-template name="data-def-stmt"/>
+      <apply-templates select="yin:action"/>
+      <apply-templates select="yin:notification"/>
     </copy>
   </template>
   <template match="yin:leaf">
@@ -504,6 +508,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:typedef"/>
       <apply-templates select="yin:grouping"/>
       <call-template name="data-def-stmt"/>
+      <apply-templates select="yin:action"/>
+      <apply-templates select="yin:notification"/>
     </copy>
   </template>
   <template match="yin:key">
@@ -603,6 +609,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:reference"/>
       <call-template name="data-def-stmt"/>
       <apply-templates select="yin:case"/>
+      <apply-templates select="yin:action"/>
+      <apply-templates select="yin:notification"/>
     </copy>
   </template>
   <template match="yin:when">
@@ -613,7 +621,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:reference"/>
     </copy>
   </template>
-  <template match="yin:rpc">
+  <template match="yin:action|yin:rpc">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
