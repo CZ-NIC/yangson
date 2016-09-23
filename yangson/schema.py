@@ -57,6 +57,8 @@ class SchemaNode:
         """List of "must" expressions attached to the schema node."""
         self.when = None # type: Optional["Expr"]
         """Optional "when" expression that makes the schema node conditional."""
+        self._ctype = None
+        """Content type of the schema node."""
 
     @property
     def qual_name(self) -> QualName:
@@ -65,15 +67,12 @@ class SchemaNode:
 
     @property
     def config(self) -> bool:
-        """Does the receiver represent configuration?"""
+        """Does the receiver (also) represent configuration?"""
         return self.content_type().value & ContentType.config.value != 0
 
     def content_type(self) -> ContentType:
         """Receiver's content type."""
-        try:
-            return self._ctype
-        except AttributeError:
-            return self.parent.content_type()
+        return self._ctype if self._ctype else self.parent.content_type()
 
     @property
     def mandatory(self) -> bool:
@@ -180,7 +179,10 @@ class SchemaNode:
         pass
 
     def _config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        raise NotImplementedError
+        if stmt.argument == "true" and self.parent.config:
+            self._ctype = ContentType.all
+        elif stmt.argument == "false":
+            self._ctype = ContentType.nonconfig
 
     def _must_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         xpp = XPathParser(stmt.argument, mid)
@@ -320,6 +322,39 @@ class InternalNode(SchemaNode):
         for c in todo:
             res = c.get_data_child(name, ns)
             if res: return res
+
+    def filter_children(self, ctype: ContentType = None,
+                        cnode: "InstanceNode" = None) -> List[SchemaNode]:
+        """Return list of valid children with matching content type.
+
+        Args:
+            ctype: Content type.
+            cnode: Context instance node for evaluating "when" statements.
+                If it is ``None``, "when" conditions are ignored.
+        """
+        if ctype is None:
+            ctype = (ContentType.nonconfig if
+                     not isinstance(self, InternalNode) else
+                     self.content_type())
+        res = []
+        for child in self.children:
+            if (child.content_type().value & ctype.value == 0 or
+                isinstance(child, (RpcActionNode, NotificationNode))):
+                continue
+            if cnode is None or child.when is None:
+                res.append(child)
+            elif isinstance(child, DataNode):
+                mn = child.iname()
+                dummy = cnode.put_member(mn, (None,))
+                if child.when.evaluate(dummy.member(mn)):
+                    res.append(child)
+            else:
+                dval = cnode.value.copy()
+                for cc in child.data_children():
+                    dval.pop(cc.iname(), None)
+                if child.when.evaluate(cnode.update(dval)):
+                    res.append(child)
+        return res
 
     def data_children(self) -> List["DataNode"]:
         """Return the set of all data nodes directly under the receiver."""
@@ -612,10 +647,6 @@ class DataNode(SchemaNode):
         return super()._tree_line_prefix() + (
             "ro" if self.content_type() == ContentType.nonconfig else "rw")
 
-    def _config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        if stmt.argument == "false":
-            self._ctype = ContentType.nonconfig
-
     def _nacm_default_deny_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Set NACM default access."""
         if stmt.keyword == "default-deny-all":
@@ -634,12 +665,10 @@ class TerminalNode(SchemaNode):
 
     def content_type(self) -> ContentType:
         """Override superclass method."""
-        try:
+        if self._ctype:
             return self._ctype
-        except AttributeError:
-            return (ContentType.nonconfig if
-                    self.parent.content_type() == ContentType.nonconfig else
-                    ContentType.config)
+        return (ContentType.config if self.parent.config else
+                ContentType.nonconfig)
 
     def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
         """Extend the superclass method."""
@@ -689,9 +718,7 @@ class TerminalNode(SchemaNode):
         return ""
 
     def _state_roots(self) -> List[SchemaNode]:
-        if hasattr(self,"_config") and not self._config:
-            return [self]
-        return []
+        return [] if self.content_type() == ContentType.config else [self]
 
 class ContainerNode(DataNode, InternalNode):
     """Container node."""
