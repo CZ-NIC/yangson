@@ -693,7 +693,7 @@ class TerminalNode(SchemaNode):
             return [self]
         return []
 
-class ContainerNode(InternalNode, DataNode):
+class ContainerNode(DataNode, InternalNode):
     """Container node."""
 
     def __init__(self) -> None:
@@ -1001,7 +1001,7 @@ class CaseNode(InternalNode):
         return "{}:({})".format(
             self._tree_line_prefix(), self.iname())
 
-class LeafNode(TerminalNode, DataNode):
+class LeafNode(DataNode, TerminalNode):
     """Leaf node."""
 
     def __init__(self) -> None:
