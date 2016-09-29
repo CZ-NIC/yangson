@@ -55,7 +55,9 @@ This module also defines the following exceptions:
 
    .. doctest::
 
-      >>> dm = DataModel.from_file('yang-library-ex4.json')
+      >>> from yangson.enumerations import ContentType
+      >>> dm = DataModel.from_file('yang-library-ex4.json',
+      ... mod_path=[".", "../../../examples/ietf"])
       >>> fsn = dm.get_schema_node("/example-4-a:bag/foo")
       >>> type(fsn)
       <class 'yangson.schema.LeafNode'>
@@ -184,13 +186,6 @@ This module also defines the following exceptions:
 	 >>> rsn.data_path()
 	 '/example-4-a:bag/example-4-b:fooref'
 
-   .. method:: follow_leafref(xpath: Expr) -> Optional[DataNode]
-
-      Return the data node referred to by a **leafref** path. The
-      argument *xpath* is an instance of :class:`.xpathast.Expr` that
-      was compiled from a **leafref** path. Return ``None`` if the
-      data node being referred to doesn't exist.
-
    .. method:: state_roots() -> List[DataPath]
 
       Return a list of :term:`data path`\ s of the roots of all state
@@ -199,11 +194,10 @@ This module also defines the following exceptions:
       contains only its data path. An empty list is returned if the
       receiver has no descendant state data nodes.
 
-   .. method:: default_value() -> Optional[Value]
+      .. doctest::
 
-      Return an instance value representing the default content as
-      defined for the receiver's subtree in the schema. ``None`` is
-      returned if there is no default content.
+	 >>> bsn.state_roots()
+	 ['/example-4-a:bag/bar']
 
    .. method:: validate(inst: InstanceNode, content: ContentType) -> None
 
@@ -219,6 +213,18 @@ This module also defines the following exceptions:
       :exc:`SchemaError` or :exc:`SemanticError` is raised,
       respectively.
 
+      .. doctest::
+
+	 >>> with open("example-data.json") as infile:
+	 ...     ri = json.load(infile)
+	 >>> inst = dm.from_raw(ri)
+	 >>> inst.validate(ContentType.all)
+	 >>> inst.validate(ContentType.config)
+	 Traceback (most recent call last):
+	 ...
+	 yangson.schema.SchemaError: [/example-4-a:bag] not allowed: member bar (config)
+
+
    .. method:: from_raw(rval: RawValue) -> Value
 
       Return a :term:`cooked value` transformed from :term:`raw value`
@@ -229,6 +235,17 @@ This module also defines the following exceptions:
       contains a member that is not defined in the schema, and
       :exc:`~.datatype.YangTypeError` if a scalar value inside *rval*
       is of incorrect type.
+
+      .. doctest::
+
+	 >>> raw = {'baz': [None]}
+	 >>> type(raw)
+	 <class 'dict'>
+	 >>> cooked = bsn.from_raw(raw)
+	 >>> cooked
+	 {'baz': (None,)}
+	 >>> type(cooked)
+	 <class 'yangson.instvalue.ObjectValue'>
 
 .. class:: InternalNode
 
@@ -241,6 +258,11 @@ This module also defines the following exceptions:
 
       The list of the schema node's children.
 
+      .. doctest::
+
+	 >>> [c.name for c in bsn.children]
+	 ['foo', 'bar', 'opts']
+
    .. rubric:: Public Methods
 
    .. method:: get_child(name: YangIdentifier, ns: YangIdentifier = \
@@ -251,15 +273,25 @@ This module also defines the following exceptions:
       the receiver's namespace is used. ``None`` is returned if the
       child isn't found.
 
-   .. method:: add_child(node: SchemaNode) -> None
+      .. doctest::
 
-      Add *node* as a new child of the receiver.
+	 >>> barsn = bsn.get_child("bar", "example-4-a")
+	 >>> barsn.qual_name
+	 ('bar', 'example-4-a')
 
    .. method:: get_schema_descendant(route: SchemaRoute) -> Optional[SchemaNode]
 
       Return the descendant schema node identified by the
       :term:`schema route` *route*, which is interpreted relative to
       the receiver. ``None`` is returned if the node is not found.
+
+      .. doctest::
+
+	 >>> bazsn = bsn.get_schema_descendant(
+	 ... [('opts','example-4-a'), ('a','example-4-a'), ('baz','example-4-a')])
+	 >>> bazsn.qual_name
+	 ('baz', 'example-4-a')
+
 
    .. method:: get_data_child(name: YangIdentifier, ns: YangIdentifier
 	       = None) -> Optional[DataNode]
@@ -269,10 +301,15 @@ This module also defines the following exceptions:
       namespace is used. ``None`` is returned if the data child is not
       found.
 
-      Unlike :meth:`getchild`, this method finds the data node
+      Unlike :meth:`get_child`, this method finds the data node
       identified by *name* and *ns* also if it is separated from the
       receiver only by non-data nodes (i.e. **choice** and **case**
-      nodes).
+      nodes), as it is the case in the following example:
+
+      .. doctest::
+
+	 >>> bsn.get_data_child('baz', 'example-4-a').qual_name
+	 ('baz', 'example-4-a')
 
 .. class:: GroupNode
 
@@ -297,6 +334,11 @@ or **uses** statement if this statement is conditional, i.e. has a
       :data:`~.enumerations.DefaultDeny` enumeration, the default is
       ``DefaultDeny.none``.
 
+      .. doctest::
+
+	 >>> fsn.default_deny
+	 <DefaultDeny.write: 2>
+
 .. class:: TerminalNode
 
    This is the abstract superclass for terminal nodes, i.e. schema
@@ -310,9 +352,18 @@ or **uses** statement if this statement is conditional, i.e. has a
       A :class:`~.datatype.DataType` object specifying the type of the
       instance.
 
+   .. rubric:: Properties
+
    .. attribute:: default
 
-      Default value defined for the instance.
+      Default value of the receiver or ``None`` if no default is
+      applicable. Note that the default may also come from receiver's
+      type.
+
+      .. doctest::
+
+	 >>> barsn.default
+	 True
 
 .. class:: ContainerNode
 
