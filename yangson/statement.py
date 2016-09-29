@@ -121,9 +121,12 @@ class ModuleParser(Parser):
             text: Text to unescape.
         """
         chop = text.split("\\", 1)
-        return (chop[0] if len(chop) == 1
-                else chop[0] + cls.unescape_map[chop[1][0]] +
-                cls.unescape(chop[1][1:]))
+        try:
+            return (chop[0] if len(chop) == 1
+                    else chop[0] + cls.unescape_map[chop[1][0]] +
+                    cls.unescape(chop[1][1:]))
+        except KeyError:
+            raise WrongArgument(text) from None
 
     def opt_separator(self) -> bool:
         """Parse an optional separator and return ``True`` if found.
