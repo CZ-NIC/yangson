@@ -76,7 +76,7 @@ class SchemaNode:
         return False
 
     def content_type(self) -> ContentType:
-        """Receiver's content type."""
+        """Return receiver's content type."""
         return self._ctype if self._ctype else self.parent.content_type()
 
     def data_parent(self) -> Optional["InternalNode"]:
@@ -95,8 +95,8 @@ class SchemaNode:
 
     def data_path(self) -> DataPath:
         """Return the receiver's data path."""
-        return ("{}/{}".format(self.parent.data_path(), self.iname())
-                if self.parent else "")
+        dp = self.data_parent()
+        return (dp.data_path() if dp else "") + "/" + self.iname()
 
     def follow_leafref(self, xpath: "Expr") -> Optional["DataNode"]:
         """Return the data node referred to by a leafref path.
