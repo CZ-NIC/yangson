@@ -7,16 +7,16 @@ RevisionDate = str
 """RevisionDate in the format ``YYYY-MM-DD``, or empty string."""
 
 YangIdentifier = str
-"""YANG identifier, see sec. `6.2`_ of [Bjo16]_."""
+"""YANG identifier, see sec. `6.2`_ of [RFC7950]_."""
 
 InstanceName = str
-"""Object member name (simple or qualified), see sec. `4`_ of [Lho16]_."""
+"""Object member name (simple or qualified), see sec. `4`_ of [RFC7951]_."""
 
 PrefName = str
 """Name with optional prefix – [YangIdentifier ":"] YangIdentifier."""
 
 InstanceIdentifier = str
-"""YANG instance identifier, see sec. `6.11`_ of [Lho16]_."""
+"""YANG instance identifier, see sec. `6.11`_ of [RFC7951]_."""
 
 ResourceIdentifier = str
 """RESTCONF resource identifier, see sec. `3.5.3`_ of [BBW16]_."""
@@ -28,7 +28,7 @@ QualName = Tuple[YangIdentifier, YangIdentifier]
 """Qualified name, tuple of name and module name."""
 
 SchemaNodeId = str
-"""Schema node identifier, see. sec. `6.5`_ in [Bjo16]_."""
+"""Schema node identifier, see. sec. `6.5`_ in [RFC7950]_."""
 
 SchemaRoute = List[QualName]
 """Schema route, a list of qualified names of schema nodes."""
