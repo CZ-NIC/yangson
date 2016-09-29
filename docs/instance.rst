@@ -83,7 +83,7 @@ This module also defines the following exceptions:
 
    .. attribute:: value
 
-      Scalar or structured value of the node, see module :mod:`instvalue`.
+      Scalar or structured value of the node, see module :mod:`.instvalue`.
 
    The arguments of the :class:`InstanceNode` constructor provide
    values for instance attributes of the same name.
@@ -130,15 +130,16 @@ This module also defines the following exceptions:
       True
 
    A structured :class:`InstanceNode` value is represented as either
-   :class:`~.instvalue.ObjectValue` or
-   :class:`~.instvalue.ArrayValue`, see :mod:`instvalue` for
-   details. The representation of a scalar value depends on its type
-   (see :mod:`datatype` module). Structured values, and some scalar
-   values as well, are *not* the same as the values provided by the
-   generic JSON parsing functions :func:`json.load` and
-   :func:`json.loads`. Therefore, values read from JSON text need some
-   additional processing, or “cooking”. *Yangson* methods such as
-   :meth:`.DataModel.from_raw` take care of this step.
+   :class:`~.instvalue.ObjectValue` (subclass of :class:`dict`) or
+   :class:`~.instvalue.ArrayValue` (subclass of :class:`list`), see
+   :mod:`.instvalue` module for details. The representation of a
+   scalar value depends on its type (see :mod:`datatype`
+   module). Structured values, and some scalar values as well, are
+   *not* the same as the values provided by the generic JSON parsing
+   functions :func:`json.load` and :func:`json.loads`. Therefore,
+   values read from JSON text need some additional processing, or
+   “cooking”. *Yangson* methods such as :meth:`.DataModel.from_raw`
+   take care of this step.
 
    .. doctest::
 

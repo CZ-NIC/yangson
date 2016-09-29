@@ -129,8 +129,8 @@ This module also defines the following exceptions:
 
       .. doctest::
 
-	 >>> rsn.content_type().name
-	 'config'
+	 >>> fsn.config
+	 True
 
    .. attribute:: mandatory
 
@@ -143,6 +143,13 @@ This module also defines the following exceptions:
 	 False
 
    .. rubric:: Public Methods
+
+   .. automethod:: content_type() -> ContentType
+
+      .. doctest::
+
+	 >>> rsn.content_type().name
+	 'config'
 
    .. method:: data_parent() -> Optional[InternalNode]
 
@@ -159,9 +166,23 @@ This module also defines the following exceptions:
 
       Return :term:`instance name` corresponding to the receiver.
 
+      .. doctest::
+
+	 >>> bsn.iname()
+	 'example-4-a:bag'
+	 >>> fsn.iname()
+	 'foo'
+
    .. method:: data_path() -> DataPath
 
       Return the receiver's :term:`data path`.
+
+      .. doctest::
+
+	 >>> fsn.data_path()
+	 '/example-4-a:bag/foo'
+	 >>> rsn.data_path()
+	 '/example-4-a:bag/example-4-b:fooref'
 
    .. method:: follow_leafref(xpath: Expr) -> Optional[DataNode]
 
