@@ -177,14 +177,8 @@ def test_schema(data_model):
     assert lj.config == ca.config == cha.config == (not ll.config) == True
     assert la.ns == ld.ns
     assert lc.ns == "testb"
-    assert la.default_value() == 11
-    assert ld.default_value() == 199
     assert ld.type.default == 111
-    assert lla.default_value() == ArrayValue([42, 54])
     assert lla.type.default == 11
-    assert lo.default_value() == True
-    assert lp.default_value() == 42
-    assert lsta.default_value() == ObjectValue()
     assert la.type.parse_value("99") == 99
     with pytest.raises(YangTypeError):
         ld.type.parse_value("99")

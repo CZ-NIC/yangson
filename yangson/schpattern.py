@@ -125,7 +125,7 @@ class Member(Typeable, Conditional):
     def _eval_when(self, cnode: "InstanceNode") -> None:
         if self.when:
             dummy = cnode.put_member(self.name, (None,))
-            super()._eval_when(dummy.member(self.name))
+            super()._eval_when(dummy)
 
     def nullable(self, ctype: ContentType) -> bool:
         """Override the superclass method."""

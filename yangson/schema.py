@@ -70,14 +70,14 @@ class SchemaNode:
         """Does the receiver (also) represent configuration?"""
         return self.content_type().value & ContentType.config.value != 0
 
-    def content_type(self) -> ContentType:
-        """Receiver's content type."""
-        return self._ctype if self._ctype else self.parent.content_type()
-
     @property
     def mandatory(self) -> bool:
         """Is the receiver a mandatory node?"""
         return False
+
+    def content_type(self) -> ContentType:
+        """Receiver's content type."""
+        return self._ctype if self._ctype else self.parent.content_type()
 
     def data_parent(self) -> Optional["InternalNode"]:
         """Return the closest ancestor data node."""
@@ -121,10 +121,6 @@ class SchemaNode:
     def state_roots(self) -> List[DataPath]:
         """Return a list of data paths to descendant state data roots."""
         return [r.data_path() for r in self._state_roots()]
-
-    def default_value(self) -> Optional[Value]:
-        """Return default content as defined by the receiver and descendants."""
-        raise NotImplementedError
 
     def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
         """Validate instance against the receiver.
@@ -259,7 +255,6 @@ class InternalNode(SchemaNode):
         super().__init__()
         self.children = [] # type: List[SchemaNode]
         self._new_ns = None # type: Optional[ModuleId]
-        self.default_children = [] # type: List[SchemaNode]
         self._mandatory_children = set() # type: MutableSet[SchemaNode]
 
     @property
@@ -323,38 +318,16 @@ class InternalNode(SchemaNode):
             res = c.get_data_child(name, ns)
             if res: return res
 
-    def filter_children(self, ctype: ContentType = None,
-                        cnode: "InstanceNode" = None) -> List[SchemaNode]:
-        """Return list of valid children with matching content type.
+    def filter_children(self, ctype: ContentType = None) -> List[SchemaNode]:
+        """Return receiver's children based on content type.
 
         Args:
             ctype: Content type.
-            cnode: Context instance node for evaluating "when" statements.
-                If it is ``None``, "when" conditions are ignored.
         """
         if ctype is None:
-            ctype = (ContentType.nonconfig if
-                     not isinstance(self, InternalNode) else
-                     self.content_type())
-        res = []
-        for child in self.children:
-            if (child.content_type().value & ctype.value == 0 or
-                isinstance(child, (RpcActionNode, NotificationNode))):
-                continue
-            if cnode is None or child.when is None:
-                res.append(child)
-            elif isinstance(child, DataNode):
-                mn = child.iname()
-                dummy = cnode.put_member(mn, (None,))
-                if child.when.evaluate(dummy.member(mn)):
-                    res.append(child)
-            else:
-                dval = cnode.value.copy()
-                for cc in child.data_children():
-                    dval.pop(cc.iname(), None)
-                if child.when.evaluate(cnode.update(dval)):
-                    res.append(child)
-        return res
+            ctype = self.content_type()
+        return [c for c in self.children if
+                c.content_type().value & ctype.value != 0]
 
     def data_children(self) -> List["DataNode"]:
         """Return the set of all data nodes directly under the receiver."""
@@ -364,15 +337,6 @@ class InternalNode(SchemaNode):
                 res.append(child)
             else:
                 res.extend(child.data_children())
-        return res
-
-    def default_value(self) -> ObjectValue:
-        """Override the superclass method."""
-        res = ObjectValue()
-        for c in self.default_children:
-            dflt = c.default_value()
-            if dflt is not None:
-                res[c.iname()] = dflt
         return res
 
     def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
@@ -442,27 +406,18 @@ class InternalNode(SchemaNode):
         for c in self.children:
             c._post_process()
 
-    def _add_default_child(self, node: SchemaNode) -> None:
-        """Add `node` to the list of default children."""
-        self.default_children.append(node)
-
     def _add_mandatory_child(self, node: SchemaNode) -> None:
         """Add `node` to the set of mandatory children."""
         self._mandatory_children.add(node)
 
-    def _apply_defaults(self, value: ObjectValue) -> None:
-        """Return a copy of `value` with added default contents."""
-        for c in self.default_children:
-            if isinstance(c, ChoiceNode):
-                ac = c.active_case(value)
-                if ac:
-                    ac._apply_defaults(value)
-                elif c.default_case:
-                    value.update(c.get_child(*c.default_case).default_value())
-            else:
-                cn = c.iname()
-                if cn not in value:
-                    value[cn] = c.default_value()
+    def _add_defaults(self, inst: "InstanceNode", ctype: ContentType,
+                      lazy: bool = False) -> "InstanceNode":
+        for c in self.filter_children(ctype):
+            if isinstance(c, DataNode):
+                inst = c._default_instance(inst, ctype, lazy)
+            elif not isinstance(c, (RpcActionNode, NotificationNode)):
+                inst = c._add_defaults(inst, ctype)
+        return inst
 
     def _state_roots(self) -> List[SchemaNode]:
         if self.content_type() == ContentType.nonconfig:
@@ -625,6 +580,17 @@ class DataNode(SchemaNode):
         self._check_must(inst)
         super().validate(inst, ctype)
 
+    def _default_instance(self, pnode: "InstanceNode", ctype: ContentType,
+                          lazy: bool = False) -> "InstanceNode":
+        iname = self.iname()
+        if iname in pnode.value: return pnode
+        nm = pnode.put_member(iname, (None,))
+        if not self.when or self.when.evaluate(nm):
+            wd = self._default_value(nm, ctype, lazy)
+            if wd.value is not None:
+                return wd.up()
+        return pnode
+
     def _check_must(self, inst: "InstanceNode") -> None:
         """Check that all receiver's "must" constraints for the instance.
 
@@ -704,15 +670,9 @@ class TerminalNode(SchemaNode):
             self.type.ref_type = ref.type
 
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
-        dflt = self.default_value()
-        if dflt is None: return []
-        iname = self.iname()
-        ni = inst.put_member(iname, (None,))
-        res = ni.member(iname)
-        if self.when is None or self.when.evaluate(res):
-            res.value = dflt
-            return res._node_set()
-        return []
+        di = self._default_instance(inst, ContentType.all)
+        return [] if di is None else [self]
+        return inst.put_member(self.iname(), dflt)._node_set()
 
     def _ascii_tree(self, indent: str) -> str:
         return ""
@@ -733,22 +693,25 @@ class ContainerNode(DataNode, InternalNode):
         """Is the receiver a mandatory node?"""
         return not self.presence and super().mandatory
 
-    def _add_default_child(self, node: SchemaNode) -> None:
-        """Extend the superclass method."""
-        if not (self.presence or self.default_children):
-            self.parent._add_default_child(self)
-        super()._add_default_child(node)
-
     def _add_mandatory_child(self, node: SchemaNode):
         if not (self.presence or self.mandatory):
             self.parent._add_mandatory_child(self)
         super()._add_mandatory_child(node)
 
+    def _default_instance(self, pnode: "InstanceNode", ctype: ContentType,
+                          lazy: bool = False) -> "InstanceNode":
+        if self.presence:
+            return pnode
+        return super()._default_instance(pnode, ctype, lazy)
+
+    def _default_value(self, inst: "InstanceNode", ctype: ContentType,
+                       lazy: bool) -> Optional["InstanceNode"]:
+        inst.value = ObjectValue()
+        return inst if lazy else self._add_defaults(inst, ctype)
+
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
         if self.presence: return []
-        iname = self.iname()
-        ni = inst.put_member(iname, ObjectValue())
-        res = ni.member(iname)
+        res = inst.put_member(self.iname(), ObjectValue())
         if self.when is None or self.when.evaluate(res):
             return [res]
         return []
@@ -894,9 +857,9 @@ class ListNode(SequenceNode, InternalNode):
             except NonexistentInstance:
                 continue
 
-    def _add_default_child(self, node: SchemaNode) -> None:
-        if node.qual_name not in self.keys:
-            super()._add_default_child(node)
+    def _default_instance(self, pnode: "InstanceNode", ctype: ContentType,
+                          lazy: bool = False) -> "InstanceNode":
+        return pnode
 
     def _post_process(self) -> None:
         super()._post_process()
@@ -937,6 +900,19 @@ class ChoiceNode(InternalNode):
         """Is the receiver a mandatory node?"""
         return self._mandatory
 
+    def _add_defaults(self, inst: "InstanceNode",
+                      ctype: ContentType) -> "InstanceNode":
+        if self.when and not self.when.evaluate(inst):
+            return inst
+        ac = self.active_case(inst.value)
+        if ac:
+            return ac._add_defaults(inst, ctype)
+        elif self.default_case:
+            dc = self.get_child(*self.default_case)
+            if not dc.when or dc.when.evaluate(inst):
+                return dc._add_defaults(inst, ctype)
+        return inst
+
     def active_case(self, value: ObjectValue) -> Optional["CaseNode"]:
         """Return receiver's case that's active in an instance node value.
 
@@ -949,11 +925,6 @@ class ChoiceNode(InternalNode):
                     or cc.iname() in value):
                         return case
 
-    def default_value(self) -> Optional[ObjectValue]:
-        """Override the superclass method."""
-        if self.default_case in [c.qual_name for c in self.default_children]:
-            return self.get_child(*self.default_case).default_value()
-
     def _pattern_entry(self) -> SchemaPattern:
         if not self.children:
             return Empty()
@@ -964,12 +935,6 @@ class ChoiceNode(InternalNode):
         if not self.mandatory:
             prev = SchemaPattern.optional(prev)
         return ConditionalPattern(prev, self.when) if self.when else prev
-
-    def _add_default_child(self, node: "CaseNode") -> None:
-        """Extend the superclass method."""
-        if not (self._mandatory or self.default_children):
-            self.parent._add_default_child(self)
-        super()._add_default_child(node)
 
     def _post_process(self) -> None:
         super()._post_process()
@@ -1014,12 +979,6 @@ class ChoiceNode(InternalNode):
 class CaseNode(InternalNode):
     """Case node."""
 
-    def _add_default_child(self, node: SchemaNode) -> None:
-        """Extend the superclass method."""
-        if not self.default_children:
-            self.parent._add_default_child(self)
-        super()._add_default_child(node)
-
     def _pattern_entry(self) -> SchemaPattern:
         return super()._schema_pattern()
 
@@ -1041,16 +1000,22 @@ class LeafNode(DataNode, TerminalNode):
         """Is the receiver a mandatory node?"""
         return self._mandatory
 
-    def default_value(self) -> Optional[ScalarValue]:
-        """Override the superclass method."""
-        return self.type.default if self.default is None else self.default
+    def _default_value(self, inst: "InstanceNode", ctype: ContentType,
+                       lazy: bool) -> "InstanceNode":
+        if self.mandatory:
+            inst.value = None
+        elif self.default is not None:
+            inst.value = self.default
+        elif self.type.default is not None:
+            inst.value = self.type.default
+        else:
+            inst.value = None
+        return inst
 
     def _post_process(self) -> None:
         super()._post_process()
         if self._mandatory:
             self.parent._add_mandatory_child(self)
-        elif self.default_value() is not None:
-            self.parent._add_default_child(self)
 
     def _tree_line(self) -> str:
         return super()._tree_line() + ("" if self._mandatory else "?")
@@ -1061,22 +1026,22 @@ class LeafNode(DataNode, TerminalNode):
 class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
 
-    def default_value(self) -> Optional[ArrayValue]:
-        """Override the superclass method."""
-        if self.default is not None:
-            return self.default
-        if self.type.default is not None:
-            return ArrayValue([self.type.default])
+    def _default_value(self, inst: "InstanceNode", ctype: ContentType,
+                       lazy: bool) -> "InstanceNode":
+        if self.mandatory:
+            inst.value = None
+        elif self.default is not None:
+            inst.value = self.default
+        elif self.type.default is not None:
+            inst.value = ArrayValue([self.type.default])
+        else:
+            inst.value = None
+        return inst
 
     def _check_unique(self, inst: "InstanceNode") -> None:
         if (self.content_type() == ContentType.config and
             len(set(inst.value)) < len(inst.value)):
             raise SemanticError(inst, "non-unique leaf-list values")
-
-    def _post_process(self) -> None:
-        super()._post_process()
-        if self.min_elements == 0 and self.default_value() is not None:
-            self.parent._add_default_child(self)
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         val = self.type.parse_value(stmt.argument)
@@ -1115,6 +1080,10 @@ class AnydataNode(DataNode):
                 res = val
             return res
         return convert(rval)
+
+    def _default_instance(self, pnode: "InstanceNode", ctype: ContentType,
+                          lazy: bool = False) -> "InstanceNode":
+        return pnode
 
     def _tree_line(self) -> str:
         return super()._tree_line() + ("" if self._mandatory else "?")
@@ -1254,4 +1223,5 @@ class SemanticError(ValidationError):
     pass
 
 from .xpathast import Expr, LocationPath, Step, Root
-from .instance import InstanceNode, ArrayEntry, NonexistentInstance
+from .instance import (InstanceNode, ArrayEntry,
+                       NonexistentInstance, ObjectMember)

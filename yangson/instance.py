@@ -97,7 +97,7 @@ class InstanceNode:
 
     def put_member(self, name: InstanceName, value: Value,
                    raw: bool = False) -> "InstanceNode":
-        """Return a copy of the receiver with a new value of a member.
+        """Return receiver's member with a new value.
 
         If the member is permitted by the schema but doesn't exist, it
         is created.
@@ -118,7 +118,7 @@ class InstanceNode:
         newval = self.value.copy()
         newval[name] = csn.from_raw(value) if raw else value
         ts = datetime.now()
-        return self._copy(ObjectValue(newval, ts) , ts)
+        return self._copy(ObjectValue(newval, ts) , ts).member(name)
 
     def delete_member(self, name: InstanceName) -> "InstanceNode":
         """Return a copy of the receiver with a member deleted from its value.
@@ -294,31 +294,6 @@ class InstanceNode:
         """
         self.schema_node.validate(self, ctype)
 
-    def add_defaults(self) -> "InstanceNode":
-        """Return a copy of the receiver with defaults added to its value."""
-        sn = self.schema_node
-        if isinstance(self.value, ArrayValue) and isinstance(sn, ListNode):
-            try:
-                inst = self.entry(0)
-            except NonexistentInstance:
-                return self
-            try:
-                while True:
-                    ninst = inst.add_defaults()
-                    inst = ninst.next()
-            except NonexistentInstance:
-                return ninst.up()
-        if isinstance(sn, InternalNode):
-            res = self
-            if self.value:
-                for mn in self.value:
-                    m = res.member(mn) if res is self else res.sibling(mn)
-                    res = m.add_defaults()
-                res = res.up()
-            sn._apply_defaults(res.value)
-            return res
-        return self
-
     def raw_value(self) -> RawValue:
         """Return receiver's value in a raw form (ready for JSON encoding)."""
         if isinstance(self.value, ObjectValue):
@@ -337,6 +312,25 @@ class InstanceNode:
         else:
             res = self.schema_node.type.to_raw(self.value)
         return res
+
+    def add_defaults(self, ctype: ContentType = None) -> "InstanceNode":
+        """Return the receiver with defaults added recursively to its value.
+
+        Args:
+            ctype: Content type of the defaults to be added. If it is
+                ``None``, the content type will be the same as receiver's.
+        """
+        sn = self.schema_node
+        val = self.value
+        if not (isinstance(val, ObjectValue) and isinstance(sn, InternalNode)):
+            return self
+        res = self
+        if val:
+            for mn in val:
+                m = res.member(mn) if res is self else res.sibling(mn)
+                res = m.add_defaults(ctype)
+            res = res.up()
+        return sn._add_defaults(res, ctype)
 
     def _peek_schema_route(self, sroute: SchemaRoute) -> Value:
         irt = InstanceRoute()
@@ -363,8 +357,8 @@ class InstanceNode:
             return [ self.entry(i) for i in range(len(val)) ]
         return [self]
 
-    def _children(self,
-                 qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
+    def _children(self, qname:
+                  Union[QualName, bool] = None) -> List["InstanceNode"]:
         """XPath - return the list of receiver's children."""
         sn = self.schema_node
         if not isinstance(sn, InternalNode): return []
@@ -374,31 +368,20 @@ class InstanceNode:
             iname = cn.iname()
             if iname in self.value:
                 return self.member(iname)._node_set()
-            res = cn._default_nodes(self)
-            if not res: return res
+            wd = cn._default_instance(self, ContentType.all, lazy=True)
+            if iname not in wd.value: return []
             while True:
                 cn = cn.parent
-                if cn is sn: return res
-                if ((cn.when is None or cn.when.evaluate(self)) and
-                    (not isinstance(cn, CaseNode) or
-                     cn.qual_name == cn.parent.default_case)):
-                    continue
-                return []
+                if cn is sn:
+                    return wd.member(iname)._node_set()
+                if (cn.when and not cn.when.evaluate(self) or
+                    isinstance(cn, CaseNode) and
+                    cn.qual_name != cn.parent.default_case):
+                    return []
         res = []
-        for cn in sn.children:
-            if isinstance(cn, ChoiceNode):
-                cin = cn._child_inst_names().intersection(self.value)
-                if cin:
-                    for i in cin:
-                        res.extend(self.member(i)._node_set())
-                else:
-                    res.extend(cn._default_nodes(inst))
-            else:
-                iname = cn.iname()
-                if iname in self.value:
-                    res.extend(self.member(iname)._node_set())
-                else:
-                    res.extend(cn._default_nodes(self))
+        wd = sn._add_defaults(self, ContentType.all, lazy=True)
+        for mn in wd.value:
+            res.extend(wd.member(mn)._node_set())
         return res
 
     def _descendants(self, qname: Union[QualName, bool] = None,
