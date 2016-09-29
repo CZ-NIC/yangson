@@ -220,11 +220,6 @@ This module also defines the following exceptions:
 
       The list of the schema node's children.
 
-   .. attribute:: default_children
-
-      The list of the children that may be added as default content to
-      the receiver's instance.
-
    .. rubric:: Public Methods
 
    .. method:: get_child(name: YangIdentifier, ns: YangIdentifier = \

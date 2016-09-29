@@ -42,45 +42,30 @@ This module also defines the following exceptions:
 .. class:: InstanceNode(value: Value, parinst: Optional[InstanceNode], \
 	   schema_node: DataNode, timestamp: datetime.datetime)
 
-   This class and its subclasses implement a *zipper* interface for
-   JSON-like values along the lines of Gérard Huet's original
-   paper [Hue97]_. However, due to the heterogeneity of JSON-like
-   values, the zipper interface is not as simple and elegant as for
-   normal trees. In particular, sibling instance nodes have different
-   representations depending on their type, which can be either
-   :class:`ObjectMember` (for nodes that are object members) or
-   :class:`ArrayEntry` (for nodes that are array entries).
+   This class and its subclasses implement the *zipper* interface for
+   instance data along the lines of Gérard Huet's original
+   paper [Hue97]_, only adapted for the specifics of JSON-like
+   structures. An important property of the zipper interface is that
+   it makes the underlying data structure persistent__: any changes to
+   the data realized through the methods of the :class:`InstanceNode`
+   class return an updated *copy* of the original instance without
+   changing the latter. As much as possible, the data are shared
+   between the original instance and the updated copy.
 
-   Inside the larger structure of a data tree, an
-   :class:`InstanceNode` represents “focus” on a particular node of
-   the structure. The focus can be moved to a neighbour instance node
-   (parent, child, sibling) and the value of an instance node can be
-   created, deleted and updated by using the methods described
-   below. Each of the methods returns a new :class:`InstanceNode` that
-   shares, as much as possible, portions of the surrounding data tree
-   with the original instance node.  However, any modifications to the
-   new instance node – if performed through the methods of the
-   :class:`InstanceNode` class and its subclasses – leave other
-   instance nodes intact.
+   __ https://en.wikipedia.org/wiki/Persistent_data_structure
 
-   Most methods for moving the focus inside the zipper structure and
-   updating the value of an instance node are defined in the
-   :class:`InstanceNode`, additional methods that are specific to an
-   :class:`ObjectMember` or :class:`ArrayEntry` are defined in the
-   respective class.
+   Whilst the zipper interface slightly complicates access to instance
+   data, it provides the advantages of persistent structures that are
+   known from functional programming languages:
 
-   The easiest way to create an :class:`InstanceNode` is to use the
-   :meth:`.DataModel.from_raw` method:
+   * The structures are thread-safe.
 
-   .. doctest::
+   * It is easy to edit the data and then return to the original
+     version, for example if new version isn't valid according to the
+     data model.
 
-      >>> dm = DataModel.from_file('yang-library-ex2.json')
-      >>> with open('example-data.json') as infile:
-      ...   ri = json.load(infile)
-      >>> inst = dm.from_raw(ri)
-
-   The arguments of the :class:`InstanceNode` constructor provide
-   values for instance variables of the same name.
+   * Staging datastores, such as *candidate* in NETCONF (sec. `8.3`_
+     in [RFC6241]_) can be implemented in a space-efficient way.
 
    .. rubric:: Instance Attributes
 
@@ -100,6 +85,9 @@ This module also defines the following exceptions:
 
       Scalar or structured value of the node, see module :mod:`instvalue`.
 
+   The arguments of the :class:`InstanceNode` constructor provide
+   values for instance attributes of the same name.
+
    .. rubric:: Properties
 
    .. attribute:: namespace
@@ -111,6 +99,69 @@ This module also defines the following exceptions:
 
       The :term:`qualified name` of the receiver. For the root node it
       is ``None``.
+
+   An :class:`InstanceNode` structure can be created from scratch, or
+   read from JSON text using :meth:`.DataModel.from_raw` method as in
+   the following example:
+
+   .. doctest::
+
+      >>> dm = DataModel.from_file('yang-library-ex2.json')
+      >>> with open('example-data.json') as infile:
+      ...   ri = json.load(infile)
+      >>> inst = dm.from_raw(ri)
+
+   The internal representation of :class:`InstanceNode` values is very
+   similar to the JSON encoding of data modelled with
+   YANG [RFC7951]_. In particular, member names have to be in the form
+   specified in sec. `4`_ of that document:
+
+   .. productionlist::
+      member-name: [identifier ":"] identifier
+
+   where the first identifier is a module name and the second is a
+   data node name. The longer (namespace-qualified) form is used if
+   and only if the member is defined in a different YANG module than
+   its parent.
+
+   .. doctest::
+
+      >>> inst.value["example-2:bag"]["bar"]
+      True
+
+   A structured :class:`InstanceNode` value is represented as either
+   :class:`~.instvalue.ObjectValue` or
+   :class:`~.instvalue.ArrayValue`, see :mod:`instvalue` for
+   details. The representation of a scalar value depends on its type
+   (see :mod:`datatype` module). Structured values, and some scalar
+   values as well, are *not* the same as the values provided by the
+   generic JSON parsing functions :func:`json.load` and
+   :func:`json.loads`. Therefore, values read from JSON text need some
+   additional processing, or “cooking”. *Yangson* methods such as
+   :meth:`.DataModel.from_raw` take care of this step.
+
+   .. doctest::
+
+      >>> type(inst.value)
+      <class 'yangson.instvalue.ObjectValue'>
+
+   Inside the larger structure of a data tree, an
+   :class:`InstanceNode` represents “focus” on a particular node of
+   the structure. The focus can be moved to a neighbour instance node
+   (parent, child, sibling) and the value of an instance node can be
+   created, deleted and updated by using the methods described
+   below. Each of the methods returns a new :class:`InstanceNode` that
+   shares, as much as possible, portions of the surrounding data tree
+   with the original instance node.  However, any modifications to the
+   new instance node – if performed through the methods of the
+   :class:`InstanceNode` class and its subclasses – leave other
+   instance nodes intact.
+
+   Most methods for moving the focus inside the zipper structure and
+   updating the value of an instance node are defined in the
+   :class:`InstanceNode`, additional methods that are specific to an
+   :class:`ObjectMember` or :class:`ArrayEntry` are defined in the
+   respective class.
 
    .. rubric:: Public Methods
 
@@ -163,8 +214,7 @@ This module also defines the following exceptions:
    .. method:: put_member(name: InstanceName, value: Union[RawValue, \
 	       Value], raw: bool = False) -> InstanceNode
 
-      Return a new instance node that is an exact copy of the
-      receiver, except that its member *name* gets the value from the
+      Return receiver's member *name* with a new value specified by the
       *value* argument. The *raw* flag has to be set to ``True`` if
       *value* is a :term:`raw value`.
 
@@ -177,12 +227,12 @@ This module also defines the following exceptions:
 
       .. doctest::
 
-	 >>> ebag = bag.put_member('bar', False)
-	 >>> ebag.value['bar']
+	 >>> nbar = bag.put_member('bar', False)
+	 >>> nbar.value
 	 False
 	 >>> bag.value['bar']                       # bag is unchanged
 	 True
-	 >>> e2bag = bag.put_member('baz', 3.1415926)  # member baz is created
+	 >>> e2bag = bag.put_member('baz', 3.1415926).up()  # baz is created
 	 >>> sorted(e2bag.value.keys())
 	 ['bar', 'baz', 'foo']
 	 >>> bag.put_member('quux', 0)
@@ -411,12 +461,19 @@ This module also defines the following exceptions:
 	 ...
 	 yangson.schema.SchemaError: [/example-2:bag] not allowed: member 'baz'
 
-   .. method:: add_defaults() -> InstanceNode
+   .. method:: add_defaults(ctype: ContentType = None) -> InstanceNode
 
       Return a new instance node that is a copy of the receiver
       extended with default values specified the data model. Only
       default values that are “in use” are added, see sections
       `7.6.1`_ and `7.7.2`_ in [RFC7950]_.
+
+      The argument *ctype* restricts the content type of data nodes
+      whose default values will be added. For example, setting it to
+      ``ContentType.config`` means that only default values of
+      configuration nodes will be added. If *ctype* is ``None``
+      (default), a the content type of added defaults will be the same
+      as the content type of the receiver.
 
       .. doctest::
 
@@ -653,7 +710,9 @@ This module also defines the following exceptions:
    The *detail* argument gives details about why the instance doesn't
    exist.
 
+.. _4: https://tools.ietf.org/html/rfc7951#section-4
 .. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
 .. _7.6.1: https://tools.ietf.org/html/rfc7950#section-7.6.1
 .. _7.7.2: https://tools.ietf.org/html/rfc7950#section-7.7.2
+.. _8.3: https://tools.ietf.org/html/rfc6241#section-8.3
 .. _9: https://tools.ietf.org/html/rfc7950#section-9
