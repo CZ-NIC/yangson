@@ -98,26 +98,6 @@ class SchemaNode:
         dp = self.data_parent()
         return (dp.data_path() if dp else "") + "/" + self.iname()
 
-    def follow_leafref(self, xpath: "Expr") -> Optional["DataNode"]:
-        """Return the data node referred to by a leafref path.
-
-        Args:
-            xpath: XPath expression compiled from a leafref path.
-        """
-        if isinstance(xpath, LocationPath):
-            lft = self.follow_leafref(xpath.left)
-            if lft is None: return None
-            return lft.follow_leafref(xpath.right)
-        elif isinstance(xpath, Step):
-            if xpath.axis == Axis.parent:
-                return self.data_parent()
-            elif xpath.axis == Axis.child:
-                if isinstance(self, InternalNode) and xpath.qname:
-                    return self.get_data_child(*xpath.qname)
-        elif isinstance(xpath, Root):
-            return Context.schema
-        return None
-
     def state_roots(self) -> List[DataPath]:
         """Return a list of data paths to descendant state data roots."""
         return [r.data_path() for r in self._state_roots()]
@@ -280,15 +260,6 @@ class InternalNode(SchemaNode):
         for c in todo:
             return c.get_child(name, ns)
 
-    def add_child(self, node: SchemaNode) -> None:
-        """Add child node to the receiver.
-
-        Args:
-            node: Child node.
-        """
-        node.parent = self
-        self.children.append(node)
-
     def get_schema_descendant(
             self, route: SchemaRoute) -> Optional[SchemaNode]:
         """Return descendant schema node or ``None`` if not found.
@@ -358,6 +329,10 @@ class InternalNode(SchemaNode):
                 raise NonexistentSchemaNode(self, *cn)
             res[ch.iname()] = ch.from_raw(rval[qn])
         return res
+
+    def _add_child(self, node: SchemaNode) -> None:
+        node.parent = self
+        self.children.append(node)
 
     def _child_inst_names(self) -> Set[InstanceName]:
         """Return the set of instance names under the receiver."""
@@ -433,7 +408,7 @@ class InternalNode(SchemaNode):
         if not Context.if_features(stmt, mid): return
         node.name = stmt.argument
         node.ns = self._new_ns if self._new_ns else self.ns
-        self.add_child(node)
+        self._add_child(node)
         node._handle_substatements(stmt, mid)
 
     def _augment_stmt(self, stmt: Statement, mid: ModuleId) -> None:
@@ -443,7 +418,7 @@ class InternalNode(SchemaNode):
         target = self.get_schema_descendant(path)
         if stmt.find1("when"):
             gr = GroupNode()
-            target.add_child(gr)
+            target._add_child(gr)
             target = gr
         myns = Context.namespace(mid)
         target._new_ns = None if target.ns == myns else myns
@@ -464,7 +439,7 @@ class InternalNode(SchemaNode):
         grp, gid = Context.get_definition(stmt, mid)
         if stmt.find1("when"):
             sn = GroupNode()
-            self.add_child(sn)
+            self._add_child(sn)
         else:
             sn = self
         sn._handle_substatements(grp, gid)
@@ -555,7 +530,7 @@ class GroupNode(InternalNode):
             cn = CaseNode()
             cn.name = stmt.argument
             cn.ns = self._new_ns if self._new_ns else self.ns
-            self.add_child(cn)
+            self._add_child(cn)
             cn._handle_child(node, stmt, mid)
 
     def _pattern_entry(self) -> SchemaPattern:
@@ -590,6 +565,26 @@ class DataNode(SchemaNode):
             if wd.value is not None:
                 return wd.up()
         return pnode
+
+    def _follow_leafref(self, xpath: "Expr") -> Optional["DataNode"]:
+        """Return the data node referred to by a leafref path.
+
+        Args:
+            xpath: XPath expression compiled from a leafref path.
+        """
+        if isinstance(xpath, LocationPath):
+            lft = self._follow_leafref(xpath.left)
+            if lft is None: return None
+            return lft._follow_leafref(xpath.right)
+        elif isinstance(xpath, Step):
+            if xpath.axis == Axis.parent:
+                return self.data_parent()
+            elif xpath.axis == Axis.child:
+                if isinstance(self, InternalNode) and xpath.qname:
+                    return self.get_data_child(*xpath.qname)
+        elif isinstance(xpath, Root):
+            return Context.schema
+        return None
 
     def _check_must(self, inst: "InstanceNode") -> None:
         """Check that all receiver's "must" constraints for the instance.
@@ -627,7 +622,7 @@ class TerminalNode(SchemaNode):
         """Initialize the class instance."""
         super().__init__()
         self.type = None # type: DataType
-        self.default = None # type: Optional[Value]
+        self._default = None # type: Optional[Value]
 
     def content_type(self) -> ContentType:
         """Override superclass method."""
@@ -644,6 +639,11 @@ class TerminalNode(SchemaNode):
     def from_raw(self, rval: RawScalar) -> ScalarValue:
         """Override the superclass method."""
         return self.type.from_raw(rval)
+
+    def _default_value(self, inst: "InstanceNode", ctype: ContentType,
+                       lazy: bool) -> "InstanceNode":
+        inst.value = self.default
+        return inst
 
     def _check_type(self, inst: "InstanceNode"):
         """Check whether receiver's type matches the instance value.
@@ -664,7 +664,7 @@ class TerminalNode(SchemaNode):
     def _post_process(self) -> None:
         super()._post_process()
         if isinstance(self.type, LeafrefType):
-            ref = self.follow_leafref(self.type.path)
+            ref = self._follow_leafref(self.type.path)
             if ref is None:
                 raise BadLeafrefPath(self)
             self.type.ref_type = ref.type
@@ -964,7 +964,7 @@ class ChoiceNode(InternalNode):
             cn = CaseNode()
             cn.name = stmt.argument
             cn.ns = self._new_ns if self._new_ns else self.ns
-            self.add_child(cn)
+            self._add_child(cn)
             cn._handle_child(node, stmt, mid)
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
@@ -1000,17 +1000,12 @@ class LeafNode(DataNode, TerminalNode):
         """Is the receiver a mandatory node?"""
         return self._mandatory
 
-    def _default_value(self, inst: "InstanceNode", ctype: ContentType,
-                       lazy: bool) -> "InstanceNode":
-        if self.mandatory:
-            inst.value = None
-        elif self.default is not None:
-            inst.value = self.default
-        elif self.type.default is not None:
-            inst.value = self.type.default
-        else:
-            inst.value = None
-        return inst
+    @property
+    def default(self) -> Optional[ScalarValue]:
+        """Default value of the receiver, if any."""
+        if self.mandatory: return None
+        if self._default is not None: return self._default
+        return self.type.default
 
     def _post_process(self) -> None:
         super()._post_process()
@@ -1021,22 +1016,18 @@ class LeafNode(DataNode, TerminalNode):
         return super()._tree_line() + ("" if self._mandatory else "?")
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self.default = self.type.from_yang(stmt.argument, mid)
+        self._default = self.type.from_yang(stmt.argument, mid)
 
 class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
 
-    def _default_value(self, inst: "InstanceNode", ctype: ContentType,
-                       lazy: bool) -> "InstanceNode":
-        if self.mandatory:
-            inst.value = None
-        elif self.default is not None:
-            inst.value = self.default
-        elif self.type.default is not None:
-            inst.value = ArrayValue([self.type.default])
-        else:
-            inst.value = None
-        return inst
+    @property
+    def default(self) -> Optional[ScalarValue]:
+        """Default value of the receiver, if any."""
+        if self.mandatory: return None
+        if self._default is not None: return self._default
+        return (None if self.type.default is None
+                else ArrayValue([self.type.default]))
 
     def _check_unique(self, inst: "InstanceNode") -> None:
         if (self.content_type() == ContentType.config and
@@ -1045,10 +1036,10 @@ class LeafListNode(SequenceNode, TerminalNode):
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         val = self.type.parse_value(stmt.argument)
-        if self.default is None:
-            self.default = ArrayValue([val])
+        if self._default is None:
+            self._default = ArrayValue([val])
         else:
-            self.default.append(val)
+            self._default.append(val)
 
 class AnydataNode(DataNode):
     """Anydata or anyxml node."""
@@ -1104,8 +1095,8 @@ class RpcActionNode(GroupNode):
         self._ctype = ContentType.nonconfig
 
     def _handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
-        self.add_child(InputNode(self.ns))
-        self.add_child(OutputNode(self.ns))
+        self._add_child(InputNode(self.ns))
+        self._add_child(OutputNode(self.ns))
         super()._handle_substatements(stmt, mid)
 
     def _flatten(self) -> List[SchemaNode]:
