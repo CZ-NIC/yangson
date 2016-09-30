@@ -1,0 +1,29 @@
+module example-4-b {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/example-4-b";
+
+  prefix "ex4b";
+
+  import example-4-a {
+    prefix "ex4a";
+  }
+
+  leaf-list quux {
+    type decimal64 {
+      fraction-digits "4";
+    }
+    max-elements "2";
+    ordered-by "user";
+  }
+
+  augment "/ex4a:bag/ex4a:opts" {
+    when "/quux = 0";
+    leaf fooref {
+      type leafref {
+        path "../ex4a:foo";
+      }
+    }
+  }
+}

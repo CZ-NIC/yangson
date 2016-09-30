@@ -1,0 +1,46 @@
+module example-5 {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/example-5";
+
+  prefix "ex5";
+
+  typedef my-string {
+    type string {
+      length "2..4";
+      pattern "x*y";
+    }
+    default "xxy";
+  }
+
+  leaf bits-leaf {
+    type bits {
+      bit un {
+        position "1";
+      }
+      bit dos;
+      bit tres;
+    }
+  }
+
+  leaf empty-leaf {
+    type empty;
+  }
+
+  leaf enumeration-leaf {
+    type enumeration {
+      enum Bashful;
+      enum Doc;
+      enum Dopey;
+      enum Grumpy;
+      enum Happy;
+      enum Sleepy;
+      enum Sneezy;
+    }
+  }
+
+  leaf string-leaf {
+    type my-string;
+  }
+}

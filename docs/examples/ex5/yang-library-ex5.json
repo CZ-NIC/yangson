@@ -1,0 +1,13 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "XXXX",
+    "module": [
+      {
+        "name": "example-5",
+        "namespace": "http://example.com/example-5",
+        "revision": "",
+        "conformance-type": "implement"
+      }
+    ]
+  }
+}

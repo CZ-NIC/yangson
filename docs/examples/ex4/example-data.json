@@ -1,0 +1,11 @@
+{
+  "example-4-a:bag": {
+    "foo": 42,
+    "bar": false,
+    "example-4-b:fooref": 42
+  },
+  "example-4-b:quux": [
+    "3.1415",
+    "0"
+  ]
+}

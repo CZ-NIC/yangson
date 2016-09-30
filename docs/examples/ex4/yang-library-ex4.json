@@ -1,0 +1,31 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "XXXX",
+    "module": [
+      {
+        "name": "example-4-a",
+        "namespace": "http://example.com/example-4-a",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "example-4-b",
+        "namespace": "http://example.com/example-4-b",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-yang-types",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types",
+        "revision": "2013-07-15",
+        "conformance-type": "import"
+      },
+      {
+        "name": "ietf-netconf-acm",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-netconf-acm",
+        "revision": "2012-02-22",
+        "conformance-type": "import"
+      }
+    ]
+  }
+}
