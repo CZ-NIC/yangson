@@ -6,3 +6,4 @@ Advanced Usage
 
    context
    schema
+   datatype
