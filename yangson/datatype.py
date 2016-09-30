@@ -1,3 +1,36 @@
+"""Classes representing YANG data types.
+
+This module implements the following classes:
+
+* BitsType: YANG bits type.
+* BinaryType: YANG binary type.
+* BooleanType: YANG boolean type.
+* DataType: Abstract class for data types.
+* Decimal64Type: YANG decimal64 type.
+* EmptyType: YANG empty type.
+* EnumerationType: YANG enumeration type.
+* IdentityrefType: YANG identityref type.
+* InstanceIdentifierType: YANG instance-identifier type.
+* LeafrefType: YANG leafref type.
+* LinkType: Abstract class for data types representing links.
+* IntegralType: Abstract class for integral types.
+* Int8Type: YANG int8 type.
+* Int16Type: YANG int16 type.
+* Int32Type: YANG int32 type.
+* Int64Type: YANG int64 type.
+* NumericType: Abstract class for numeric types.
+* StringType: YANG string type.
+* Uint8Type: YANG uint8 type.
+* Uint16Type: YANG uint16 type.
+* Uint32Type: YANG uint32 type.
+* Uint64Type: YANG uint64 type.
+* UnionType: YANG union type.
+
+The module also defines the following exceptions:
+
+* YangTypeError: A scalar value is of incorrect type.
+"""
+
 import base64
 import decimal
 import re
@@ -23,18 +56,70 @@ class DataType:
         self.module_id = mid
         self.default = None
 
+    def from_raw(self, raw: RawScalar) -> ScalarValue:
+        """Return a cooked value of the receiver type.
+
+        Args:
+            raw: Raw value obtained from JSON parser.
+
+        Raises:
+            YangTypeError: If `raw` doesn't conform to the receiver.
+        """
+        try:
+            res = self._convert_raw(raw)
+            if res is not None and self._constraints(res): return res
+        except TypeError:
+            raise YangTypeError(raw) from None
+        raise YangTypeError(raw)
+
+    def parse_value(self, input: str) -> ScalarValue:
+        """Parse value of a data type.
+
+        Args:
+            input: String representation of the value.
+        """
+        res = self._parse(input)
+        if res is not None and self._constraints(res): return res
+        raise YangTypeError(input)
+
+    def _convert_raw(self, raw: RawScalar) -> ScalarValue:
+        """Return a cooked value."""
+        return raw
+
+    def to_raw(self, val: ScalarValue) -> RawScalar:
+        """Return a raw value ready to be serialized in JSON."""
+        return val
+
+    def from_yang(self, input: str, mid: ModuleId) -> ScalarValue:
+        """Parse value specified in a YANG module."""
+        return self.parse_value(input)
+
+    def canonical_string(self, val: ScalarValue) -> str:
+        """Return canonical form of a value."""
+        return str(val)
+
+    def contains(self, val: ScalarValue) -> bool:
+        """Return ``True`` if the receiver type contains `val`."""
+        try:
+            return self._constraints(val)
+        except TypeError:
+            return False
+
+    def _constraints(self, val: Any) -> bool:
+        return True
+
     @classmethod
-    def resolve_type(cls, stmt: Statement, mid: ModuleId) -> "DataType":
+    def _resolve_type(cls, stmt: Statement, mid: ModuleId) -> "DataType":
         typ = stmt.argument
         if typ in cls.dtypes:
             res = cls.dtypes[typ](mid)
-            res.handle_properties(stmt, mid)
+            res._handle_properties(stmt, mid)
         else:
-            res = cls.derived_type(stmt, mid)
+            res = cls._derived_type(stmt, mid)
         return res
 
     @classmethod
-    def derived_type(cls, stmt: Statement, mid: ModuleId) -> "DataType":
+    def _derived_type(cls, stmt: Statement, mid: ModuleId) -> "DataType":
         """Completely resolve a derived type.
 
         Args:
@@ -50,14 +135,14 @@ class DataType:
             tchain.append((tdef, s, m))
             if s.argument in cls.dtypes: break
         res = cls.dtypes[s.argument](mid)
-        res.handle_properties(s, m)
+        res._handle_properties(s, m)
         while tchain:
             tdef, typst, tid = tchain.pop()
-            res.handle_restrictions(typst, tid)
+            res._handle_restrictions(typst, tid)
             dfst = tdef.find1("default")
             if dfst:
                 res.default = res.from_yang(dfst.argument, mid)
-        res.handle_restrictions(stmt, mid)
+        res._handle_restrictions(stmt, mid)
         return res
 
     @staticmethod
@@ -98,19 +183,6 @@ class DataType:
             [ to_num(r) for r in ran[1:-1] ] +
             [[parser(ran[-1][0]), hi]])
 
-    def _deref(self, node: InstanceNode) -> List[InstanceNode]:
-        return []
-
-    def parse_value(self, input: str) -> ScalarValue:
-        """Parse value of a data type.
-
-        Args:
-            input: String representation of the value.
-        """
-        res = self._parse(input)
-        if res is not None and self._constraints(res): return res
-        raise YangTypeError(input)
-
     def _parse(self, input: str) -> Optional[ScalarValue]:
         """The most generic parsing method is to return `input`.
 
@@ -119,55 +191,19 @@ class DataType:
         """
         return self._convert_raw(input)
 
-    def from_raw(self, raw: RawScalar) -> ScalarValue:
-        """Return a cooked value of the receiver type.
+    def _deref(self, node: InstanceNode) -> List[InstanceNode]:
+        return []
 
-        Args:
-            raw: Raw value obtained from JSON parser.
-        """
-        try:
-            res = self._convert_raw(raw)
-            if res is not None and self._constraints(res): return res
-        except TypeError:
-            raise YangTypeError(raw) from None
-        raise YangTypeError(raw)
-
-    def _convert_raw(self, raw: RawScalar) -> ScalarValue:
-        """Return a cooked value."""
-        return raw
-
-    def to_raw(self, val: ScalarValue) -> RawScalar:
-        """Return a raw value ready to be serialized in JSON."""
-        return val
-
-    def from_yang(self, input: str, mid: ModuleId) -> ScalarValue:
-        """Parse value specified in a YANG module."""
-        return self.parse_value(input)
-
-    def canonical_string(self, val: ScalarValue) -> str:
-        """Return canonical form of a value."""
-        return str(val)
-
-    def contains(self, val: ScalarValue) -> bool:
-        """Return ``True`` if the receiver type contains `val`."""
-        try:
-            return self._constraints(val)
-        except TypeError:
-            return False
-
-    def _constraints(self, val: Any) -> bool:
-        return True
-
-    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
         Args:
             stmt: Yang ``type`` statement.
             mid: Id of the context module.
         """
-        self.handle_restrictions(stmt, mid)
+        self._handle_restrictions(stmt, mid)
 
-    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type restriction substatements.
 
         Args:
@@ -175,54 +211,6 @@ class DataType:
             mid: Id of the context module.
         """
         pass
-
-class UnionType(DataType):
-    """Class representing YANG "union" type."""
-
-    def __init__(self, mid: ModuleId):
-        """Initialize the class instance."""
-        super().__init__(mid)
-        self.types = [] # type: List[DataType]
-
-    def to_raw(self, val: ScalarValue) -> RawScalar:
-        for t in self.types:
-            if t.contains(val):
-                return t.to_raw(val)
-
-    def canonical_string(self, val: ScalarValue) -> str:
-        for t in self.types:
-            if t.contains(val):
-                return t.canonical_string(val)
-
-    def _parse(self, input: str) -> Optional[ScalarValue]:
-        for t in self.types:
-            val = t._parse(input)
-            if val is not None and t._constraints(val): return val
-        return None
-
-    def _convert_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
-        for t in self.types:
-            val = t._convert_raw(raw)
-            if val is not None and t._constraints(val): return val
-        return None
-
-    def _constraints(self, val: Any) -> bool:
-        for t in self.types:
-            try:
-                if t._constraints(val): return True
-            except TypeError:
-                continue
-        return False
-
-    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type substatements.
-
-        Args:
-            stmt: Yang ``type`` statement.
-            mid: Id of the context module.
-        """
-        self.types = [ self.resolve_type(ts, mid)
-                       for ts in stmt.find_all("type") ]
 
 class EmptyType(DataType, metaclass=_Singleton):
     """Singleton class representing YANG "empty" type."""
@@ -274,7 +262,7 @@ class BitsType(DataType):
             raise YangTypeError(val) from None
         return res
 
-    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle **bit** statements."""
         nextpos = 0
         for bst in stmt.find_all("bit"):
@@ -291,7 +279,7 @@ class BitsType(DataType):
                 self.bit[label] = nextpos
             nextpos += 1
 
-    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         bst = stmt.find_all("bit")
         if not bst: return
         new = set([ b.argument for b in bst if Context.if_features(b, mid) ])
@@ -342,7 +330,7 @@ class StringType(DataType):
         self.patterns = []
         self.invert_patterns = []
 
-    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type restrictions.
 
         Args:
@@ -409,7 +397,7 @@ class EnumerationType(DataType):
     def _constraints(self, val: str) -> bool:
         return val in self.enum
 
-    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle **enum** statements."""
         nextval = 0
         for est in stmt.find_all("enum"):
@@ -426,7 +414,7 @@ class EnumerationType(DataType):
                 self.enum[label] = nextval
             nextval += 1
 
-    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         est = stmt.find_all("enum")
         if not est: return
         new = set([ e.argument for e in est if Context.if_features(e, mid) ])
@@ -441,7 +429,7 @@ class LinkType(DataType):
         super().__init__(mid)
         self.require_instance = True # type: bool
 
-    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
         Args:
@@ -460,7 +448,7 @@ class LeafrefType(LinkType):
         self.path = None
         self.ref_type = None
 
-    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
         Args:
@@ -526,7 +514,7 @@ class IdentityrefType(DataType):
         """Override the superclass method."""
         return Context.translate_pname(input, mid)
 
-    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
         Args:
@@ -546,7 +534,7 @@ class NumericType(DataType):
     def _constraints(self, val: Union[int, decimal.Decimal]) -> bool:
         return self._in_range(val, self._range)
 
-    def handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
         Args:
@@ -567,7 +555,7 @@ class Decimal64Type(NumericType):
         self._epsilon = decimal.Decimal(0) # type: decimal.Decimal
         self.context = None # type: decimal.Context
 
-    def handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
         Args:
@@ -579,7 +567,7 @@ class Decimal64Type(NumericType):
         quot = decimal.Decimal(10**fd)
         lim = decimal.Decimal(9223372036854775808)
         self._range = [[-lim / quot, (lim - 1) / quot]]
-        super().handle_properties(stmt, mid)
+        super()._handle_properties(stmt, mid)
 
     def _convert_raw(self, raw: str) -> decimal.Decimal:
         try:
@@ -683,6 +671,54 @@ class Uint64Type(IntegralType):
 
     def to_raw(self, val: int) -> str:
         return self.canonical_string(val)
+
+class UnionType(DataType):
+    """Class representing YANG "union" type."""
+
+    def __init__(self, mid: ModuleId):
+        """Initialize the class instance."""
+        super().__init__(mid)
+        self.types = [] # type: List[DataType]
+
+    def to_raw(self, val: ScalarValue) -> RawScalar:
+        for t in self.types:
+            if t.contains(val):
+                return t.to_raw(val)
+
+    def canonical_string(self, val: ScalarValue) -> str:
+        for t in self.types:
+            if t.contains(val):
+                return t.canonical_string(val)
+
+    def _parse(self, input: str) -> Optional[ScalarValue]:
+        for t in self.types:
+            val = t._parse(input)
+            if val is not None and t._constraints(val): return val
+        return None
+
+    def _convert_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
+        for t in self.types:
+            val = t._convert_raw(raw)
+            if val is not None and t._constraints(val): return val
+        return None
+
+    def _constraints(self, val: Any) -> bool:
+        for t in self.types:
+            try:
+                if t._constraints(val): return True
+            except TypeError:
+                continue
+        return False
+
+    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+        """Handle type substatements.
+
+        Args:
+            stmt: Yang ``type`` statement.
+            mid: Id of the context module.
+        """
+        self.types = [ self._resolve_type(ts, mid)
+                       for ts in stmt.find_all("type") ]
 
 class YangTypeError(YangsonException):
     """Exception to be raised if a value doesn't match its type."""

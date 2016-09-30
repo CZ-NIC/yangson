@@ -298,6 +298,7 @@ class InternalNode(SchemaNode):
         if ctype is None:
             ctype = self.content_type()
         return [c for c in self.children if
+                not isinstance(c, (RpcActionNode, NotificationNode)) and
                 c.content_type().value & ctype.value != 0]
 
     def data_children(self) -> List["DataNode"]:
@@ -475,14 +476,14 @@ class InternalNode(SchemaNode):
     def _leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf statement."""
         node = LeafNode()
-        node.type = DataType.resolve_type(
+        node.type = DataType._resolve_type(
             stmt.find1("type", required=True), mid)
         self._handle_child(node, stmt, mid)
 
     def _leaf_list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle leaf-list statement."""
         node = LeafListNode()
-        node.type = DataType.resolve_type(
+        node.type = DataType._resolve_type(
             stmt.find1("type", required=True), mid)
         self._handle_child(node, stmt, mid)
 
@@ -904,26 +905,25 @@ class ChoiceNode(InternalNode):
                       ctype: ContentType) -> "InstanceNode":
         if self.when and not self.when.evaluate(inst):
             return inst
-        ac = self.active_case(inst.value)
+        ac = self._active_case(inst.value)
         if ac:
             return ac._add_defaults(inst, ctype)
         elif self.default_case:
-            dc = self.get_child(*self.default_case)
-            if not dc.when or dc.when.evaluate(inst):
-                return dc._add_defaults(inst, ctype)
-        return inst
+            n = dc = self.get_child(*self.default_case)
+            while n is not self:
+                if n.when and not n.when.evaluate(inst):
+                    return inst
+                n = n.parent
+            return dc._add_defaults(inst, ctype)
+        else:
+            return inst
 
-    def active_case(self, value: ObjectValue) -> Optional["CaseNode"]:
-        """Return receiver's case that's active in an instance node value.
-
-        Args:
-            value: Instance node value
-        """
-        for case in self.children:
-            for cc in case.children:
-                if (isinstance(cc, ChoiceNode) and cc.active_case(value)
-                    or cc.iname() in value):
-                        return case
+    def _active_case(self, value: ObjectValue) -> Optional["CaseNode"]:
+        """Return receiver's case that's active in an instance node value."""
+        for c in self.children:
+            for cc in c.data_children():
+                if cc.iname() in value:
+                    return c
 
     def _pattern_entry(self) -> SchemaPattern:
         if not self.children:
