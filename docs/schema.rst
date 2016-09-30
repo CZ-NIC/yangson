@@ -311,6 +311,34 @@ This module also defines the following exceptions:
 	 >>> bsn.get_data_child('baz', 'example-4-a').qual_name
 	 ('baz', 'example-4-a')
 
+   .. method:: filter_children(ctype: ContentType = None) -> List[SchemaNode]
+
+      Return the list of receiver's children that are of the :term:`content
+      type` specified by the argument *ctype*. If the argument is
+      ``None``, then the returned list contains children of the same
+      content type as the receiver. Children that are instances of
+      either :class:`RpcActionNode` or :class:`NotificationNode` are
+      always omitted.
+
+      .. doctest::
+
+	 >>> [c.name for c in bsn.filter_children(ContentType.config)]
+	 ['foo', 'opts']
+	 >>> [c.name for c in bsn.filter_children(ContentType.nonconfig)]
+	 ['bar', 'opts']
+
+   .. method:: data_children() -> List[DataNode]
+
+      Return the list of receiver's data children, i.e. descendant
+      data nodes that are either direct children of the receiver, or
+      that have no ancestor data nodes that are also descendants of
+      the receiver. See also :meth:`get_data_child`.
+
+      .. doctest::
+
+	 >>> [c.name for c in bsn.data_children()]
+	 ['foo', 'bar', 'baz', 'fooref']
+
 .. class:: GroupNode
 
 This class is a subclass of :class:`InternalNode`. Its instances are
@@ -352,6 +380,11 @@ or **uses** statement if this statement is conditional, i.e. has a
       A :class:`~.datatype.DataType` object specifying the type of the
       instance.
 
+      .. doctest::
+
+	 >>> type(rsn.type)
+	 <class 'yangson.datatype.LeafrefType'>
+
    .. rubric:: Properties
 
    .. attribute:: default
@@ -367,8 +400,8 @@ or **uses** statement if this statement is conditional, i.e. has a
 
 .. class:: ContainerNode
 
-   This class is a subclass of :class:`InternalNode` and
-   :class:`DataNode`. Its instances represent YANG **container**
+   This class is a subclass of :class:`DataNode` and
+   :class:`InternalNode`. Its instances represent YANG **container**
    nodes.
 
    .. rubric:: Instance Attributes
@@ -377,6 +410,11 @@ or **uses** statement if this statement is conditional, i.e. has a
 
       A boolean value specifying whether the instance is a container
       with presence.
+
+      .. doctest::
+
+	 >>> bsn.presence
+	 True
 
 .. class:: SequenceNode
 
@@ -392,12 +430,23 @@ or **uses** statement if this statement is conditional, i.e. has a
       leaf-list entries set by the **min-elements** statement. The
       default is 0.
 
+      .. doctest::
+
+	 >>> qsn = dm.get_data_node('/example-4-b:quux')
+	 >>> qsn.min_elements
+	 0
+
    .. attribute:: max_elements
 
       An integer value specifying the maximum number of list or
       leaf-list entries set by the **max-elements** statement. The
       default value is ``None``, which means that no maximum is
       specified.
+
+      .. doctest::
+
+	 >>> qsn.max_elements
+	 2
 
    .. attribute:: user_ordered
 
@@ -407,18 +456,28 @@ or **uses** statement if this statement is conditional, i.e. has a
       (leaf-)list is ordered by system, i.e. the server may rearrange
       the entries.
 
+      .. doctest::
+
+	 >>> qsn.user_ordered
+	 True
+
    .. rubric:: Public Methods
 
    .. method:: entry_from_raw(rval: RawEntry) -> EntryValue
 
       Return a :term:`cooked value` of an array entry transformed from
-      :term:`raw value` *rval* as dictated by the receiver and its
+      :term:`raw value` *rval* as dictated by the receiver and/or its
       subtree in the schema.
 
       This method raises :exc:`NonexistentSchemaNode` if *rval*
       contains a member that is not defined in the schema, and
       :exc:`~.datatype.YangTypeError` if a scalar value inside *rval*
       is of incorrect type.
+
+      .. doctest::
+
+	 >>> qsn.entry_from_raw("2.7182")
+	 Decimal('2.7182')
 
 .. class:: ListNode
 
@@ -453,13 +512,11 @@ or **uses** statement if this statement is conditional, i.e. has a
       the **default** substatement of **choice**. The value of
       ``None`` (default) means that no case is defined as default.
 
-   .. rubric:: Public Methods
+      .. doctest::
 
-   .. method:: active_case(value: ObjectValue) -> Optional[CaseNode]
-
-      Return the receiver's case that is active in *value*, or
-      ``None`` if there is no such case. Active is the case whose
-      descendant data nodes have instance(s) in *value*.
+	 >>> osn = bsn.get_child('opts', 'example-4-a')
+	 >>> osn.default_case
+	 ('a', 'example-4-a')
 
 .. class:: CaseNode
 
@@ -472,8 +529,8 @@ or **uses** statement if this statement is conditional, i.e. has a
 
 .. class:: LeafNode
 
-   This class is a subclass of :class:`TerminalNode` and
-   :class:`DataNode`. Its instances represent YANG **leaf** nodes.
+   This class is a subclass of :class:`DataNode` and :class:`TerminalNode`.
+   Its instances represent YANG **leaf** nodes.
 
 .. class:: LeafListNode
 

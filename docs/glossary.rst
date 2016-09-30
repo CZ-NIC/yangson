@@ -30,6 +30,12 @@ specification, see section `3`_ of [RFC7950]_.
       A normalized string value that [RFC7950]_ defines for most
       scalar types.
 
+   content type
+
+      Character of a schema node, i.e. whether it represents
+      configuration, non-configuration, or both. Represented by the
+      enumeration :data:`~.enumerations.ContentType`.
+
    qualified name
 
        A tuple in the form *(name, module)* where *name* is the name
