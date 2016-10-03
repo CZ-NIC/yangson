@@ -38,7 +38,7 @@ from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, List, Optional, Tuple, Union
 from .exceptions import YangsonException
 from .context import Context
-from .instance import InstanceNode, InstanceIdParser
+from .instance import InstanceNode, InstanceIdParser, InstanceRoute
 from .parser import ParserException
 from .statement import Statement
 from .typealiases import *
@@ -72,31 +72,27 @@ class DataType:
             raise YangTypeError(raw) from None
         raise YangTypeError(raw)
 
-    def parse_value(self, input: str) -> ScalarValue:
-        """Parse value of a data type.
-
-        Args:
-            input: String representation of the value.
-        """
-        res = self._parse(input)
-        if res is not None and self._constraints(res): return res
-        raise YangTypeError(input)
-
-    def _convert_raw(self, raw: RawScalar) -> ScalarValue:
-        """Return a cooked value."""
-        return raw
-
     def to_raw(self, val: ScalarValue) -> RawScalar:
         """Return a raw value ready to be serialized in JSON."""
         return val
 
-    def from_yang(self, input: str, mid: ModuleId) -> ScalarValue:
-        """Parse value specified in a YANG module."""
-        return self.parse_value(input)
+    def parse_value(self, text: str) -> ScalarValue:
+        """Parse value of a data type.
+
+        Args:
+            text: String representation of the value.
+        """
+        res = self._parse(text)
+        if res is not None and self._constraints(res): return res
+        raise YangTypeError(text)
 
     def canonical_string(self, val: ScalarValue) -> str:
         """Return canonical form of a value."""
         return str(val)
+
+    def from_yang(self, text: str, mid: ModuleId) -> ScalarValue:
+        """Parse value specified in a YANG module."""
+        return self.parse_value(text)
 
     def contains(self, val: ScalarValue) -> bool:
         """Return ``True`` if the receiver type contains `val`."""
@@ -104,6 +100,10 @@ class DataType:
             return self._constraints(val)
         except TypeError:
             return False
+
+    def _convert_raw(self, raw: RawScalar) -> ScalarValue:
+        """Return a cooked value."""
+        return raw
 
     def _constraints(self, val: Any) -> bool:
         return True
@@ -135,10 +135,14 @@ class DataType:
             tchain.append((tdef, s, m))
             if s.argument in cls.dtypes: break
         res = cls.dtypes[s.argument](mid)
-        res._handle_properties(s, m)
+        btyp = True
         while tchain:
             tdef, typst, tid = tchain.pop()
-            res._handle_restrictions(typst, tid)
+            if btyp:
+                res._handle_properties(s, m)
+                btyp = False
+            else:
+                res._handle_restrictions(typst, tid)
             dfst = tdef.find1("default")
             if dfst:
                 res.default = res.from_yang(dfst.argument, mid)
@@ -183,13 +187,8 @@ class DataType:
             [ to_num(r) for r in ran[1:-1] ] +
             [[parser(ran[-1][0]), hi]])
 
-    def _parse(self, input: str) -> Optional[ScalarValue]:
-        """The most generic parsing method is to return `input`.
-
-        Args:
-            input: String representation of the value.
-        """
-        return self._convert_raw(input)
+    def _parse(self, text: str) -> Optional[ScalarValue]:
+        return self._convert_raw(text)
 
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         return []
@@ -198,7 +197,7 @@ class DataType:
         """Handle type substatements.
 
         Args:
-            stmt: Yang ``type`` statement.
+            stmt: YANG ``type`` statement.
             mid: Id of the context module.
         """
         self._handle_restrictions(stmt, mid)
@@ -207,7 +206,7 @@ class DataType:
         """Handle type restriction substatements.
 
         Args:
-            stmt: Yang ``type`` statement.
+            stmt: YANG ``type`` statement.
             mid: Id of the context module.
         """
         pass
@@ -221,8 +220,8 @@ class EmptyType(DataType, metaclass=_Singleton):
     def _constraints(self, val: Tuple[None]) -> bool:
         return val == (None,)
 
-    def _parse(self, input: str) -> Tuple[None]:
-        return None if input else (None,)
+    def _parse(self, text: str) -> Tuple[None]:
+        return None if text else (None,)
 
     def _convert_raw(self, raw: List[None]) -> Tuple[None]:
         try:
@@ -305,14 +304,14 @@ class BooleanType(DataType):
         """
         return isinstance(val, bool)
 
-    def _parse(self, input: str) -> bool:
+    def _parse(self, text: str) -> bool:
         """Parse boolean value.
 
         Args:
-            input: String representation of the value.
+            text: String representation of the value.
         """
-        if input == "true": return True
-        if input == "false": return False
+        if text == "true": return True
+        if text == "false": return False
 
     def canonical_string(self, val: bool) -> str:
         if val is True: return "true"
@@ -322,24 +321,24 @@ class BooleanType(DataType):
 class StringType(DataType):
     """Class representing YANG "string" type."""
 
-    _length = [[0, 4294967295]] # type: Range
+    length = [[0, 4294967295]] # type: Range
 
     def __init__(self, mid: ModuleId) -> None:
         """Initialize the class instance."""
         super().__init__(mid)
-        self.patterns = []
-        self.invert_patterns = []
+        self.patterns = [] # type: List[Pattern]
+        self.invert_patterns = [] # type: List[Pattern]
 
     def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type restrictions.
 
         Args:
-            stmt: Yang string type statement.
+            stmt: YANG string type statement.
             mid: Id of the context module.
         """
         lstmt = stmt.find1("length")
         if lstmt:
-            self._length = self._combine_ranges(self._length,
+            self.length = self._combine_ranges(self.length,
                                                 lstmt.argument, int)
         for pst in stmt.find_all("pattern"):
             pat = re.compile(XMLToPython(pst.argument))
@@ -357,7 +356,7 @@ class StringType(DataType):
         return isinstance(val, str) and self._constraints(val)
 
     def _constraints(self, val: str) -> bool:
-        if not self._in_range(len(val), self._length):
+        if not self._in_range(len(val), self.length):
             return False
         for p in self.patterns:
             if not p.match(val): return False
@@ -378,7 +377,7 @@ class BinaryType(StringType):
         return isinstance(val, bytes) and self._constraints(val)
 
     def _constraints(self, val: bytes) -> bool:
-        return self._in_range(len(val), self._length)
+        return self._in_range(len(val), self.length)
 
     def to_raw(self, val: bytes) -> str:
         return self.canonical_string(val)
@@ -433,7 +432,7 @@ class LinkType(DataType):
         """Handle type substatements.
 
         Args:
-            stmt: Yang ``type leafref/instance-identifier`` statement.
+            stmt: YANG ``type leafref/instance-identifier`` statement.
             mid: Id of the context module.
         """
         if stmt.find1("require-instance", "false"):
@@ -452,7 +451,7 @@ class LeafrefType(LinkType):
         """Handle type substatements.
 
         Args:
-            stmt: Yang ``type leafref`` statement.
+            stmt: YANG ``type leafref`` statement.
             mid: Id of the context module.
         """
         self.path = XPathParser(
@@ -477,15 +476,18 @@ class LeafrefType(LinkType):
 class InstanceIdentifierType(LinkType):
     """Class representing YANG "instance-identifier" type."""
 
-    def _constraints(self, val: str) -> bool:
+    def _convert_raw(self, raw: str) -> InstanceRoute:
         try:
-            InstanceIdParser(val).parse()
-            return True
-        except:
-            return False
+            return InstanceIdParser(raw).parse()
+        except ParserException:
+            raise YangTypeError(raw) from None
+
+    def to_raw(self, val: InstanceRoute) -> str:
+        """Override the superclass method."""
+        return str(val)
 
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
-        return [node.top().goto(InstanceIdParser(node.value).parse())]
+        return [node.top().goto(node.value)]
 
 class IdentityrefType(DataType):
     """Class representing YANG "identityref" type."""
@@ -510,15 +512,20 @@ class IdentityrefType(DataType):
     def to_raw(self, val: QualName) -> str:
         return self.canonical_string(val)
 
-    def from_yang(self, input:str, mid: ModuleId) -> QualName:
+    def from_yang(self, text: str, mid: ModuleId) -> QualName:
         """Override the superclass method."""
-        return Context.translate_pname(input, mid)
+        try:
+            res = Context.translate_pname(text, mid)
+        except:
+            raise YangTypeError(text) from None
+        if self._constraints(res): return res
+        raise YangTypeError(text)
 
     def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
 
         Args:
-            stmt: Yang ``type identityref`` statement.
+            stmt: YANG ``type identityref`` statement.
             mid: Id of the context module.
         """
         self.bases = [ Context.translate_pname(b.argument, mid)
@@ -538,7 +545,7 @@ class NumericType(DataType):
         """Handle type substatements.
 
         Args:
-            stmt: Yang ``type`` statement.
+            stmt: YANG ``type`` statement.
             mid: Id of the context module.
         """
         rstmt = stmt.find1("range")
@@ -559,7 +566,7 @@ class Decimal64Type(NumericType):
         """Handle type substatements.
 
         Args:
-            stmt: Yang ``type decimal64`` statement.
+            stmt: YANG ``type decimal64`` statement.
             mid: Id of the context module.
         """
         fd = int(stmt.find1("fraction-digits", required=True).argument)
@@ -595,14 +602,14 @@ class IntegralType(NumericType):
     # Regular expressions
     hexa_re = re.compile(r"\s*(\+|-)?0x")
 
-    def _parse(self, input: str) -> int:
+    def _parse(self, text: str) -> int:
         """Parse integral value.
 
         Args:
-            input: String representation of the value.
+            text: String representation of the value.
         """
         try:
-            return (int(input, 16) if self.hexa_re.match(input) else int(input))
+            return (int(text, 16) if self.hexa_re.match(text) else int(text))
         except ValueError:
             return None
 
@@ -690,9 +697,9 @@ class UnionType(DataType):
             if t.contains(val):
                 return t.canonical_string(val)
 
-    def _parse(self, input: str) -> Optional[ScalarValue]:
+    def _parse(self, text: str) -> Optional[ScalarValue]:
         for t in self.types:
-            val = t._parse(input)
+            val = t._parse(text)
             if val is not None and t._constraints(val): return val
         return None
 
@@ -714,7 +721,7 @@ class UnionType(DataType):
         """Handle type substatements.
 
         Args:
-            stmt: Yang ``type`` statement.
+            stmt: YANG ``type`` statement.
             mid: Id of the context module.
         """
         self.types = [ self._resolve_type(ts, mid)
