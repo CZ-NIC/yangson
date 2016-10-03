@@ -34,7 +34,8 @@ This module defines the following exceptions:
 from typing import Dict, List, MutableSet, Optional, Set, Tuple, Union
 from .exceptions import YangsonException
 from .context import Context
-from .datatype import DataType, LeafrefType, LinkType, RawScalar
+from .datatype import (DataType, LeafrefType, LinkType,
+                       RawScalar, IdentityrefType)
 from .enumerations import Axis, ContentType, DefaultDeny
 from .instvalue import ArrayValue, EntryValue, ObjectValue, Value
 from .schpattern import *
@@ -183,6 +184,9 @@ class SchemaNode:
 
     def _post_process(self) -> None:
         pass
+
+    def _is_identityref(self) -> bool:
+        return False
 
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
         return []
@@ -669,6 +673,9 @@ class TerminalNode(SchemaNode):
             if ref is None:
                 raise BadLeafrefPath(self)
             self.type.ref_type = ref.type
+
+    def _is_identityref(self) -> bool:
+        return isinstance(self.type, IdentityrefType)
 
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
         di = self._default_instance(inst, ContentType.all)

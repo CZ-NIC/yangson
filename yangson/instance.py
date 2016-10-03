@@ -669,6 +669,10 @@ class InstanceRoute(list):
         """Return a string representation of the receiver."""
         return "".join([str(c) for c in self])
 
+    def __hash__(self) -> int:
+        """Return the hash value of the receiver."""
+        return self.__str__().__hash__()
+
 class InstanceSelector:
     """Components of instance identifers."""
     pass

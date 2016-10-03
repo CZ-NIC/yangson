@@ -395,6 +395,7 @@ class FuncDerivedFrom(BinaryExpr):
             raise XPathTypeError(ns)
         i = Context.translate_pname(self.right._eval_string(xctx), self.mid)
         for n in ns:
+            if not n.schema_node._is_identityref(): return False
             if self.or_self and n.value == i: return True
             if Context.is_derived_from(n.value, i): return True
         return False
