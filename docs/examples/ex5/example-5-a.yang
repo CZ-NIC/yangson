@@ -1,10 +1,14 @@
-module example-5 {
+module example-5-a {
 
   yang-version "1.1";
 
-  namespace "http://example.com/example-5";
+  namespace "http://example.com/example-5-a";
 
-  prefix "ex5";
+  prefix "ex5a";
+
+  import example-5-b {
+    prefix "ex5b";
+  }
 
   typedef my-string {
     type string {
@@ -24,6 +28,16 @@ module example-5 {
     }
   }
 
+  leaf boolean-leaf {
+    type boolean;
+  }
+
+  leaf decimal64-leaf {
+    type decimal64 {
+      fraction-digits "4";
+    }
+  }
+
   leaf empty-leaf {
     type empty;
   }
@@ -38,6 +52,13 @@ module example-5 {
       enum Sleepy;
       enum Sneezy;
     }
+  }
+
+  leaf identityref-leaf {
+    type identityref {
+      base ex5b:base-identity;
+    }
+    default "ex5b:derived-identity";
   }
 
   leaf string-leaf {

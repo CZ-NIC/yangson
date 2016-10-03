@@ -35,6 +35,11 @@ __ https://tools.ietf.org/html/rfc3986
 
 __ https://tools.ietf.org/html/rfc6241
 
+.. [RFC4648] Josefsson, S. *The Base16, Base32, and Base64 Data
+	     Encodings*. `RFC 4648`__, IETF, 2006, 18 p.
+
+__ https://tools.ietf.org/html/rfc4648
+
 .. [RFC6536] Bierman, A.; Bjorklund, M. *Network Configuration
 	     Protocol (NETCONF) Access Control Model.* `RFC 6536`__,
 	     IETF, 2012, 49 p. ISSN 2070-1721.

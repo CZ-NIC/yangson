@@ -1,0 +1,14 @@
+module example-5-b {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/example-5-b";
+
+  prefix "ex5b";
+
+  identity base-identity;
+
+  identity derived-identity {
+    base base-identity;
+  }
+}

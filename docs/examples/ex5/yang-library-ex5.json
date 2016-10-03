@@ -3,8 +3,14 @@
     "module-set-id": "XXXX",
     "module": [
       {
-        "name": "example-5",
-        "namespace": "http://example.com/example-5",
+        "name": "example-5-a",
+        "namespace": "http://example.com/example-5-a",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "example-5-b",
+        "namespace": "http://example.com/example-5-b",
         "revision": "",
         "conformance-type": "implement"
       }
