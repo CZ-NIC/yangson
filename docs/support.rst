@@ -8,3 +8,4 @@ Supporting Modules
    enumerations
    exceptions
    parser
+   xpath
