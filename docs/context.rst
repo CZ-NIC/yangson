@@ -410,48 +410,50 @@ This module also defines the following exceptions:
 	 ... ('example-3-a', '2016-06-18')).parse()
 	 False
 
-.. autoexception:: BadPath(path: str)
+.. autoexception:: MissingModule(name: YangIdentifier, rev: str = "")
+
+   The arguments specify the name and optional revision of the missing
+   module.
+
+.. autoexception:: ModuleNotFound(name: YangIdentifier, rev: str = "")
    :show-inheritance:
 
-   The *path* argument contains the invalid path.
+.. autoexception:: ModuleNotRegistered(name: YangIdentifier, rev: str = "")
+   :show-inheritance:
 
-.. autoexception:: BadYangLibraryData(reason: str)
+.. autoexception:: ModuleNotImplemented(name: YangIdentifier, rev: str = "")
+   :show-inheritance:
+
+.. autoexception:: BadYangLibraryData
    :show-inheritance:
 
    The *reason* argument is a text describing the problem.
 
-.. autoexception:: CyclicImports
+.. autoexception:: BadPath
    :show-inheritance:
 
-   See sec. `5.1`_ of [RFC7950]_ for further explanation.
+   The *path* argument contains the invalid path.
 
-.. autoexception:: FeaturePrerequisiteError(name: YangIdentifier, ns: \
-		   YangIdentifier)
+.. autoexception:: UnknownPrefix
+   :show-inheritance:
+
+   The *prefix* argument contains the unknown prefix.
+
+.. autoexception:: ModuleNotImported(mod: YangIdentifier, mid: ModuleId)
+   :show-inheritance:
+
+   Module *mod* is expected to be imported from a module or
+   submodule whose :term:`module identifier` is *mid*.
+
+.. autoexception:: InvalidFeatureExpression
+   :show-inheritance:
+
+.. autoexception:: FeaturePrerequisiteError(name: YangIdentifier, ns: YangIdentifier)
    :show-inheritance:
 
    The *name* and *ns* arguments contain the name and namespace of the
    feature for which a pre-requisite feature is not supported by the
    data model.
-
-.. autoexception:: MissingImport(imported: YangIdentifier, mid: \
-		   ModuleId)
-   :show-inheritance:
-
-   Module *imported* is expected to be imported from a module or
-   submodule whose :term:`module identifier` is *mid*.
-
-.. autoexception:: ModuleNotFound(name: YangIdentifier, rev: str = "")
-   :show-inheritance:
-
-   The *name* and *rev* arguments give the name and revision of the
-   non-existent (sub)module.
-
-.. autoexception:: ModuleNotRegistered(name: YangIdentifier, rev: str \
-		   = "")
-   :show-inheritance:
-
-   The *name* and *rev* arguments give the name and revision of the
-   module that is missing in YANG library.
 
 .. autoexception:: MultipleImplementedRevisions(module: YangIdentifier)
    :show-inheritance:
@@ -459,13 +461,10 @@ This module also defines the following exceptions:
    See sec. `5.6.5`_ of [RFC7950]_ for further explanation. The *module*
    argument contains the name of the module with multiple implemented revisions.
 
-.. autoexception:: UnknownPrefix(prefix: str)
+.. autoexception:: CyclicImports
    :show-inheritance:
 
-   The *prefix* argument contains the unknown prefix.
-
-.. autoexception:: InvalidFeatureExpression
-   :show-inheritance:
+   See sec. `5.1`_ of [RFC7950]_ for further explanation.
 
 .. _5.6.5: https://tools.ietf.org/html/rfc7950#section-5.6.5
 .. _5.1: https://tools.ietf.org/html/rfc7950#section-5.1
