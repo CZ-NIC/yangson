@@ -1,6 +1,6 @@
 {
   "ietf-yang-library:modules-state": {
-    "module-set-id": "XXXX",
+    "module-set-id": "b5e2c7aa84bd40f60c853ceefb69031ed8f9b96b",
     "module": [
       {
         "name": "example-4-a",
