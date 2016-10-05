@@ -127,3 +127,45 @@ data model content:
 
 Support for individual features and/or deviations are also indicated
 in YANG library data.
+
+Content Type
+============
+
+YANG distinguishes configuration from state data (see sec. `4.2.3`_ in
+[RFC7950]_), and the **config** statement can be used to specify to
+which of the two categories a given schema node belongs. A schema node
+whose definition doesn't contain the **config** statement inherits
+this property from its parent schema node. State data may be embedded
+inside configuration, but not vice versa. Finally, for schemas of RPC
+operations, actions and notifications, the distinction between
+configuration and state data makes no sense at all, and **config**
+statements, if present, are ignored there.
+
+The approach adopted by the *Yangson* library is to assign a content
+type to every :class:`~.schema.SchemaNode`. The values are members of
+the enumeration :class:`~.enumerations.ContentType`:
+
+* :attr:`~.ContentType.config`
+* :attr:`~.ContentType.nonconfig`
+* :attr:`~.ContentType.all`
+
+All non-terminal schema nodes (**container**, **list**, **choice**
+and **case**) that represent configuration have the content type
+:attr:`~ContentType.all` because they may have both configuration and
+state data nodes as descendants.
+
+Content type of terminal data nodes (**leaf**, **leaf-list**, **anydata** and
+**anyxml**) reflects their **config**, i.e. it is either
+:attr:`~ContentType.config` or :attr:`~ContentType.nonconfig`.
+
+Other nodes always have content type :attr:`~ContentType.nonconfig`.
+
+The method :meth:`.SchemaNode.content_type` returns the content type
+of the receiver.
+
+The above rules allow for a straightforward implementation of content
+filtering in RESTCONF based on the ``content`` query parameter, see
+sec. `4.8.1`_ in [BBW16]_.
+
+.. _4.2.3: https://tools.ietf.org/html/rfc7950#section-4.2.3
+.. _4.8.1: https://tools.ietf.org/html/draft-ietf-netconf-restconf#section-4.8.1

@@ -11,6 +11,7 @@ Contents:
    basic
    advanced
    support
+   examples
    references
    glossary
 

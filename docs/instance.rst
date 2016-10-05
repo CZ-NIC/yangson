@@ -489,7 +489,7 @@ This module also defines the following exceptions:
 	 >>> wd.member('example-2:bag').member('baz').raw_value()
 	 '0.0'
 
-.. autoclass:: RootNode
+.. autoclass:: RootNode(value: Value, schema_node: SchemaNode, timestamp: datetime.datetime)
    :show-inheritance:
 
    .. rubric:: Instance Attributes

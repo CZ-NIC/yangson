@@ -6,13 +6,13 @@ Enumeration Classes
    :synopsis: Enumeration classes
 
 .. autoclass:: ContentType
-   :show-inheritance:
+   :members:
 
 .. autoclass:: DefaultDeny
-   :show-inheritance:
+   :members:
 
 .. autoclass:: Axis
-   :show-inheritance:
+   :members:
 
 .. autoclass:: MultiplicativeOp
-   :show-inheritance:
+   :members:

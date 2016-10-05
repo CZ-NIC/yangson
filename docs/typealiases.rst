@@ -6,9 +6,9 @@ Type Aliases
    :synopsis: Type aliases
    :members:
 
-   In order to keep the class and method signature readable, the
-   documentation for other *Yangson* modules the names of type aliases
-   unprefixed, i.e. without module names.
+   In order to keep class and method signatures readable, the
+   documentation for other *Yangson* modules uses the names of type
+   aliases unprefixed, i.e. without module names.
 
 .. _6.2: https://tools.ietf.org/html/rfc7950#section-6.2
 .. _6.5: https://tools.ietf.org/html/rfc7950#section-6.5

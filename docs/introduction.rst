@@ -85,7 +85,18 @@ converted to the compact syntax by using the XSLT stylesheet
 Doctest Examples
 ================
 
-TBD
+This documentation uses doctest__ snippets rather heavily. For this
+purpose, each Python module uses a specific example data model and/or
+JSON instance document that have to be loaded first. Python statements that
+do so are also included as doctest snippets. Other obvious steps, such
+as necessary Python module imports, are not shown.
+
+__ http://www.sphinx-doc.org/en/stable/ext/doctest.html
+
+The example YANG modules, YANG library specifications and instance
+documents are included with *Yangson* documentation, in subdirectories
+of the ``examples`` directory. All the examples are also listed in
+:ref:`sec-examples`.
 
 .. _persistent structures: https://en.wikipedia.org/wiki/Persistent_data_structure
 .. _5.2: https://tools.ietf.org/html/rfc7950#section-5.2
