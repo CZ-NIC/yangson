@@ -27,9 +27,11 @@ XPath Abstract Syntax Tree
    :synopsis: Abstract syntax tree for XPath expressions
 
 The :mod:`.xpathast` module defines classes that allow for building
-`abstract syntax trees` (AST) for XPath 1.0 expressions with
+`abstract syntax trees`__ (AST) for XPath 1.0 expressions with
 extensions introduced by YANG 1.1. Only the following class is
 intended to be public:
+
+__ https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
 * :class:`Expr`: XPath 1.0 expression with YANG 1.0 extensions.
 
