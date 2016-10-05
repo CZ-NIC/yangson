@@ -62,14 +62,17 @@ all :class:`~.schema.TerminalNode` instances.
 
    >>> dm = DataModel.from_file('yang-library-ex5.json',
    ... mod_path=[".", "../../../examples/ietf"])
+   >>> binary_t = dm.get_data_node('/example-5-a:binary-leaf').type
    >>> bits_t = dm.get_data_node('/example-5-a:bits-leaf').type
    >>> boolean_t = dm.get_data_node('/example-5-a:boolean-leaf').type
    >>> decimal64_t = dm.get_data_node('/example-5-a:decimal64-leaf').type
    >>> empty_t = dm.get_data_node('/example-5-a:empty-leaf').type
    >>> enumeration_t = dm.get_data_node('/example-5-a:enumeration-leaf').type
    >>> identityref_t = dm.get_data_node('/example-5-a:identityref-leaf').type
+   >>> ii_t = dm.get_data_node('/example-5-a:instance-identifier-leaf').type
+   >>> leafref_t = dm.get_data_node('/example-5-a:leafref-leaf').type
    >>> string_t = dm.get_data_node('/example-5-a:string-leaf').type
-
+   >>> union_t = dm.get_data_node('/example-5-a:union-leaf').type
 
 .. class:: DataType(mid: ModuleId)
 
@@ -223,7 +226,21 @@ all :class:`~.schema.TerminalNode` instances.
    A :term:`cooked value` of this type is a tuple of strings – names
    of the bits that are set.
 
-   See documentation of :meth:`DataType.from_raw` for an example.
+   See documentation of :meth:`~DataType.from_raw` for an example.
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: bit
+
+      A dictionary that maps bit labels as defined by **bit**
+      statements to bit positions. The position are either defined
+      explicitly via the **position** statement, or assigned
+      automatically – see sec. `9.7.4.2`_ in [RFC7950]_ for details.
+
+      .. doctest::
+
+	 >>> bits_t.bit['un']
+	 1
 
 .. class:: BooleanType
 
@@ -233,7 +250,7 @@ all :class:`~.schema.TerminalNode` instances.
    Both :term:`raw value` and :term:`cooked value` of this type is a
    Python :class:`bool` value.
 
-   See documentation of :meth:`DataType.parse_value` for an example.
+   See documentation of :meth:`~DataType.parse_value` for an example.
 
 .. class:: StringType
 
@@ -281,13 +298,233 @@ all :class:`~.schema.TerminalNode` instances.
 
 .. class:: BinaryType
 
-   This class is a subclass of :class:`StrindType`, and represents YANG
+   This class is a subclass of :class:`StringType`, and represents YANG
    **binary** type.
 
-   The :term:`cooked value` is a Python :class:`bytes` object, whereas
-   the :term:`raw value` is the same bytestring encoded in Base64 (see
-   sec. `4`_ in [RFC4648]_).
+   The :term:`cooked value` is a Python :class:`bytes` object.
 
-.. _4: https://tools.ietf.org/html/rfc4648#section-4
+   .. doctest::
+
+      >>> binary_t.to_raw(b'\xFF\xFE')
+      '//4='
+
+.. class:: EnumerationType
+
+   This class is a subclass of :class:`DataType`, and represents YANG
+   **enumeration** type.
+
+   Both :term:`raw value` and :term:`cooked value` of this type is a
+   string, and it must must be one of the names specified in the type's
+   definition via the **enum** statement.
+
+   See documentation of :meth:`~DataType.contains` for an example.
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: enum
+
+      A dictionary that maps assigned enum names to their values as
+      defined via the **value** statement or assigned automatically.
+
+      .. doctest::
+
+	 >>> enumeration_t.enum['Happy']
+	 4
+
+.. class:: LinkType
+
+   This is an abstract superclass for types that refer to other
+   instance nodes (**leafref** and **instance-identifier**). It is a
+   subclass of :class:`DataType`.
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: require_instance
+
+      Boolean flag that indicates whether an instance node being
+      referred to is required to exist. This property is set by the
+      **require-instance** statement in type's definition, see
+      sec. `9.9.3`_ in [RFC7950]_.
+
+      .. doctest::
+
+	 >>> leafref_t.require_instance
+	 True
+
+.. class:: LeafrefType
+
+   This class is a subclass of :class:`LinkType`, and represents YANG
+   **leafref** type.
+
+   The type of a :term:`cooked value` of this type is dictated by the
+   type of the leaf node that is being referred to via the **path**
+   statement.
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: path
+
+      An :class:`~.xpathast.Expr` object (XPath abstract syntax tree)
+      parsed from the argument of the **path** statement.
+
+      .. doctest::
+
+	 >>> print(leafref_t.path, end='')
+	 LocationPath
+	   Root
+	   Step (child ('string-leaf', 'example-5-a'))
+
+   .. attribute:: ref_type
+
+      Type of the leaf being referred to.
+
+      .. doctest::
+
+	 >>> type(leafref_t.ref_type)
+	 <class 'yangson.datatype.StringType'>
+	 >>> leafref_t.contains('abc')
+	 False
+
+.. class:: InstanceIdentifierType
+
+   This class is a subclass of :class:`LinkType`, and represents YANG
+   **instance-identifier** type.
+
+   A :term:`cooked value` of this type is an
+   :class:`~.instance.InstanceRoute` object parsed from a :term:`raw
+   value` as defined in sec. `9.13`_ of [RFC7950]_.
+
+   .. doctest::
+
+      >>> type(ii_t.from_raw('/example-5-a:boolean-leaf'))
+      <class 'yangson.instance.InstanceRoute'>
+      >>> str(ii_t.from_raw('/example-5-a:boolean-leaf'))
+      '/example-5-a:boolean-leaf'
+
+.. class:: IdentityrefType
+
+   This class is a subclass of :class:`DataType`, and represents YANG
+   **identityref** type.
+
+   A :term:`cooked value` of this type is a :term:`qualified name` of
+   an identity defined by the data model.
+
+   See documentation of :meth:`~DataType.from_yang` for an example.
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: bases
+
+      List of :term:`qualified names` of identities that are defined
+      as bases for this type via the **base** statement.
+
+      .. doctest::
+
+	 >>> identityref_t.bases
+	 [('base-identity', 'example-5-b')]
+
+.. class:: NumericType
+
+   This class is an abstract superclass for all classes representing
+   numeric types. It is subclass of :class:`DataType`.
+
+.. class:: Decimal64Type
+
+   This class is a subclass of :class:`NumericType`, and represents
+   YANG **decimal64** type.
+
+   A :term:`cooked value` of this type is a :class:`decimal.Decimal` number.
+
+   See documentation of :meth:`~DataType.canonical_string` for an example.
+
+.. class:: IntegralType
+
+   This class is an abstract superclass for all classes representing
+   integral numbers. It is subclass of :class:`NumericType`, and represents
+   YANG **integral** type.
+
+   Python unlimited precision integers (:class:`int`) are use for
+   :term:`cooked value`\ s of all integral types, and restrictions on
+   ranges are enforced explicitly for specific types such as
+   **uint32**.
+
+.. class:: Int8Type
+
+   This class is a subclass of :class:`IntegralType`, and represents
+   YANG **int8** type.
+
+.. class:: Int16Type
+
+   This class is a subclass of :class:`IntegralType`, and represents
+   YANG **int16** type.
+
+.. class:: Int32Type
+
+   This class is a subclass of :class:`IntegralType`, and represents
+   YANG **int32** type.
+
+.. class:: Int64Type
+
+   This class is a subclass of :class:`IntegralType`, and represents
+   YANG **int64** type.
+
+.. class:: Uint8Type
+
+   This class is a subclass of :class:`IntegralType`, and represents
+   YANG **uint8** type.
+
+.. class:: Uint16Type
+
+   This class is a subclass of :class:`IntegralType`, and represents
+   YANG **uint16** type.
+
+.. class:: Uint32Type
+
+   This class is a subclass of :class:`IntegralType`, and represents
+   YANG **uint32** type.
+
+.. class:: Uint64Type
+
+   This class is a subclass of :class:`IntegralType`, and represents
+   YANG **uint64** type.
+
+.. class:: UnionType
+
+   This class is a subclass of :class:`DataType`, and represents YANG
+   **union** type.
+
+   A :term:`cooked value` of this type must be a valid cooked value of
+   a union's member type. Methods in this class are implemented so
+   that they iterate through the member types in the order in which
+   they are specified in the union type definition, and try the same
+   method from their classes. If the method fails, next member class
+   is tried in turn. The result of the first method implementation
+   that succeeds is used as the result of the implementation in the
+   :class:`UnionType`. If the method does not succeed for any of the
+   member classes, then the :class:`UnionType` method fails, too.
+
+   .. doctest::
+
+      >>> union_t.parse_value('true')  # result is bool, not string
+      True
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: types
+
+      List of member types.
+
+      .. doctest::
+
+	 >>> len(union_t.types)
+	 2
+	 >>> type(union_t.types[0])
+	 <class 'yangson.datatype.StringType'>
+
+.. autoexception:: YangTypeError
+
 .. _7.3: https://tools.ietf.org/html/rfc7950#section-7.3
 .. _9.1: https://tools.ietf.org/html/rfc7950#section-9.1
+.. _9.7.4.2: https://tools.ietf.org/html/rfc7950#section-9.7.4.2
+.. _9.9.3: https://tools.ietf.org/html/rfc7950#section-9.9.3
+.. _9.13: https://tools.ietf.org/html/rfc7950#section-9.13

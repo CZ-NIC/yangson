@@ -18,6 +18,10 @@ module example-5-a {
     default "xxy";
   }
 
+  leaf binary-leaf {
+    type binary;
+  }
+
   leaf bits-leaf {
     type bits {
       bit un {
@@ -61,7 +65,25 @@ module example-5-a {
     default "ex5b:derived-identity";
   }
 
+  leaf instance-identifier-leaf {
+    type instance-identifier;
+  }
+
+  leaf leafref-leaf {
+    type leafref {
+      path "/string-leaf";
+      require-instance "true";
+    }
+  }
+
   leaf string-leaf {
     type my-string;
+  }
+
+  leaf union-leaf {
+    type union {
+      type my-string;
+      type boolean;
+    }
   }
 }
