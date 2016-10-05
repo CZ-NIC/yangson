@@ -418,8 +418,8 @@ class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
     def __init__(self, value: Value, schema_node: "DataNode",
-                 ts: datetime):
-        super().__init__(value, None, schema_node, ts)
+                 timestamp: datetime):
+        super().__init__(value, None, schema_node, timestamp)
         self.name = None # type: None
         """The instance name of the root node is always ``None``."""
 
@@ -451,8 +451,8 @@ class ObjectMember(InstanceNode):
 
     def __init__(self, name: InstanceName, siblings: Dict[InstanceName, Value],
                  value: Value, parinst: InstanceNode,
-                 schema_node: "DataNode", ts: datetime ):
-        super().__init__(value, parinst, schema_node, ts)
+                 schema_node: "DataNode", timestamp: datetime ):
+        super().__init__(value, parinst, schema_node, timestamp)
         self.name = name # type: InstanceName
         """The instance name of the receiver."""
         self.siblings = siblings # type: Dict[InstanceName, Value]
@@ -516,8 +516,8 @@ class ArrayEntry(InstanceNode):
 
     def __init__(self, before: List[Value], after: List[Value],
                  value: Value, parinst: InstanceNode,
-                 schema_node: "DataNode", ts: datetime = None):
-        super().__init__(value, parinst, schema_node, ts)
+                 schema_node: "DataNode", timestamp: datetime = None):
+        super().__init__(value, parinst, schema_node, timestamp)
         self.before = before # type: List[Value]
         """Preceding entries of the parent array."""
         self.after = after # type: List[Value]
