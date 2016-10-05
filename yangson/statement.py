@@ -1,4 +1,16 @@
-"""YANG statements."""
+"""YANG statements and a parser for YANG modules.
+
+This module implements the following classes:
+
+* ModuleParser: Recursive-descent parser for YANG modules.
+* Statement: YANG statements.
+
+The module also defines the following exceptions:
+
+* DefinitionNotFound: Requested definition does not exist.
+* StatementNotFound: Required statement does not exist.
+* WrongArgument: Statement argument is invalid.
+"""
 
 from typing import Dict, List, Optional, Tuple
 from .exceptions import YangsonException
@@ -7,16 +19,7 @@ from .typealiases import YangIdentifier
 
 class Statement:
 
-    """This class represents a YANG statement.
-
-    Instance variables:
-
-    * keyword: statement keyword,
-    * prefix: optional keyword prefix (for extensions),
-    * argument: statement argument,
-    * superstmt: parent statement,
-    * substatements: list of substatements.
-    """
+    """YANG statement."""
 
     _escape_table = str.maketrans({ '"': '\\"', '\\': '\\\\'})
     """Table for translating characters to their escaped form."""
@@ -24,8 +27,6 @@ class Statement:
     def __init__(self,
                  kw: YangIdentifier,
                  arg: Optional[str],
-                 sup: "Statement" = None,
-                 sub: List["Statement"] = [],
                  pref: YangIdentifier = None):
         """Initialize the class instance.
 
@@ -39,8 +40,8 @@ class Statement:
         self.prefix = pref
         self.keyword = kw
         self.argument = arg
-        self.superstmt = sup
-        self.substatements = sub
+        self.superstmt = None
+        self.substatements = []
 
     def __str__(self) -> str:
         """Return string representation of the receiver.
@@ -86,11 +87,11 @@ class Statement:
 
     def get_definition(self, name: YangIdentifier,
                        kw: YangIdentifier) -> "Statement":
-        """Recursively search ancestor statements for a definition.
+        """Search ancestor statements for a definition.
 
         Args:
             name: Name of a grouping or datatype (with no prefix).
-            kw: ``Grouping`` or ``typedef``.
+            kw: ``grouping`` or ``typedef``.
 
         Raises:
             DefinitionNotFound: If the definition is not found.
@@ -349,7 +350,7 @@ class ModuleParser(Parser):
         raise UnexpectedInput(self, "end of input")
 
 class StatementNotFound(YangsonException):
-    """Exception to raise when a statement should exist but doesn't."""
+    """Required statement does not exist."""
 
     def __init__(self, parent: Statement, kw: YangIdentifier):
         self.parent = parent
@@ -360,7 +361,7 @@ class StatementNotFound(YangsonException):
         return "`{}' in `{}'".format(self.keyword, self.parent)
 
 class DefinitionNotFound(YangsonException):
-    """Exception to be raised when a requested definition doesn't exist."""
+    """Requested definition does not exist."""
 
     def __init__(self, kw: YangIdentifier, name: YangIdentifier):
         self.keyword = kw
@@ -370,7 +371,7 @@ class DefinitionNotFound(YangsonException):
         return "{} {}".format(self.keyword, self.name)
 
 class WrongArgument(YangsonException):
-    """Exception to be raised when a statement argument is invalid."""
+    """Statement argument is invalid."""
 
     def __init__(self, stmt: Statement):
         self.stmt = stmt
