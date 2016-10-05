@@ -21,7 +21,7 @@ EntryValue = Union[ScalarValue, "ObjectValue"]
 class StructuredValue:
     """Abstract class for array and object values."""
 
-    def __init__(self, ts: datetime) -> None:
+    def __init__(self, ts: datetime):
         """Initialize class instance.
 
         Args:

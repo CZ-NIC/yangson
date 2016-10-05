@@ -26,7 +26,7 @@ class Statement:
                  arg: Optional[str],
                  sup: "Statement" = None,
                  sub: List["Statement"] = [],
-                 pref: YangIdentifier = None) -> None:
+                 pref: YangIdentifier = None):
         """Initialize the class instance.
 
         Args:
@@ -351,7 +351,7 @@ class ModuleParser(Parser):
 class StatementNotFound(YangsonException):
     """Exception to raise when a statement should exist but doesn't."""
 
-    def __init__(self, parent: Statement, kw: YangIdentifier) -> None:
+    def __init__(self, parent: Statement, kw: YangIdentifier):
         self.parent = parent
         self.keyword = kw
 
@@ -362,7 +362,7 @@ class StatementNotFound(YangsonException):
 class DefinitionNotFound(YangsonException):
     """Exception to be raised when a requested definition doesn't exist."""
 
-    def __init__(self, kw: YangIdentifier, name: YangIdentifier) -> None:
+    def __init__(self, kw: YangIdentifier, name: YangIdentifier):
         self.keyword = kw
         self.name = name
 
@@ -372,7 +372,7 @@ class DefinitionNotFound(YangsonException):
 class WrongArgument(YangsonException):
     """Exception to be raised when a statement argument is invalid."""
 
-    def __init__(self, stmt: Statement) -> None:
+    def __init__(self, stmt: Statement):
         self.stmt = stmt
 
     def __str__(self) -> str:

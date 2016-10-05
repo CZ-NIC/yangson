@@ -51,7 +51,7 @@ Range = List[List[Union[int, decimal.Decimal]]]
 class DataType:
     """Abstract class for YANG data types."""
 
-    def __init__(self, mid: ModuleId) -> None:
+    def __init__(self, mid: ModuleId):
         """Initialize the class instance."""
         self.module_id = mid
         self.default = None
@@ -232,7 +232,7 @@ class EmptyType(DataType, metaclass=_Singleton):
 class BitsType(DataType):
     """Class representing YANG "bits" type."""
 
-    def __init__(self, mid: ModuleId) -> None:
+    def __init__(self, mid: ModuleId):
         """Initialize the class instance."""
         super().__init__(mid)
         self.bit = {}
@@ -323,7 +323,7 @@ class StringType(DataType):
 
     length = [[0, 4294967295]] # type: Range
 
-    def __init__(self, mid: ModuleId) -> None:
+    def __init__(self, mid: ModuleId):
         """Initialize the class instance."""
         super().__init__(mid)
         self.patterns = [] # type: List[Pattern]
@@ -388,7 +388,7 @@ class BinaryType(StringType):
 class EnumerationType(DataType):
     """Class representing YANG "enumeration" type."""
 
-    def __init__(self, mid: ModuleId) -> None:
+    def __init__(self, mid: ModuleId):
         """Initialize the class instance."""
         super().__init__(mid)
         self.enum = {} # type: Dict[str, int]
@@ -423,7 +423,7 @@ class EnumerationType(DataType):
 class LinkType(DataType):
     """Abstract class for instance-referencing types."""
 
-    def __init__(self, mid: ModuleId) -> None:
+    def __init__(self, mid: ModuleId):
         """Initialize the class instance."""
         super().__init__(mid)
         self.require_instance = True # type: bool
@@ -441,7 +441,7 @@ class LinkType(DataType):
 class LeafrefType(LinkType):
     """Class representing YANG "leafref" type."""
 
-    def __init__(self, mid: ModuleId) -> None:
+    def __init__(self, mid: ModuleId):
         """Initialize the class instance."""
         super().__init__(mid)
         self.path = None
@@ -492,7 +492,7 @@ class InstanceIdentifierType(LinkType):
 class IdentityrefType(DataType):
     """Class representing YANG "identityref" type."""
 
-    def __init__(self, mid: ModuleId) -> None:
+    def __init__(self, mid: ModuleId):
         """Initialize the class instance."""
         super().__init__(mid)
         self.bases = [] # type: List[QualName]
@@ -556,11 +556,10 @@ class NumericType(DataType):
 class Decimal64Type(NumericType):
     """Class representing YANG "decimal64" type."""
 
-    def __init__(self, mid: ModuleId) -> None:
+    def __init__(self, mid: ModuleId):
         """Initialize the class instance."""
         super().__init__(mid)
         self._epsilon = decimal.Decimal(0) # type: decimal.Decimal
-        self.context = None # type: decimal.Context
 
     def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
@@ -728,9 +727,9 @@ class UnionType(DataType):
                        for ts in stmt.find_all("type") ]
 
 class YangTypeError(YangsonException):
-    """Exception to be raised if a value doesn't match its type."""
+    """A value doesn't match its type."""
 
-    def __init__(self, value) -> None:
+    def __init__(self, value):
         self.value = value
 
     def __str__(self) -> str:

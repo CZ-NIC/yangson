@@ -220,7 +220,7 @@ class Parser:
 class ParserException(YangsonException):
     """Base class for parser exceptions."""
 
-    def __init__(self, p: Parser) -> None:
+    def __init__(self, p: Parser):
         self.parser = p
 
     def __str__(self) -> str:
@@ -237,7 +237,7 @@ class EndOfInput(ParserException):
 class UnexpectedInput(ParserException):
     """Unexpected input."""
 
-    def __init__(self, p: Parser, expected: str = None) -> None:
+    def __init__(self, p: Parser, expected: str = None):
         super().__init__(p)
         self.expected = expected
 

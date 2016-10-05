@@ -23,7 +23,7 @@ class DataModel(metaclass=_Singleton):
     created.
     """
 
-    def __init__(self, yltxt: str, mod_path: List[str]) -> None:
+    def __init__(self, yltxt: str, mod_path: List[str]):
         """Initialize the class instance.
         
         Args:

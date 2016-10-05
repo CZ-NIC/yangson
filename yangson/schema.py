@@ -46,7 +46,7 @@ from .xpathparser import XPathParser
 class SchemaNode:
     """Abstract class for all schema nodes."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the class instance."""
         self.name = None # type: Optional[YangIdentifier]
         """Name of the schema node."""
@@ -152,6 +152,26 @@ class SchemaNode:
             method = getattr(self, mname)
             method(s, mid)
 
+    def _follow_leafref(self, xpath: "Expr") -> Optional["DataNode"]:
+        """Return the data node referred to by a leafref path.
+
+        Args:
+            xpath: XPath expression compiled from a leafref path.
+        """
+        if isinstance(xpath, LocationPath):
+            lft = self._follow_leafref(xpath.left)
+            if lft is None: return None
+            return lft._follow_leafref(xpath.right)
+        elif isinstance(xpath, Step):
+            if xpath.axis == Axis.parent:
+                return self.data_parent()
+            elif xpath.axis == Axis.child:
+                if isinstance(self, InternalNode) and xpath.qname:
+                    return self.get_data_child(*xpath.qname)
+        elif isinstance(xpath, Root):
+            return Context.schema
+        return None
+
     def _noop(self, stmt: Statement, mid: ModuleId) -> None:
         pass
 
@@ -234,7 +254,7 @@ class SchemaNode:
 class InternalNode(SchemaNode):
     """Abstract class for schema nodes that have children."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.children = [] # type: List[SchemaNode]
@@ -571,26 +591,6 @@ class DataNode(SchemaNode):
                 return wd.up()
         return pnode
 
-    def _follow_leafref(self, xpath: "Expr") -> Optional["DataNode"]:
-        """Return the data node referred to by a leafref path.
-
-        Args:
-            xpath: XPath expression compiled from a leafref path.
-        """
-        if isinstance(xpath, LocationPath):
-            lft = self._follow_leafref(xpath.left)
-            if lft is None: return None
-            return lft._follow_leafref(xpath.right)
-        elif isinstance(xpath, Step):
-            if xpath.axis == Axis.parent:
-                return self.data_parent()
-            elif xpath.axis == Axis.child:
-                if isinstance(self, InternalNode) and xpath.qname:
-                    return self.get_data_child(*xpath.qname)
-        elif isinstance(xpath, Root):
-            return Context.schema
-        return None
-
     def _check_must(self, inst: "InstanceNode") -> None:
         """Check that all receiver's "must" constraints for the instance.
 
@@ -623,7 +623,7 @@ class DataNode(SchemaNode):
 class TerminalNode(SchemaNode):
     """Abstract superclass for terminal nodes in the schema tree."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.type = None # type: DataType
@@ -691,7 +691,7 @@ class TerminalNode(SchemaNode):
 class ContainerNode(DataNode, InternalNode):
     """Container node."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.presence = False # type: bool
@@ -734,7 +734,7 @@ class ContainerNode(DataNode, InternalNode):
 class SequenceNode(DataNode):
     """Abstract class for data nodes that represent a sequence."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.min_elements = 0 # type: int
@@ -827,7 +827,7 @@ class SequenceNode(DataNode):
 class ListNode(SequenceNode, InternalNode):
     """List node."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.keys = [] # type: List[QualName]
@@ -897,7 +897,7 @@ class ListNode(SequenceNode, InternalNode):
 class ChoiceNode(InternalNode):
     """Choice node."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.default_case = None # type: QualName
@@ -997,7 +997,7 @@ class CaseNode(InternalNode):
 class LeafNode(DataNode, TerminalNode):
     """Leaf node."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self._mandatory = False # type: bool
@@ -1051,7 +1051,7 @@ class LeafListNode(SequenceNode, TerminalNode):
 class AnydataNode(DataNode):
     """Anydata or anyxml node."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self._mandatory = False # type: bool
@@ -1096,7 +1096,7 @@ class AnydataNode(DataNode):
 class RpcActionNode(GroupNode):
     """RPC or action node."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self._ctype = ContentType.nonconfig
@@ -1123,7 +1123,7 @@ class RpcActionNode(GroupNode):
 class InputNode(GroupNode):
     """RPC or action input node."""
 
-    def __init__(self, ns) -> None:
+    def __init__(self, ns):
         """Initialize the class instance."""
         super().__init__()
         self._config = False
@@ -1139,7 +1139,7 @@ class InputNode(GroupNode):
 class OutputNode(GroupNode):
     """RPC or action output node."""
 
-    def __init__(self, ns) -> None:
+    def __init__(self, ns):
         """Initialize the class instance."""
         super().__init__()
         self._config = False
@@ -1155,7 +1155,7 @@ class OutputNode(GroupNode):
 class NotificationNode(GroupNode):
     """Notification node."""
 
-    def __init__(self) -> None:
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self._ctype = ContentType.nonconfig
@@ -1169,7 +1169,7 @@ class NotificationNode(GroupNode):
 class SchemaNodeException(YangsonException):
     """Abstract exception class for schema node errors."""
 
-    def __init__(self, sn: SchemaNode) -> None:
+    def __init__(self, sn: SchemaNode):
         self.schema_node = sn
 
     def __str__(self) -> str:
@@ -1179,7 +1179,7 @@ class NonexistentSchemaNode(SchemaNodeException):
     """A schema node doesn't exist."""
 
     def __init__(self, sn: SchemaNode, name: YangIdentifier,
-                 ns: YangIdentifier = None) -> None:
+                 ns: YangIdentifier = None):
         super().__init__(sn)
         self.name = name
         self.ns = ns
@@ -1191,7 +1191,7 @@ class NonexistentSchemaNode(SchemaNodeException):
 class BadSchemaNodeType(SchemaNodeException):
     """A schema node is of a wrong type."""
 
-    def __init__(self, sn: SchemaNode, expected: str) -> None:
+    def __init__(self, sn: SchemaNode, expected: str):
         super().__init__(sn)
         self.expected = expected
 
@@ -1205,7 +1205,7 @@ class BadLeafrefPath(SchemaNodeException):
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
 
-    def __init__(self, inst: "InstanceNode", detail: str) -> None:
+    def __init__(self, inst: "InstanceNode", detail: str):
         self.inst = inst
         self.detail = detail
 

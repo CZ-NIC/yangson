@@ -1,3 +1,16 @@
+"""Abstract syntax tree for XPath 1.0 expressions with YANG extensions.
+
+This module defines a number of classes that mostly correspond to
+variables (non-terminals) of the XPath 1.0 grammar. Only th efollowing
+class is intended to be public:
+
+* Expr: XPath 1.0 expression with YANG 1.0 extensions.
+
+The module also defines the following exception:
+
+* XPathTypeError: A subexpression is of a wrong type.
+"""
+
 import decimal
 from math import ceil, copysign, floor
 from pyxb.utils.xmlre import XMLToPython
@@ -19,18 +32,28 @@ class XPathContext:
         self.position = position
         self.size = size
 
-    def update_cnode(self, new_cnode: InstanceNode):
+    def update_cnode(self, new_cnode: InstanceNode) -> "XPathContext":
         return self.__class__(new_cnode, self.origin, self.position, self.size)
 
 class Expr:
-    """Abstract class for XPath expressions."""
+    """Abstract class for nodes of XPath AST."""
 
     indent = 2
 
-    def __str__(self):
+    def __str__(self) -> str:
+        """Return a string representation of the receiver's AST."""
         return self._tree()
 
     def evaluate(self, node: InstanceNode) -> XPathValue:
+        """Evaluate the receiver and return the result.
+
+        Args:
+            node: Context node for XPath evaluation.
+
+        Raises:
+            XPathTypeError: If a subexpression of the receiver is of a wrong
+                type.
+        """
         return self._eval(XPathContext(node, node, 1, 1))
 
     def _eval_float(self, xctx: XPathContext) -> float:
@@ -52,20 +75,20 @@ class Expr:
         if isinstance(val, bool): return str(val).lower()
         return str(val)
 
-    def _tree(self, indent: int = 0):
+    def _tree(self, indent: int = 0) -> str:
         node_name = self.__class__.__name__
         attr = self._properties_str()
         attr_str  = " (" + attr + ")\n" if attr else "\n"
         return (" " * indent + node_name + attr_str +
                 self._children_str(indent + self.indent))
 
-    def _properties_str(self):
+    def _properties_str(self) -> str:
         return ""
 
-    def _children_str(self, indent):
+    def _children_str(self, indent) -> str:
         return ""
 
-    def _predicates_str(self, indent):
+    def _predicates_str(self, indent) -> str:
         if not self.predicates: return ""
         res = " " * indent + "-- Predicates:\n"
         newi = indent + 3
@@ -94,20 +117,20 @@ class Expr:
 class UnaryExpr(Expr):
     """Abstract superclass for unary expressions."""
 
-    def __init__(self, expr: Optional[Expr]) -> None:
+    def __init__(self, expr: Optional[Expr]):
         self.expr = expr
 
-    def _children_str(self, indent: int):
+    def _children_str(self, indent: int) -> str:
         return self.expr._tree(indent) if self.expr else ""
 
 class BinaryExpr(Expr):
     """Abstract superclass of binary expressions."""
 
-    def __init__(self, left: Expr, right: Expr) -> None:
+    def __init__(self, left: Expr, right: Expr):
         self.left = left
         self.right = right
 
-    def _children_str(self, indent: int):
+    def _children_str(self, indent: int) -> str:
         return self.left._tree(indent) + self.right._tree(indent)
 
     def _eval_ops(self, xctx: XPathContext) -> Tuple[XPathValue, XPathValue]:
@@ -133,11 +156,11 @@ class AndExpr(BinaryExpr):
 
 class EqualityExpr(BinaryExpr):
 
-    def __init__(self, left: Expr, right: Expr, negate: bool) -> None:
+    def __init__(self, left: Expr, right: Expr, negate: bool):
         super().__init__(left, right)
         self.negate = negate
 
-    def _properties_str(self):
+    def _properties_str(self) -> str:
         return "!=" if self.negate else "="
 
     def _eval(self, xctx: XPathContext) -> bool:
@@ -147,12 +170,12 @@ class EqualityExpr(BinaryExpr):
 class RelationalExpr(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr, less: bool,
-                 equal: bool) -> None:
+                 equal: bool):
         super().__init__(left, right)
         self.less = less
         self.equal = equal
 
-    def _properties_str(self):
+    def _properties_str(self) -> str:
         res = "<" if self.less else ">"
         if self.equal: res += "="
         return res
@@ -165,11 +188,11 @@ class RelationalExpr(BinaryExpr):
 
 class AdditiveExpr(BinaryExpr):
 
-    def __init__(self, left: Expr, right: Expr, plus: bool) -> None:
+    def __init__(self, left: Expr, right: Expr, plus: bool):
         super().__init__(left, right)
         self.plus = plus
 
-    def _properties_str(self):
+    def _properties_str(self) -> str:
         return "+" if self.plus else "-"
 
     def _eval(self, xctx: XPathContext) -> float:
@@ -179,11 +202,11 @@ class AdditiveExpr(BinaryExpr):
 class MultiplicativeExpr(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr,
-                 operator: MultiplicativeOp) -> None:
+                 operator: MultiplicativeOp):
         super().__init__(left, right)
         self.operator = operator
 
-    def _properties_str(self):
+    def _properties_str(self) -> str:
         if self.operator == MultiplicativeOp.multiply: return "*"
         if self.operator == MultiplicativeOp.divide: return "div"
         if self.operator == MultiplicativeOp.modulo: return "mod"
@@ -209,7 +232,7 @@ class UnaryMinusExpr(UnaryExpr):
         super().__init__(expr)
         self.negate = negate
 
-    def _properties_str(self):
+    def _properties_str(self) -> str:
         return "-" if self.negate else "+"
 
     def _eval(self, xctx: XPathContext) -> float:
@@ -224,29 +247,29 @@ class UnionExpr(BinaryExpr):
 
 class Literal(Expr):
 
-    def __init__(self, value: str) -> None:
+    def __init__(self, value: str):
         self.value = value
 
-    def _properties_str(self):
+    def _properties_str(self) -> str:
         return self.value
 
-    def _eval(self, xctx: XPathContext):
+    def _eval(self, xctx: XPathContext) -> str:
         return self.value
 
 class Number(Expr):
 
-    def __init__(self, value: float) -> None:
+    def __init__(self, value: float):
         self.value = value
 
-    def _properties_str(self):
+    def _properties_str(self) -> str:
         return str(self.value)
 
-    def _eval(self, xctx: XPathContext):
+    def _eval(self, xctx: XPathContext) -> float:
         return float(self.value)
 
 class PathExpr(BinaryExpr):
 
-    def _eval(self, xctx: XPathContext):
+    def _eval(self, xctx: XPathContext) -> XPathValue:
         ns = self.left._eval(xctx)
         if not isinstance(ns, NodeSet):
             raise XPathTypeError(ns)
@@ -257,20 +280,20 @@ class PathExpr(BinaryExpr):
 
 class FilterExpr(Expr):
 
-    def __init__(self, primary: Expr, predicates: List[Expr]) -> None:
+    def __init__(self, primary: Expr, predicates: List[Expr]):
         self.primary = primary
         self.predicates = predicates
 
-    def _children_str(self, indent):
+    def _children_str(self, indent) -> str:
         return self.primary._tree(indent) + self._predicates_str(indent)
 
-    def _eval(self, xctx: XPathContext):
+    def _eval(self, xctx: XPathContext) -> XPathValue:
         res = self.primary._eval(xctx)
         return self._apply_predicates(res, xctx)
 
 class LocationPath(BinaryExpr):
 
-    def _eval(self, xctx: XPathContext):
+    def _eval(self, xctx: XPathContext) -> XPathValue:
         lres = self.left._eval(xctx)
         ns = lres.bind(self.right._node_trans())
         return self.right._apply_predicates(ns, xctx)
@@ -283,15 +306,15 @@ class Root(Expr):
 class Step(Expr):
 
     def __init__(self, axis: Axis, qname: QualName,
-                 predicates: List[Expr]) -> None:
+                 predicates: List[Expr]):
         self.axis = axis
         self.qname = qname
         self.predicates = predicates
 
-    def _properties_str(self):
+    def _properties_str(self) -> str:
         return "{} {}".format(self.axis.name, self.qname)
 
-    def _children_str(self, indent):
+    def _children_str(self, indent) -> str:
         return self._predicates_str(indent)
 
     def _node_trans(self) -> NodeExpr:
@@ -314,7 +337,7 @@ class Step(Expr):
                 lambda n, qn=self.qname: [] if qn and qn != n.qual_name else [n],
                 }[self.axis]
 
-    def _eval(self, xctx: XPathContext):
+    def _eval(self, xctx: XPathContext) -> XPathValue:
         ns = NodeSet(self._node_trans()(xctx.cnode))
         return self._apply_predicates(ns, xctx)
 
@@ -342,7 +365,7 @@ class FuncCeiling(UnaryExpr):
 
 class FuncConcat(Expr):
 
-    def __init__(self, parts: List[Expr]) -> None:
+    def __init__(self, parts: List[Expr]):
         self.parts = parts
 
     def _children_str(self, indent: int) -> str:
@@ -380,12 +403,12 @@ class FuncDeref(UnaryExpr):
 class FuncDerivedFrom(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr, or_self: bool,
-                 mid: ModuleId) -> None:
+                 mid: ModuleId):
         super().__init__(left, right)
         self.or_self = or_self
         self.mid = mid
 
-    def _properties_str(self):
+    def _properties_str(self) -> str:
         return ("OR-SELF, " if self.or_self
                 else "") + Context.namespace(self.mid)
 
@@ -429,11 +452,11 @@ class FuncLast(Expr):
 
 class FuncName(UnaryExpr):
 
-    def __init__(self, expr: Optional[Expr], local: bool) -> None:
+    def __init__(self, expr: Optional[Expr], local: bool):
         super().__init__(expr)
         self.local = local
 
-    def _properties_str(self):
+    def _properties_str(self) -> str:
         return "LOCAL" if self.local else ""
 
     def _eval(self, xctx: XPathContext) -> str:
@@ -517,7 +540,7 @@ class FuncStringLength(UnaryExpr):
 class FuncSubstring(BinaryExpr):
 
     def __init__(self, string: Expr, start: Expr,
-                 length: Optional[Expr]) -> None:
+                 length: Optional[Expr]):
         super().__init__(string, start)
         self.length = length
 
@@ -567,7 +590,7 @@ class FuncSum(UnaryExpr):
 
 class FuncTranslate(BinaryExpr):
 
-    def __init__(self, s1: Expr, s2: Expr, s3: Expr) -> None:
+    def __init__(self, s1: Expr, s2: Expr, s3: Expr):
         super().__init__(s1, s2)
         self.nchars = s3
 
@@ -586,9 +609,9 @@ class FuncTrue(Expr):
         return True
 
 class XPathTypeError(YangsonException):
-    """Exception to be raised for type errors in XPath evaluation."""
+    """The value of an XPath (sub)expression is of a wrong type."""
 
-    def __init__(self, value: XPathValue) -> None:
+    def __init__(self, value: XPathValue):
         self.value = value
 
     def __str__(self) -> str:

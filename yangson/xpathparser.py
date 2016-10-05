@@ -1,4 +1,14 @@
-"""Parser for XPath 1.0 expressions"""
+"""Parser for XPath 1.0 expressions.
+
+This module defines the following classes:
+
+* XPathParser: Recursive descent parser for XPath expressions.
+
+The module also defines the following exceptions:
+
+* InvalidXPath: An XPath expression is invalid.
+* NotSupported: A given XPath 1.0 feature isn't (currently) supported.
+"""
 
 from typing import List, Optional, Tuple, Union
 from .context import Context
@@ -10,7 +20,7 @@ from .xpathast import *
 class XPathParser(Parser):
     """Parser for XPath expressions."""
 
-    def __init__(self, text: str, mid: ModuleId) -> None:
+    def __init__(self, text: str, mid: ModuleId):
         """Initialize the parser instance.
 
         Args:
@@ -20,7 +30,16 @@ class XPathParser(Parser):
         self.mid = mid
 
     def parse(self) -> Expr:
-        """Parse an XPath 1.0 expression."""
+        """Parse an XPath expression.
+
+        Returns:
+            A node of the XPath AST.
+
+        Raises:
+            InvalidXPath: If the input XPath expression is invalid.
+            NotSupported: If the input XPath expression contains a feature
+                that isn't supported by the implementation.
+        """
         self.skip_ws()
         return self._or_expr()
 
@@ -390,7 +409,7 @@ class InvalidXPath(ParserException):
 class NotSupported(ParserException):
     """Exception to be raised for unimplemented XPath features."""
 
-    def __init__(self, feature: str) -> None:
+    def __init__(self, feature: str):
         self.feature = feature
 
     def __str__(self) -> str:

@@ -427,7 +427,7 @@ class Context:
 class FeatureExprParser(Parser):
     """Parser and evaluator for if-feature expressions."""
 
-    def __init__(self, text: str, mid: ModuleId) -> None:
+    def __init__(self, text: str, mid: ModuleId):
         """Initialize the parser instance.
 
         Args:
@@ -499,10 +499,10 @@ class FeatureExprParser(Parser):
                 raise UnknownPrefix(p, self.mid) from None
         return n in Context.modules[fid].features
 
-class _MissingModule(YangsonException):
-    """Abstract exception – a module is missing."""
+class MissingModule(YangsonException):
+    """Abstract exception class – a module is missing."""
 
-    def __init__(self, name: YangIdentifier, rev: str = "") -> None:
+    def __init__(self, name: YangIdentifier, rev: str = ""):
         self.name = name
         self.rev = rev
 
@@ -511,22 +511,22 @@ class _MissingModule(YangsonException):
             return self.name + "@" + self.rev
         return self.name
 
-class ModuleNotFound(_MissingModule):
+class ModuleNotFound(MissingModule):
     """A module or submodule registered in YANG library is not found."""
     pass
 
-class ModuleNotRegistered(_MissingModule):
+class ModuleNotRegistered(MissingModule):
     """A module is not registered in YANG library."""
     pass
 
-class ModuleNotImplemented(_MissingModule):
+class ModuleNotImplemented(MissingModule):
     """A module is not implemented."""
     pass
 
 class BadYangLibraryData(YangsonException):
     """Broken YANG library data."""
 
-    def __init__(self, reason: str) -> None:
+    def __init__(self, reason: str):
         self.reason = reason
 
     def __str__(self) -> str:
@@ -535,7 +535,7 @@ class BadYangLibraryData(YangsonException):
 class BadPath(YangsonException):
     """Invalid schema or data path."""
 
-    def __init__(self, path: str) -> None:
+    def __init__(self, path: str):
         self.path = path
 
     def __str__(self) -> str:
@@ -544,7 +544,7 @@ class BadPath(YangsonException):
 class UnknownPrefix(YangsonException):
     """Unknown namespace prefix."""
 
-    def __init__(self, prefix: YangIdentifier, mid: ModuleId) -> None:
+    def __init__(self, prefix: YangIdentifier, mid: ModuleId):
         self.prefix = prefix
         self.mid = mid
 
@@ -554,7 +554,7 @@ class UnknownPrefix(YangsonException):
 class ModuleNotImported(YangsonException):
     """Module is not imported."""
 
-    def __init__(self, mod: YangIdentifier, mid: ModuleId) -> None:
+    def __init__(self, mod: YangIdentifier, mid: ModuleId):
         self.mod = mod
         self.mid = mid
 
@@ -568,7 +568,7 @@ class InvalidFeatureExpression(ParserException):
 class FeaturePrerequisiteError(YangsonException):
     """Pre-requisite feature is not supported."""
 
-    def __init__(self, name: YangIdentifier, ns: YangIdentifier) -> None:
+    def __init__(self, name: YangIdentifier, ns: YangIdentifier):
         self.name = name
         self.ns = ns
 
@@ -578,7 +578,7 @@ class FeaturePrerequisiteError(YangsonException):
 class MultipleImplementedRevisions(YangsonException):
     """A module has multiple implemented revisions."""
 
-    def __init__(self, module: YangIdentifier) -> None:
+    def __init__(self, module: YangIdentifier):
         self.module = module
 
     def __str__(self) -> str:

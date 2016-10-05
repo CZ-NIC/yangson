@@ -33,7 +33,7 @@ class InstanceNode:
     """YANG data node instance implemented as a zipper structure."""
 
     def __init__(self, value: Value, parinst: Optional["InstanceNode"],
-                 schema_node: "DataNode", timestamp: datetime) -> None:
+                 schema_node: "DataNode", timestamp: datetime):
         """Initialize the class instance."""
         self.parinst = parinst         # type: Optional["InstanceNode"]
         """Parent instance node, or ``None`` for the root node."""
@@ -418,7 +418,7 @@ class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
     def __init__(self, value: Value, schema_node: "DataNode",
-                 ts: datetime) -> None:
+                 ts: datetime):
         super().__init__(value, None, schema_node, ts)
         self.name = None # type: None
         """The instance name of the root node is always ``None``."""
@@ -451,7 +451,7 @@ class ObjectMember(InstanceNode):
 
     def __init__(self, name: InstanceName, siblings: Dict[InstanceName, Value],
                  value: Value, parinst: InstanceNode,
-                 schema_node: "DataNode", ts: datetime ) -> None:
+                 schema_node: "DataNode", ts: datetime ):
         super().__init__(value, parinst, schema_node, ts)
         self.name = name # type: InstanceName
         """The instance name of the receiver."""
@@ -516,7 +516,7 @@ class ArrayEntry(InstanceNode):
 
     def __init__(self, before: List[Value], after: List[Value],
                  value: Value, parinst: InstanceNode,
-                 schema_node: "DataNode", ts: datetime = None) -> None:
+                 schema_node: "DataNode", ts: datetime = None):
         super().__init__(value, parinst, schema_node, ts)
         self.before = before # type: List[Value]
         """Preceding entries of the parent array."""
@@ -680,7 +680,7 @@ class InstanceSelector:
 class MemberName(InstanceSelector):
     """Selectors of object members."""
 
-    def __init__(self, name: InstanceName) -> None:
+    def __init__(self, name: InstanceName):
         """Initialize the class instance.
 
         Args:
@@ -714,7 +714,7 @@ class MemberName(InstanceSelector):
 class EntryIndex(InstanceSelector):
     """Numeric selectors for a list or leaf-list entry."""
 
-    def __init__(self, index: int) -> None:
+    def __init__(self, index: int):
         """Initialize the class instance.
 
         Args:
@@ -751,7 +751,7 @@ class EntryIndex(InstanceSelector):
 class EntryValue(InstanceSelector):
     """Value-based selectors of an array entry."""
 
-    def __init__(self, value: ScalarValue) -> None:
+    def __init__(self, value: ScalarValue):
         """Initialize the class instance.
 
         Args:
@@ -792,7 +792,7 @@ class EntryValue(InstanceSelector):
 class EntryKeys(InstanceSelector):
     """Key-based selectors for a list entry."""
 
-    def __init__(self, keys: Dict[InstanceName, ScalarValue]) -> None:
+    def __init__(self, keys: Dict[InstanceName, ScalarValue]):
         """Initialize the class instance.
 
         Args:
@@ -981,7 +981,7 @@ class InstanceException(YangsonException):
 class InstanceValueError(InstanceException):
     """The instance value is incompatible with the called method."""
 
-    def __init__(self, inst: InstanceNode, detail: str) -> None:
+    def __init__(self, inst: InstanceNode, detail: str):
         super().__init__(inst)
         self.detail = detail
 
@@ -991,7 +991,7 @@ class InstanceValueError(InstanceException):
 class NonexistentInstance(InstanceException):
     """Attempt to access an instance node that doesn't exist."""
 
-    def __init__(self, inst: InstanceNode, detail: str) -> None:
+    def __init__(self, inst: InstanceNode, detail: str):
         super().__init__(inst)
         self.detail = detail
 
