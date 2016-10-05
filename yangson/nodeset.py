@@ -1,6 +1,7 @@
 """XPath node-set"""
 
 from typing import List, Callable, Union
+from numbers import Number
 from .instance import InstanceNode
 
 # Type aliases
@@ -39,11 +40,13 @@ class NodeSet(list):
 
     @comparison
     def __eq__(self, val: XPathValue) -> bool:
-        is_str = isinstance(val, str)
         for n in self:
             if n.is_internal(): continue
-            if is_str:
+            if isinstance(val, str):
                 if str(n) == val:
+                    return True
+            elif isinstance(n.value, Number):
+                if float(n.value) == val:
                     return True
             elif n.value == val:
                 return True
@@ -51,11 +54,13 @@ class NodeSet(list):
 
     @comparison
     def __ne__(self, val: XPathValue) -> bool:
-        is_str = isinstance(val, str)
         for n in self:
             if n.is_internal(): continue
-            if is_str:
+            if isinstance(val, str):
                 if str(n) != val:
+                    return True
+            elif isinstance(n.value, Number):
+                if float(n.value) != val:
                     return True
             elif n.value != val:
                 return True
