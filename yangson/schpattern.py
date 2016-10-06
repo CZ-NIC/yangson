@@ -175,7 +175,7 @@ class Alternative(SchemaPattern):
                 self.right.tree(indent + 2))
 
     def __str__(self) -> str:
-        return "alternative"
+        return str(self.left) + " or " + str(self.right)
 
 class ChoicePattern(Alternative, Typeable):
 
@@ -196,9 +196,6 @@ class ChoicePattern(Alternative, Typeable):
         return " " * indent + "Choice {}\n{}\n{}".format(
             self.name,
             self.left.tree(indent + 2), self.right.tree(indent + 2))
-
-    def __str__(self) -> str:
-        return "choice '" + self.name + "'"
 
 class Pair(SchemaPattern):
 
@@ -235,4 +232,4 @@ class Pair(SchemaPattern):
                 self.right.tree(indent + 2))
 
     def __str__(self) -> str:
-        return str(self.left) + ", " + str(self.right)
+        return str(self.left)
