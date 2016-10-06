@@ -1,6 +1,6 @@
-============
+************
 Type Aliases
-============
+************
 
 .. automodule:: yangson.typealiases
    :synopsis: Type aliases

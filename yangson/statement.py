@@ -110,6 +110,28 @@ class ModuleParser(Parser):
                      "\\": "\\" } # type: Dict[str,str]
     """Dictionary for mapping escape sequences to characters."""
 
+    def parse(self) -> Statement:
+        """Parse a complete YANG module or submodule.
+
+        Args:
+            mtext: Yang module text.
+
+        Raises:
+            EndOfInput: If past the end of input.
+            UnexpectedInput: If top-level statement isn't ``(sub)module``.
+        """
+        self.opt_separator()
+        start = self.offset
+        res = self.statement()
+        if res.keyword not in ["module", "submodule"]:
+            self.offset = start
+            raise UnexpectedInput(self, "'module' or 'submodule'")
+        try:
+            self.opt_separator()
+        except EndOfInput:
+            return res
+        raise UnexpectedInput(self, "end of input")
+
     def _back_break(self) -> int:
         self.offset -= 1
         return -1
@@ -326,28 +348,6 @@ class ModuleParser(Parser):
             self.opt_separator()
         self.offset += 1
         return res
-
-    def parse(self) -> Statement:
-        """Parse a complete YANG module or submodule.
-
-        Args:
-            mtext: Yang module text.
-
-        Raises:
-            EndOfInput: If past the end of input.
-            UnexpectedInput: If top-level statement isn't ``(sub)module``.
-        """
-        self.opt_separator()
-        start = self.offset
-        res = self.statement()
-        if res.keyword not in ["module", "submodule"]:
-            self.offset = start
-            raise UnexpectedInput(self, "'module' or 'submodule'")
-        try:
-            self.opt_separator()
-        except EndOfInput:
-            return res
-        raise UnexpectedInput(self, "end of input")
 
 class StatementNotFound(YangsonException):
     """Required statement does not exist."""

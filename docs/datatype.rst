@@ -1,6 +1,7 @@
-==========
+**********
 Data Types
-==========
+**********
+
 
 .. module:: yangson.datatype
    :synopsis: Classes representing YANG data types
@@ -46,17 +47,9 @@ The module also defines the following exceptions:
 
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
 
-YANG provides a selection of built-in data types, and also supports
-defining new types that are derived from existing types (built-in or
-derived) by specifying the base type and zero or more restrictions.
-See sec. `7.3`_ of [RFC7950]_ for details.
+Doctest__ snippets for this module use the data model from :ref:`sec-ex5`.
 
-*Yangson* library resolves all derived types so that the base type
-corresponds to a Python class and restrictions are represented as
-values of appropriate instance attributes. Instances of subclasses
-of :class:`DataType` typically appear as values
-of :attr:`~.TerminalNode.type` attribute that is common to
-all :class:`~.schema.TerminalNode` instances.
+__ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 .. doctest::
 
@@ -73,6 +66,18 @@ all :class:`~.schema.TerminalNode` instances.
    >>> leafref_t = dm.get_data_node('/example-5-a:leafref-leaf').type
    >>> string_t = dm.get_data_node('/example-5-a:string-leaf').type
    >>> union_t = dm.get_data_node('/example-5-a:union-leaf').type
+
+YANG provides a selection of built-in data types, and also supports
+defining new types that are derived from existing types (built-in or
+derived) by specifying the base type and zero or more restrictions.
+See sec. `7.3`_ of [RFC7950]_ for details.
+
+*Yangson* library resolves all derived types so that the base type
+corresponds to a Python class and restrictions are represented as
+values of appropriate instance attributes. Instances of subclasses
+of :class:`DataType` typically appear as values
+of :attr:`~.TerminalNode.type` attribute that is common to
+all :class:`~.schema.TerminalNode` instances.
 
 .. class:: DataType(mid: ModuleId)
 
@@ -415,7 +420,7 @@ all :class:`~.schema.TerminalNode` instances.
 
    .. attribute:: bases
 
-      List of :term:`qualified names` of identities that are defined
+      List of :term:`qualified name`\ s of identities that are defined
       as bases for this type via the **base** statement.
 
       .. doctest::

@@ -1,6 +1,7 @@
-=================
+*****************
 Data Model Schema
-=================
+*****************
+
 
 .. module:: yangson.schema
    :synopsis: Classes representing YANG schema nodes
@@ -10,6 +11,7 @@ Data Model Schema
    import json
    import os
    from yangson import DataModel
+   from yangson.enumerations import ContentType
    os.chdir("examples/ex4")
 
 .. testcleanup::
@@ -47,21 +49,25 @@ This module also defines the following exceptions:
 * :exc:`SchemaError`: An instance violates a schema constraint, see :term:`schema error`.
 * :exc:`SemanticError`: An instance violates a semantic rule, see :term:`semantic error`.
 
+Doctest__ snippets for this module use the data model and instance
+document from :ref:`sec-ex4`.
+
+__ http://www.sphinx-doc.org/en/stable/ext/doctest.html
+
+.. doctest::
+
+   >>> dm = DataModel.from_file('yang-library-ex4.json',
+   ... mod_path=[".", "../../../examples/ietf"])
+   >>> fsn = dm.get_schema_node("/example-4-a:bag/foo")
+   >>> rsn = dm.get_schema_node("/example-4-a:bag/opts/example-4-b:fooref/fooref")
+   >>> with open("example-data.json") as infile:
+   ...     ri = json.load(infile)
+   >>> inst = dm.from_raw(ri)
 
 .. class:: SchemaNode
 
    This class serves as the top-level abstract superclass for all
    schema node classes.
-
-   .. doctest::
-
-      >>> from yangson.enumerations import ContentType
-      >>> dm = DataModel.from_file('yang-library-ex4.json',
-      ... mod_path=[".", "../../../examples/ietf"])
-      >>> fsn = dm.get_schema_node("/example-4-a:bag/foo")
-      >>> type(fsn)
-      <class 'yangson.schema.LeafNode'>
-      >>> rsn = dm.get_schema_node("/example-4-a:bag/opts/example-4-b:fooref/fooref")
 
    .. rubric:: Instance Attributes
 
@@ -215,9 +221,6 @@ This module also defines the following exceptions:
 
       .. doctest::
 
-	 >>> with open("example-data.json") as infile:
-	 ...     ri = json.load(infile)
-	 >>> inst = dm.from_raw(ri)
 	 >>> inst.validate(ContentType.all)
 	 >>> inst.validate(ContentType.config)
 	 Traceback (most recent call last):

@@ -5,6 +5,19 @@ YANG Statements
 .. module:: yangson.statement
    :synopsis: YANG statements and a parser for YANG modules
 
+.. testsetup::
+
+   import os
+   os.chdir("examples/ex5")
+   from yangson import DataModel
+   from yangson.context import Context
+   from yangson.statement import ModuleParser
+
+.. testcleanup::
+
+   os.chdir("../..")
+   del DataModel._instances[DataModel]
+
 This module implements the following classes:
 
 * :class:`ModuleParser`: Recursive-descent parser for YANG modules.
@@ -15,6 +28,16 @@ The module also defines the following exceptions:
 * :exc:`DefinitionNotFound`: Requested definition does not exist.
 * :exc:`StatementNotFound`: Required statement does not exist.
 * :exc:`WrongArgument`: Statement argument is invalid.
+
+Doctest__ snippets for this module use the YANG module *example-5-a*,
+see :ref:`sec-ex5`.
+
+__ http://www.sphinx-doc.org/en/stable/ext/doctest.html
+
+.. doctest::
+
+   >>> dm = DataModel.from_file("yang-library-ex5.json")
+   >>> mex5a = Context.modules[('example-5-a', '')].statement
 
 .. class:: Statement(kw: YangIdentifier, arg: Optional[str], pref: \
 	   YangIdentifier = None)
@@ -31,6 +54,11 @@ The module also defines the following exceptions:
       The statement's keyword. For extension statements, this is the
       local part of the keyword.
 
+      .. doctest::
+
+	 >>> mex5a.keyword
+	 'module'
+
    .. attribute:: prefix
 
       Optional prefix of the statement keyword. It is ``None`` for all
@@ -46,6 +74,11 @@ The module also defines the following exceptions:
       that have no argument, such as **input**, the value of this
       attribute is ``None``.
 
+      .. doctest::
+
+	 >>> mex5a.argument
+	 'example-5-a'
+
    .. attribute:: superstmt
 
       Parent statement, or ``None`` if there is no parent.
@@ -53,6 +86,9 @@ The module also defines the following exceptions:
    .. attribute:: substatements
 
       List of substatements.
+
+      >>> len(mex5a.substatements)
+      16
 
    .. rubric:: Public Methods
 
@@ -70,12 +106,33 @@ The module also defines the following exceptions:
       returned. If *arg* is ``None``, then the arguments of
       substatements are not taken into account.
 
+      .. doctest::
+
+	 >>> lfs = mex5a.find1('leaf', 'string-leaf')
+	 >>> str(lfs)
+	 'leaf "string-leaf" { ... }'
+	 >>> lfs.superstmt.keyword
+	 'module'
+	 >>> mex5a.find1('rpc') is None
+	 True
+	 >>> mex5a.find1('rpc', required=True)
+	 Traceback (most recent call last):
+	 ...
+	 yangson.statement.StatementNotFound: `rpc' in `module "example-5-a" { ... }'
+
    .. method:: find_all(kw: YangIdentifier, pref: YangIdentifier = \
 	       None) -> List[Statement]
 
       Return the list of all substatements with a matching
       keyword. The conditions on keyword matching are the same as for
       :meth:`find1`.
+
+      .. doctest::
+
+	 >>> len(mex5a.find_all('leaf'))
+	 11
+	 >>> mex5a.find_all('rpc')
+	 []
 
    .. method:: get_definition(name: YangIdentifier, kw:
 	       YangIdentifier) -> Statement:
@@ -88,3 +145,49 @@ The module also defines the following exceptions:
 
       This method raises :exc:`DefinitionNotFound` if the search
       is not successful.
+
+      .. doctest::
+
+	 >>> str(lfs.get_definition('my-string', 'typedef'))
+	 'typedef "my-string" { ... }'
+	 >>> lfs.get_definition('my-string', 'grouping')
+	 Traceback (most recent call last):
+	 ...
+	 yangson.statement.DefinitionNotFound: grouping my-string
+
+.. class:: ModuleParser(text: str)
+
+   This class is a subclass of :class:`.Parser`, and implements a
+   recursive-descent parser for YANG modules. Source text of the YANG
+   module is passed to the constructor in the *text* argument (see
+   also the :attr:`.Parser.input` attribute).
+
+   .. rubric:: Public Methods
+
+   .. automethod:: parse
+
+      This method raises :exc:`WrongArgument` if a statement argument
+      is invalid. It may also raise parsing exceptions defined in the
+      :mod:`.parser` module.
+
+      .. doctest::
+
+	 >>> with open('example-5-a.yang') as infile:
+	 ...     m5atxt = infile.read()
+	 >>> str(ModuleParser(m5atxt).parse())
+	 'module "example-5-a" { ... }'
+
+.. exception:: StatementNotFound(parent: Statement, kw: YangIdentifier)
+
+   A statement with keyword *kw* was not found as a substatement of
+   *parent*.
+
+.. exception:: DefinitionNotFound(kw: YangIdentifier, name: YangIdentifier)
+
+   Definition of a grouping or typedef was not found. Argument *kw*
+   is the keyword of the definition statement (``grouping`` or
+   ``typedef``), and *name* is the name of the definition.
+
+.. exception:: WrongArgument(stmt: Statement)
+
+   The argument of statement *stmt* is invalid.

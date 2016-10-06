@@ -35,6 +35,15 @@ This module also defines the following exceptions:
 * :exc:`MultipleImplementedRevisions`: A module has multiple implemented revisions.
 * :exc:`UnknownPrefix`: Unknown namespace prefix.
 
+Doctest__ snippets for this module use the data model from :ref:`sec-ex3`.
+
+__ http://www.sphinx-doc.org/en/stable/ext/doctest.html
+
+.. doctest::
+
+   >>> dm = DataModel.from_file("yang-library-ex3.json",
+   ... [".", "../../../examples/ietf"])
+
 .. class:: ModuleData(main_module: YangIdentifier)
 
    An object of this class contains data related to a single module or
@@ -91,7 +100,6 @@ This module also defines the following exceptions:
    .. doctest::
 
       >>> from yangson.context import Context
-      >>> dm = DataModel.from_file("yang-library-ex3.json", [".", "../../../examples/ietf"])
 
    .. rubric:: Class Attributes
 

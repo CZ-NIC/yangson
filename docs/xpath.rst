@@ -1,6 +1,6 @@
-=================
+*****************
 XPath Expressions
-=================
+*****************
 
 The *Yangson* library includes a fairly complete implementation of
 XPath parser and evaluator. It supports XPath 1.0 [XPath]_ with
@@ -19,6 +19,19 @@ functions, default namespace, and other features.
 
    os.chdir("../..")
    del DataModel._instances[DataModel]
+
+Doctest__ snippets in this section use the data model and instance
+document from :ref:`sec-ex4`.
+
+__ http://www.sphinx-doc.org/en/stable/ext/doctest.html
+
+.. doctest::
+
+   >>> dm = DataModel.from_file("yang-library-ex4.json",
+   ... [".", "../../../examples/ietf"])
+   >>> with open("example-data.json") as infile:
+   ...     ri = json.load(infile)
+   >>> inst = dm.from_raw(ri)
 
 XPath Abstract Syntax Tree
 ==========================
@@ -88,7 +101,7 @@ The module also defines the following exceptions:
    This class is a subclass of :class:~.parser.Parser`, and implements
    a recursive-descent parser for XPath expressions. Constructor
    argument *text* contains the textual form of an XPath expression
-   (see the :attr:`.Parser.input` attribute), and *mid* initializes
+   (see also the :attr:`.Parser.input` attribute), and *mid* initializes
    the value of the :attr:`mid` instance attribute.
 
    .. rubric:: Instance Attributes
@@ -118,11 +131,6 @@ The module also defines the following exceptions:
 
 .. doctest::
 
-   >>> dm = DataModel.from_file("yang-library-ex4.json",
-   ... [".", "../../../examples/ietf"])
-   >>> with open("example-data.json") as infile:
-   ...     ri = json.load(infile)
-   >>> inst = dm.from_raw(ri)
    >>> fref = inst.member("example-4-a:bag").member("example-4-b:fooref")
    >>> xp = 'deref(.)/../../quux[2]/preceding-sibling::quux = 3.1415'
    >>> cxp = XPathParser(xp, ('example-4-b', '')).parse()

@@ -10,8 +10,7 @@
    import json
    import os
    from yangson import DataModel
-   from yangson.instance import (InstanceIdParser, InstanceRoute,
-                                 ResourceIdParser)
+   from yangson.instance import InstanceIdParser, ResourceIdParser
    os.chdir("examples/ex2")
 
 .. testcleanup::
@@ -38,6 +37,18 @@ This module also defines the following exceptions:
   the called method.
 * :exc:`NonexistentInstance`: Attempt to access an instance node that
   doesn't exist.
+
+Doctest__ snippets for this module use the data model and instance
+document from :ref:`sec-ex2`.
+
+__ http://www.sphinx-doc.org/en/stable/ext/doctest.html
+
+.. doctest::
+
+   >>> dm = DataModel.from_file('yang-library-ex2.json')
+   >>> with open('example-data.json') as infile:
+   ...   ri = json.load(infile)
+   >>> inst = dm.from_raw(ri)
 
 .. class:: InstanceNode(value: Value, parinst: Optional[InstanceNode], \
 	   schema_node: DataNode, timestamp: datetime.datetime)
@@ -101,15 +112,8 @@ This module also defines the following exceptions:
       is ``None``.
 
    An :class:`InstanceNode` structure can be created from scratch, or
-   read from JSON text using :meth:`.DataModel.from_raw` method as in
-   the following example:
-
-   .. doctest::
-
-      >>> dm = DataModel.from_file('yang-library-ex2.json')
-      >>> with open('example-data.json') as infile:
-      ...   ri = json.load(infile)
-      >>> inst = dm.from_raw(ri)
+   read from JSON text using :meth:`.DataModel.from_raw` (see the
+   doctest snippet above).
 
    The internal representation of :class:`InstanceNode` values is very
    similar to the JSON encoding of data modelled with

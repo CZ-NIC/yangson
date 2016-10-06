@@ -21,6 +21,11 @@ The *datamodel* module implements the following class:
 * :class:`DataModel`: basic user-level entry point to YANG data model
   information.
 
+Doctest__ snippets for this module use the data model and instance
+document from :ref:`sec-ex1`.
+
+__ http://www.sphinx-doc.org/en/stable/ext/doctest.html
+
 .. class:: DataModel(yltxt: str, mod_path: List[str])
 
    This class provides a basic user-level entry point to the *Yangson*
@@ -48,7 +53,7 @@ The *datamodel* module implements the following class:
      *mod_path*.
 
    :class:`DataModel` is re-exported by the main package, so it can
-   also be imported directly from there:
+   also be imported directly from there.
 
    .. doctest::
 

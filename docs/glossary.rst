@@ -1,8 +1,8 @@
 .. _glossary:
 
-========
+********
 Glossary
-========
+********
 
 Many important terms are also defined in the YANG
 specification, see section `3`_ of [RFC7950]_.

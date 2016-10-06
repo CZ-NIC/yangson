@@ -17,13 +17,14 @@ YANG are less than intuitive, and some are perhaps even slightly
 peculiar. This section gives an overview of fundamental YANG concepts
 and terms the are needed for understanding the documentation of the
 Yangson library. However, it is no substitute for studying YANG
-documentation especially [RFC7950]_ and [Bie16]_.
+documentation, especially [RFC7950]_ and [Bie16]_.
 
-Another factor that may cause confusion is conflicting terminology:
-some terms, such as *module* or *instance*, are used, with different
-meanings, in both Python and YANG. Therefore, when reading the
-following sections, it is important to distinuish whether a given text
-discusses programming language or data modelling stuff.
+Another factor that may confuse users of the *Yangson* library is
+conflicting terminology: some terms, such as *module* or *instance*,
+are used, with different meanings, in both Python and YANG. Therefore,
+when reading the following sections, it is important to distinguish
+whether a given text discusses programming language or data modelling
+stuff.
 
 Data Models
 ===========
@@ -128,8 +129,8 @@ data model content:
 Support for individual features and/or deviations are also indicated
 in YANG library data.
 
-Content Type
-============
+Content Types
+=============
 
 YANG distinguishes configuration from state data (see sec. `4.2.3`_ in
 [RFC7950]_), and the **config** statement can be used to specify to

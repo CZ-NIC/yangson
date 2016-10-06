@@ -1,3 +1,4 @@
+===================================
 Welcome to Yangson's documentation!
 ===================================
 
@@ -8,6 +9,7 @@ Contents:
 
    introduction
    concepts-terms
+   quickstart
    basic
    advanced
    support
@@ -15,9 +17,9 @@ Contents:
    references
    glossary
 
+##################
 Indices and tables
-==================
+##################
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
