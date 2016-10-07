@@ -54,7 +54,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 .. doctest::
 
    >>> dm = DataModel.from_file('yang-library-ex5.json',
-   ... mod_path=[".", "../../../examples/ietf"])
+   ... mod_path=[".", "../../../yang-modules/ietf"])
    >>> binary_t = dm.get_data_node('/example-5-a:binary-leaf').type
    >>> bits_t = dm.get_data_node('/example-5-a:bits-leaf').type
    >>> boolean_t = dm.get_data_node('/example-5-a:boolean-leaf').type

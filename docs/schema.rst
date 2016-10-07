@@ -57,7 +57,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 .. doctest::
 
    >>> dm = DataModel.from_file('yang-library-ex4.json',
-   ... mod_path=[".", "../../../examples/ietf"])
+   ... mod_path=[".", "../../../yang-modules/ietf"])
    >>> fsn = dm.get_schema_node("/example-4-a:bag/foo")
    >>> rsn = dm.get_schema_node("/example-4-a:bag/opts/example-4-b:fooref/fooref")
    >>> with open("example-data.json") as infile:

@@ -1,9 +1,0 @@
-*/Makefile
-*.dsdl
-*.rng
-*.rnc
-*.xml
-*.xsl
-*.yin
-model.tree
-test.py

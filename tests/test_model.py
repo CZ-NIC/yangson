@@ -79,8 +79,8 @@ tree = """+--rw (test:choiA)?
 
 @pytest.fixture
 def data_model():
-    return DataModel.from_file("examples/test/yang-library-data.json",
-                               ["examples/test", "examples/ietf"])
+    return DataModel.from_file("yang-modules/test/yang-library-data.json",
+                               ["yang-modules/test", "yang-modules/ietf"])
 
 @pytest.fixture
 def instance(data_model):

@@ -42,7 +42,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 .. doctest::
 
    >>> dm = DataModel.from_file("yang-library-ex3.json",
-   ... [".", "../../../examples/ietf"])
+   ... [".", "../../../yang-modules/ietf"])
 
 .. class:: ModuleData(main_module: YangIdentifier)
 
@@ -141,7 +141,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
 	 >>> Context.module_search_path
-	 ['.', '../../../examples/ietf']
+	 ['.', '../../../yang-modules/ietf']
 
    .. attribute:: modules
 
