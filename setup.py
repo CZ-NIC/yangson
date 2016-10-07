@@ -1,12 +1,5 @@
 from distutils.core import setup
 
-def contents(*filenames):
-    buf = []
-    for filename in filenames:
-        with open(filename, encoding="utf-8") as fp:
-            buf.append(fp.read())
-    return "\n\n".join(buf)
-
 setup(
     name = "yangson",
     packages = ["yangson"],
@@ -27,5 +20,32 @@ setup(
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries",
         "Topic :: System :: Systems Administration"],
-    long_description = contents("README.rst")
+    long_description = """\
+.. |date| date::
+
+******************
+Welcome to Yangson
+******************
+
+:Author: Ladislav Lhotka <lhotka@nic.cz>
+:Date: |date|
+
+Yangson is a Python 3 library for working with `JSON encoded`_ configuration and state
+data modelled using the YANG_ data modelling language.
+
+Installation
+============
+
+Via pip TBD.
+
+Links
+=====
+
+* `Git repository`_
+* Documentation TBD
+
+.. _JSON encoded: https://tools.ietf.org/html/rfc7951
+.. _YANG: https://tools.ietf.org/html/rfc7950
+.. _Git repository: https://github.com/CZ-NIC/yangson
+"""
     )
