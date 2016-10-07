@@ -1,0 +1,9 @@
+# include license files
+include COPYING
+include COPYING.LESSER
+
+# include YANG modules and YANG library data
+recursive-include yang-modules *.yang *.json
+
+# include XSLT stylesheets and RELAX NG schemas
+recursive-include tools *.xsl *.rng Makefile
