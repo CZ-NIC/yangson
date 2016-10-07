@@ -1,5 +1,12 @@
 from distutils.core import setup
 
+def contents(*filenames):
+    buf = []
+    for filename in filenames:
+        with open(filename, encoding="utf-8") as fp:
+            buf.append(fp.read())
+    return "\n\n".join(buf)
+
 setup(
     name = "yangson",
     packages = ["yangson"],
@@ -20,18 +27,5 @@ setup(
         "Operating System :: OS Independent",
         "Topic :: Software Development :: Libraries",
         "Topic :: System :: Systems Administration"],
-    long_description = """\
-.. |date| date::
-
-=======
-Yangson
-=======
-:Author: Ladislav Lhotka <lhotka@nic.cz>
-:Date: |date|
-
-Python library for working with YANG_ data models and JSON-encoded
-data.
-
-.. _YANG: https://tools.ietf.org/html/rfc7950
-"""
+    long_description = contents("README.rst")
     )
