@@ -7,7 +7,7 @@ setup(
     description = "Library for working with data modelled in YANG",
     author = "Ladislav Lhotka",
     author_email = "lhotka@nic.cz",
-    url = "https://gitlab.labs.nic.cz/llhotka/yangson",
+    url = "https://github.com/CZ-NIC/yangson",
     install_requires = ['PyXB'],
     tests_require = ["pytest"],
     keywords = ["yang", "data model", "configuration", "json"],
@@ -32,6 +32,6 @@ Yangson
 Python library for working with YANG_ data models and JSON-encoded
 data.
 
-.. _YANG: https://tools.ietf.org/html/draft-ietf-netmod-rfc6020bis
+.. _YANG: https://tools.ietf.org/html/rfc7950
 """
     )
