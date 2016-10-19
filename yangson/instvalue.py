@@ -46,13 +46,13 @@ class StructuredValue:
         """
         self.timestamp = ts if ts else datetime.now()
 
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self.timestamp = datetime.now()
+
     def copy(self) -> "StructuredValue":
         """Return a shallow copy of the receiver."""
         return self.__class__(super().copy(), datetime.now())
-
-    def stamp(self) -> None:
-        """Update the receiver's timestamp to current time."""
-        self.timestamp = datetime.now()
 
     def __eq__(self, val: "StructuredValue") -> bool:
         """Return ``True`` if the receiver equal to `val`.

@@ -1087,10 +1087,8 @@ class AnydataNode(DataNode):
         def convert(val):
             if isinstance(val, list):
                 res = ArrayValue([convert(x) for x in val])
-                res.stamp()
             elif isinstance(val, dict):
                 res = ObjectValue({ x:convert(val[x]) for x in val })
-                res.stamp()
             else:
                 res = val
             return res
