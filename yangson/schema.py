@@ -1200,8 +1200,9 @@ class NonexistentSchemaNode(SchemaNodeException):
         self.ns = ns
 
     def __str__(self) -> str:
-        return "under {} – name '{}', namespace '{}'".format(
-            super().__str__(), self.name, self.ns)
+        loc = ("under " + super().__str__() if self.schema_node.parent
+                   else "top level")
+        return loc + " – name '{}', namespace '{}'".format(self.name, self.ns)
 
 class BadSchemaNodeType(SchemaNodeException):
     """A schema node is of a wrong type."""
@@ -1236,5 +1237,4 @@ class SemanticError(ValidationError):
     pass
 
 from .xpathast import Expr, LocationPath, Step, Root
-from .instance import (InstanceNode, ArrayEntry,
-                       NonexistentInstance, ObjectMember)
+from .instance import InstanceNode, ArrayEntry, NonexistentInstance
