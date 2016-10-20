@@ -34,7 +34,7 @@
         "name": "ietf-inet-types",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
         "revision": "2013-07-15",
-        "conformance-type": "implement"
+        "conformance-type": "import"
       }
     ]
   }
