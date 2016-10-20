@@ -240,7 +240,7 @@ class Context:
         """
         revs = [mn for mn in cls.modules if mn[0] == mod]
         if not revs:
-            raise ModuleNotRegistered(impn)
+            raise ModuleNotRegistered(mod)
         return sorted(revs, key=lambda x: x[1])[-1]
 
     @classmethod
