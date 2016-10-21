@@ -768,7 +768,7 @@ class SequenceNode(DataNode):
         if isinstance(inst, ArrayEntry):
             super().validate(inst, ctype)
         elif isinstance(inst.value, ArrayValue):
-            self._check_unique(inst)
+            self._check_list_props(inst)
             self._check_cardinality(inst)
             try:
                 e = inst.entry(0)
@@ -851,8 +851,14 @@ class ListNode(SequenceNode, InternalNode):
         self._key_members = []
         self.unique = [] # type: List[List[SchemaRoute]]
 
-    def _check_unique(self, inst: "InstanceNode") -> None:
-        """Check uniqueness of keys and "unique" properties."""
+    def _check_list_props(self, inst: "InstanceNode") -> None:
+        """Check uniqueness of keys and "unique" properties, if applicable."""
+        if self.keys:
+            self._check_keys(inst)
+        for u in self.unique:
+            self._check_unique(u, inst)
+
+    def _check_keys(self, inst: "InstanceNode") -> None:
         ukeys = set()
         for i in range(len(inst.value)):
             en = inst.value[i]
@@ -865,22 +871,24 @@ class ListNode(SequenceNode, InternalNode):
             if kval in ukeys:
                 raise SchemaError(inst, "non-unique list key: " + repr(kval))
             ukeys.add(kval)
-        for u in self.unique:
-            uvals = set()
-            try:
-                en = inst.entry(0)
-                while True:
-                    den = en.add_defaults()
-                    uval = tuple([den._peek_schema_route(sr) for sr in u])
-                    if None not in uval:
-                        if uval in uvals:
-                            raise SemanticError(
-                                inst, "unique constraint violated")
-                        else:
-                            uvals.add(uval)
-                    en = en.next()
-            except NonexistentInstance:
-                continue
+
+    def _check_unique(self, unique: List[SchemaRoute],
+                          inst: "InstanceNode") -> None:
+        uvals = set()
+        try:
+            en = inst.entry(0)
+            while True:
+                den = en.add_defaults()
+                uval = tuple([den._peek_schema_route(sr) for sr in unique])
+                if None not in uval:
+                    if uval in uvals:
+                        raise SemanticError(
+                            inst, "unique constraint violated")
+                    else:
+                        uvals.add(uval)
+                en = en.next()
+        except NonexistentInstance:
+            pass
 
     def _default_instance(self, pnode: "InstanceNode", ctype: ContentType,
                           lazy: bool = False) -> "InstanceNode":
@@ -1053,7 +1061,7 @@ class LeafListNode(SequenceNode, TerminalNode):
         return (None if self.type.default is None
                 else ArrayValue([self.type.default]))
 
-    def _check_unique(self, inst: "InstanceNode") -> None:
+    def _check_list_props(self, inst: "InstanceNode") -> None:
         if (self.content_type() == ContentType.config and
             len(set(inst.value)) < len(inst.value)):
             raise SemanticError(inst, "non-unique leaf-list values")
