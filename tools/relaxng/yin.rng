@@ -224,6 +224,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 	<optional>
 	  <ref name="revision-date-stmt"/>
 	</optional>
+	<ref name="desc-ref"/>
 	<ref name="extensions"/>
       </interleave>
     </element>
@@ -238,6 +239,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 	<optional>
 	  <ref name="revision-date-stmt"/>
 	</optional>
+	<ref name="desc-ref"/>
 	<ref name="extensions"/>
       </interleave>
     </element>
