@@ -29,11 +29,14 @@ from typing import Dict, List, Union
 from .typealiases import *
 
 # Type aliases
-Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
+Value = Union[ScalarValue, "StructuredValue"]
 """All possible types of cooked values (scalar and structured)."""
 
 EntryValue = Union[ScalarValue, "ObjectValue"]
 """Type of the value a list ot leaf-list entry."""
+
+InstKey = Union[InstanceName, int]
+"""Index of an array entry or name of an object member."""
 
 class StructuredValue:
     """Abstract class for array and object values."""
@@ -46,13 +49,13 @@ class StructuredValue:
         """
         self.timestamp = ts if ts else datetime.now()
 
-    def __setitem__(self, key, value):
-        super().__setitem__(key, value)
-        self.timestamp = datetime.now()
-
     def copy(self) -> "StructuredValue":
         """Return a shallow copy of the receiver."""
         return self.__class__(super().copy(), datetime.now())
+
+    def __setitem__(self, key: InstKey, value: Value) -> None:
+        super().__setitem__(key, value)
+        self.timestamp = datetime.now()
 
     def __eq__(self, val: "StructuredValue") -> bool:
         """Return ``True`` if the receiver equal to `val`.
@@ -75,7 +78,7 @@ class ArrayValue(StructuredValue, list):
 
     def __hash__(self) -> int:
         """Return hash value for the receiver."""
-        return tuple([ x.__hash__() for x in self]).__hash__()
+        return tuple([x.__hash__() for x in self]).__hash__()
 
 class ObjectValue(StructuredValue, dict):
     """This class represents cooked object values."""
@@ -88,4 +91,4 @@ class ObjectValue(StructuredValue, dict):
     def __hash__(self) -> int:
         """Return hash value for the receiver."""
         sks = sorted(self.keys())
-        return tuple([ (k, self[k].__hash__()) for k in sks ]).__hash__()
+        return tuple([(k, self[k].__hash__()) for k in sks]).__hash__()

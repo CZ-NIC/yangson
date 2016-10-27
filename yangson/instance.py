@@ -19,6 +19,7 @@
 
 This module implements the following classes:
 
+* LinkedList: Persistent linked list of instance values.
 * InstanceNode: Abstract class for instance nodes.
 * RootNode: Root of the data tree.
 * ObjectMember: Instance node that is an object member.
@@ -37,7 +38,7 @@ The module defines the following exceptions:
 """
 
 from datetime import datetime
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Tuple, Union
 from urllib.parse import unquote
 from .exceptions import YangsonException
 from .context import Context
@@ -45,13 +46,84 @@ from .enumerations import ContentType
 from .instvalue import *
 from .parser import EndOfInput, Parser, UnexpectedInput
 from .typealiases import *
+from .typealiases import _Singleton
+
+class LinkedList:
+    """Persistent linked list of instance values."""
+
+    @classmethod
+    def from_list(cls, vals: List[Value] = []) -> "LinkedList":
+        """Create an instance from a standard list.
+
+        Args:
+            vals: Python list of instance values.
+        """
+        res = _EmptyList()
+        for v in vals[::-1]:
+            res = res.cons(v)
+        return res
+
+    def __init__(self, head: Value, tail: "LinkedList"):
+        """Initialize the class instance."""
+        self.head = head
+        """Head of the linked list."""
+        self.tail = tail
+        """Tail of the linked list."""
+
+    def __bool__(self):
+        """Return receiver's boolean value."""
+        return True
+
+    def __iter__(self):
+        """Iterate the receiver's entries."""
+        l = self
+        while True:
+            try:
+                n, l = l.pop()
+            except IndexError:
+                raise StopIteration from None
+            yield n
+
+    def cons(self, val: Value) -> "LinkedList":
+        """Prepend a value to the receiver in the persistent way.
+
+        Args:
+            val: Instance value.
+
+        Returns: A new linked list.
+        """
+        return LinkedList(val, self)
+
+    def pop(self) -> Tuple[Value, "LinkedList"]:
+        """Deconstruct the receiver.
+
+        Returns: A tuple with receiver's head and tail, respectively.
+        """
+        return (self.head, self.tail)
+
+class _EmptyList(LinkedList, metaclass=_Singleton):
+    """Singleton class representing the empty linked list."""
+
+    def __init__(self):
+        pass
+
+    def __bool__(self):
+        return False
+
+    def __getitem__(self, key):
+        raise IndexError
+
+    def pop(self) -> None:
+        raise IndexError
 
 class InstanceNode:
     """YANG data node instance implemented as a zipper structure."""
 
-    def __init__(self, value: Value, parinst: Optional["InstanceNode"],
-                 schema_node: "DataNode", timestamp: datetime):
+    def __init__(self, key: InstKey, value: Value, parinst: "InstanceNode",
+                     schema_node: "DataNode", timestamp: datetime):
         """Initialize the class instance."""
+        self.path = parinst.path + (key,)   # type: List[InstKey]
+        """Path in the data tree."""
         self.parinst = parinst         # type: Optional["InstanceNode"]
         """Parent instance node, or ``None`` for the root node."""
         self.schema_node = schema_node # type: DataNode
@@ -66,11 +138,6 @@ class InstanceNode:
         """The receiver's namespace."""
         return self.schema_node.ns
 
-    @property
-    def qual_name(self) -> Optional[QualName]:
-        """The receiver's qualified name."""
-        return None
-
     def __str__(self) -> str:
         """Return string representation of the receiver's value."""
         sn = self.schema_node
@@ -83,12 +150,7 @@ class InstanceNode:
 
     def json_pointer(self) -> str:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
-        parents = []
-        inst = self
-        while inst.parinst:
-            parents.append(inst)
-            inst = inst.parinst
-        return "/" + "/".join([i._pointer_fragment() for i in parents[::-1]])
+        return "/" + "/".join([str(c) for c in self.path])
 
     def member(self, name: InstanceName) -> "ObjectMember":
         """Return an instance node corresponding to a receiver's member.
@@ -134,8 +196,7 @@ class InstanceNode:
         csn = self._member_schema_node(name)
         newval = self.value.copy()
         newval[name] = csn.from_raw(value) if raw else value
-        ts = datetime.now()
-        return self._copy(ObjectValue(newval, ts) , ts).member(name)
+        return self._copy(newval).member(name)
 
     def delete_member(self, name: InstanceName) -> "InstanceNode":
         """Return a copy of the receiver with a member deleted from its value.
@@ -155,8 +216,7 @@ class InstanceNode:
             del newval[name]
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
-        ts = datetime.now()
-        return self._copy(ObjectValue(newval, ts), ts)
+        return self._copy(newval)
 
     def look_up(self, keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
         """Return the entry with matching keys.
@@ -199,8 +259,10 @@ class InstanceNode:
         if not isinstance(val, ArrayValue):
             raise InstanceValueError(self, "entry of non-array")
         try:
-            return ArrayEntry(val[:index], val[index+1:], val[index], self,
-                              self.schema_node, val.timestamp)
+            return ArrayEntry(index, LinkedList.from_list(val[:index]),
+                                  LinkedList.from_list(val[index+1:]),
+                                  val[index], self, self.schema_node,
+                                  val.timestamp)
         except IndexError:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
@@ -215,8 +277,9 @@ class InstanceNode:
         if not isinstance(val, ArrayValue):
             raise InstanceValueError(self, "last entry of non-array")
         try:
-            return ArrayEntry(val[:-1], [], val[-1], self,
-                              self.schema_node, val.timestamp)
+            return ArrayEntry(
+                len(val) - 1, LinkedList.from_list(val[:-1]),
+                _EmptyList(), val[-1], self,self.schema_node, val.timestamp)
         except IndexError:
             raise NonexistentInstance(self, "last of empty") from None
 
@@ -235,8 +298,7 @@ class InstanceNode:
             raise InstanceValueError(self, "entry of non-array")
         if index >= len(val):
             raise NonexistentInstance(self, "entry " + str(index)) from None
-        ts = datetime.now()
-        return self._copy(ArrayValue(val[:index] + val[index+1:], ts), ts)
+        return self._copy(ArrayValue(val[:index] + val[index+1:]))
 
     def up(self) -> "InstanceNode":
         """Return an instance node corresponding to the receiver's parent.
@@ -266,7 +328,7 @@ class InstanceNode:
             Copy of the receiver with the updated value.
         """
         newval = self.schema_node.from_raw(value) if raw else value
-        return self._copy(newval, datetime.now())
+        return self._copy(newval)
 
     def goto(self, iroute: "InstanceRoute") -> "InstanceNode":
         """Move the focus to an instance inside the receiver's value.
@@ -436,9 +498,11 @@ class RootNode(InstanceNode):
 
     def __init__(self, value: Value, schema_node: "DataNode",
                  timestamp: datetime):
-        super().__init__(value, None, schema_node, timestamp)
-        self.name = None # type: None
-        """The instance name of the root node is always ``None``."""
+        self.path = ()
+        self.parinst = None
+        self.value = value
+        self.schema_node = schema_node
+        self.timestamp = timestamp
 
     def up(self) -> None:
         """Override the superclass method.
@@ -448,10 +512,9 @@ class RootNode(InstanceNode):
         """
         raise NonexistentInstance(self, "up of top")
 
-    def _copy(self, newval: Value = None,
-              newts: datetime = None) -> InstanceNode:
-        return RootNode(newval if newval else self.value, self.schema_node,
-                          newts if newts else self._timestamp)
+    def _copy(self, newval: Value, newts: datetime = None) -> InstanceNode:
+        return RootNode(
+            newval, self.schema_node, newts if newts else newval.timestamp)
 
     def _ancestors_or_self(
             self, qname: Union[QualName, bool] = None) -> List["RootNode"]:
@@ -469,14 +532,16 @@ class ObjectMember(InstanceNode):
     def __init__(self, name: InstanceName, siblings: Dict[InstanceName, Value],
                  value: Value, parinst: InstanceNode,
                  schema_node: "DataNode", timestamp: datetime ):
-        super().__init__(value, parinst, schema_node, timestamp)
-        self.name = name # type: InstanceName
-        """The instance name of the receiver."""
+        super().__init__(name, value, parinst, schema_node, timestamp)
         self.siblings = siblings # type: Dict[InstanceName, Value]
         """Sibling members within the parent object."""
 
     @property
-    def qual_name(self) -> Optional[QualName]:
+    def name(self) -> YangIdentifier:
+        return self.path[-1]
+
+    @property
+    def qual_name(self) -> QualName:
         """Return the receiver's qualified name."""
         p, s, loc = self.name.partition(":")
         return (loc, p) if s else (p, self.namespace)
@@ -488,7 +553,8 @@ class ObjectMember(InstanceNode):
             name: Instance name of the sibling member.
 
         Raises:
-            NonexistentSchemaNode: If member `name` is not permitted by the schema.
+            NonexistentSchemaNode: If member `name` is not permitted by the
+                schema.
             NonexistentInstance: If sibling member `name` doesn't exist.
         """
         ssn = self.parinst._member_schema_node(name)
@@ -507,15 +573,15 @@ class ObjectMember(InstanceNode):
         res[self.name] = self.value
         return res
 
-    def _pointer_fragment(self) -> str:
-        return self.name
-
-    def _copy(self, newval: Value = None,
-              newts: datetime = None) -> "ObjectMember":
-        return ObjectMember(self.name, self.siblings,
-                           self.value if newval is None else newval,
-                           self.parinst, self.schema_node,
-                           newts if newts else self._timestamp)
+    def _copy(self, newval: Value, newts: datetime = None) -> "ObjectMember":
+        if newts:
+            ts = newts
+        elif isinstance(newval, StructuredValue):
+            ts = newval.timestamp
+        else:
+            ts = datetime.now()
+        return ObjectMember(self.name, self.siblings, newval, self.parinst,
+                                self.schema_node, ts)
 
     def _ancestors_or_self(
             self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
@@ -531,23 +597,23 @@ class ObjectMember(InstanceNode):
 class ArrayEntry(InstanceNode):
     """This class represents an array entry."""
 
-    def __init__(self, before: List[Value], after: List[Value],
-                 value: Value, parinst: InstanceNode,
-                 schema_node: "DataNode", timestamp: datetime = None):
-        super().__init__(value, parinst, schema_node, timestamp)
-        self.before = before # type: List[Value]
+    def __init__(self, index: int, before: LinkedList, after: LinkedList,
+                     value: Value, parinst: InstanceNode,
+                     schema_node: "DataNode", timestamp: datetime = None):
+        super().__init__(index, value, parinst, schema_node, timestamp)
+        self.before = before # type: LinkedList
         """Preceding entries of the parent array."""
-        self.after = after # type: List[Value]
+        self.after = after # type: LinkedList
         """Following entries of the parent array."""
 
     @property
     def index(self) -> int:
-        """Return the receiver's index."""
-        return len(self.before)
+        """Index of the receiver in the parent array."""
+        return self.path[-1]
 
     @property
     def name(self) -> InstanceName:
-        """Return the name of the receiver."""
+        """Name of the receiver."""
         return self.parinst.name
 
     @property
@@ -567,14 +633,16 @@ class ArrayEntry(InstanceNode):
         """Return an instance node corresponding to the previous entry.
 
         Raises:
-            NonexistentInstance: If the receiver is the first entry of the parent array.
+            NonexistentInstance: If the receiver is the first entry of the
+                parent array.
         """
         try:
-            newval = self.before[-1]
+            newval, nbef = self.before.pop()
         except IndexError:
             raise NonexistentInstance(self, "previous of first") from None
-        return ArrayEntry(self.before[:-1], [self.value] + self.after, newval,
-                          self.parinst, self.schema_node, self.timestamp)
+        return ArrayEntry(
+            self.index - 1, nbef, self.after.cons(self.value), newval,
+            self.parinst, self.schema_node, self.timestamp)
 
     def next(self) -> "ArrayEntry":
         """Return an instance node corresponding to the next entry.
@@ -583,11 +651,12 @@ class ArrayEntry(InstanceNode):
             NonexistentInstance: If the receiver is the last entry of the parent array.
         """
         try:
-            newval = self.after[0]
+            newval, naft = self.after.pop()
         except IndexError:
             raise NonexistentInstance(self, "next of last") from None
-        return ArrayEntry(self.before + [self.value], self.after[1:], newval,
-                          self.parinst, self.schema_node, self.timestamp)
+        return ArrayEntry(
+            self.index + 1, self.before.cons(self.value), naft, newval,
+            self.parinst, self.schema_node, self.timestamp)
 
     def insert_before(self, value: Union[RawValue, Value],
                       raw: bool = False) -> "ArrayEntry":
@@ -600,9 +669,9 @@ class ArrayEntry(InstanceNode):
         Returns:
             An instance node of the new inserted entry.
         """
-        return ArrayEntry(self.before, [self.value] + self.after,
-                          self._cook_value(value, raw), self.parinst,
-                          self.schema_node, datetime.now())
+        return ArrayEntry(self.index, self.before, self.after.cons(self.value),
+                              self._cook_value(value, raw), self.parinst,
+                              self.schema_node, datetime.now())
 
     def insert_after(self, value: Union[RawValue, Value],
                      raw: bool = False) -> "ArrayEntry":
@@ -615,9 +684,9 @@ class ArrayEntry(InstanceNode):
         Returns:
             An instance node of the newly inserted entry.
         """
-        return ArrayEntry(self.before + [self.value], self.after,
-                          self._cook_value(value, raw), self.parinst,
-                          self.schema_node, datetime.now())
+        return ArrayEntry(self.index, self.before.cons(self.value), self.after,
+                              self._cook_value(value, raw), self.parinst,
+                              self.schema_node, datetime.now())
 
     def _cook_value(self, value: Union[RawValue, Value], raw: bool) -> Value:
         return (super(SequenceNode, self.schema_node).from_raw(value) if raw
@@ -625,20 +694,21 @@ class ArrayEntry(InstanceNode):
 
     def _zip(self) -> ArrayValue:
         """Zip the receiver into an array and return it."""
-        res = ArrayValue(self.before.copy(), self.timestamp)
+        res = list(self.before)
+        res.reverse()
         res.append(self.value)
-        res += self.after
-        return res
+        res.extend(list(self.after))
+        return ArrayValue(res, self.timestamp)
 
-    def _pointer_fragment(self) -> int:
-        return str(len(self.before))
-
-    def _copy(self, newval: Value = None,
-              newts: datetime = None) -> "ArrayEntry":
-        return ArrayEntry(self.before, self.after,
-                          newval if newval else self.value,
-                          self.parinst, self.schema_node,
-                          newts if newts else self._timestamp)
+    def _copy(self, newval: Value, newts: datetime = None) -> "ArrayEntry":
+        if newts:
+            ts = newts
+        elif isinstance(newval, StructuredValue):
+            ts = newval.timestamp
+        else:
+            ts = datetime.now()
+        return ArrayEntry(self.index, self.before, self.after, newval,
+                              self.parinst, self.schema_node, ts)
 
     def _ancestors_or_self(
             self, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
@@ -658,7 +728,7 @@ class ArrayEntry(InstanceNode):
             return []
         res = []
         ent = self
-        for i in range(len(self.before)):
+        for _ in self.before:
             ent = ent.previous()
             res.append(ent)
         return res
@@ -670,7 +740,7 @@ class ArrayEntry(InstanceNode):
             return []
         res = []
         ent = self
-        for i in range(len(self.after)):
+        for _ in self.after:
             ent = ent.next()
             res.append(ent)
         return res

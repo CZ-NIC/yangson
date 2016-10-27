@@ -487,7 +487,7 @@ class FuncName(UnaryExpr):
                 raise XPathTypeError(ns)
             except IndexError:
                 return ""
-        if node.name is None: return ""
+        if node.path is (): return ""
         if self.local:
             p, s, loc = node.name.partition(":")
             return loc if s else p

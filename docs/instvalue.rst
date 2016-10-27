@@ -63,7 +63,10 @@ data structures with additional attributs and methods:
       Return a shallow copy of the receiver with :attr:`last_modified`
       set to current time.
 
-   .. automethod:: stamp
+   .. method:: __setitem__(self, key: InstKey, value: Value) -> None
+
+      Set an array entry or object member *key* to *value* and update
+      receiver's timestamp to the current time.
 
    .. method:: __eq__(val: StructuredValue) -> bool
 
