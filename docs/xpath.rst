@@ -131,7 +131,7 @@ The module also defines the following exceptions:
 
 .. doctest::
 
-   >>> fref = inst.member("example-4-a:bag").member("example-4-b:fooref")
+   >>> fref = inst["example-4-a:bag"]["example-4-b:fooref"]
    >>> xp = 'deref(.)/../../quux[2]/preceding-sibling::quux = 3.1415'
    >>> cxp = XPathParser(xp, ('example-4-b', '')).parse()
    >>> print(cxp, end='')

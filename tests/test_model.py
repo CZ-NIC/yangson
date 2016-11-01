@@ -280,11 +280,11 @@ def test_instance(instance):
     hid = hash(instd)
     assert hi == hix
     assert hi != hid
-    conta = instance.member("test:contA")
-    la1 = conta.member("listA").last_entry()
-    lt = conta.member("testb:leafT")
+    conta = instance["test:contA"]
+    la1 = conta["listA"].last_entry()
+    lt = conta["testb:leafT"]
     assert la1.index == 1
-    tbln = conta.member("testb:leafN")
+    tbln = conta["testb:leafN"]
     inst1 = la1.put_member("leafE", "ABBA").top()
     inst2 = tbln.update("hello!").top()
     assert instance.value == inst1.value
@@ -292,10 +292,10 @@ def test_instance(instance):
     assert instance.timestamp < inst1.timestamp < inst2.timestamp
     assert inst1.json_pointer() == inst2.json_pointer() == "/"
     assert la1.namespace == "test"
-    assert la1.member("leafE").namespace == "test"
-    assert la1.member("leafF").value is False
+    assert la1["leafE"].namespace == "test"
+    assert la1["leafF"].value is False
     with pytest.raises(NonexistentInstance):
-        la1.member("contD")
+        la1["contD"]
     assert la1.json_pointer() == "/test:contA/listA/1"
     assert lt.value == ("CC-BY", "test")
     assert str(lt) == "test:CC-BY"
@@ -319,8 +319,8 @@ def test_xpath(instance):
     def xptest(expr, res=True, node=instance, module="test"):
         mid = Context.last_revision(module)
         assert XPathParser(expr, mid).parse().evaluate(node) == res
-    conta = instance.member("test:contA")
-    lr = conta.member("testb:leafR")
+    conta = instance["test:contA"]
+    lr = conta["testb:leafR"]
     with pytest.raises(InvalidXPath):
         xptest("foo()")
     with pytest.raises(NotSupported):
@@ -458,9 +458,9 @@ def test_instance_paths(data_model, instance):
     iid3 = InstanceIdParser("/test:contA/listA[1]/contD/contE").parse()
     bad_pth = "/test:contA/listA=ABBA,true/contD/contE"
     assert instance.peek(rid1) == instance.peek(iid1) == "hi!"
-    assert (instance.goto(rid2).member("leafP").value ==
-            instance.goto(iid2).member("leafP").value ==
-            instance.goto(iid3).member("leafP").value == 10)
+    assert (instance.goto(rid2)["leafP"].value ==
+            instance.goto(iid2)["leafP"].value ==
+            instance.goto(iid3)["leafP"].value == 10)
     with pytest.raises(NonexistentSchemaNode):
         ResourceIdParser("/test:contA/leafX").parse()
     with pytest.raises(NonexistentSchemaNode):
@@ -472,13 +472,13 @@ def test_instance_paths(data_model, instance):
 def test_edits(data_model, instance):
     laii = InstanceIdParser("/test:contA/listA").parse()
     la = instance.goto(laii)
-    inst1 = la.entry(1).update(
+    inst1 = la[1].update(
         {"leafE": "B00F", "leafF": False}, raw=True).top()
     assert instance.peek(laii)[1]["leafE"] == "ABBA"
     assert inst1.peek(laii)[1]["leafE"] == "B00F"
     modla = la.delete_entry(1)
     assert len(modla.value) == 1
-    llb1 = instance.member("test:llistB").entry(1)
+    llb1 = instance["test:llistB"][1]
     modllb = llb1.update("2001:db8:0:2::1", raw=True).up()
     assert modllb.value == ArrayValue(["::1", "2001:db8:0:2::1"])
     with pytest.raises(YangTypeError):

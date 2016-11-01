@@ -207,11 +207,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> bag = inst.member('example-2:bag')
-	 >>> foo = bag.member('foo')
+	 >>> bag = inst['example-2:bag']
+	 >>> foo = bag['foo']
 	 >>> foo.json_pointer()
 	 '/example-2:bag/foo'
-	 >>> bag.member('baz')
+	 >>> bag['baz']
 	 Traceback (most recent call last):
 	 ...
 	 yangson.instance.NonexistentInstance: [/example-2:bag] member baz
@@ -290,7 +290,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo6 = foo.entry(0)
+	 >>> foo6 = foo[0]
 	 >>> foo6.value['number']
 	 6
 
@@ -356,7 +356,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> ebar = bag.member('bar').update(False)
+	 >>> ebar = bag['bar'].update(False)
 	 >>> ebar.value
 	 False
 
@@ -366,7 +366,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       flag is set, the :meth:`update` method “cooks” the raw value
       first into the Python's :class:`decimal.Decimal` type.
 
-      >>> e3baz = e2bag.member('baz').update_from_raw('2.7182818')
+      >>> e3baz = e2bag['baz'].update_from_raw('2.7182818')
       >>> e3baz.value
       Decimal('2.7182818')
 
@@ -458,7 +458,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> e2foo6 = e2bag.member('foo').entry(0)
+	 >>> e2foo6 = e2bag['foo'][0]
 	 >>> bad2 = e2foo6.update(
 	 ... {'number': 42, 'in-words': 'forty-two'}, raw=True).top()
 	 >>> bad2.validate()
@@ -490,7 +490,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> wd.member('example-2:bag').member('baz').raw_value()
+	 >>> wd['example-2:bag']['baz'].raw_value()
 	 '0.0'
 
 .. autoclass:: RootNode(value: Value, schema_node: SchemaNode, timestamp: datetime.datetime)

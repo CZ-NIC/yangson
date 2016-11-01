@@ -144,33 +144,38 @@ class InstanceNode:
         return (str(self.value) if isinstance(self.value, StructuredValue) else
                 sn.type.canonical_string(self.value))
 
+    def __getitem__(self, key: InstKey) -> "InstanceNode":
+        """Return member or entry with the given key.
+
+        Args:
+            key: Entry index (for an array) or member name (for an object).
+
+        Raises:
+            NonexistentInstance: If receiver's value doesn't contain member
+                `name`.
+            InstanceValueError: If the receiver's value is not an object.
+        """
+        if isinstance(self.value, ObjectValue):
+            return self._member(key)
+        if isinstance(self.value, ArrayValue):
+            return self._entry(key)
+        raise InstanceValueError(self, "scalar instance")
+
     def is_internal(self) -> bool:
-        """Return ``True`` if the receiver is an instance of an internal node."""
+        """Return ``True`` if the receiver is an instance of an internal node.
+        """
         return isinstance(self.schema_node, InternalNode)
 
     def json_pointer(self) -> str:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
         return "/" + "/".join([str(c) for c in self.path])
 
-    def member(self, name: InstanceName) -> "ObjectMember":
-        """Return an instance node corresponding to a receiver's member.
-
-        Args:
-            name: Instance name of the member
-
-        Raises:
-            NonexistentSchemaNode: If the member isn't permitted by the schema.
-            NonexistentInstance: If receiver's value doesn't contain member
-                `name`.
-            InstanceValueError: If the receiver's value is not an object.
-        """
-        if not isinstance(self.value, ObjectValue):
-            raise InstanceValueError(self, "member of non-object")
-        csn = self._member_schema_node(name)
+    def _member(self, name: InstanceName) -> "ObjectMember":
         sibs = self.value.copy()
         try:
-            return ObjectMember(name, sibs, sibs.pop(name), self,
-                                csn, self.value.timestamp)
+            return ObjectMember(
+                name, sibs, sibs.pop(name), self,
+                self._member_schema_node(name), self.value.timestamp)
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
 
@@ -196,7 +201,7 @@ class InstanceNode:
         csn = self._member_schema_node(name)
         newval = self.value.copy()
         newval[name] = csn.from_raw(value) if raw else value
-        return self._copy(newval).member(name)
+        return self._copy(newval)._member(name)
 
     def delete_member(self, name: InstanceName) -> "InstanceNode":
         """Return a copy of the receiver with a member deleted from its value.
@@ -238,32 +243,21 @@ class InstanceNode:
                     if en[k] != keys[k]:
                         flag = False
                         break
-                if flag: return self.entry(i)
+                if flag: return self._entry(i)
             raise NonexistentInstance(self, "entry lookup failed")
         except KeyError:
             raise NonexistentInstance(self, "entry lookup failed") from None
         except TypeError:
             raise InstanceValueError(self, "lookup on non-list") from None
 
-    def entry(self, index: int) -> "ArrayEntry":
-        """Return an instance node corresponding to a receiver's entry.
-
-        Args:
-            index: Index of the entry.
-
-        Raises:
-            InstanceValueError: If the receiver's value is not an array.
-            NonexistentInstance: If entry `index` is not present.
-        """
+    def _entry(self, index: int) -> "ArrayEntry":
         val = self.value
-        if not isinstance(val, ArrayValue):
-            raise InstanceValueError(self, "entry of non-array")
         try:
             return ArrayEntry(index, LinkedList.from_list(val[:index]),
                                   LinkedList.from_list(val[index+1:]),
                                   val[index], self, self.schema_node,
                                   val.timestamp)
-        except IndexError:
+        except (IndexError, TypeError):
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
     def last_entry(self) -> "ArrayEntry":
@@ -378,11 +372,11 @@ class InstanceNode:
         if isinstance(self.value, ObjectValue):
             res = {}
             for m in self.value:
-                res[m] = self.member(m).raw_value()
+                res[m] = self._member(m).raw_value()
         elif isinstance(self.value, ArrayValue):
             res = []
             try:
-                en = self.entry(0)
+                en = self._entry(0)
                 while True:
                     res.append(en.raw_value())
                     en = en.next()
@@ -406,7 +400,7 @@ class InstanceNode:
         res = self
         if val:
             for mn in val:
-                m = res.member(mn) if res is self else res.sibling(mn)
+                m = res._member(mn) if res is self else res.sibling(mn)
                 res = m.add_defaults(ctype)
             res = res.up()
         return sn._add_defaults(res, ctype)
@@ -433,7 +427,7 @@ class InstanceNode:
         """XPath - return the list of all receiver's nodes."""
         val = self.value
         if isinstance(val, ArrayValue):
-            return [ self.entry(i) for i in range(len(val)) ]
+            return [ self._entry(i) for i in range(len(val)) ]
         return [self]
 
     def _children(self, qname:
@@ -446,13 +440,13 @@ class InstanceNode:
             if cn is None: return []
             iname = cn.iname()
             if iname in self.value:
-                return self.member(iname)._node_set()
+                return self._member(iname)._node_set()
             wd = cn._default_instance(self, ContentType.all, lazy=True)
             if iname not in wd.value: return []
             while True:
                 cn = cn.parent
                 if cn is sn:
-                    return wd.member(iname)._node_set()
+                    return wd._member(iname)._node_set()
                 if (cn.when and not cn.when.evaluate(self) or
                     isinstance(cn, CaseNode) and
                     cn.qual_name != cn.parent.default_case):
@@ -460,7 +454,7 @@ class InstanceNode:
         res = []
         wd = sn._add_defaults(self, ContentType.all, lazy=True)
         for mn in wd.value:
-            res.extend(wd.member(mn)._node_set())
+            res.extend(wd._member(mn)._node_set())
         return res
 
     def _descendants(self, qname: Union[QualName, bool] = None,
@@ -796,7 +790,7 @@ class MemberName(InstanceSelector):
         Args:
             inst: Current instance.
         """
-        return inst.member(self.name)
+        return inst._member(self.name)
 
 class EntryIndex(InstanceSelector):
     """Numeric selectors for a list or leaf-list entry."""
@@ -833,7 +827,7 @@ class EntryIndex(InstanceSelector):
         Args:
             inst: Current instance.
         """
-        return inst.entry(self.index)
+        return inst._entry(self.index)
 
 class EntryValue(InstanceSelector):
     """Value-based selectors of an array entry."""
@@ -871,7 +865,7 @@ class EntryValue(InstanceSelector):
             inst: Current instance.
         """
         try:
-            return inst.entry(inst.value.index(self.value))
+            return inst._entry(inst.value.index(self.value))
         except ValueError:
             raise NonexistentInstance(
                 inst, "entry '{}'".format(str(self.value))) from None

@@ -359,7 +359,7 @@ class InternalNode(SchemaNode):
         self._check_schema_pattern(inst, ctype)
         super().validate(inst, ctype)
         for m in inst.value:
-            inst.member(m).validate(ctype)
+            inst._member(m).validate(ctype)
 
     def from_raw(self, rval: RawObject) -> ObjectValue:
         """Override the superclass method."""
@@ -771,7 +771,7 @@ class SequenceNode(DataNode):
             self._check_list_props(inst)
             self._check_cardinality(inst)
             try:
-                e = inst.entry(0)
+                e = inst._entry(0)
                 while True:
                     super().validate(e, ctype)
                     e = e.next()
@@ -866,7 +866,7 @@ class ListNode(SequenceNode, InternalNode):
                 kval = tuple([en[k] for k in self._key_members])
             except KeyError as e:
                 raise SchemaError(
-                    inst.entry(i),
+                    inst._entry(i),
                     "missing list key '{}'".format(e.args[0])) from None
             if kval in ukeys:
                 raise SchemaError(inst, "non-unique list key: " + repr(kval))
@@ -876,7 +876,7 @@ class ListNode(SequenceNode, InternalNode):
                           inst: "InstanceNode") -> None:
         uvals = set()
         try:
-            en = inst.entry(0)
+            en = inst._entry(0)
             while True:
                 den = en.add_defaults()
                 uval = tuple([den._peek_schema_route(sr) for sr in unique])

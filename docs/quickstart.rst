@@ -173,7 +173,7 @@ So let's see if that default value is in place:
 
 .. doctest::
 
-   >>> iwd.member('example-2:bag').member('baz').value
+   >>> iwd['example-2:bag']['baz'].value
    Decimal('0E-7')
 
 Indeed it is – ``Decimal('0E-7')`` is just a fancy way of writing
@@ -184,7 +184,7 @@ However, if we try the same for the other data tree, we don't find the
 
 .. doctest::
 
-   >>> i2wd.member('example-2:bag').member('baz').value
+   >>> i2wd['example-2:bag']['baz'].value
    Traceback (most recent call last):
    ...
    yangson.instance.NonexistentInstance: [/example-2:bag] member baz
