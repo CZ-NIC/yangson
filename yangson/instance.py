@@ -123,10 +123,10 @@ class EmptyList(LinkedList, metaclass=_Singleton):
 class InstanceNode:
     """YANG data node instance implemented as a zipper structure."""
 
-    def __init__(self, key: InstKey, value: Value, parinst: "InstanceNode",
+    def __init__(self, key: InstanceKey, value: Value, parinst: "InstanceNode",
                      schema_node: "DataNode", timestamp: datetime):
         """Initialize the class instance."""
-        self.path = parinst.path + (key,)   # type: List[InstKey]
+        self.path = parinst.path + (key,)   # type: List[InstanceKey]
         """Path in the data tree."""
         self.parinst = parinst         # type: Optional["InstanceNode"]
         """Parent instance node, or ``None`` for the root node."""
@@ -152,7 +152,7 @@ class InstanceNode:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
         return "/" + "/".join([str(c) for c in self.path])
 
-    def __getitem__(self, key: InstKey) -> "InstanceNode":
+    def __getitem__(self, key: InstanceKey) -> "InstanceNode":
         """Return member or entry with the given key.
 
         Args:
@@ -219,24 +219,23 @@ class InstanceNode:
         newval[name] = csn.from_raw(value) if raw else value
         return self._copy(newval)._member(name)
 
-    def delete_member(self, name: InstanceName) -> "InstanceNode":
-        """Return a copy of the receiver with a member deleted from its value.
+    def delete_item(self, key: InstanceKey) -> "InstanceNode":
+        """Delete an item (member or entry) from receiver's value.
 
         Args:
-            name: Instance name of the member.
+            key: Key of the item (instance name or index).
 
         Raises:
-            NonexistentInstance: If receiver's value doesn't contain member
-                `name`.
-            InstanceValueError: If the receiver's value is not an object.
+            NonexistentInstance: If receiver's value doesn't contain the item.
+            InstanceValueError: If the receiver's value is a scalar.
         """
-        if not isinstance(self.value, ObjectValue):
-            raise InstanceValueError(self, "member of non-object")
+        if not isinstance(self.value, StructuredValue):
+            raise InstanceValueError(self, "scalar value")
         newval = self.value.copy()
         try:
-            del newval[name]
-        except KeyError:
-            raise NonexistentInstance(self, "member " + name) from None
+            del newval[key]
+        except (KeyError, IndexError, TypeError):
+            raise NonexistentInstance(self, "item " + key) from None
         return self._copy(newval)
 
     def look_up(self, keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
@@ -265,23 +264,6 @@ class InstanceNode:
             raise NonexistentInstance(self, "entry lookup failed") from None
         except TypeError:
             raise InstanceValueError(self, "lookup on non-list") from None
-
-    def delete_entry(self, index: int) -> "InstanceNode":
-        """Return a copy of the receiver with an entry deleted from its value.
-
-        Args:
-            index: Index of the deleted entry.
-
-        Raises:
-            InstanceValueError: If the receiver's value is not an array.
-            NonexistentInstance: If entry `index` is not present.
-        """
-        val = self.value
-        if not isinstance(val, ArrayValue):
-            raise InstanceValueError(self, "entry of non-array")
-        if index >= len(val):
-            raise NonexistentInstance(self, "entry " + str(index)) from None
-        return self._copy(ArrayValue(val[:index] + val[index+1:]))
 
     def up(self) -> "InstanceNode":
         """Return an instance node corresponding to the receiver's parent.
@@ -752,7 +734,7 @@ class InstanceRoute(list):
 class InstanceSelector:
     """Components of instance identifers."""
 
-    def __init__(self, key: InstKey):
+    def __init__(self, key: InstanceKey):
         """Initialize the class instance.
 
         Args:

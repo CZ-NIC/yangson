@@ -476,7 +476,7 @@ def test_edits(data_model, instance):
         {"leafE": "B00F", "leafF": False}, raw=True).top()
     assert instance.peek(laii)[1]["leafE"] == "ABBA"
     assert inst1.peek(laii)[1]["leafE"] == "B00F"
-    modla = la.delete_entry(1)
+    modla = la.delete_item(1)
     assert len(modla.value) == 1
     llb1 = instance["test:llistB"][1]
     modllb = llb1.update("2001:db8:0:2::1", raw=True).up()

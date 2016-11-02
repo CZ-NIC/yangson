@@ -233,7 +233,7 @@ mandatory in the data model:
 
 .. doctest::
 
-   >>> broken2 = inw.up().up().up().delete_member('bar').top()
+   >>> broken2 = inw.up().up().up().delete_item('bar').top()
    >>> broken2.validate()
    Traceback (most recent call last):
    ...

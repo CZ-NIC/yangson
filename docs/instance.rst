@@ -50,7 +50,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    ...   ri = json.load(infile)
    >>> inst = dm.from_raw(ri)
 
-.. class:: InstanceNode(key: InstKey, value: Value, \
+.. class:: InstanceNode(key: InstanceKey, value: Value, \
 	   parinst: Optional[InstanceNode], \
 	   schema_node: DataNode, timestamp: datetime.datetime)
 
@@ -199,7 +199,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. automethod:: json_pointer
 
-   .. method:: __getitem__(key: InstKey) -> InstanceNode
+   .. method:: __getitem__(key: InstanceKey) -> InstanceNode
 
       This method allows for selecting receiver's member or entry
       using square brackets as it is usual for other Python sequence
@@ -305,20 +305,27 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 ...
 	 yangson.schema.NonexistentSchemaNode: quux in module example-2
 
-   .. method:: delete_member(name: InstanceName) -> InstanceNode
+   .. method:: delete_item(key: InstanceKey) -> InstanceNode
 
       Return a new instance node that is an exact copy of the
-      receiver, except that member *name* is deleted from its value.
+      receiver, except that item *key* is deleted from its value.
 
       This method raises :exc:`InstanceValueError` if the receiver's
-      value is not an object, and:exc:`NonexistentInstance` if member
-      *name* isn't present in the actual receiver's value.
+      value is a scalar, and:exc:`NonexistentInstance` if the item
+      isn't present in the actual receiver's value.
 
       .. doctest::
 
-	 >>> xbag = e2bag.delete_member('baz')
+	 >>> xbag = e2bag.delete_item('baz')
 	 >>> sorted(xbag.value.keys())
 	 ['bar', 'foo']
+	 >>> sorted(e2bag.value.keys())  # e2bag is unvchanged
+	 ['bar', 'baz', 'foo']
+	 >>> xfoo = foo.delete_item(0)
+	 >>> len(xfoo.value)
+	 1
+	 >>> len(foo.value)   # foo is unchanged
+	 2
 
    .. method:: look_up(keys: Dict[InstanceName, ScalarValue]) -> ArrayEntry
 
@@ -338,22 +345,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> foo3 = foo.look_up({'number': 3})
 	 >>> foo3.json_pointer()
 	 '/example-2:bag/foo/1'
-
-   .. method:: delete_entry(index: int) -> InstanceNode
-
-      Return a new instance node that is an exact copy of the
-      receiver, except that the entry specified by *index* is deleted
-      from its value.
-
-      This method raises :exc:`InstanceValueError` if the receiver is
-      not an array, and :exc:`NonexistentInstance` if entry *index* is
-      not present in the actual receiver's value.
-
-      >>> xfoo = foo.delete_entry(0)
-      >>> len(xfoo.value)
-      1
-      >>> len(foo.value)
-      2
 
    .. method:: up() -> InstanceNode
 

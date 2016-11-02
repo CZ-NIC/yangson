@@ -63,7 +63,7 @@ data structures with additional attributs and methods:
       Return a shallow copy of the receiver with :attr:`last_modified`
       set to current time.
 
-   .. method:: __setitem__(self, key: InstKey, value: Value) -> None
+   .. method:: __setitem__(self, key: InstanceKey, value: Value) -> None
 
       Set an array entry or object member *key* to *value* and update
       receiver's timestamp to the current time.

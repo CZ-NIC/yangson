@@ -35,7 +35,7 @@ Value = Union[ScalarValue, "StructuredValue"]
 EntryValue = Union[ScalarValue, "ObjectValue"]
 """Type of the value a list ot leaf-list entry."""
 
-InstKey = Union[InstanceName, int]
+InstanceKey = Union[InstanceName, int]
 """Index of an array entry or name of an object member."""
 
 class StructuredValue:
@@ -53,7 +53,7 @@ class StructuredValue:
         """Return a shallow copy of the receiver."""
         return self.__class__(super().copy(), datetime.now())
 
-    def __setitem__(self, key: InstKey, value: Value) -> None:
+    def __setitem__(self, key: InstanceKey, value: Value) -> None:
         super().__setitem__(key, value)
         self.timestamp = datetime.now()
 
