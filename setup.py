@@ -1,9 +1,9 @@
-from distutils.core import setup
+from setuptools import setup
 
 setup(
     name = "yangson",
     packages = ["yangson"],
-    version = "1.0.0rc1",
+    version = "1.1.0",
     description = "Library for working with data modelled in YANG",
     author = "Ladislav Lhotka",
     author_email = "lhotka@nic.cz",
