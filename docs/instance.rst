@@ -50,8 +50,16 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    ...   ri = json.load(infile)
    >>> inst = dm.from_raw(ri)
 
-.. class:: InstanceNode(value: Value, parinst: Optional[InstanceNode], \
+.. class:: InstanceNode(key: InstKey, value: Value, \
+	   parinst: Optional[InstanceNode], \
 	   schema_node: DataNode, timestamp: datetime.datetime)
+
+   The *key* argument is the key of the instance in the parent
+   structure, i.e. either :term:`instance name` for an
+   :class:`ObjectMember` or integer index for an
+   :class:`ArrayEntry`. The key becomes the last component of the
+   :attr:`path` attribute. Other constructor arguments contain values
+   for instance attributes of the same name.
 
    This class and its subclasses implement the *zipper* interface for
    instance data along the lines of Gérard Huet's original
@@ -80,6 +88,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. rubric:: Instance Attributes
 
+   .. attribute:: path
+
+      Path of the instance in the data tree: a tuple containing keys
+      of the ancestor nodes and the instance itself.
+
    .. attribute:: parinst
 
       Parent instance node, or ``None`` for the root node.
@@ -90,7 +103,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. attribute:: timestamp
 
-      The time when the instance node was last modified.
+      The date and time when the instance node was last modified.
 
    .. attribute:: value
 
@@ -103,13 +116,19 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. attribute:: namespace
 
-      The :term:`namespace identifier` of the instance node. For the root
-      node it is ``None``.
+      The :term:`namespace identifier` of the instance node.
+
+   .. attribute:: name
+
+      The :term:`instance name` of the receiver. For an
+      :class:`ArrayEntry` instance it is by definition the same as the
+      qualified name of the parent :class:`ObjectMember`.
 
    .. attribute:: qual_name
 
-      The :term:`qualified name` of the receiver. For the root node it
-      is ``None``.
+      The :term:`qualified name` of the receiver. For an
+      :class:`ArrayEntry` instance it is by definition the same as the
+      qualified name of the parent :class:`ObjectMember`.
 
    An :class:`InstanceNode` structure can be created from scratch, or
    read from JSON text using :meth:`.DataModel.from_raw` (see the
@@ -178,6 +197,50 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       the result is the value returned by Python standard function
       :class:`str`.
 
+   .. automethod:: json_pointer
+
+   .. method:: __getitem__(key: InstKey) -> InstanceNode
+
+      This method allows for selecting receiver's member or entry
+      using square brackets as it is usual for other Python sequence
+      types. The argument *key* is
+
+      * an integer index, if the receiver's value is an array
+	(negative indices are also supported), or
+
+      * an :term:`instance name`, if the receiver's value is an object.
+
+      The value returned by this method is either an
+      :class:`ObjectMember` or :class:`ArrayEntry`.
+
+      This method raises :exc:`InstanceValueError` if receiver's value
+      is not structured, and :exc:`NonexistentInstance` if the member
+      or entry identified by *key* doesn't exist in the actual
+      receiver's value.
+
+      .. doctest::
+
+	 >>> bag = inst['example-2:bag']
+	 >>> foo = bag['foo']
+	 >>> foo.path
+	 ('example-2:bag', 'foo')
+	 >>> foo.json_pointer()
+	 '/example-2:bag/foo'
+	 >>> bag['baz']
+	 Traceback (most recent call last):
+	 ...
+	 yangson.instance.NonexistentInstance: [/example-2:bag] member baz
+	 >>> foo6 = foo[0]
+	 >>> foo6.value['number']
+	 6
+	 >>> foo3 = foo[-1]
+	 >>> foo3.value['in-words']
+	 'three'
+	 >>> foo[2]
+	 Traceback (most recent call last):
+	 ...
+	 yangson.instance.NonexistentInstance: [/example-2:bag/foo] entry 2
+
    .. method:: is_internal() -> bool
 
       Return ``True`` if the receiver is an instance of an internal
@@ -188,33 +251,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 	 >>> inst.is_internal()
 	 True
-
-   .. automethod:: json_pointer
-
-   .. method:: member(name: InstanceName) -> ObjectMember
-
-      Return an instance node corresponding to the receiver's
-      member *name*.
-
-      This method may raise the following exceptions:
-
-      * :exc:`InstanceValueError` – if receiver's value is not an
-	object.
-      * :exc:`NonexistentSchemaNode` – if the schema doesn't permit
-	member *name*,
-      * :exc:`NonexistentInstance` – if member *name* isn't present in
-	the actual receiver's value,
-
-      .. doctest::
-
-	 >>> bag = inst['example-2:bag']
-	 >>> foo = bag['foo']
-	 >>> foo.json_pointer()
-	 '/example-2:bag/foo'
-	 >>> bag['baz']
-	 Traceback (most recent call last):
-	 ...
-	 yangson.instance.NonexistentInstance: [/example-2:bag] member baz
 
    .. method:: put_member(name: InstanceName, value: Union[RawValue, \
 	       Value], raw: bool = False) -> InstanceNode
@@ -235,7 +271,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> nbar = bag.put_member('bar', False)
 	 >>> nbar.value
 	 False
-	 >>> bag.value['bar']                       # bag is unchanged
+	 >>> bag.value['bar']  # bag is unchanged
 	 True
 	 >>> e2bag = bag.put_member('baz', 3.1415926).up()  # baz is created
 	 >>> sorted(e2bag.value.keys())
@@ -277,34 +313,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 	 >>> foo3 = foo.look_up({'number': 3})
 	 >>> foo3.json_pointer()
-	 '/example-2:bag/foo/1'
-
-   .. method:: entry(index: int) -> ArrayEntry
-
-      Return an instance node corresponding to the receiver's entry
-      whose index is specified by the *index* argument.
-
-      This method raises :exc:`InstanceValueError` if the receiver's
-      value is not an array, and :exc:`NonexistentInstance` if entry
-      *index* is not present in the receiver's value.
-
-      .. doctest::
-
-	 >>> foo6 = foo[0]
-	 >>> foo6.value['number']
-	 6
-
-   .. method:: last_entry() -> ArrayEntry
-
-      Return an instance node corresponding to the receiver's last entry.
-
-      :exc:`InstanceValueError` is raised if the receiver's value is
-      not an array, and :exc:`NonexistentInstance` is raised if the
-      receiver is an empty array.
-
-      .. doctest::
-
-	 >>> foo.last_entry().json_pointer()
 	 '/example-2:bag/foo/1'
 
    .. method:: delete_entry(index: int) -> InstanceNode
@@ -496,13 +504,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 .. autoclass:: RootNode(value: Value, schema_node: SchemaNode, timestamp: datetime.datetime)
    :show-inheritance:
 
-   .. rubric:: Instance Attributes
-
-   .. attribute:: name
-
-      The :term:`instance name` of the root node is always ``None``.
-
-.. class:: ObjectMember(name: InstanceName, siblings: \
+.. class:: ObjectMember(key: InstanceName, siblings: \
 	   Dict[InstanceName, Value], value: Value, parinst: \
 	   InstanceNode, schema_node: DataNode, timestamp: \
 	   datetime.datetime)
@@ -514,10 +516,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    constructor have the same meaning as in :class:`InstanceNode`.
 
    .. rubric:: Instance Attributes
-
-   .. attribute:: name
-
-      Instance name of the receiver as a member of the parent object.
 
    .. attribute:: siblings
 
@@ -540,7 +538,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> foo.sibling('bar').json_pointer()
 	 '/example-2:bag/bar'
 
-.. class:: ArrayEntry(before: List[Value], after: List[Value], value: \
+.. class:: ArrayEntry(key: int, before: List[Value], after: List[Value], value: \
 	   Value, parinst: InstanceNode, schema_node: \
 	   DataNode, timestamp: datetime.datetime)
 
@@ -571,15 +569,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 	 >>> foo6.index
 	 0
-
-   .. attribute:: name
-
-      The :term:`instance name` of an array entry is by definition the
-      same as the instance name of the parent array.
-
-      .. doctest::
-
-	 >>> foo6.name
+	 >>> foo6.name  # inherited from parent
 	 'foo'
 
    .. rubric:: Public Methods

@@ -281,7 +281,7 @@ def test_instance(instance):
     assert hi == hix
     assert hi != hid
     conta = instance["test:contA"]
-    la1 = conta["listA"].last_entry()
+    la1 = conta["listA"][-1]
     lt = conta["testb:leafT"]
     assert la1.index == 1
     tbln = conta["testb:leafN"]

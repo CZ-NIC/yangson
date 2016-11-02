@@ -48,6 +48,10 @@ from .parser import EndOfInput, Parser, UnexpectedInput
 from .typealiases import *
 from .typealiases import _Singleton
 
+__all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
+               "InstanceIdParser", "ResourceIdParser", "InstanceRoute",
+               "InstanceException", "InstanceValueError", "NonexistentInstance"]
+
 class LinkedList:
     """Persistent linked list of instance values."""
 
@@ -58,7 +62,7 @@ class LinkedList:
         Args:
             vals: Python list of instance values.
         """
-        res = _EmptyList()
+        res = EmptyList()
         for v in vals[::-1]:
             res = res.cons(v)
         return res
@@ -101,7 +105,7 @@ class LinkedList:
         """
         return (self.head, self.tail)
 
-class _EmptyList(LinkedList, metaclass=_Singleton):
+class EmptyList(LinkedList, metaclass=_Singleton):
     """Singleton class representing the empty linked list."""
 
     def __init__(self):
@@ -144,6 +148,10 @@ class InstanceNode:
         return (str(self.value) if isinstance(self.value, StructuredValue) else
                 sn.type.canonical_string(self.value))
 
+    def json_pointer(self) -> str:
+        """Return JSON Pointer [RFC6901]_ of the receiver."""
+        return "/" + "/".join([str(c) for c in self.path])
+
     def __getitem__(self, key: InstKey) -> "InstanceNode":
         """Return member or entry with the given key.
 
@@ -165,19 +173,6 @@ class InstanceNode:
         """Return ``True`` if the receiver is an instance of an internal node.
         """
         return isinstance(self.schema_node, InternalNode)
-
-    def json_pointer(self) -> str:
-        """Return JSON Pointer [RFC6901]_ of the receiver."""
-        return "/" + "/".join([str(c) for c in self.path])
-
-    def _member(self, name: InstanceName) -> "ObjectMember":
-        sibs = self.value.copy()
-        try:
-            return ObjectMember(
-                name, sibs, sibs.pop(name), self,
-                self._member_schema_node(name), self.value.timestamp)
-        except KeyError:
-            raise NonexistentInstance(self, "member " + name) from None
 
     def put_member(self, name: InstanceName, value: Value,
                    raw: bool = False) -> "InstanceNode":
@@ -249,33 +244,6 @@ class InstanceNode:
             raise NonexistentInstance(self, "entry lookup failed") from None
         except TypeError:
             raise InstanceValueError(self, "lookup on non-list") from None
-
-    def _entry(self, index: int) -> "ArrayEntry":
-        val = self.value
-        try:
-            return ArrayEntry(index, LinkedList.from_list(val[:index]),
-                                  LinkedList.from_list(val[index+1:]),
-                                  val[index], self, self.schema_node,
-                                  val.timestamp)
-        except (IndexError, TypeError):
-            raise NonexistentInstance(self, "entry " + str(index)) from None
-
-    def last_entry(self) -> "ArrayEntry":
-        """Return an instance node corresponding to the receiver's last entry.
-
-        Raises:
-            InstanceValueError: If the receiver's value is not an array.
-            NonexistentInstance: If the receiver's value is an empty array.
-        """
-        val = self.value
-        if not isinstance(val, ArrayValue):
-            raise InstanceValueError(self, "last entry of non-array")
-        try:
-            return ArrayEntry(
-                len(val) - 1, LinkedList.from_list(val[:-1]),
-                _EmptyList(), val[-1], self,self.schema_node, val.timestamp)
-        except IndexError:
-            raise NonexistentInstance(self, "last of empty") from None
 
     def delete_entry(self, index: int) -> "InstanceNode":
         """Return a copy of the receiver with an entry deleted from its value.
@@ -367,6 +335,25 @@ class InstanceNode:
         """
         self.schema_node.validate(self, ctype)
 
+    def add_defaults(self, ctype: ContentType = None) -> "InstanceNode":
+        """Return the receiver with defaults added recursively to its value.
+
+        Args:
+            ctype: Content type of the defaults to be added. If it is
+                ``None``, the content type will be the same as receiver's.
+        """
+        sn = self.schema_node
+        val = self.value
+        if not (isinstance(val, ObjectValue) and isinstance(sn, InternalNode)):
+            return self
+        res = self
+        if val:
+            for mn in val:
+                m = res._member(mn) if res is self else res.sibling(mn)
+                res = m.add_defaults(ctype)
+            res = res.up()
+        return sn._add_defaults(res, ctype)
+
     def raw_value(self) -> RawValue:
         """Return receiver's value in a raw form (ready for JSON encoding)."""
         if isinstance(self.value, ObjectValue):
@@ -386,24 +373,25 @@ class InstanceNode:
             res = self.schema_node.type.to_raw(self.value)
         return res
 
-    def add_defaults(self, ctype: ContentType = None) -> "InstanceNode":
-        """Return the receiver with defaults added recursively to its value.
+    def _member(self, name: InstanceName) -> "ObjectMember":
+        sibs = self.value.copy()
+        try:
+            return ObjectMember(
+                name, sibs, sibs.pop(name), self,
+                self._member_schema_node(name), self.value.timestamp)
+        except KeyError:
+            raise NonexistentInstance(self, "member " + name) from None
 
-        Args:
-            ctype: Content type of the defaults to be added. If it is
-                ``None``, the content type will be the same as receiver's.
-        """
-        sn = self.schema_node
+    def _entry(self, index: int) -> "ArrayEntry":
         val = self.value
-        if not (isinstance(val, ObjectValue) and isinstance(sn, InternalNode)):
-            return self
-        res = self
-        if val:
-            for mn in val:
-                m = res._member(mn) if res is self else res.sibling(mn)
-                res = m.add_defaults(ctype)
-            res = res.up()
-        return sn._add_defaults(res, ctype)
+        i = len(val) + index if index < 0 else index
+        try:
+            return ArrayEntry(i, LinkedList.from_list(val[:i]),
+                                  LinkedList.from_list(val[i+1:]),
+                                  val[index], self, self.schema_node,
+                                  val.timestamp)
+        except (IndexError, TypeError):
+            raise NonexistentInstance(self, "entry " + str(index)) from None
 
     def _peek_schema_route(self, sroute: SchemaRoute) -> Value:
         irt = InstanceRoute()
@@ -523,10 +511,10 @@ class RootNode(InstanceNode):
 class ObjectMember(InstanceNode):
     """This class represents an object member."""
 
-    def __init__(self, name: InstanceName, siblings: Dict[InstanceName, Value],
+    def __init__(self, key: InstanceName, siblings: Dict[InstanceName, Value],
                  value: Value, parinst: InstanceNode,
                  schema_node: "DataNode", timestamp: datetime ):
-        super().__init__(name, value, parinst, schema_node, timestamp)
+        super().__init__(key, value, parinst, schema_node, timestamp)
         self.siblings = siblings # type: Dict[InstanceName, Value]
         """Sibling members within the parent object."""
 
@@ -591,10 +579,10 @@ class ObjectMember(InstanceNode):
 class ArrayEntry(InstanceNode):
     """This class represents an array entry."""
 
-    def __init__(self, index: int, before: LinkedList, after: LinkedList,
+    def __init__(self, key: int, before: LinkedList, after: LinkedList,
                      value: Value, parinst: InstanceNode,
                      schema_node: "DataNode", timestamp: datetime = None):
-        super().__init__(index, value, parinst, schema_node, timestamp)
+        super().__init__(key, value, parinst, schema_node, timestamp)
         self.before = before # type: LinkedList
         """Preceding entries of the parent array."""
         self.after = after # type: LinkedList
@@ -756,69 +744,27 @@ class InstanceRoute(list):
 
 class InstanceSelector:
     """Components of instance identifers."""
-    pass
 
-class MemberName(InstanceSelector):
-    """Selectors of object members."""
-
-    def __init__(self, name: InstanceName):
+    def __init__(self, key: InstKey):
         """Initialize the class instance.
 
         Args:
-            name: Member name.
+            key: Member name or entry index.
         """
-        self.name = name
+        self.key = key
 
-    def __str__(self) -> str:
-        """Return a string representation of the receiver."""
-        return "/" + self.name
+    def __eq__(self, other: "InstanceSelector") -> bool:
+        return self.key == other.key
 
-    def __eq__(self, other: "MemberName") -> bool:
-        return self.name == other.name
-
-    def peek_step(self, obj: ObjectValue) -> Value:
-        """Return the member of `obj` addressed by the receiver.
-
-        Args:
-            obj: Current object.
-        """
-        return obj.get(self.name)
-
-    def goto_step(self, inst: InstanceNode) -> InstanceNode:
-        """Return member instance of `inst` addressed by the receiver.
-
-        Args:
-            inst: Current instance.
-        """
-        return inst._member(self.name)
-
-class EntryIndex(InstanceSelector):
-    """Numeric selectors for a list or leaf-list entry."""
-
-    def __init__(self, index: int):
-        """Initialize the class instance.
-
-        Args:
-            index: Index of an entry.
-        """
-        self.index = index
-
-    def __str__(self) -> str:
-        """Return a string representation of the receiver."""
-        return "[{0:d}]".format(self.index)
-
-    def __eq__(self, other: "EntryIndex") -> bool:
-        return self.index == other.index
-
-    def peek_step(self, arr: ArrayValue) -> Value:
+    def peek_step(self, val: StructuredValue) -> Value:
         """Return the entry of `arr` addressed by the receiver.
 
         Args:
-            arr: Current array.
+            val: Current value (object or array).
         """
         try:
-            return arr[self.index]
-        except IndexError:
+            return val[self.key]
+        except (IndexError, KeyError, TypeError):
             return None
 
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
@@ -827,7 +773,21 @@ class EntryIndex(InstanceSelector):
         Args:
             inst: Current instance.
         """
-        return inst._entry(self.index)
+        return inst[self.key]
+
+class MemberName(InstanceSelector):
+    """Selectors of object members."""
+
+    def __str__(self) -> str:
+        """Return a string representation of the receiver."""
+        return "/" + self.key
+
+class EntryIndex(InstanceSelector):
+    """Numeric selectors for a list or leaf-list entry."""
+
+    def __str__(self) -> str:
+        """Return a string representation of the receiver."""
+        return "[{0:d}]".format(self.key)
 
 class EntryValue(InstanceSelector):
     """Value-based selectors of an array entry."""
