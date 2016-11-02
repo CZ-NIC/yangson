@@ -241,6 +241,30 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 ...
 	 yangson.instance.NonexistentInstance: [/example-2:bag/foo] entry 2
 
+   .. method:: __iter__()
+
+      Return receiver's iterator.
+
+      If the receiver's value is an object, then this method returns
+      simply the value's iterator that can be used exactly as a Python
+      dictionary iterator:
+
+      .. doctest::
+
+	 >>> sorted([m for m in bag])
+	 ['bar', 'foo']
+
+      However, if the receiver's value is an array, the returned
+      iterator yields successive :class:`ArrayEntry` instances:
+
+      .. doctest::
+
+	 >>> [e.json_pointer() for e in foo]
+	 ['/example-2:bag/foo/0', '/example-2:bag/foo/1']
+
+      An attempt to iterate over an :class:`InstanceNode` that has a
+      scalar value raises :exc:`InstanceValueError`.
+
    .. method:: is_internal() -> bool
 
       Return ``True`` if the receiver is an instance of an internal

@@ -770,13 +770,8 @@ class SequenceNode(DataNode):
         elif isinstance(inst.value, ArrayValue):
             self._check_list_props(inst)
             self._check_cardinality(inst)
-            try:
-                e = inst._entry(0)
-                while True:
-                    super().validate(e, ctype)
-                    e = e.next()
-            except NonexistentInstance:
-                pass
+            for e in inst:
+                super().validate(e, ctype)
         else:
             raise SchemaError(inst, "non-array value")
 
@@ -875,20 +870,14 @@ class ListNode(SequenceNode, InternalNode):
     def _check_unique(self, unique: List[SchemaRoute],
                           inst: "InstanceNode") -> None:
         uvals = set()
-        try:
-            en = inst._entry(0)
-            while True:
-                den = en.add_defaults()
-                uval = tuple([den._peek_schema_route(sr) for sr in unique])
-                if None not in uval:
-                    if uval in uvals:
-                        raise SemanticError(
-                            inst, "unique constraint violated")
-                    else:
-                        uvals.add(uval)
-                en = en.next()
-        except NonexistentInstance:
-            pass
+        for en in inst:
+            den = en.add_defaults()
+            uval = tuple([den._peek_schema_route(sr) for sr in unique])
+            if None not in uval:
+                if uval in uvals:
+                    raise SemanticError(inst, "unique constraint violated")
+                else:
+                    uvals.add(uval)
 
     def _default_instance(self, pnode: "InstanceNode", ctype: ContentType,
                           lazy: bool = False) -> "InstanceNode":

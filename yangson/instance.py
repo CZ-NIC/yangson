@@ -79,7 +79,7 @@ class LinkedList:
         return True
 
     def __iter__(self):
-        """Iterate the receiver's entries."""
+        """Iterate over receiver's entries."""
         l = self
         while True:
             try:
@@ -167,6 +167,27 @@ class InstanceNode:
             return self._member(key)
         if isinstance(self.value, ArrayValue):
             return self._entry(key)
+        raise InstanceValueError(self, "scalar instance")
+
+    def __iter__(self):
+        """Return receiver's iterator.
+
+        Raises:
+            InstanceValueError: if the receiver is a scalar value that cannot
+                be iterated.
+        """
+        def it():
+            try:
+                en = self[0]
+                while True:
+                    yield en
+                    en = en.next()
+            except NonexistentInstance:
+                raise StopIteration from None
+        if isinstance(self.value, ArrayValue):
+            return it()
+        if isinstance(self.value, ObjectValue):
+            return iter(self.value)
         raise InstanceValueError(self, "scalar instance")
 
     def is_internal(self) -> bool:
@@ -357,21 +378,10 @@ class InstanceNode:
     def raw_value(self) -> RawValue:
         """Return receiver's value in a raw form (ready for JSON encoding)."""
         if isinstance(self.value, ObjectValue):
-            res = {}
-            for m in self.value:
-                res[m] = self._member(m).raw_value()
-        elif isinstance(self.value, ArrayValue):
-            res = []
-            try:
-                en = self._entry(0)
-                while True:
-                    res.append(en.raw_value())
-                    en = en.next()
-            except NonexistentInstance:
-                pass
-        else:
-            res = self.schema_node.type.to_raw(self.value)
-        return res
+            return {m: self._member(m).raw_value() for m in self.value}
+        if isinstance(self.value, ArrayValue):
+            return [en.raw_value() for en in self]
+        return self.schema_node.type.to_raw(self.value)
 
     def _member(self, name: InstanceName) -> "ObjectMember":
         sibs = self.value.copy()
@@ -413,10 +423,7 @@ class InstanceNode:
 
     def _node_set(self) -> List["InstanceNode"]:
         """XPath - return the list of all receiver's nodes."""
-        val = self.value
-        if isinstance(val, ArrayValue):
-            return [ self._entry(i) for i in range(len(val)) ]
-        return [self]
+        return list(self) if isinstance(self.value, ArrayValue) else [self]
 
     def _children(self, qname:
                   Union[QualName, bool] = None) -> List["InstanceNode"]:
@@ -709,10 +716,10 @@ class ArrayEntry(InstanceNode):
         if qname and self.qual_name != qname:
             return []
         res = []
-        ent = self
+        en = self
         for _ in self.before:
-            ent = ent.previous()
-            res.append(ent)
+            en = en.previous()
+            res.append(en)
         return res
 
     def _following_siblings(
@@ -721,10 +728,10 @@ class ArrayEntry(InstanceNode):
         if qname and self.qual_name != qname:
             return []
         res = []
-        ent = self
+        en = self
         for _ in self.after:
-            ent = ent.next()
-            res.append(ent)
+            en = en.next()
+            res.append(en)
         return res
 
     def _parent(self) -> List["InstanceNode"]:
