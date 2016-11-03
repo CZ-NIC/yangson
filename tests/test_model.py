@@ -485,7 +485,7 @@ def test_edits(data_model, instance):
         llb1.update("2001::2::1", raw=True)
 
 def test_validation(instance):
-    assert instance.validate(ContentType.all) is None
+    assert instance.validate(ctype=ContentType.all) is None
     inst2 = instance.put_member("testb:leafQ", "ABBA").top()
     with pytest.raises(SchemaError):
-        inst2.validate(ContentType.all)
+        inst2.validate(ctype=ContentType.all)

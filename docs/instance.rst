@@ -449,10 +449,24 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> e2inst.value['example-2:bag']['foo'][1]['in-words'] # changed!
 	 'tres'
 
-   .. method:: validate(content: ContentType = ContentType.config) -> None
+   .. method:: validate(scope: ValidationScope = ValidationScope.all, \
+	       content: ContentType = ContentType.config) -> None
 
-      Perform schema validation on the receiver's value. The value of
-      the *content* argument belongs to the
+      Perform validation on the receiver's value. The *scope* argument
+      determines the validation scope. The options are as follows:
+
+      * ``ValidationScope.syntax`` – verifies schema constraints
+	(taking into account **if-feature** and **when** statements,
+	if present) and data types.
+
+      * ``ValidationScope.semantics`` – verifies **must** constraints,
+	uniqueness of list keys, **unique** constraints in list nodes,
+	and integrity of **leafref** references.
+
+      * ``ValidationScope.all`` – performs all checks from both items
+	above.
+
+      The value of the *content* argument belongs to the
       :data:`~.enumerations.ContentType` enumeration and specifies
       whether the receiver's value is to be validated as configuration
       (``Content.config``) or as both configuration and state data

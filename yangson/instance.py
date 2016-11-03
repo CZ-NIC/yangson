@@ -42,7 +42,7 @@ from typing import Any, Callable, List, Tuple, Union
 from urllib.parse import unquote
 from .exceptions import YangsonException
 from .context import Context
-from .enumerations import ContentType
+from .enumerations import ContentType, ValidationScope
 from .instvalue import *
 from .parser import EndOfInput, Parser, UnexpectedInput
 from .typealiases import *
@@ -326,17 +326,19 @@ class InstanceNode:
             if val is None: return None
         return val
 
-    def validate(self, ctype: ContentType = ContentType.config) -> None:
-        """Perform schema validation of the receiver's value.
+    def validate(self, scope: ValidationScope = ValidationScope.all,
+                     ctype: ContentType = ContentType.config) -> None:
+        """Validate the receiver's value.
 
         Args:
+            scope: Scope of the validation (syntax, semantics or all).
             ctype: Receiver's content type.
 
         Raises:
             SchemaError: If the value doesn't conform to the schema.
             SemanticError: If the value violates a semantic constraint.
         """
-        self.schema_node._validate(self, ctype)
+        self.schema_node._validate(self, scope, ctype)
 
     def add_defaults(self, ctype: ContentType = None) -> "InstanceNode":
         """Return the receiver with defaults added recursively to its value.

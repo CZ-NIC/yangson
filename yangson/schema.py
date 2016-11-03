@@ -53,7 +53,7 @@ from .exceptions import YangsonException
 from .context import Context
 from .datatype import (DataType, LeafrefType, LinkType,
                        RawScalar, IdentityrefType)
-from .enumerations import Axis, ContentType, DefaultDeny
+from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
 from .instvalue import ArrayValue, EntryValue, ObjectValue, Value
 from .schpattern import *
 from .statement import Statement, WrongArgument
@@ -133,11 +133,13 @@ class SchemaNode:
         """
         raise NotImplementedError
 
-    def _validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
+    def _validate(self, inst: "InstanceNode", scope: ValidationScope,
+                      ctype: ContentType) -> None:
         """Validate instance against the receiver.
 
         Args:
             inst: Instance node to be validated.
+            scope: Scope of the validation (syntax, semantics or all)
             ctype: Content type of the instance.
 
         Returns:
@@ -363,11 +365,13 @@ class InternalNode(SchemaNode):
             res[ch.iname()] = ch.from_raw(rval[qn])
         return res
 
-    def _validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
+    def _validate(self, inst: "InstanceNode", scope: ValidationScope,
+                      ctype: ContentType) -> None:
         """Extend the superclass method."""
-        self._check_schema_pattern(inst, ctype)
-        for m in inst.value:
-            inst._member(m).validate(ctype)
+        if ctype.value & ValidationScope.syntax.value:   # schema
+            self._check_schema_pattern(inst, ctype)
+        for m in inst.value:              # all members
+            inst._member(m).validate(scope, ctype)
 
     def _add_child(self, node: SchemaNode) -> None:
         node.parent = self
@@ -379,15 +383,6 @@ class InternalNode(SchemaNode):
 
     def _check_schema_pattern(self, inst: "InstanceNode",
                              ctype: ContentType) -> None:
-        """Match instance value against receiver's schema pattern.
-
-        Args:
-            inst: Instance node to be chancked.
-            ctype: Content type of the instance.
-
-        Raises:
-            SchemaError: if `inst` doesn't match the schema pattern.
-        """
         p = self.schema_pattern
         p._eval_when(inst)
         for m in inst.value:
@@ -589,10 +584,12 @@ class DataNode(SchemaNode):
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
-    def _validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
+    def _validate(self, inst: "InstanceNode", scope: ValidationScope,
+                      ctype: ContentType) -> None:
         """Extend the superclass method."""
-        self._check_must(inst)
-        super()._validate(inst, ctype)
+        if scope.value & ValidationScope.semantics.value:
+            self._check_must(inst)        # must expressions
+        super()._validate(inst, scope, ctype)
 
     def _default_instance(self, pnode: "InstanceNode", ctype: ContentType,
                           lazy: bool = False) -> "InstanceNode":
@@ -606,14 +603,6 @@ class DataNode(SchemaNode):
         return pnode
 
     def _check_must(self, inst: "InstanceNode") -> None:
-        """Check that all receiver's "must" constraints for the instance.
-
-        Args:
-            inst: Instance node to be checked.
-
-        Raises:
-            SemanticError: If a "must" expression evaluates to ``False``.
-        """
         for mex in self.must:
             if not mex[0].evaluate(inst):
                 msg = "'must' expression is false" if mex[1] is None else mex[1]
@@ -654,30 +643,21 @@ class TerminalNode(SchemaNode):
         """Override the superclass method."""
         return self.type.from_raw(rval)
 
-    def _validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
+    def _validate(self, inst: "InstanceNode", scope: ValidationScope,
+                      ctype: ContentType) -> None:
         """Extend the superclass method."""
-        self._check_type(inst)
+        if (scope.value & ValidationScope.syntax.value and
+                not self.type.contains(inst.value)):   # data type
+            raise SchemaError(inst, "invalid type: " + repr(inst.value))
+        if (isinstance(self.type, LinkType) and        # referential integrity
+                scope.value & ValidationScope.semantics.value and
+                self.type.require_instance and not inst._deref()):
+            raise SemanticError(inst, "required instance missing")
 
     def _default_value(self, inst: "InstanceNode", ctype: ContentType,
                        lazy: bool) -> "InstanceNode":
         inst.value = self.default
         return inst
-
-    def _check_type(self, inst: "InstanceNode"):
-        """Check whether receiver's type matches the instance value.
-
-        Args:
-            inst: Instance node to be checked.
-
-        Raises:
-            SchemaError: If the instance value doesn't match the type.
-            SemanticError: If the instance violates referential integrity.
-        """
-        if not self.type.contains(inst.value):
-            raise SchemaError(inst, "invalid type: " + repr(inst.value))
-        if (isinstance(self.type, LinkType) and self.type.require_instance and
-            not inst._deref()):
-            raise SemanticError(inst, "required instance missing")
 
     def _post_process(self) -> None:
         super()._post_process()
@@ -759,25 +739,19 @@ class SequenceNode(DataNode):
         """Is the receiver a mandatory node?"""
         return self.min_elements > 0
 
-    def _validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
+    def _validate(self, inst: "InstanceNode", scope: ValidationScope,
+                      ctype: ContentType) -> None:
         """Extend the superclass method."""
         if isinstance(inst, ArrayEntry):
-            super()._validate(inst, ctype)
+            super()._validate(inst, scope, ctype)
         else:
-            self._check_list_props(inst)
-            self._check_cardinality(inst)
+            if scope.value & ValidationScope.semantics.value:
+                self._check_list_props(inst)
+                self._check_cardinality(inst)
             for e in inst:
-                super()._validate(e, ctype)
+                super()._validate(e, scope, ctype)
 
     def _check_cardinality(self, inst: "InstanceNode") -> None:
-        """Check that the instance satisfies cardinality constraints.
-
-        Args:
-            inst: Instance node to be checked.
-
-        Raises:
-            SchemaError: It the cardinality of `inst` isn't correct.
-        """
         if len(inst.value) < self.min_elements:
             raise SemanticError(inst,
                               "number of entries < min-elements ({})".format(
