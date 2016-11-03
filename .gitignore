@@ -1,9 +1,11 @@
 .cache
 *.pyc
 bin
+dist
 docs/_build
 include
 lib
+MANIFEST
 pip-selfcheck.json
 pyvenv.cfg
 TAGS
