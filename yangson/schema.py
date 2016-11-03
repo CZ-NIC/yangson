@@ -120,7 +120,20 @@ class SchemaNode:
         """Return a list of data paths to descendant state data roots."""
         return [r.data_path() for r in self._state_roots()]
 
-    def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
+    def from_raw(self, rval: RawValue) -> Value:
+        """Return instance value transformed from a raw value using receiver.
+
+        Args:
+            rval: Raw value.
+
+        Raises:
+            NonexistentSchemaNode: If a member inside `rval` is not defined
+                in the schema.
+            YangTypeError: If a scalar value inside `rval` is of incorrect type.
+        """
+        raise NotImplementedError
+
+    def _validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
         """Validate instance against the receiver.
 
         Args:
@@ -135,19 +148,6 @@ class SchemaNode:
             SemanticError: If a "must" expression evaluates to ``False``.
         """
         pass
-
-    def from_raw(self, rval: RawValue) -> Value:
-        """Return instance value transformed from a raw value using receiver.
-
-        Args:
-            rval: Raw value.
-
-        Raises:
-            NonexistentSchemaNode: If a member inside `rval` is not defined
-                in the schema.
-            YangTypeError: If a scalar value inside `rval` is of incorrect type.
-        """
-        raise NotImplementedError
 
     def _iname2qname(self, iname: InstanceName) -> QualName:
         """Translate instance name to qualified name in the receiver's context.
@@ -352,15 +352,6 @@ class InternalNode(SchemaNode):
                 res.extend(child.data_children())
         return res
 
-    def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
-        """Extend the superclass method."""
-        if not isinstance(inst.value, ObjectValue):
-            raise SchemaError(inst, "non-object value")
-        self._check_schema_pattern(inst, ctype)
-        super().validate(inst, ctype)
-        for m in inst.value:
-            inst._member(m).validate(ctype)
-
     def from_raw(self, rval: RawObject) -> ObjectValue:
         """Override the superclass method."""
         res = ObjectValue()
@@ -371,6 +362,12 @@ class InternalNode(SchemaNode):
                 raise NonexistentSchemaNode(self, *cn)
             res[ch.iname()] = ch.from_raw(rval[qn])
         return res
+
+    def _validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
+        """Extend the superclass method."""
+        self._check_schema_pattern(inst, ctype)
+        for m in inst.value:
+            inst._member(m).validate(ctype)
 
     def _add_child(self, node: SchemaNode) -> None:
         node.parent = self
@@ -592,10 +589,10 @@ class DataNode(SchemaNode):
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
-    def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
+    def _validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
         """Extend the superclass method."""
         self._check_must(inst)
-        super().validate(inst, ctype)
+        super()._validate(inst, ctype)
 
     def _default_instance(self, pnode: "InstanceNode", ctype: ContentType,
                           lazy: bool = False) -> "InstanceNode":
@@ -653,14 +650,13 @@ class TerminalNode(SchemaNode):
         return (ContentType.config if self.parent.config else
                 ContentType.nonconfig)
 
-    def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
-        """Extend the superclass method."""
-        self._check_type(inst)
-        super().validate(inst, ctype)
-
     def from_raw(self, rval: RawScalar) -> ScalarValue:
         """Override the superclass method."""
         return self.type.from_raw(rval)
+
+    def _validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
+        """Extend the superclass method."""
+        self._check_type(inst)
 
     def _default_value(self, inst: "InstanceNode", ctype: ContentType,
                        lazy: bool) -> "InstanceNode":
@@ -763,17 +759,15 @@ class SequenceNode(DataNode):
         """Is the receiver a mandatory node?"""
         return self.min_elements > 0
 
-    def validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
+    def _validate(self, inst: "InstanceNode", ctype: ContentType) -> None:
         """Extend the superclass method."""
         if isinstance(inst, ArrayEntry):
-            super().validate(inst, ctype)
-        elif isinstance(inst.value, ArrayValue):
+            super()._validate(inst, ctype)
+        else:
             self._check_list_props(inst)
             self._check_cardinality(inst)
             for e in inst:
-                super().validate(e, ctype)
-        else:
-            raise SchemaError(inst, "non-array value")
+                super()._validate(e, ctype)
 
     def _check_cardinality(self, inst: "InstanceNode") -> None:
         """Check that the instance satisfies cardinality constraints.

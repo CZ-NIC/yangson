@@ -205,29 +205,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> bsn.state_roots()
 	 ['/example-4-a:bag/bar']
 
-   .. method:: validate(inst: InstanceNode, content: ContentType) -> None
-
-      Validate an :class:`~.instance.InstanceNode` *inst* against the
-      receiver. The *content* argument specifies the content type of
-      the value of *inst*. Permitted values are defined by the
-      :data:`~.enumerations.ContentType` enumeration, currently
-      supported are ``ContentType.config`` (configuration) and
-      ``ContentType.all`` (both configuration and state data).
-
-      ``None`` is returned if the instance is valid. If a
-      :term:`schema error` or :term:`semantic error` is detected, then
-      :exc:`SchemaError` or :exc:`SemanticError` is raised,
-      respectively.
-
-      .. doctest::
-
-	 >>> inst.validate(ContentType.all)
-	 >>> inst.validate(ContentType.config)
-	 Traceback (most recent call last):
-	 ...
-	 yangson.schema.SchemaError: [/example-4-a:bag] not allowed: member bar (config)
-
-
    .. method:: from_raw(rval: RawValue) -> Value
 
       Return a :term:`cooked value` transformed from :term:`raw value`

@@ -336,7 +336,7 @@ class InstanceNode:
             SchemaError: If the value doesn't conform to the schema.
             SemanticError: If the value violates a semantic constraint.
         """
-        self.schema_node.validate(self, ctype)
+        self.schema_node._validate(self, ctype)
 
     def add_defaults(self, ctype: ContentType = None) -> "InstanceNode":
         """Return the receiver with defaults added recursively to its value.
