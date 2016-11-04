@@ -368,7 +368,7 @@ class InternalNode(SchemaNode):
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
                       ctype: ContentType) -> None:
         """Extend the superclass method."""
-        if ctype.value & ValidationScope.syntax.value:   # schema
+        if scope.value & ValidationScope.syntax.value:   # schema
             self._check_schema_pattern(inst, ctype)
         for m in inst.value:              # all members
             inst._member(m).validate(scope, ctype)
