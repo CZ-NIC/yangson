@@ -64,7 +64,7 @@ class LinkedList:
         """
         res = EmptyList()
         for v in vals[::-1]:
-            res = res.cons(v)
+            res = cls(v, res)
         return res
 
     def __init__(self, head: Value, tail: "LinkedList"):
