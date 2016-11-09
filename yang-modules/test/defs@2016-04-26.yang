@@ -24,11 +24,12 @@ module defs {
 
   typedef typC {
     type enumeration {
-      enum Mars {
+      enum Spades {
         value "100";
       }
-      enum Phobos;
-      enum Deimos;
+      enum Hearts;
+      enum Diamonds;
+      enum Clubs;
     }
   }
 

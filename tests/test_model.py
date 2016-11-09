@@ -116,7 +116,7 @@ def instance(data_model):
         "test:contT": {
             "bits": "dos cuatro",
             "decimal64": 4.50,
-            "enumeration": "Phobos"
+            "enumeration": "Hearts"
         }
     }
     """
@@ -250,7 +250,7 @@ def test_types(data_model):
     en = ct.get_child("enumeration", "test").type
     assert not en.contains("Mars")
     assert not en.contains("Deimos")
-    assert en.enum["Phobos"] == 101
+    assert en.enum["Hearts"] == 101
     bits = ct.get_child("bits", "test").type
     assert bits.as_int(bits._convert_raw("dos cuatro")) == 10
     with pytest.raises(YangTypeError):

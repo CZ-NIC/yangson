@@ -185,12 +185,13 @@ module test {
     }
     leaf enumeration {
       type d:typC {
-        enum Phobos {
+        enum Hearts {
           if-feature "feA and not feB";
         }
-        enum Deimos {
+        enum Diamonds {
           if-feature "feB";
         }
+	enum Clubs;
       }
     }
     leaf bits {
