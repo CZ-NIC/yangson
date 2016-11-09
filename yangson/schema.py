@@ -51,10 +51,11 @@ This module defines the following exceptions:
 from typing import Dict, List, MutableSet, Optional, Set, Tuple, Union
 from .exceptions import YangsonException
 from .context import Context
-from .datatype import (DataType, LeafrefType, LinkType,
+from .datatype import (DataType, EmptyType, LeafrefType, LinkType,
                        RawScalar, IdentityrefType)
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
-from .instvalue import ArrayValue, EntryValue, ObjectValue, Value
+from .instvalue import (ArrayValue, EntryValue, ObjectValue, StructuredValue,
+                            Value)
 from .schpattern import *
 from .statement import Statement, WrongArgument
 from .typealiases import *
@@ -273,6 +274,13 @@ class SchemaNode:
 class InternalNode(SchemaNode):
     """Abstract class for schema nodes that have children."""
 
+    _html_template = """<table class="container">
+  <thead>
+    <tr><th>Name</th><th>Data Type</th><th>Value</th></tr>
+  </thead>
+  <tbody>{}</tbody>
+</table>"""
+
     def __init__(self):
         """Initialize the class instance."""
         super().__init__()
@@ -364,6 +372,15 @@ class InternalNode(SchemaNode):
                 raise NonexistentSchemaNode(self, *cn)
             res[ch.iname()] = ch.from_raw(rval[qn])
         return res
+
+    def _html_table(self, inst: "InstanceNode") -> str:
+        val = inst.value
+        res = []
+        for m in sorted(val.keys()):
+            csn = self.get_data_child(*self._iname2qname(m))
+            if csn and isinstance(csn, TerminalNode):
+                res.append(csn._html_row(inst[m]))
+        return self._html_template.format("\n".join(res))
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
                       ctype: ContentType) -> None:
@@ -626,6 +643,9 @@ class DataNode(SchemaNode):
 class TerminalNode(SchemaNode):
     """Abstract superclass for terminal nodes in the schema tree."""
 
+    _html_template = (
+        """<tr><td><input type="checkbox">{}</td><td>{}</td><td>{}</td></tr>""")
+
     def __init__(self):
         """Initialize the class instance."""
         super().__init__()
@@ -642,6 +662,12 @@ class TerminalNode(SchemaNode):
     def from_raw(self, rval: RawScalar) -> ScalarValue:
         """Override the superclass method."""
         return self.type.from_raw(rval)
+
+    def _html_row(self, inst: "InstanceNode") -> str:
+        typ = self.type
+        return self._html_template.format(
+            self.iname(), str(typ), typ._editable_html(inst.value) if
+            self.config else typ.canonical_string(inst.value))
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
                       ctype: ContentType) -> None:
@@ -1010,6 +1036,8 @@ class LeafNode(DataNode, TerminalNode):
 class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
 
+    _html_template = "<tr><td></td><td></td><td>{}</td></tr>"
+
     @property
     def default(self) -> Optional[ScalarValue]:
         """Default value of the receiver, if any."""
@@ -1017,6 +1045,15 @@ class LeafListNode(SequenceNode, TerminalNode):
         if self._default is not None: return self._default
         return (None if self.type.default is None
                 else ArrayValue([self.type.default]))
+
+    def _html_row(self, inst: "InstanceNode") -> str:
+        typ = self.type
+        f = typ._editable_html if self.config else typ.canonical_string
+        res = [super()._html_template.format(
+            self.iname(), str(typ), f(inst.value[0]))]
+        for en in inst.value[1:]:
+            res.append(self._html_template.format(f(en)))
+        return "\n".join(res)
 
     def _check_list_props(self, inst: "InstanceNode") -> None:
         if (self.content_type() == ContentType.config and

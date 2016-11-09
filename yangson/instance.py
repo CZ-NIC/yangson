@@ -367,6 +367,42 @@ class InstanceNode:
             return [en.raw_value() for en in self]
         return self.schema_node.type.to_raw(self.value)
 
+    def html_member_table(self) -> str:
+        """Return HTML rendering of the receiver."""
+        if self.is_internal():
+            return self.schema_node._html_table(self)
+        raise InstanceValueError(self, "scalar instance")
+
+    def html_tree(self) -> str:
+        """Return HTML rendering of receiver's descendant tree."""
+        if not self.is_internal():
+            raise InstanceValueError(self, "scalar instance")
+        return '<div class="data-tree"><ul>\n{}</ul>\n</div>\n'.format(
+            self._html_tree(True, True))
+
+    def _html_tree(self, expand: bool = False, select: bool = False,
+                       path: str = "") -> str:
+        if isinstance(self.value, ArrayValue):
+            return self[0]._html_tree(path=path) if self.value else ""
+        subs = ""
+        inner = False
+        npath = "{}/{}".format(path, self.name)
+        for m in sorted(self.value):
+            c = self._member(m)
+            if c.is_internal():
+                inner = True
+                subs += c._html_tree(path=npath)
+        res = "<li"
+        if select:
+            res += ' class="selected"'
+        res += '><input type="checkbox" id="{}"'.format(npath)
+        if expand:
+            res += ' checked="checked"'
+        res += '><label for="{}">{}</label>'.format(npath, self.name)
+        if inner:
+            res += '<ul>\n{}</ul>'.format(subs)
+        return res + "</li>"
+
     def _member(self, name: InstanceName) -> "ObjectMember":
         sibs = self.value.copy()
         try:
@@ -476,6 +512,7 @@ class RootNode(InstanceNode):
         self.value = value
         self.schema_node = schema_node
         self.timestamp = timestamp
+        self.name = "/"
 
     def up(self) -> None:
         """Override the superclass method.

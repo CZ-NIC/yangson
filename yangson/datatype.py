@@ -52,7 +52,7 @@ import base64
 import decimal
 import re
 from pyxb.utils.xmlre import XMLToPython
-from typing import Any, Callable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from .exceptions import YangsonException
 from .context import Context
 from .instance import InstanceNode, InstanceIdParser, InstanceRoute
@@ -68,6 +68,8 @@ Range = List[List[Union[int, decimal.Decimal]]]
 class DataType:
     """Abstract class for YANG data types."""
 
+    _option_template = '<option value="{}"{}>{}</option>'
+
     def __init__(self, mid: ModuleId, name: YangIdentifier):
         """Initialize the class instance."""
         self.module_id = mid
@@ -76,8 +78,8 @@ class DataType:
 
     def __str__(self):
         """Return YANG name of the receiver type."""
-        base = self.__class__.__name__[:-4].lower()
-        return base if self.name is None else "{}({})".format(self.name, base)
+        base = self._yang_name()
+        return "{}({})".format(self.name, base) if self.name else base
 
     def from_raw(self, raw: RawScalar) -> ScalarValue:
         """Return a cooked value of the receiver type.
@@ -123,6 +125,15 @@ class DataType:
             return self._constraints(val)
         except TypeError:
             return False
+
+    def _yang_name(self) -> str:
+        return self.__class__.__name__[:-4].lower()
+
+    def _editable_html(self, val: ScalarValue,
+                           attrs: Dict[str, str] = {}) -> str:
+        attrs["contenteditable"] = "true"
+        return '<span{}>{}</span>'.format(Context._html_attributes(attrs),
+                                              self.canonical_string(val))
 
     def _convert_raw(self, raw: RawScalar) -> ScalarValue:
         """Return a cooked value."""
@@ -242,6 +253,10 @@ class EmptyType(DataType, metaclass=_Singleton):
     def canonical_string(self, val: Tuple[None]) -> str:
         return ""
 
+    def _editable_html(self, val: ScalarValue,
+                           attrs: Dict[str, str] = {}) -> str:
+        return ""
+
     def _constraints(self, val: Tuple[None]) -> bool:
         return val == (None,)
 
@@ -261,6 +276,21 @@ class BitsType(DataType):
         """Initialize the class instance."""
         super().__init__(mid, name)
         self.bit = {}
+
+    def sorted_bits(self) -> List[Tuple[str, int]]:
+        """Return list of bit items sorted by position."""
+        return sorted(self.bit.items(), key=lambda x: x[1])
+
+    def _editable_html(self, val: Tuple[str],
+                           attrs: Dict[str, str] = {}) -> str:
+        bits = []
+        for b in self.sorted_bits():
+            c = " checked" if b[0] in val else ""
+            bits.append(
+                '<input type="checkbox" name="{}" value="{}"{}>{}</option>'.format(
+                    b[0], b[1], c, b[0]))
+        return "<form{}>\n{}\n</form>".format(Context._html_attributes(attrs),
+                                                  "<br>\n".join(bits))
 
     def _convert_raw(self, raw: str) -> Tuple[str]:
         try:
@@ -328,6 +358,14 @@ class BooleanType(DataType):
             val: Value to test.
         """
         return isinstance(val, bool)
+
+    def _editable_html(self, val: str, attrs: Dict[str, str] = {}) -> str:
+        opts = (self._option_template.format(
+            "true", " selected" if val else "", "true") +
+            self._option_template.format(
+                "false", "" if val else " selected", "false"))
+        return "<select{}>\n{}\n</select>".format(
+            Context._html_attributes(attrs), "\n".join(opts))
 
     def _parse(self, text: str) -> bool:
         """Parse boolean value.
@@ -417,6 +455,18 @@ class EnumerationType(DataType):
         """Initialize the class instance."""
         super().__init__(mid, name)
         self.enum = {} # type: Dict[str, int]
+
+    def sorted_enums(self) -> List[Tuple[str, int]]:
+        """Return list of enum items sorted by value."""
+        return sorted(self.enum.items(), key=lambda x: x[1])
+
+    def _editable_html(self, val: str, attrs: Dict[str, str] = {}) -> str:
+        enums = []
+        for e in self.sorted_enums():
+            s = " selected" if e[0] == val else ""
+            enums.append(self._option_template.format(e[1], s, e[0]))
+        return "<select{}>\n{}\n</select>".format(
+            Context._html_attributes(attrs), "\n".join(enums))
 
     def _constraints(self, val: str) -> bool:
         return val in self.enum

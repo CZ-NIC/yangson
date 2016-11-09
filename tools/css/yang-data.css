@@ -1,0 +1,79 @@
+body {
+    font-family: arial, sans-serif;
+}
+
+.container {
+    width: 100%;
+    text-align: left;
+}
+
+.container th {
+    background-color: lightskyblue;
+    border-bottom: 2px solid black;
+}
+
+.container tbody > tr:nth-child(even) {
+    background-color: #0000002A;
+}
+
+.container tbody > tr:nth-child(odd) {
+    background-color: #0000000F;
+}
+
+.container td {
+    overflow-x: scroll;
+    max-width: 300pt;
+}
+
+.container td > span {
+    white-space: nowrap;
+}
+
+.container td:first-child > input {
+    vertical-align: top;
+    margin-right: 4px;
+}
+
+.data-tree, .data-tree * {
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.data-tree li ul {
+    margin-left: 15px;
+}
+
+.data-tree label::before {
+    content: "\25ba";
+    color: DarkSlateBlue;
+    font-size: 10pt;
+    line-height: 12pt;
+    margin-right: 2px;
+    vertical-align: top;
+}
+
+.data-tree input[type="checkbox"] {
+    display: none;
+}
+
+.data-tree li.selected > label {
+    background-color: Aqua;
+}
+
+.data-tree input[type="checkbox"]:checked ~ label::before {
+    content: "\25bc";
+}
+
+.data-tree input[type="checkbox"]:not(checked) {
+    content: "-";
+}
+
+.data-tree label {
+    cursor: pointer;
+}
+
+.data-tree input[type="checkbox"]:not(:checked) ~ ul {
+    display: none;
+}
+
