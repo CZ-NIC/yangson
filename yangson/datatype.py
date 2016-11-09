@@ -68,10 +68,16 @@ Range = List[List[Union[int, decimal.Decimal]]]
 class DataType:
     """Abstract class for YANG data types."""
 
-    def __init__(self, mid: ModuleId):
+    def __init__(self, mid: ModuleId, name: YangIdentifier):
         """Initialize the class instance."""
         self.module_id = mid
         self.default = None
+        self.name = name
+
+    def __str__(self):
+        """Return YANG name of the receiver type."""
+        base = self.__class__.__name__[:-4].lower()
+        return base if self.name is None else "{}({})".format(self.name, base)
 
     def from_raw(self, raw: RawScalar) -> ScalarValue:
         """Return a cooked value of the receiver type.
@@ -129,14 +135,16 @@ class DataType:
     def _resolve_type(cls, stmt: Statement, mid: ModuleId) -> "DataType":
         typ = stmt.argument
         if typ in cls.dtypes:
-            res = cls.dtypes[typ](mid)
+            res = cls.dtypes[typ](mid, None)
             res._handle_properties(stmt, mid)
         else:
-            res = cls._derived_type(stmt, mid)
+            p, s, loc = typ.partition(":")
+            res = cls._derived_type(stmt, mid, loc if s else typ)
         return res
 
     @classmethod
-    def _derived_type(cls, stmt: Statement, mid: ModuleId) -> "DataType":
+    def _derived_type(cls, stmt: Statement, mid: ModuleId,
+                          name: YangIdentifier) -> "DataType":
         """Completely resolve a derived type.
 
         Args:
@@ -151,7 +159,7 @@ class DataType:
             s = tdef.find1("type", required=True)
             tchain.append((tdef, s, m))
             if s.argument in cls.dtypes: break
-        res = cls.dtypes[s.argument](mid)
+        res = cls.dtypes[s.argument](mid, name)
         btyp = True
         while tchain:
             tdef, typst, tid = tchain.pop()
@@ -249,9 +257,9 @@ class EmptyType(DataType, metaclass=_Singleton):
 class BitsType(DataType):
     """Class representing YANG "bits" type."""
 
-    def __init__(self, mid: ModuleId):
+    def __init__(self, mid: ModuleId, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid)
+        super().__init__(mid, name)
         self.bit = {}
 
     def _convert_raw(self, raw: str) -> Tuple[str]:
@@ -340,9 +348,9 @@ class StringType(DataType):
 
     length = [[0, 4294967295]] # type: Range
 
-    def __init__(self, mid: ModuleId):
+    def __init__(self, mid: ModuleId, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid)
+        super().__init__(mid, name)
         self.patterns = [] # type: List[Pattern]
         self.invert_patterns = [] # type: List[Pattern]
 
@@ -405,9 +413,9 @@ class BinaryType(StringType):
 class EnumerationType(DataType):
     """Class representing YANG "enumeration" type."""
 
-    def __init__(self, mid: ModuleId):
+    def __init__(self, mid: ModuleId, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid)
+        super().__init__(mid, name)
         self.enum = {} # type: Dict[str, int]
 
     def _constraints(self, val: str) -> bool:
@@ -440,9 +448,9 @@ class EnumerationType(DataType):
 class LinkType(DataType):
     """Abstract class for instance-referencing types."""
 
-    def __init__(self, mid: ModuleId):
+    def __init__(self, mid: ModuleId, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid)
+        super().__init__(mid, name)
         self.require_instance = True # type: bool
 
     def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
@@ -458,9 +466,9 @@ class LinkType(DataType):
 class LeafrefType(LinkType):
     """Class representing YANG "leafref" type."""
 
-    def __init__(self, mid: ModuleId):
+    def __init__(self, mid: ModuleId, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid)
+        super().__init__(mid, name)
         self.path = None
         self.ref_type = None
 
@@ -493,6 +501,9 @@ class LeafrefType(LinkType):
 class InstanceIdentifierType(LinkType):
     """Class representing YANG "instance-identifier" type."""
 
+    def __str__(self):
+        return "instance-identifier"
+
     def _convert_raw(self, raw: str) -> InstanceRoute:
         try:
             return InstanceIdParser(raw).parse()
@@ -509,9 +520,9 @@ class InstanceIdentifierType(LinkType):
 class IdentityrefType(DataType):
     """Class representing YANG "identityref" type."""
 
-    def __init__(self, mid: ModuleId):
+    def __init__(self, mid: ModuleId, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid)
+        super().__init__(mid, name)
         self.bases = [] # type: List[QualName]
 
     def _convert_raw(self, raw: str) -> QualName:
@@ -573,9 +584,9 @@ class NumericType(DataType):
 class Decimal64Type(NumericType):
     """Class representing YANG "decimal64" type."""
 
-    def __init__(self, mid: ModuleId):
+    def __init__(self, mid: ModuleId, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid)
+        super().__init__(mid, name)
         self._epsilon = decimal.Decimal(0) # type: decimal.Decimal
 
     def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
@@ -698,9 +709,9 @@ class Uint64Type(IntegralType):
 class UnionType(DataType):
     """Class representing YANG "union" type."""
 
-    def __init__(self, mid: ModuleId):
+    def __init__(self, mid: ModuleId, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid)
+        super().__init__(mid, name)
         self.types = [] # type: List[DataType]
 
     def to_raw(self, val: ScalarValue) -> RawScalar:
