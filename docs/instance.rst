@@ -327,14 +327,15 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> len(foo.value)   # foo is unchanged
 	 2
 
-   .. method:: look_up(keys: Dict[InstanceName, ScalarValue]) -> ArrayEntry
+   .. method:: look_up(**keys: Dict[InstanceName, ScalarValue]) -> ArrayEntry
 
       Return an instance node corresponding to the receiver's entry
-      with keys specified by *keys*. The receiver must be a YANG list.
+      with specified keys. The receiver must be a YANG list.
 
-      The argument *keys* is a dictionary whose keys are
-      :term:`instance name`\ s of the list keys, and values are the
-      corresponding list key values.
+      The keys are passed to this method as a sequence of keyword
+      arguments ``kwarg=value`` where ``kwarg`` is the :term:`instance
+      name`\ s of a list key, and ``value`` is the corresponding list
+      key value.
 
       This method raises :exc:`InstanceValueError` if the receiver is
       not a YANG list, and :exc:`NonexistentInstance` if no entry with
@@ -342,7 +343,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo3 = foo.look_up({'number': 3})
+	 >>> foo3 = foo.look_up(number=3)
 	 >>> foo3.json_pointer()
 	 '/example-2:bag/foo/1'
 

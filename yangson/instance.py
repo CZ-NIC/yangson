@@ -238,11 +238,11 @@ class InstanceNode:
             raise NonexistentInstance(self, "item " + key) from None
         return self._copy(newval)
 
-    def look_up(self, keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
+    def look_up(self, **keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
         """Return the entry with matching keys.
 
         Args:
-            keys: Dictionary of list keys and their values.
+            keys: Keys and values specified as keyword arguments.
 
         Raises:
             InstanceValueError: If the receiver's value is not a YANG list.
@@ -860,7 +860,7 @@ class EntryKeys(InstanceSelector):
         Args:
             inst: Current instance.
         """
-        return inst.look_up(self.keys)
+        return inst.look_up(**self.keys)
 
 class InstancePathParser(Parser):
     """Abstract class for parsers of strings identifying instances."""
