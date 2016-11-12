@@ -1014,30 +1014,6 @@ class InstanceIdParser(InstancePathParser):
             self.skip_ws()
         return EntryKeys(sel)
 
-    def _key_values(self, sn: "SequenceNode") -> EntryKeys:
-        """Parse leaf-list value or list keys."""
-        try:
-            keys = self.up_to("/")
-        except EndOfInput:
-            keys = self.remaining()
-        if not keys:
-            raise UnexpectedInput(self, "entry value or keys")
-        if isinstance(sn, LeafListNode):
-            return EntryValue(sn.type.parse_value(unquote(keys)))
-        ks = keys.split(",")
-        try:
-            if len(ks) != len(sn.keys):
-                raise UnexpectedInput(self,
-                                      "exactly {} keys".format(len(sn.keys)))
-        except AttributeError:
-            raise BadSchemaNodeType(sn, "list")
-        sel = {}
-        for j in range(len(ks)):
-            knod = sn.get_data_child(*sn.keys[j])
-            val = knod.type.parse_value(unquote(ks[j]))
-            sel[knod.iname()] = val
-        return EntryKeys(sel)
-
 class InstanceException(YangsonException):
     """Abstract class for exceptions related to operations on instance nodes."""
 
