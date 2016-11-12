@@ -380,25 +380,27 @@ class InstanceNode:
         return '<div class="data-tree"><ul>\n{}</ul>\n</div>\n'.format(
             self._html_tree(True, True))
 
-    def _html_tree(self, expand: bool = False, select: bool = False,
-                       path: str = "") -> str:
-        if isinstance(self.value, ArrayValue):
-            return self[0]._html_tree(path=path) if self.value else ""
+    def _html_tree(self, expand: bool = False, select: bool = False) -> str:
         subs = ""
-        inner = False
-        npath = "{}/{}".format(path, self.name)
-        for m in sorted(self.value):
-            c = self._member(m)
-            if c.is_internal():
-                inner = True
-                subs += c._html_tree(path=npath)
+        if isinstance(self.value, ArrayValue):
+            inner = True
+            for en in self:
+                subs += en._html_tree()
+        else:
+            inner = False
+            for m in sorted(self.value):
+                c = self._member(m)
+                if c.is_internal():
+                    inner = True
+                    subs += c._html_tree()
         res = "<li"
         if select:
             res += ' class="selected"'
-        res += '><input type="checkbox" id="{}"'.format(npath)
+        jp = self.json_pointer()
+        res += '><input type="checkbox" id="{}"'.format(jp)
         if expand:
             res += ' checked="checked"'
-        res += '><label for="{}">{}</label>'.format(npath, self.name)
+        res += '><label for="{}">{}</label>'.format(jp, self.key)
         if inner:
             res += '<ul>\n{}</ul>'.format(subs)
         return res + "</li>"
@@ -512,7 +514,7 @@ class RootNode(InstanceNode):
         self.value = value
         self.schema_node = schema_node
         self.timestamp = timestamp
-        self.name = "/"
+        self.name = self.key = "/"
 
     def up(self) -> None:
         """Override the superclass method.
@@ -545,6 +547,11 @@ class ObjectMember(InstanceNode):
         super().__init__(key, value, parinst, schema_node, timestamp)
         self.siblings = siblings # type: Dict[InstanceName, Value]
         """Sibling members within the parent object."""
+
+    @property
+    def key(self) -> InstanceName:
+        """Receiver's key (member name)."""
+        return self.path[-1]
 
     @property
     def name(self) -> YangIdentifier:
@@ -615,6 +622,11 @@ class ArrayEntry(InstanceNode):
         """Preceding entries of the parent array."""
         self.after = after # type: LinkedList
         """Following entries of the parent array."""
+
+    @property
+    def key(self) -> InstanceName:
+        """Receiver's key (index as string)."""
+        return str(self.path[-1])
 
     @property
     def index(self) -> int:
