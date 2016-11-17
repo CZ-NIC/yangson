@@ -34,6 +34,31 @@ body {
     margin-right: 4px;
 }
 
+.container input.expansion,
+.data-tree input[type="checkbox"] {
+    display: none;
+}
+
+.container label::before,
+.data-tree label::before {
+    content: "\25ba";
+    color: DarkSlateBlue;
+    font-size: 10pt;
+    line-height: 12pt;
+    margin-right: 2px;
+    vertical-align: top;
+}
+
+.container tr.hidden,
+.data-tree input[type="checkbox"]:not(:checked) ~ ul {
+    display: none;
+}
+
+.container input[type="checkbox"]:checked ~ label::before,
+.data-tree input[type="checkbox"]:checked ~ label::before {
+    content: "\25bc";
+}
+
 .data-tree, .data-tree * {
     padding: 0;
     margin: 0;
@@ -44,36 +69,10 @@ body {
     margin-left: 15px;
 }
 
-.data-tree label::before {
-    content: "\25ba";
-    color: DarkSlateBlue;
-    font-size: 10pt;
-    line-height: 12pt;
-    margin-right: 2px;
-    vertical-align: top;
-}
-
-.data-tree input[type="checkbox"] {
-    display: none;
-}
-
 .data-tree li.selected > label {
     background-color: Aqua;
-}
-
-.data-tree input[type="checkbox"]:checked ~ label::before {
-    content: "\25bc";
-}
-
-.data-tree input[type="checkbox"]:not(checked) {
-    content: "-";
 }
 
 .data-tree label {
     cursor: pointer;
 }
-
-.data-tree input[type="checkbox"]:not(:checked) ~ ul {
-    display: none;
-}
-

@@ -384,10 +384,12 @@ class InstanceNode:
         subs = ""
         if isinstance(self.value, ArrayValue):
             inner = True
+            nent = len(self.value)
             for en in self:
                 subs += en._html_tree()
         else:
             inner = False
+            nent = -1
             for m in sorted(self.value):
                 c = self._member(m)
                 if c.is_internal():
@@ -400,7 +402,8 @@ class InstanceNode:
         res += '><input type="checkbox" id="{}"'.format(jp)
         if expand:
             res += ' checked="checked"'
-        res += '><label for="{}">{}</label>'.format(jp, self.key)
+        res += '><label for="{}">{}{}</label>'.format(
+            jp, self.key, "" if nent < 0 else " [{}]".format(nent))
         if inner:
             res += '<ul>\n{}</ul>'.format(subs)
         return res + "</li>"
@@ -625,8 +628,8 @@ class ArrayEntry(InstanceNode):
 
     @property
     def key(self) -> InstanceName:
-        """Receiver's key (index as string)."""
-        return str(self.path[-1])
+        """Receiver's key (XPath position)."""
+        return self.path[-1] + 1
 
     @property
     def index(self) -> int:

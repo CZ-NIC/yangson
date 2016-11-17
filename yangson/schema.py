@@ -643,9 +643,6 @@ class DataNode(SchemaNode):
 class TerminalNode(SchemaNode):
     """Abstract superclass for terminal nodes in the schema tree."""
 
-    _html_template = (
-        """<tr><td><input type="checkbox">{}</td><td>{}</td><td>{}</td></tr>""")
-
     def __init__(self):
         """Initialize the class instance."""
         super().__init__()
@@ -1005,6 +1002,9 @@ class CaseNode(InternalNode):
 class LeafNode(DataNode, TerminalNode):
     """Leaf node."""
 
+    _html_template = (
+        """<tr><td><input type="checkbox">{}</td><td>{}</td><td>{}</td></tr>""")
+
     def __init__(self):
         """Initialize the class instance."""
         super().__init__()
@@ -1036,7 +1036,17 @@ class LeafNode(DataNode, TerminalNode):
 class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
 
-    _html_template = "<tr><td></td><td></td><td>{}</td></tr>"
+    _html_template = (
+        """<tr>
+             <td><input type="checkbox">{}</td>
+             <td>{}</td>
+             <td>
+               <input type="checkbox" class="expansion" id="{}">
+               <label for="{}">[{}]</label>
+             </td>
+           </tr>""")
+    _html_entry_template = (
+        """<tr class="hidden"><td></td><td></td><td>{}</td></tr>""")
 
     @property
     def default(self) -> Optional[ScalarValue]:
@@ -1049,10 +1059,11 @@ class LeafListNode(SequenceNode, TerminalNode):
     def _html_row(self, inst: "InstanceNode") -> str:
         typ = self.type
         f = typ._editable_html if self.config else typ.canonical_string
-        res = [super()._html_template.format(
-            self.iname(), str(typ), f(inst.value[0]))]
-        for en in inst.value[1:]:
-            res.append(self._html_template.format(f(en)))
+        jp = inst.json_pointer()
+        res = [self._html_template.format(
+            self.iname(), str(typ), jp, jp, len(inst.value))]
+        for en in inst.value:
+            res.append(self._html_entry_template.format(f(en)))
         return "\n".join(res)
 
     def _check_list_props(self, inst: "InstanceNode") -> None:
