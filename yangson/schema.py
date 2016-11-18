@@ -67,17 +67,19 @@ class SchemaNode:
     def __init__(self):
         """Initialize the class instance."""
         self.name = None # type: Optional[YangIdentifier]
-        """Name of the schema node."""
+        """Name of the receiver."""
         self.ns = None # type: Optional[YangIdentifier]
-        """Namespace of the schema node."""
+        """Namespace of the receiver."""
         self.parent = None # type: Optional["InternalNode"]
         """Parent schema node."""
+        self.description = None # type: Optional[str]
+        """Description of the receiver."""
         self.must = [] # type: List[Tuple["Expr", Optional[str]]]
-        """List of "must" expressions attached to the schema node."""
+        """List of "must" expressions attached to the receiver."""
         self.when = None # type: Optional["Expr"]
-        """Optional "when" expression that makes the schema node conditional."""
+        """Optional "when" expression that makes the receiver conditional."""
         self._ctype = None
-        """Content type of the schema node."""
+        """Content type of the receiver."""
 
     @property
     def qual_name(self) -> QualName:
@@ -201,6 +203,9 @@ class SchemaNode:
         elif stmt.argument == "false":
             self._ctype = ContentType.nonconfig
 
+    def _description_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+        self.description = stmt.argument
+
     def _must_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         xpp = XPathParser(stmt.argument, mid)
         mex = xpp.parse()
@@ -247,6 +252,7 @@ class SchemaNode:
         "config": "_config_stmt",
         "container": "_container_stmt",
         "default": "_default_stmt",
+        "description": "_description_stmt",
         "identity": "_identity_stmt",
         "ietf-netconf-acm:default-deny-all": "_nacm_default_deny_stmt",
         "ietf-netconf-acm:default-deny-write": "_nacm_default_deny_stmt",

@@ -103,6 +103,18 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> rsn.parent.ns
 	 'example-4-b'
 
+   .. attribute:: description
+
+      Description string for the schema node, or ``None`` if the
+      schema node's definition contains no description.
+
+      .. doctest::
+
+	 >>> dm.get_data_node("/example-4-a:bag").description
+	 'Top-level container.'
+	 >>> rsn.description is None
+	 True
+
    .. attribute:: must
 
       List of **must** expressions that are attached to the schema

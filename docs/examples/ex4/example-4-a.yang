@@ -12,6 +12,7 @@ module example-4-a {
   }
 
   container bag {
+    description "Top-level container.";
     presence "true";
     leaf foo {
       type uint8;
