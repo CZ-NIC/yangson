@@ -52,7 +52,7 @@ from typing import Dict, List, MutableSet, Optional, Set, Tuple, Union
 from .exceptions import YangsonException
 from .context import Context
 from .datatype import (DataType, EmptyType, LeafrefType, LinkType,
-                       RawScalar, IdentityrefType)
+                       RawScalar, IdentityrefType, YangTypeError)
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
 from .instvalue import (ArrayValue, EntryValue, ObjectValue, StructuredValue,
                             Value)
@@ -370,6 +370,8 @@ class InternalNode(SchemaNode):
 
     def from_raw(self, rval: RawObject) -> ObjectValue:
         """Override the superclass method."""
+        if not isinstance(rval, dict):
+            raise YangTypeError(rval)
         res = ObjectValue()
         for qn in rval:
             cn = self._iname2qname(qn)
@@ -815,6 +817,8 @@ class SequenceNode(DataNode):
 
     def from_raw(self, rval: RawList) -> ArrayValue:
         """Override the superclass method."""
+        if not isinstance(rval, list):
+            raise YangTypeError(rval)
         res = ArrayValue()
         for en in rval:
             res.append(self.entry_from_raw(en))

@@ -780,7 +780,7 @@ class UnionType(DataType):
                        for ts in stmt.find_all("type") ]
 
 class YangTypeError(YangsonException):
-    """A value doesn't match its type."""
+    """A value doesn't match its expected type."""
 
     def __init__(self, value):
         self.value = value
