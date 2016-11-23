@@ -351,12 +351,7 @@ class BitsType(DataType):
 class BooleanType(DataType):
     """Class representing YANG "boolean" type."""
 
-    def contains(self, val: bool) -> bool:
-        """Return ``True`` if the receiver type contains `val`.
-
-        Args:
-            val: Value to test.
-        """
+    def _constraints(self, val: bool) -> bool:
         return isinstance(val, bool)
 
     def _editable_html(self, val: str, attrs: Dict[str, str] = {}) -> str:
@@ -410,16 +405,8 @@ class StringType(DataType):
             else:
                 self.patterns.append(pat)
 
-    def contains(self, val: str) -> bool:
-        """Return ``True`` if the receiver type contains `val`.
-
-        Args:
-            val: Value to test.
-        """
-        return isinstance(val, str) and self._constraints(val)
-
     def _constraints(self, val: str) -> bool:
-        if not self._in_range(len(val), self.length):
+        if not (isinstance(val, str) and self._in_range(len(val), self.length)):
             return False
         for p in self.patterns:
             if not p.match(val): return False
@@ -436,11 +423,8 @@ class BinaryType(StringType):
         except TypeError:
             return None
 
-    def contains(self, val: bytes) -> bool:
-        return isinstance(val, bytes) and self._constraints(val)
-
     def _constraints(self, val: bytes) -> bool:
-        return self._in_range(len(val), self.length)
+        return isinstance(val, bytes) and self._in_range(len(val), self.length)
 
     def to_raw(self, val: bytes) -> str:
         return self.canonical_string(val)
@@ -529,6 +513,7 @@ class LeafrefType(LinkType):
             stmt: YANG ``type leafref`` statement.
             mid: Id of the context module.
         """
+        super()._handle_properties(stmt, mid)
         self.path = XPathParser(
             stmt.find1("path", required=True).argument, mid).parse()
 
@@ -665,13 +650,8 @@ class Decimal64Type(NumericType):
     def canonical_string(self, val: decimal.Decimal) -> str:
         return "0.0" if val == 0 else str(val).rstrip("0")
 
-    def contains(self, val: decimal.Decimal) -> bool:
-        """Return ``True`` if the receiver type contains `val`.
-
-        Args:
-            val: Value to test.
-        """
-        return isinstance(val, decimal.Decimal) and self._constraints(val)
+    def _constraints(self, val: decimal.Decimal) -> bool:
+        return isinstance(val, decimal.Decimal) and super()._constraints(val)
 
 class IntegralType(NumericType):
     """Abstract class for integral data types."""
@@ -696,13 +676,8 @@ class IntegralType(NumericType):
         except (ValueError, TypeError):
             return None
 
-    def contains(self, val: int) -> bool:
-        """Return ``True`` if the receiver type contains `val`.
-
-        Args:
-            val: Value to test.
-        """
-        return isinstance(val, int) and self._constraints(val)
+    def _constraints(self, val: int) -> bool:
+        return isinstance(val, int) and super()._constraints(val)
 
 class Int8Type(IntegralType):
     """Class representing YANG "int8" type."""
