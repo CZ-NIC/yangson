@@ -101,6 +101,9 @@ module test {
       leaf leafF {
         type boolean;
       }
+      leaf leafW {
+	type d:typE;
+      }
       container contD {
         leaf leafG {
           type yang:yang-identifier;

@@ -42,6 +42,12 @@ module defs {
     }
   }
 
+  typedef typE {
+    type leafref {
+      path "../../leafB";
+    }
+  }
+
   grouping grB {
     container contE {
       presence "explicit";

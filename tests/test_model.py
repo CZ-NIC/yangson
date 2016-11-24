@@ -53,6 +53,7 @@ tree = """+--rw (test:choiA)?
 |     |  +--rw leafG?
 |     +--rw leafE
 |     +--rw leafF
+|     +--rw leafW?
 +--rw test:contT
 |  +--rw binary?
 |  +--rw bits?
@@ -101,6 +102,7 @@ def instance(data_model):
 			    }
 		    }, {
 			    "leafE": "ABBA",
+                "leafW": 9,
 			    "leafF": false
 		    }],
             "testb:leafS":
@@ -310,7 +312,7 @@ def test_instance(instance):
     axtest(la1._following_siblings(), [])
     assert len(conta._children()) == 10
     axtest(la1._children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance._descendants(with_self=True)) == 30
+    assert len(instance._descendants(with_self=True)) == 31
     axtest(conta._descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln._ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
@@ -362,14 +364,14 @@ def test_xpath(instance):
     xptest("local-name()", "leafR", lr)
     xptest("name()", "testb:leafR", lr)
     xptest("name(../t:listA)", "listA", lr, "testb")
-    xptest("count(descendant-or-self::*)", 30)
+    xptest("count(descendant-or-self::*)", 31)
     xptest("count(descendant::t:leafE)", 2)
     xptest("count(preceding-sibling::*)", 0, lr, "testb")
     xptest("count(following-sibling::*)", 0, lr, "testb")
     xptest("count(descendant-or-self::contA/descendant-or-self::contA)", 1, conta)
     xptest("count(descendant-or-self::contA/descendant::contA)", 0, conta)
     xptest("listA[last()-1]/following-sibling::*/leafE = 'ABBA'", node=conta)
-    xptest("count(//contD/parent::*/following-sibling::*/*)", 3)
+    xptest("count(//contD/parent::*/following-sibling::*/*)", 4)
     xptest("//leafP = 10")
     xptest("""count(listA[leafE = 'C0FFEE' and leafF = true()]//
            leafP/ancestor::node())""", 5, conta)
