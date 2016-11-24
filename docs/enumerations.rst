@@ -8,6 +8,9 @@ Enumeration Classes
 .. autoclass:: ContentType
    :members:
 
+.. autoclass:: ValidationScope
+   :members:
+
 .. autoclass:: DefaultDeny
    :members:
 

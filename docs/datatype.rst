@@ -110,6 +110,17 @@ all :class:`~.schema.TerminalNode` instances.
 	 >>> string_t.default
 	 'xxy'
 
+   .. attribute:: name
+
+      Name of the type if it is derived, otherwise ``None``.
+
+      .. doctest::
+
+	 >>> string_t.name
+	 'my-string'
+	 >>> boolean_t.name is None
+	 True
+
    .. rubric:: Public Methods
 
    .. method:: from_raw(raw: RawScalar) -> ScalarValue

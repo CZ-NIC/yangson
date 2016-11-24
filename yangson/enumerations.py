@@ -27,7 +27,7 @@ class ContentType(Enum):
     nonconfig = 2
     """Data that does not represent configuration."""
     all = 3
-    """All of the above."""
+    """All data."""
 
 class ValidationScope(Enum):
     """Enumeration of validation scopes."""
@@ -37,7 +37,7 @@ class ValidationScope(Enum):
     """Validation of semantics ("must" constraints, uniqueness, cardinality,
     referential integrity."""
     all = 3
-    """All of the above."""
+    """Both syntax and semantics."""
 
 class DefaultDeny(Enum):
     """Enumeration of NACM default deny values."""
