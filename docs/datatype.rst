@@ -377,7 +377,7 @@ all :class:`~.schema.TerminalNode` instances.
 	 >>> print(leafref_t.path, end='')
 	 LocationPath
 	   Root
-	   Step (child ('string-leaf', 'example-5-a'))
+	   Step (child ('string-leaf', None))
 
    .. attribute:: ref_type
 

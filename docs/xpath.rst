@@ -145,10 +145,10 @@ The module also defines the following exceptions:
            LocationPath
              Step (parent None)
              Step (parent None)
-           Step (child ('quux', 'example-4-b'))
+           Step (child ('quux', None))
              -- Predicates:
                 Number (2.0)
-         Step (preceding_sibling ('quux', 'example-4-b'))
+         Step (preceding_sibling ('quux', None))
      Number (3.1415)
    >>> cxp.evaluate(fref)
    True

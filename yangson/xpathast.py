@@ -312,7 +312,7 @@ class LocationPath(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> XPathValue:
         lres = self.left._eval(xctx)
-        ns = lres.bind(self.right._node_trans())
+        ns = lres.bind(self.right._node_trans(xctx))
         return self.right._apply_predicates(ns, xctx)
 
 class Root(Expr):
@@ -334,28 +334,30 @@ class Step(Expr):
     def _children_str(self, indent) -> str:
         return self._predicates_str(indent)
 
-    def _node_trans(self) -> NodeExpr:
+    def _node_trans(self, xctx) -> NodeExpr:
+        qname = ((self.qname[0], xctx.origin.namespace) if
+                     self.qname and self.qname[1] is None else self.qname)
         return {
-            Axis.ancestor: lambda n, qn=self.qname: n._ancestors(qn),
+            Axis.ancestor: lambda n, qn=qname: n._ancestors(qn),
             Axis.ancestor_or_self:
-                lambda n, qn=self.qname: n._ancestors_or_self(qn),
-            Axis.child: lambda n, qn=self.qname: n._children(qn),
-            Axis.descendant: lambda n, qn=self.qname: n._descendants(qn),
+                lambda n, qn=qname: n._ancestors_or_self(qn),
+            Axis.child: lambda n, qn=qname: n._children(qn),
+            Axis.descendant: lambda n, qn=qname: n._descendants(qn),
             Axis.descendant_or_self:
-                lambda n, qn=self.qname: n._descendants(qn, True),
+                lambda n, qn=qname: n._descendants(qn, True),
             Axis.following_sibling:
-                lambda n, qn=self.qname: n._following_siblings(qn),
+                lambda n, qn=qname: n._following_siblings(qn),
             Axis.parent: (
-                lambda n, qn=self.qname: [] if qn and qn != n.parent.qual_name
+                lambda n, qn=qname: [] if qn and qn != n.parent.qual_name
                 else n._parent()),
             Axis.preceding_sibling:
-                lambda n, qn=self.qname: n._preceding_siblings(qn),
+                lambda n, qn=qname: n._preceding_siblings(qn),
             Axis.self:
-                lambda n, qn=self.qname: [] if qn and qn != n.qual_name else [n],
+                lambda n, qn=qname: [] if qn and qn != n.qual_name else [n],
                 }[self.axis]
 
     def _eval(self, xctx: XPathContext) -> XPathValue:
-        ns = NodeSet(self._node_trans()(xctx.cnode))
+        ns = NodeSet(self._node_trans(xctx)(xctx.cnode))
         return self._apply_predicates(ns, xctx)
 
 class FuncBitIsSet(BinaryExpr):

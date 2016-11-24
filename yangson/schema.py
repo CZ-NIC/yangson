@@ -174,22 +174,26 @@ class SchemaNode:
             method = getattr(self, mname)
             method(s, mid)
 
-    def _follow_leafref(self, xpath: "Expr") -> Optional["DataNode"]:
+    def _follow_leafref(
+            self, xpath: "Expr", init: "TerminalNode") -> Optional["DataNode"]:
         """Return the data node referred to by a leafref path.
 
         Args:
             xpath: XPath expression compiled from a leafref path.
+            init: initial context node
         """
         if isinstance(xpath, LocationPath):
-            lft = self._follow_leafref(xpath.left)
+            lft = self._follow_leafref(xpath.left, init)
             if lft is None: return None
-            return lft._follow_leafref(xpath.right)
+            return lft._follow_leafref(xpath.right, init)
         elif isinstance(xpath, Step):
             if xpath.axis == Axis.parent:
                 return self.data_parent()
             elif xpath.axis == Axis.child:
                 if isinstance(self, InternalNode) and xpath.qname:
-                    return self.get_data_child(*xpath.qname)
+                    qname = (xpath.qname if xpath.qname[1]
+                                 else (xpath.qname[0], init.ns))
+                    return self.get_data_child(*qname)
         elif isinstance(xpath, Root):
             return Context.schema
         return None
@@ -693,7 +697,7 @@ class TerminalNode(SchemaNode):
     def _post_process(self) -> None:
         super()._post_process()
         if isinstance(self.type, LeafrefType):
-            ref = self._follow_leafref(self.type.path)
+            ref = self._follow_leafref(self.type.path, self)
             if ref is None:
                 raise BadLeafrefPath(self)
             self.type.ref_type = ref.type
