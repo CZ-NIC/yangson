@@ -829,8 +829,9 @@ class SequenceNode(DataNode):
         if not isinstance(rval, list):
             raise RawTypeError(rpath, "expected array")
         res = ArrayValue()
-        i = 1
+        i = 0
         for en in rval:
+            i += 1
             res.append(self.entry_from_raw(en, "{}/{}".format(rpath, i)))
         return res
 
@@ -876,7 +877,7 @@ class ListNode(SequenceNode, InternalNode):
                     inst._entry(i),
                     "missing list key '{}'".format(e.args[0])) from None
             if kval in ukeys:
-                raise SchemaError(inst, "non-unique list key: " + repr(
+                raise SemanticError(inst, "non-unique list key: " + repr(
                     kval[0] if len(kval) < 2 else kval))
             ukeys.add(kval)
 
