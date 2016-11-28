@@ -101,7 +101,7 @@ class DataModel(metaclass=_Singleton):
         Returns:
             Root instance node.
         """
-        cooked = Context.schema.from_raw(robj, "/")
+        cooked = Context.schema.from_raw(robj)
         return RootNode(cooked, Context.schema, cooked.timestamp)
 
     @staticmethod
