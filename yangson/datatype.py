@@ -50,6 +50,7 @@ The module also defines the following exceptions:
 
 import base64
 import decimal
+import numbers
 import re
 from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -639,6 +640,8 @@ class Decimal64Type(NumericType):
         super()._handle_properties(stmt, mid)
 
     def _convert_raw(self, raw: str) -> decimal.Decimal:
+        if not isinstance(raw, (str, numbers.Real)):
+            return None
         try:
             return decimal.Decimal(raw).quantize(self._epsilon)
         except decimal.InvalidOperation:
