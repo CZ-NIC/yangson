@@ -94,8 +94,8 @@ class DataType:
             res = self._convert_raw(raw)
             if res is not None and self._constraints(res): return res
         except TypeError:
-            raise YangTypeError(raw) from None
-        raise YangTypeError(raw)
+            raise YangTypeError(self, raw) from None
+        raise YangTypeError(self, raw)
 
     def to_raw(self, val: ScalarValue) -> RawScalar:
         """Return a raw value ready to be serialized in JSON."""
@@ -109,7 +109,7 @@ class DataType:
         """
         res = self._parse(text)
         if res is not None and self._constraints(res): return res
-        raise YangTypeError(text)
+        raise YangTypeError(self, text)
 
     def canonical_string(self, val: ScalarValue) -> str:
         """Return canonical form of a value."""
@@ -313,7 +313,7 @@ class BitsType(DataType):
             for b in val:
                 res += 1 << self.bit[b]
         except KeyError:
-            raise YangTypeError(val) from None
+            raise YangTypeError(self, val) from None
         return res
 
     def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
@@ -344,7 +344,7 @@ class BitsType(DataType):
         try:
             items = [(self.bit[b], b) for b in val]
         except KeyError:
-            raise YangTypeError(val) from None
+            raise YangTypeError(self, val) from None
         items.sort()
         return " ".join([x[1] for x in items])
         
@@ -374,7 +374,7 @@ class BooleanType(DataType):
     def canonical_string(self, val: bool) -> str:
         if val is True: return "true"
         if val is False: return "false"
-        raise YangTypeError(val)
+        raise YangTypeError(self, val)
 
 class StringType(DataType):
     """Class representing YANG "string" type."""
@@ -543,7 +543,7 @@ class InstanceIdentifierType(LinkType):
         try:
             return InstanceIdParser(raw).parse()
         except ParserException:
-            raise YangTypeError(raw) from None
+            raise YangTypeError(self, raw) from None
 
     def to_raw(self, val: InstanceRoute) -> str:
         """Override the superclass method."""
@@ -580,9 +580,9 @@ class IdentityrefType(DataType):
         try:
             res = Context.translate_pname(text, mid)
         except:
-            raise YangTypeError(text) from None
+            raise YangTypeError(self, text) from None
         if self._constraints(res): return res
-        raise YangTypeError(text)
+        raise YangTypeError(self, text)
 
     def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
         """Handle type substatements.
@@ -782,11 +782,12 @@ class UnionType(DataType):
 class YangTypeError(YangsonException):
     """A value doesn't match its expected type."""
 
-    def __init__(self, value):
+    def __init__(self, typ, value):
+        self.typ = typ
         self.value = value
 
     def __str__(self) -> str:
-        return "value " + repr(self.value)
+        return "{}, expected {}".format(repr(self.value), str(self.typ))
 
 DataType.dtypes = { "binary": BinaryType,
                     "bits": BitsType,

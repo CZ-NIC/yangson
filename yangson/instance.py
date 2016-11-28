@@ -216,7 +216,7 @@ class InstanceNode:
             raise InstanceValueError(self, "member of non-object")
         csn = self._member_schema_node(name)
         newval = self.value.copy()
-        newval[name] = csn.from_raw(value) if raw else value
+        newval[name] = csn.from_raw(value, self.json_pointer()) if raw else value
         return self._copy(newval)._member(name)
 
     def delete_item(self, key: InstanceKey) -> "InstanceNode":
@@ -292,7 +292,7 @@ class InstanceNode:
         Returns:
             Copy of the receiver with the updated value.
         """
-        newval = self.schema_node.from_raw(value) if raw else value
+        newval = self.schema_node.from_raw(value, self.json_pointer()) if raw else value
         return self._copy(newval)
 
     def goto(self, iroute: "InstanceRoute") -> "InstanceNode":
@@ -714,8 +714,8 @@ class ArrayEntry(InstanceNode):
                               self.schema_node, datetime.now())
 
     def _cook_value(self, value: Union[RawValue, Value], raw: bool) -> Value:
-        return (super(SequenceNode, self.schema_node).from_raw(value) if raw
-                else value)
+        return super(SequenceNode, self.schema_node).from_raw(
+            value, self.json_pointer()) if raw else value
 
     def _zip(self) -> ArrayValue:
         """Zip the receiver into an array and return it."""

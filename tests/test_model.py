@@ -9,7 +9,7 @@ from yangson.enumerations import ContentType
 from yangson.instance import (InstanceIdParser, NonexistentInstance,
                               ResourceIdParser)
 from yangson.instvalue import ArrayValue, ObjectValue
-from yangson.schema import SequenceNode, NonexistentSchemaNode, SchemaError
+from yangson.schema import SequenceNode, NonexistentSchemaNode, RawTypeError, SchemaError
 from yangson.xpathast import XPathTypeError
 from yangson.xpathparser import InvalidXPath, NotSupported, XPathParser
 
@@ -483,7 +483,7 @@ def test_edits(data_model, instance):
     llb1 = instance["test:llistB"][1]
     modllb = llb1.update("2001:db8:0:2::1", raw=True).up()
     assert modllb.value == ArrayValue(["::1", "2001:db8:0:2::1"])
-    with pytest.raises(YangTypeError):
+    with pytest.raises(RawTypeError):
         llb1.update("2001::2::1", raw=True)
 
 def test_validation(instance):

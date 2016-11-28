@@ -123,16 +123,17 @@ class SchemaNode:
         """Return a list of data paths to descendant state data roots."""
         return [r.data_path() for r in self._state_roots()]
 
-    def from_raw(self, rval: RawValue) -> Value:
+    def from_raw(self, rval: RawValue, rpath: str = "") -> Value:
         """Return instance value transformed from a raw value using receiver.
 
         Args:
             rval: Raw value.
+            rpath: JSON pointer of the current instance node.
 
         Raises:
-            NonexistentSchemaNode: If a member inside `rval` is not defined
-                in the schema.
-            YangTypeError: If a scalar value inside `rval` is of incorrect type.
+            RawMemberError: If a member inside `rval` is not defined in the
+                schema.
+            RawTypeError: If a scalar value inside `rval` is of incorrect type.
         """
         raise NotImplementedError
 
@@ -372,17 +373,18 @@ class InternalNode(SchemaNode):
                 res.extend(child.data_children())
         return res
 
-    def from_raw(self, rval: RawObject) -> ObjectValue:
+    def from_raw(self, rval: RawObject, rpath: str = "") -> ObjectValue:
         """Override the superclass method."""
         if not isinstance(rval, dict):
-            raise YangTypeError(rval)
+            raise RawTypeError(rpath, "expected object")
         res = ObjectValue()
         for qn in rval:
             cn = self._iname2qname(qn)
             ch = self.get_data_child(*cn)
+            npath = rpath + "/" + qn
             if ch is None:
-                raise NonexistentSchemaNode(self, *cn)
-            res[ch.iname()] = ch.from_raw(rval[qn])
+                raise RawMemberError(npath)
+            res[ch.iname()] = ch.from_raw(rval[qn], npath)
         return res
 
     def _html_table(self, inst: "InstanceNode") -> str:
@@ -668,9 +670,12 @@ class TerminalNode(SchemaNode):
         return (ContentType.config if self.parent.config else
                 ContentType.nonconfig)
 
-    def from_raw(self, rval: RawScalar) -> ScalarValue:
+    def from_raw(self, rval: RawScalar, rpath: str = "") -> ScalarValue:
         """Override the superclass method."""
-        return self.type.from_raw(rval)
+        try:
+            return self.type.from_raw(rval)
+        except YangTypeError as e:
+            raise RawTypeError(rpath, str(e))
 
     def _html_row(self, inst: "InstanceNode") -> str:
         typ = self.type
@@ -819,27 +824,29 @@ class SequenceNode(DataNode):
         """Extend the superclass method."""
         return super()._tree_line() + "*"
 
-    def from_raw(self, rval: RawList) -> ArrayValue:
+    def from_raw(self, rval: RawList, rpath: str = "") -> ArrayValue:
         """Override the superclass method."""
         if not isinstance(rval, list):
-            raise YangTypeError(rval)
+            raise RawTypeError(rpath, "expected array")
         res = ArrayValue()
+        i = 1
         for en in rval:
-            res.append(self.entry_from_raw(en))
+            res.append(self.entry_from_raw(en, "{}/{}".format(rpath, i)))
         return res
 
-    def entry_from_raw(self, rval: RawEntry) -> EntryValue:
+    def entry_from_raw(self, rval: RawEntry, rpath: str = "") -> EntryValue:
         """Transform a raw (leaf-)list entry into the cooked form.
 
         Args:
             rval: raw entry (scalar or object)
+            rpath: JSON pointer of the entry
 
         Raises:
             NonexistentSchemaNode: If a member inside `rval` is not defined
                 in the schema.
             YangTypeError: If a scalar value inside `rval` is of incorrect type.
         """
-        return super().from_raw(rval)
+        return super().from_raw(rval, rpath)
 
 class ListNode(SequenceNode, InternalNode):
     """List node."""
@@ -869,7 +876,8 @@ class ListNode(SequenceNode, InternalNode):
                     inst._entry(i),
                     "missing list key '{}'".format(e.args[0])) from None
             if kval in ukeys:
-                raise SchemaError(inst, "non-unique list key: " + repr(kval))
+                raise SchemaError(inst, "non-unique list key: " + repr(
+                    kval[0] if len(kval) < 2 else kval))
             ukeys.add(kval)
 
     def _check_unique(self, unique: List[SchemaRoute],
@@ -1109,7 +1117,7 @@ class AnydataNode(DataNode):
         """Is the receiver a mandatory node?"""
         return self._mandatory
 
-    def from_raw(self, rval: RawValue) -> Value:
+    def from_raw(self, rval: RawValue, rpath: str = "") -> Value:
         """Override the superclass method."""
         def convert(val):
             if isinstance(val, list):
@@ -1245,6 +1253,29 @@ class BadLeafrefPath(SchemaNodeException):
     """A leafref path is incorrect."""
     pass
 
+class RawDataError(YangsonException):
+    """Abstract exception class for errors in raw data."""
+
+    def __init__(self, path: str):
+        self.path = path
+
+    def __str__(self):
+        return self.path
+
+class RawMemberError(RawDataError):
+    """A member in the raw value doesn't exist."""
+    pass
+
+class RawTypeError(RawDataError):
+    """A raw value is of an incorrect type."""
+
+    def __init__(self, path: str, detail: str):
+        super().__init__(path)
+        self.detail = detail
+
+    def __str__(self):
+        return "[{}] {}".format(self.path, self.detail)
+
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
 
@@ -1264,4 +1295,4 @@ class SemanticError(ValidationError):
     pass
 
 from .xpathast import Expr, LocationPath, Step, Root
-from .instance import InstanceNode, ArrayEntry, NonexistentInstance
+from .instance import ArrayEntry, InstanceNode, NonexistentInstance
