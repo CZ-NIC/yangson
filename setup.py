@@ -3,12 +3,16 @@ from setuptools import setup
 setup(
     name = "yangson",
     packages = ["yangson"],
-    version = "1.1.0",
+    use_scm_version = True,
+    setup_requires=["setuptools_scm"],
     description = "Library for working with data modelled in YANG",
     author = "Ladislav Lhotka",
     author_email = "lhotka@nic.cz",
     url = "https://github.com/CZ-NIC/yangson",
-    install_requires = ['PyXB'],
+    entry_points = {
+        "console_scripts": ["yangson=yangson.__main__:main"]
+        }
+    install_requires = ["PyXB"],
     tests_require = ["pytest"],
     keywords = ["yang", "data model", "configuration", "json"],
     classifiers = [
