@@ -11,7 +11,7 @@ setup(
     url = "https://github.com/CZ-NIC/yangson",
     entry_points = {
         "console_scripts": ["yangson=yangson.__main__:main"]
-        }
+        },
     install_requires = ["PyXB"],
     tests_require = ["pytest"],
     keywords = ["yang", "data model", "configuration", "json"],

@@ -37,7 +37,7 @@ Installation
 The *Yangson* package is available from PyPI_ and can be installed
 using the *pip* package manager as follows::
 
-  $ pip install yangson
+  python -m pip install yangson
 
 Naming of YANG Modules
 ======================
