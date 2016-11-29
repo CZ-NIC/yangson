@@ -7,6 +7,8 @@ working with configuration and other data modelled with the YANG data
 modelling language. *Yangson* supports only the JSON data encoding as
 defined in [RFC7951]_.
 
+The *Yangson* package also provides a simple :ref:`man-page`.
+
 Main Features
 =============
 
@@ -32,7 +34,10 @@ __ https://en.wikipedia.org/wiki/Persistent_data_structure
 Installation
 ============
 
-TBD
+The *Yangson* package is available from PyPI_ and can be installed
+using the *pip* package manager as follows::
+
+  $ pip install yangson
 
 Naming of YANG Modules
 ======================

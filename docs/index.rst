@@ -13,6 +13,7 @@ Contents:
    basic
    advanced
    support
+   cmdline
    examples
    references
    glossary

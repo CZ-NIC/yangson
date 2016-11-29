@@ -468,7 +468,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	above.
 
       The value of the *content* argument belongs to the
-      :data:`~.enumerations.ContentType` enumeration and specifies
+      :class:`~.enumerations.ContentType` enumeration and specifies
       whether the receiver's value is to be validated as configuration
       (``Content.config``) or as both configuration and state data
       (``Content.all``).
