@@ -43,7 +43,10 @@ This module defines the following exceptions:
 * NonexistentSchemaNode: A schema node doesn't exist.
 * BadSchemaNodType: A schema node is of a wrong type.
 * BadLeafrefPath: A leafref path is incorrect.
-* ValidationError: Abstract exeption class for instance validation errors.
+* RawDataError: Abstract exception class for errors in raw data.
+* RawMemberError: Object member in raw data doesn't exist in the schema.
+* RawTypeError: Raw data value is of incorrect type.
+* ValidationError: Abstract exception class for instance validation errors.
 * SchemaError: An instance violates a schema constraint.
 * SemanticError: An instance violates a semantic rule.
 """
@@ -1257,25 +1260,25 @@ class BadLeafrefPath(SchemaNodeException):
 class RawDataError(YangsonException):
     """Abstract exception class for errors in raw data."""
 
-    def __init__(self, path: str):
-        self.path = path
+    def __init__(self, jptr: JSONPointer):
+        self.jptr = jptr
 
-    def __str__(self):
-        return self.path
+    def __str__(self) -> JSONPointer:
+        return self.jptr
 
 class RawMemberError(RawDataError):
-    """A member in the raw value doesn't exist."""
+    """Object member in the raw value doesn't exist in the schema."""
     pass
 
 class RawTypeError(RawDataError):
-    """A raw value is of an incorrect type."""
+    """Raw value is of an incorrect type."""
 
-    def __init__(self, path: str, detail: str):
-        super().__init__(path)
+    def __init__(self, jptr: JSONPointer, detail: str):
+        super().__init__(jptr)
         self.detail = detail
 
     def __str__(self):
-        return "[{}] {}".format(self.path, self.detail)
+        return "[{}] {}".format(self.jptr, self.detail)
 
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""

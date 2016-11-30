@@ -45,6 +45,9 @@ This module also defines the following exceptions:
 * :exc:`NonexistentSchemaNode`: A schema node doesn't exist.
 * :exc:`BadSchemaNodType`: A schema node is of a wrong type.
 * :exc:`BadLeafrefPath`: A leafref path is incorrect.
+* :exc:`RawDataError`: Abstract exception class for errors in raw data.
+* :exc:`RawMemberError`: Object member in raw data doesn't exist in the schema.
+* :exc:`RawTypeError`: Raw data value is of incorrect type.
 * :exc:`ValidationError`: Abstract exeption class for instance validation errors.
 * :exc:`SchemaError`: An instance violates a schema constraint, see :term:`schema error`.
 * :exc:`SemanticError`: An instance violates a semantic rule, see :term:`semantic error`.
@@ -235,7 +238,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> raw = {'baz': [None]}
 	 >>> type(raw)
 	 <class 'dict'>
-	 >>> cooked = bsn.from_raw(raw)
+	 >>> cooked = bsn.from_raw(raw, "/example-4-a:bag")
 	 >>> cooked
 	 {'baz': (None,)}
 	 >>> type(cooked)
@@ -457,11 +460,13 @@ or **uses** statement if this statement is conditional, i.e. has a
 
    .. rubric:: Public Methods
 
-   .. method:: entry_from_raw(rval: RawEntry) -> EntryValue
+   .. method:: entry_from_raw(rval: RawEntry, jptr: JSONPointer = "") -> EntryValue
 
       Return a :term:`cooked value` of an array entry transformed from
       :term:`raw value` *rval* as dictated by the receiver and/or its
-      subtree in the schema.
+      subtree in the schema. The *jptr* argument gives the JSON
+      Pointer [RFC6901]_ of the entry for the cooked value is intended
+      (if known, otherwise the second argument needn't be present).
 
       This method raises :exc:`NonexistentSchemaNode` if *rval*
       contains a member that is not defined in the schema, and
@@ -560,7 +565,6 @@ or **uses** statement if this statement is conditional, i.e. has a
    represent YANG **notification** nodes.
 
 .. autoexception:: SchemaNodeException(sn: SchemaNode)
-   :show-inheritance:
 
    The schema node for which the exception occurred is passed in the
    *sn* argument.
@@ -579,8 +583,15 @@ or **uses** statement if this statement is conditional, i.e. has a
 .. autoexception:: BadLeafrefPath(sn: SchemaNode)
    :show-inheritance:
 
-.. autoexception:: ValidationError(inst: InstanceNode, detail: str)
+.. autoexception:: RawDataError(jptr: JSONPointer)
+
+.. autoexception:: RawMemberError(jptr: JSONPointer)
    :show-inheritance:
+
+.. autoexception:: RawTypeError(jptr: JSONPointer, detail: str)
+   :show-inheritance:
+
+.. autoexception:: ValidationError(inst: InstanceNode, detail: str)
 
    The *inst* argument contains the instance node that was found
    invalid, and *detail* provides additional information about the

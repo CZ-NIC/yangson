@@ -207,7 +207,7 @@ happens to be the key of the *foo* list:
    >>> broken1.validate()
    Traceback (most recent call last):
    ...
-   yangson.schema.SchemaError: [/example-2:bag/foo] non-unique list key: (6,)
+   yangson.schema.SemanticError: [/example-2:bag/foo] non-unique list key: (6,)
 
 Correct! Both entries of the *foo* list now have the same key, namely ``6``.
 
