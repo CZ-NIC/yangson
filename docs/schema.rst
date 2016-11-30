@@ -217,11 +217,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> bsn.state_roots()
 	 ['/example-4-a:bag/bar']
 
-   .. method:: from_raw(rval: RawValue) -> Value
+   .. method:: from_raw(rval: RawValue, jptr: JSONPointer = "") -> Value
 
       Return a :term:`cooked value` transformed from :term:`raw value`
       *rval* as dictated by the receiver and its subtree in the
-      schema.
+      schema. The *jptr* argument gives the JSON Pointer [RFC6901]_ of
+      the instance node for the cooked value is intended (if known,
+      otherwise the second argument needn't be present).
 
       This method raises :exc:`NonexistentSchemaNode` if *rval*
       contains a member that is not defined in the schema, and

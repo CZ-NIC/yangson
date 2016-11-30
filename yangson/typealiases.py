@@ -35,6 +35,9 @@ PrefName = str
 InstanceIdentifier = str
 """YANG instance identifier, see sec. `6.11`_ of [RFC7951]_."""
 
+JSONPointer = str
+"""JSON Pointer [RFC6901]_."""
+
 ResourceIdentifier = str
 """RESTCONF resource identifier, see sec. `3.5.3`_ of [BBW16]_."""
 

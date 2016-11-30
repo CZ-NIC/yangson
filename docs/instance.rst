@@ -197,7 +197,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       the result is the value returned by Python standard function
       :class:`str`.
 
-   .. automethod:: json_pointer
+   .. automethod:: json_pointer() -> JSONPointer
 
    .. method:: __getitem__(key: InstanceKey) -> InstanceNode
 

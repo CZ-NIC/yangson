@@ -148,7 +148,7 @@ class InstanceNode:
         return (str(self.value) if isinstance(self.value, StructuredValue) else
                 sn.type.canonical_string(self.value))
 
-    def json_pointer(self) -> str:
+    def json_pointer(self) -> JSONPointer:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
         return "/" + "/".join([str(c) for c in self.path])
 
