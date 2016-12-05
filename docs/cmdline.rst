@@ -26,6 +26,10 @@ and exits.
 Operations
 ==========
 
+.. option:: -h, --help
+
+   Show an overview of the command syntax and exit.
+
 .. option:: -i, --id
 
    Print the unique module set identifier that can be used, for
