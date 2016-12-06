@@ -142,12 +142,11 @@ class SchemaNode:
         """
         raise NotImplementedError
 
-    def client_digest(self) -> Dict[str, Any]:
+    def _client_digest(self) -> Dict[str, Any]:
         """Return dictionary of receiver's properties suitable for clients."""
         return {
-            "description": self.description,
-            "children": {}
-            }
+            "class": self._yang_class(),
+            "description": self.description }
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
                       ctype: ContentType) -> None:
@@ -399,9 +398,11 @@ class InternalNode(SchemaNode):
             res[ch.iname()] = ch.from_raw(rval[qn], npath)
         return res
 
-    def client_digest(self) -> Dict[str, Any]:
-        """Return dictionary of receiver's properties suitable for clients."""
-        pass
+    def _client_digest(self) -> Dict[str, Any]:
+        res = super()._client_digest()
+        res["children"] = {
+            c.iname(): c._client_digest() for c in self.data_children() }
+        return res
 
     def _html_table(self, inst: "InstanceNode") -> str:
         val = inst.value
@@ -600,6 +601,9 @@ class GroupNode(InternalNode):
         """Override superclass method."""
         return []
 
+    def _yang_class(self) -> str:
+        return "root"
+
     def _state_roots(self) -> List[SchemaNode]:
         return []
 
@@ -631,8 +635,7 @@ class DataNode(SchemaNode):
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
-    def yang_class(self) -> YangIdentifier:
-        """Return YANG name corresponding to receiver's class."""
+    def _yang_class(self) -> str:
         return self.__class__.__name__[:-4].lower()
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
@@ -697,6 +700,16 @@ class TerminalNode(SchemaNode):
         except YangTypeError as e:
             raise RawTypeError(jptr, str(e))
 
+    def _client_digest(self) -> Dict[str, Any]:
+        res = super()._client_digest()
+        res.update({
+            "type": self.type.name,
+            "base-type": self.type.yang_type()})
+        df = self.default
+        if df is not None:
+            res["default"] = self.type.to_raw(df)
+        return res
+
     def _html_row(self, inst: "InstanceNode") -> str:
         typ = self.type
         return self._html_template.format(
@@ -753,6 +766,11 @@ class ContainerNode(DataNode, InternalNode):
     def mandatory(self) -> bool:
         """Is the receiver a mandatory node?"""
         return not self.presence and super().mandatory
+
+    def _client_digest(self) -> Dict[str, Any]:
+        res = super()._client_digest()
+        res["presence"] = self.presence
+        return res
 
     def _add_mandatory_child(self, node: SchemaNode):
         if not (self.presence or self.mandatory):
@@ -878,6 +896,11 @@ class ListNode(SequenceNode, InternalNode):
         self.keys = [] # type: List[QualName]
         self._key_members = []
         self.unique = [] # type: List[List[SchemaRoute]]
+
+    def _client_digest(self) -> Dict[str, Any]:
+        res = super()._client_digest()
+        res["keys"] = self._key_members
+        return res
 
     def _check_list_props(self, inst: "InstanceNode") -> None:
         """Check uniqueness of keys and "unique" properties, if applicable."""
@@ -1099,8 +1122,7 @@ class LeafListNode(SequenceNode, TerminalNode):
         return (None if self.type.default is None
                 else ArrayValue([self.type.default]))
 
-    def yang_class(self) -> YangIdentifier:
-        """Override the superclass method."""
+    def _yang_class(self) -> str:
         return "leaf-list"
 
     def _html_row(self, inst: "InstanceNode") -> str:

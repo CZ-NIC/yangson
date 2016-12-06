@@ -368,19 +368,6 @@ or **uses** statement if this statement is conditional, i.e. has a
 	 >>> fsn.default_deny
 	 <DefaultDeny.write: 2>
 
-   .. rubric:: Public Methods
-
-   .. method:: yang_class() -> YangIdentifier
-
-      Return YANG name corresponding to the receiver's class, i.e. one of
-      ``container``, ``leaf``, ``list``, ``leaf-list``, ``anydata``
-      and ``anyxml``.
-
-      .. doctest::
-
-	 >>> fsn.yang_class()
-	 'leaf'
-
 .. class:: TerminalNode
 
    This is the abstract superclass for terminal nodes, i.e. schema

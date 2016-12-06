@@ -130,7 +130,7 @@ class DataModel(metaclass=_Singleton):
             Data node if found in the schema, or ``None``.
 
         Raises:
-            BadPath: If the schema path is invalid
+            BadPath: If the schema path is invalid.
         """
         addr = Context.path2route(path)
         node = Context.schema
@@ -147,3 +147,12 @@ class DataModel(metaclass=_Singleton):
             String with the ASCII tree.
         """
         return Context.schema._ascii_tree("")
+
+    @staticmethod
+    def schema_digest() -> str:
+        """Generate schema digest (to be used primarily by clients).
+
+        Returns:
+            Condensed information about the schema in JSON format.
+        """
+        return json.dumps(Context.schema._client_digest())

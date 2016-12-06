@@ -167,5 +167,16 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> dm.ascii_tree()
 	 '+--rw example-1:greeting?\n'
 
+      .. staticmethod:: schema_digest() -> str
+
+      Generate digest of the data model schema. The returned string
+      contains JSON-encoded information about the data model,
+      primarily intended for use in client applications.
+
+      .. doctest::
+
+	 >>> len(dm.schema_digest())
+	 179
+
 .. _sec. 6.1: https://tools.ietf.org/html/rfc7951#section-6.1
 .. _pyang: https://github.com/mbj4668/pyang
