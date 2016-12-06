@@ -79,7 +79,7 @@ class DataType:
 
     def __str__(self):
         """Return YANG name of the receiver type."""
-        base = self._yang_name()
+        base = self.yang_type()
         return "{}({})".format(self.name, base) if self.name else base
 
     def from_raw(self, raw: RawScalar) -> ScalarValue:
@@ -127,7 +127,8 @@ class DataType:
         except TypeError:
             return False
 
-    def _yang_name(self) -> str:
+    def yang_type(self) -> YangIdentifier:
+        """Return YANG name of the receiver."""
         return self.__class__.__name__[:-4].lower()
 
     def _editable_html(self, val: ScalarValue,
@@ -538,6 +539,10 @@ class InstanceIdentifierType(LinkType):
     """Class representing YANG "instance-identifier" type."""
 
     def __str__(self):
+        return "instance-identifier"
+
+    def yang_type(self) -> YangIdentifier:
+        """Override the superclass method."""
         return "instance-identifier"
 
     def _convert_raw(self, raw: str) -> InstanceRoute:

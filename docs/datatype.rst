@@ -228,6 +228,15 @@ all :class:`~.schema.TerminalNode` instances.
 	 >>> enumeration_t.contains("SnowWhite")
 	 False
 
+   .. method:: yang_type() -> YangIdentifier
+
+      Return YANG name of the receiver.
+
+      .. doctest::
+
+	 >>> ii_t.yang_type()
+	 'instance-identifier'
+
 .. class:: EmptyType
 
    This class is a subclass of :class:`DataType`, and represents YANG
