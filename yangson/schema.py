@@ -35,7 +35,9 @@ This module implements the following classes:
 * NotificationNode: YANG notification node.
 * LeafNode: YANG leaf node.
 * LeafListNode: YANG leaf-list node.
-* AnydataNode: YANG anydata or anyxml node.
+* AnyContentNode: Abstract superclass for anydata and anyxml nodes..
+* AnydataNode: YANG anydata node.
+* AnyxmlNode: YANG anyxml node.
 
 This module defines the following exceptions:
 
@@ -51,7 +53,7 @@ This module defines the following exceptions:
 * SemanticError: An instance violates a semantic rule.
 """
 
-from typing import Dict, List, MutableSet, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, MutableSet, Optional, Set, Tuple, Union
 from .exceptions import YangsonException
 from .context import Context
 from .datatype import (DataType, EmptyType, LeafrefType, LinkType,
@@ -139,6 +141,13 @@ class SchemaNode:
             RawTypeError: If a scalar value inside `rval` is of incorrect type.
         """
         raise NotImplementedError
+
+    def client_digest(self) -> Dict[str, Any]:
+        """Return dictionary of receiver's properties suitable for clients."""
+        return {
+            "description": self.description,
+            "children": {}
+            }
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
                       ctype: ContentType) -> None:
@@ -390,6 +399,10 @@ class InternalNode(SchemaNode):
             res[ch.iname()] = ch.from_raw(rval[qn], npath)
         return res
 
+    def client_digest(self) -> Dict[str, Any]:
+        """Return dictionary of receiver's properties suitable for clients."""
+        pass
+
     def _html_table(self, inst: "InstanceNode") -> str:
         val = inst.value
         res = []
@@ -617,6 +630,10 @@ class DataNode(SchemaNode):
         """Initialize the class instance."""
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
+
+    def yang_class(self) -> YangIdentifier:
+        """Return YANG name corresponding to receiver's class."""
+        return self.__class__.__name__[:-4].lower()
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
                       ctype: ContentType) -> None:
@@ -1082,6 +1099,10 @@ class LeafListNode(SequenceNode, TerminalNode):
         return (None if self.type.default is None
                 else ArrayValue([self.type.default]))
 
+    def yang_class(self) -> YangIdentifier:
+        """Override the superclass method."""
+        return "leaf-list"
+
     def _html_row(self, inst: "InstanceNode") -> str:
         typ = self.type
         f = typ._editable_html if self.config else typ.canonical_string
@@ -1104,8 +1125,8 @@ class LeafListNode(SequenceNode, TerminalNode):
         else:
             self._default.append(val)
 
-class AnydataNode(DataNode):
-    """Anydata or anyxml node."""
+class AnyContentNode(DataNode):
+    """Abstract class for anydata or anyxml nodes."""
 
     def __init__(self):
         """Initialize the class instance."""
@@ -1146,6 +1167,14 @@ class AnydataNode(DataNode):
     def _post_process(self) -> None:
         if self._mandatory:
             self.parent._add_mandatory_child(self)
+
+class AnydataNode(AnyContentNode):
+    """Anydata node."""
+    pass
+
+class AnyxmlNode(AnyContentNode):
+    """Anyxml node."""
+    pass
 
 class RpcActionNode(GroupNode):
     """RPC or action node."""

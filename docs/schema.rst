@@ -27,7 +27,8 @@ The *schema* module defines the following classes:
 * :class:`DataNode`: Abstract class for data nodes.
 * :class:`TerminalNode`: Abstract class for schema nodes that have no children.
 * :class:`ContainerNode`: YANG **container** node.
-* :class:`SequenceNode`: Abstract class for schema nodes that represent a sequence.
+* :class:`SequenceNode`: Abstract class for schema nodes that
+  represent a sequence.
 * :class:`ListNode`: YANG **list** node.
 * :class:`ChoiceNode`: YANG **choice** node.
 * :class:`CaseNode`: YANG **case** node.
@@ -37,6 +38,9 @@ The *schema* module defines the following classes:
 * :class:`NotificationNode`: YANG **notification** node.
 * :class:`LeafNode`: YANG **leaf** node.
 * :class:`LeafListNode`: YANG **leaf-list** node.
+* :class:`AnyContentNode`: Abstract superclass for YANG **anydata**
+  or **anyxml** nodes.
+* :class:`AnydataNode`: YANG **anydata** or **anyxml** node.
 * :class:`AnydataNode`: YANG **anydata** or **anyxml** node.
 
 This module also defines the following exceptions:
@@ -364,6 +368,19 @@ or **uses** statement if this statement is conditional, i.e. has a
 	 >>> fsn.default_deny
 	 <DefaultDeny.write: 2>
 
+   .. rubric:: Public Methods
+
+   .. method:: yang_class() -> YangIdentifier
+
+      Return YANG name corresponding to the receiver's class, i.e. one of
+      ``container``, ``leaf``, ``list``, ``leaf-list``, ``anydata``
+      and ``anyxml``.
+
+      .. doctest::
+
+	 >>> fsn.yang_class()
+	 'leaf'
+
 .. class:: TerminalNode
 
    This is the abstract superclass for terminal nodes, i.e. schema
@@ -537,10 +554,21 @@ or **uses** statement if this statement is conditional, i.e. has a
    :class:`TerminalNode`. Its instances represent YANG **leaf-list**
    nodes.
 
+.. class:: AnyContentNode
+
+   This class is an abstract superclass of :class:`DataNode` covering
+   both . Its instances **anydata** and **anyxml** nodes. It is a
+   subclass od :class:`DataNode`.
+
 .. class:: AnydataNode
 
-   This class is a subclass of :class:`DataNode`. Its instances
-   represent YANG **anydata** and **anyxml** nodes.
+   This class is a subclass of :class:`AnyContentNode`. Its instances
+   represent YANG **anydata** nodes.
+
+.. class:: AnyxmlNode
+
+   This class is a subclass of :class:`AnyContentNode`. Its instances
+   represent YANG **anyxml** nodes.
 
 .. class:: RpcActionNode
 
