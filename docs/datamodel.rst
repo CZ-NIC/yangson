@@ -110,7 +110,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       data tree “raw” because it needs to be processed into the
       “cooked” form before it can be used in *Yangson*. For example,
       64-bit numbers have to be encoded as strings in JSON text (see
-      `sec. 6.1`_ of [RFC7951]_), whereas the cooked form is a Python
+      sec. `6.1`_ of [RFC7951]_), whereas the cooked form is a Python
       number.
 
       See the documentation of :mod:`instvalue` module for more
@@ -169,14 +169,54 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. staticmethod:: schema_digest() -> str
 
-      Generate digest of the data model schema. The returned string
-      contains JSON-encoded information about the data model,
-      primarily intended for use in client applications.
+      Generate digest of the data model schema. This information is
+      primarily intended to aid client applications.
+
+      The returned string contains a structure of JSON
+      objects that follows the data model hierarchy. Every JSON
+      object also contains members with information about the corresponding
+      data node (including the anonymous root node), namely:
+
+      * The following members are available for all nodes:
+
+	- ``class`` – class of the node, with these possible values:
+	  ``root``, ``container``, ``leaf``, ``list``, ``leaf-list``,
+	  ``anydata`` and ``anyxml``.
+
+	- ``description`` – description string as defined in the data
+	  model, or empty string if the node has no description.
+
+      * Internal nodes (the root node, containers, and lists) have the
+	``children`` member. Its value is an object with a name/value
+	pair for every child data node that is defined in the data
+	model. The name is the identifier of the child identical to
+	the name of the node's instance – for example, it is
+	``foomod:bar`` for the ``bar`` data node defined in the
+	``foomod`` module. The value of each member of the
+	``children`` object is then another object containing the
+	child's schema digest.
+
+      * The following members are added for terminal nodes (leafs and
+	leaf-lists):
+
+	- ``base-type`` – base type of the terminal node such as
+	  ``uint8``, ``string`` etc.
+
+	- ``derived`` – this member is present only if the node's type
+	  is derived, and contains the name of the derived type.
+
+      * Container nodes also have the ``presence`` member that is
+	``true`` for containers with presence (see sec. `7.5.1`_ of
+	[RFC7950]_), and ``false`` otherwise.
+
+      * List nodes also have the ``keys`` member whose value is an
+	array with names of the list's keys.
 
       .. doctest::
 
 	 >>> len(dm.schema_digest())
-	 179
+	 161
 
-.. _sec. 6.1: https://tools.ietf.org/html/rfc7951#section-6.1
+.. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
+.. _7.5.1: https://tools.ietf.org/html/rfc7950#section-7.5.1
 .. _pyang: https://github.com/mbj4668/pyang
