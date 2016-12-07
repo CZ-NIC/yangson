@@ -56,6 +56,6 @@ Links
 .. _JSON encoded: https://tools.ietf.org/html/rfc7951
 .. _YANG: https://tools.ietf.org/html/rfc7950
 .. _Git repository: https://github.com/CZ-NIC/yangson
-.. _Documentation: http://yangson.readthedocs.io
+.. _Documentation: https://yangson.labs.nic.cz
 """
     )

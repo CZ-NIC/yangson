@@ -35,4 +35,4 @@ Links
 .. _YANG: https://tools.ietf.org/html/rfc7950
 .. _Instructions: https://github.com/CZ-NIC/yangson/wiki/devinstall
 .. _Git repository: https://github.com/CZ-NIC/yangson
-.. _Documentation: http://yangson.readthedocs.io
+.. _Documentation: https://yangson.labs.nic.cz
