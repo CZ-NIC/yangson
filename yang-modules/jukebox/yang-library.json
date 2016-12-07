@@ -1,0 +1,13 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "11ad638a5e06c58c4845f7619b45c3d5922c7693",
+    "module": [
+      {
+        "name": "example-jukebox",
+        "revision": "2016-08-15",
+        "namespace": "http://example.com/ns/example-jukebox",
+        "conformance-type": "implement"
+      }
+    ]
+  }
+}
