@@ -146,7 +146,7 @@ class SchemaNode:
         """Return dictionary of receiver's properties suitable for clients."""
         return {
             "class": self._yang_class(),
-            "description": self.description }
+            "description": self.description if self.description else ""}
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
                       ctype: ContentType) -> None:
@@ -702,9 +702,9 @@ class TerminalNode(SchemaNode):
 
     def _client_digest(self) -> Dict[str, Any]:
         res = super()._client_digest()
-        res.update({
-            "type": self.type.name,
-            "base-type": self.type.yang_type()})
+        res["base-type"] = self.type.yang_type()
+        if self.type.name:
+            res["derived"] = self.type.name
         df = self.default
         if df is not None:
             res["default"] = self.type.to_raw(df)
