@@ -1,5 +1,5 @@
 ===================================
-Welcome to Yangson's documentation!
+Welcome to *Yangson* documentation!
 ===================================
 
 Contents:

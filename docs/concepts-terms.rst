@@ -16,7 +16,7 @@ YANG language specification. Nevertheless, some concepts and rules in
 YANG are less than intuitive, and some are perhaps even slightly
 peculiar. This section gives an overview of fundamental YANG concepts
 and terms the are needed for understanding the documentation of the
-Yangson library. However, it is no substitute for studying YANG
+*Yangson* library. However, it is no substitute for studying YANG
 documentation, especially [RFC7950]_ and [Bie16]_.
 
 Another factor that may confuse users of the *Yangson* library is
@@ -29,8 +29,11 @@ stuff.
 Data Models
 ===========
 
-Data models define and describe some data. In the case of YANG, the
-data are of four different sorts:
+Data models define and describe some data.  A complete YANG data
+model usually corresponds to a particular device, physical virtual,
+with a dedicated configuration and management system.
+
+YANG distinguishes four different sorts of data:
 
 * configuration,
 * state data and statistics,
@@ -68,13 +71,15 @@ The formal means include:
 
 * For scalar parameters, it is also possible to define a default value.
 
-A complete data model usually corresponds to a particular device or
-network service.
+For the *Yangson* library, a fully specified data model is the
+baseline from which any further processing starts. That's why
+operations with isolated YANG modules are not “officially” supported,
+i.e. not available through the public API.
 
 Trees and Nodes
 ===============
 
-In most practical applications of the Yangson library, a programmer
+In most practical applications of the *Yangson* library, a programmer
 needs to work with two types of trees:
 
 * *data tree* contains real data such as configuration, state data,
@@ -99,7 +104,7 @@ YANG data models consist of *modules*. Each module defines the schema
 for some (usually related) parts of the data trees. Typically, a YANG
 module covers a certain subsystem or function. Every module defines a
 namespace that needs to be locally unique in a given data model. In
-Yangson, the namespace is identified by the YANG module name.
+*Yangson*, the namespace is identified by the YANG module name.
 
 YANG modules may also offload parts of their contents
 into *submodules*. One can then have one (main) module and any number

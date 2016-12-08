@@ -126,8 +126,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. staticmethod:: get_schema_node(path: SchemaPath) -> Optional[SchemaNode]
 
-      Return the schema node addressed by *path* argument, or ``None``
-      if no such schema node exists.
+      Return the schema node addressed by *path*, or ``None`` if no
+      such schema node exists. The *path* argument is a :term:`schema
+      path`.
 
       .. doctest::
 

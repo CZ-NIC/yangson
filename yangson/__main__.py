@@ -31,7 +31,7 @@ from yangson.schema import (RawMemberError, RawTypeError, SchemaError,
 def main(ylib: str = None, path: List[str] = ["."],
              scope: ValidationScope = ValidationScope.all,
              ctype: ContentType = ContentType.config, set_id: bool = False,
-             tree: bool = False, validate: str = None):
+             tree: bool = False, digest: bool = False, validate: str = None):
     """Entry-point for a validation script."""
     if ylib is None:
         parser = argparse.ArgumentParser(
@@ -53,6 +53,9 @@ def main(ylib: str = None, path: List[str] = ["."],
             "-t", "--tree", action="store_true",
             help="print schema tree as ASCII art")
         grp.add_argument(
+            "-d", "--digest", action="store_true",
+            help="print schema digest in JSON format")
+        grp.add_argument(
             "-v", "--validate", metavar="INST",
             help="name of the file with JSON-encoded instance data")
         parser.add_argument(
@@ -65,6 +68,7 @@ def main(ylib: str = None, path: List[str] = ["."],
         ylib = args.ylib
         set_id = args.id
         tree = args.tree
+        digest = args.digest
         validate = args.validate
         path = args.path.split(":")
         scope = ValidationScope[args.scope]
@@ -95,6 +99,12 @@ def main(ylib: str = None, path: List[str] = ["."],
         return 0
     if tree:
         print(dm.ascii_tree())
+        return 0
+    if tree:
+        print(dm.ascii_tree())
+        return 0
+    if digest:
+        print(dm.schema_digest())
         return 0
     if not validate:
         return 0

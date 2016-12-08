@@ -41,6 +41,11 @@ Operations
    Print the schema tree of the complete data model as ASCII art. See
    also :meth:`.DataModel.ascii_tree`.
 
+.. option:: -d, --digest
+
+   Print the schema digest of the data model in JSON format. See
+   also :meth:`.DataModel.schema_digest`.
+
 .. option:: -v <instance>, --validate <instance>
 
    Validate an instance object against the data model. The *instance*
