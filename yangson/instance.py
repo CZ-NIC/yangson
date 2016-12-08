@@ -238,33 +238,6 @@ class InstanceNode:
             raise NonexistentInstance(self, "item " + key) from None
         return self._copy(newval)
 
-    def look_up(self, **keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
-        """Return the entry with matching keys.
-
-        Args:
-            keys: Keys and values specified as keyword arguments.
-
-        Raises:
-            InstanceValueError: If the receiver's value is not a YANG list.
-            NonexistentInstance: If no entry with matching keys exists.
-        """
-        if not isinstance(self.value, ArrayValue):
-            raise InstanceValueError(self, "lookup on non-list")
-        try:
-            for i in range(len(self.value)):
-                en = self.value[i]
-                flag = True
-                for k in keys:
-                    if en[k] != keys[k]:
-                        flag = False
-                        break
-                if flag: return self._entry(i)
-            raise NonexistentInstance(self, "entry lookup failed")
-        except KeyError:
-            raise NonexistentInstance(self, "entry lookup failed") from None
-        except TypeError:
-            raise InstanceValueError(self, "lookup on non-list") from None
-
     def up(self) -> "InstanceNode":
         """Return an instance node corresponding to the receiver's parent.
 
@@ -586,6 +559,33 @@ class ObjectMember(InstanceNode):
                                 ssn, self.timestamp)
         except KeyError:
             raise NonexistentInstance(self, "member " + name) from None
+
+    def look_up(self, **keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
+        """Return the entry with matching keys.
+
+        Args:
+            keys: Keys and values specified as keyword arguments.
+
+        Raises:
+            InstanceValueError: If the receiver's value is not a YANG list.
+            NonexistentInstance: If no entry with matching keys exists.
+        """
+        if not isinstance(self.schema_node, ListNode):
+            raise InstanceValueError(self, "lookup on non-list")
+        try:
+            for i in range(len(self.value)):
+                en = self.value[i]
+                flag = True
+                for k in keys:
+                    if en[k] != keys[k]:
+                        flag = False
+                        break
+                if flag: return self._entry(i)
+            raise NonexistentInstance(self, "entry lookup failed")
+        except KeyError:
+            raise NonexistentInstance(self, "entry lookup failed") from None
+        except TypeError:
+            raise InstanceValueError(self, "lookup on non-list") from None
 
     def _zip(self) -> ObjectValue:
         """Zip the receiver into an object and return it."""
