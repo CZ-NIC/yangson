@@ -78,18 +78,6 @@ class Context:
         cls._module_sequence = [] # type: List[ModuleId]
         """List that defines the order of module processing."""
 
-    @staticmethod
-    def _html_attributes(attrs) -> str:
-        """Render HTML attributes from a dictionary."""
-        if not attrs: return ""
-        ats = []
-        for k in attrs:
-            at = k
-            if attrs[k] is not None:
-                at += '="{}"'.format(attrs[k])
-            ats.append(at)
-        return " " + " ".join(ats)
-
     @classmethod
     def _from_yang_library(cls, yang_lib: Dict[str, Any],
                            mod_path: List[str]) -> None:

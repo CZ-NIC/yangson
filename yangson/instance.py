@@ -340,47 +340,6 @@ class InstanceNode:
             return [en.raw_value() for en in self]
         return self.schema_node.type.to_raw(self.value)
 
-    def html_member_table(self) -> str:
-        """Return HTML rendering of the receiver."""
-        if self.is_internal():
-            return self.schema_node._html_table(self)
-        raise InstanceValueError(self, "scalar instance")
-
-    def html_tree(self) -> str:
-        """Return HTML rendering of receiver's descendant tree."""
-        if not self.is_internal():
-            raise InstanceValueError(self, "scalar instance")
-        return '<div class="data-tree"><ul>\n{}</ul>\n</div>\n'.format(
-            self._html_tree(True, True))
-
-    def _html_tree(self, expand: bool = False, select: bool = False) -> str:
-        subs = ""
-        if isinstance(self.value, ArrayValue):
-            inner = True
-            nent = len(self.value)
-            for en in self:
-                subs += en._html_tree()
-        else:
-            inner = False
-            nent = -1
-            for m in sorted(self.value):
-                c = self._member(m)
-                if c.is_internal():
-                    inner = True
-                    subs += c._html_tree()
-        res = "<li"
-        if select:
-            res += ' class="selected"'
-        jp = self.json_pointer()
-        res += '><input type="checkbox" id="{}"'.format(jp)
-        if expand:
-            res += ' checked="checked"'
-        res += '><label for="{}">{}{}</label>'.format(
-            jp, self.key, "" if nent < 0 else " [{}]".format(nent))
-        if inner:
-            res += '<ul>\n{}</ul>'.format(subs)
-        return res + "</li>"
-
     def _member(self, name: InstanceName) -> "ObjectMember":
         sibs = self.value.copy()
         try:

@@ -1,5 +1,0 @@
-name: py35
-dependencies:
-- python=3.5.2=0
-- pip:
-  - PyXB==1.2.4
