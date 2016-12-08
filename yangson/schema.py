@@ -724,8 +724,12 @@ class TerminalNode(SchemaNode):
             raise SchemaError(inst, "invalid type: " + repr(inst.value))
         if (isinstance(self.type, LinkType) and        # referential integrity
                 scope.value & ValidationScope.semantics.value and
-                self.type.require_instance and not inst._deref()):
-            raise SemanticError(inst, "required instance missing")
+                self.type.require_instance):
+            try:
+                if not inst._deref():
+                    raise SemanticError(inst, "required instance missing")
+            except YangsonException:
+                raise SemanticError(inst, "required instance missing") from None
 
     def _default_value(self, inst: "InstanceNode", ctype: ContentType,
                        lazy: bool) -> "InstanceNode":
