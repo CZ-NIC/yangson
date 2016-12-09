@@ -405,6 +405,11 @@ or **uses** statement if this statement is conditional, i.e. has a
    :class:`InternalNode`. Its instances represent YANG **container**
    nodes.
 
+   The `method resolution order`_ for this class is as follows:
+
+   :class:`ContainerNode` ► :class:`DataNode` ► :class:`InternalNode` ►
+   :class:`SchemaNode`
+
    .. rubric:: Instance Attributes
 
    .. attribute:: presence
@@ -488,6 +493,11 @@ or **uses** statement if this statement is conditional, i.e. has a
    :class:`InternalNode`. Its instances represent YANG **list**
    nodes.
 
+   The `method resolution order`_ for this class is as follows:
+
+   :class:`ListNode` ► :class:`SequenceNode` ► :class:`DataNode` ►
+   :class:`InternalNode` ► :class:`SchemaNode`
+
    .. rubric:: Instance Attributes
 
    .. attribute:: keys
@@ -535,17 +545,26 @@ or **uses** statement if this statement is conditional, i.e. has a
    This class is a subclass of :class:`DataNode` and :class:`TerminalNode`.
    Its instances represent YANG **leaf** nodes.
 
+   The `method resolution order`_ for this class is as follows:
+
+   :class:`LeafNode` ► :class:`DataNode` ► :class:`TerminalNode` ►
+   :class:`SchemaNode`
+
 .. class:: LeafListNode
 
    This class is a subclass of :class:`SequenceNode` and
    :class:`TerminalNode`. Its instances represent YANG **leaf-list**
    nodes.
 
+   The `method resolution order`_ for this class is as follows:
+
+   :class:`LeafListNode` ► :class:`SequenceNode` ► :class:`DataNode` ►
+   :class:`TerminalNode` ► :class:`SchemaNode`
+
 .. class:: AnyContentNode
 
-   This class is an abstract superclass of :class:`DataNode` covering
-   both . Its instances **anydata** and **anyxml** nodes. It is a
-   subclass od :class:`DataNode`.
+   This class is an abstract superclass for both **anydata** and
+   **anyxml** nodes. It is a subclass od :class:`DataNode`.
 
 .. class:: AnydataNode
 
@@ -626,3 +645,4 @@ or **uses** statement if this statement is conditional, i.e. has a
 .. _7.8.3: https://tools.ietf.org/html/rfc7950#section-7.8.3
 .. _7.9.2: https://tools.ietf.org/html/rfc7950#section-7.9.2
 .. _7.21.5: https://tools.ietf.org/html/rfc7950#section-7.21.5
+.. _method resolution order: https://www.python.org/download/releases/2.3/mro/
