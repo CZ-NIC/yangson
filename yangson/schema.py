@@ -1073,7 +1073,8 @@ class LeafNode(DataNode, TerminalNode):
             self.parent._add_mandatory_child(self)
 
     def _tree_line(self) -> str:
-        return super()._tree_line() + ("" if self._mandatory else "?")
+        return "{}{} <{}>".format(
+            super()._tree_line(), "" if self._mandatory else "?", self.type)
 
     def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
         self._default = self.type.from_yang(stmt.argument, mid)
@@ -1103,6 +1104,9 @@ class LeafListNode(SequenceNode, TerminalNode):
             self._default = ArrayValue([val])
         else:
             self._default.append(val)
+
+    def _tree_line(self) -> str:
+        return "{} <{}>".format(super()._tree_line(), self.type)
 
 class AnyContentNode(DataNode):
     """Abstract class for anydata or anyxml nodes."""

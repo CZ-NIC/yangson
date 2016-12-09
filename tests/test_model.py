@@ -16,66 +16,66 @@ from yangson.xpathparser import InvalidXPath, NotSupported, XPathParser
 tree = """+--rw (test:choiA)?
 |  +--:(test:caseA)
 |  |  +--rw test:contC
-|  |  |  +--rw leafD?
-|  |  |  +--rw llistA*
-|  |  +--rw test:leafH?
+|  |  |  +--rw leafD? <typB(int16)>
+|  |  |  +--rw llistA* <typA(int16)>
+|  |  +--rw test:leafH? <ip-address(union)>
 |  +--:(testb:leafQ)
-|  |  +--rw testb:leafQ?
+|  |  +--rw testb:leafQ? <empty>
 |  +--:(test:llistB)
-|     +--rw test:llistB*
+|     +--rw test:llistB* <ip-address-no-zone(union)>
 +--rw test:contA
 |  +--rw anydA
 |  +--rw anyxA?
 |  +--rw (testb:choiB)
 |  |  +--:(testb:contB)
 |  |  |  +--rw testb:contB!
-|  |  |     +--rw leafC
+|  |  |     +--rw leafC <typA(int16)>
 |  |  +--:(testb:leafI)
-|  |  |  +--rw testb:leafI?
+|  |  |  +--rw testb:leafI? <typB(int16)>
 |  |  +--:(testb:leafN)
-|  |     +--rw testb:leafN?
-|  +--rw leafA?
-|  +--ro leafB
-|  +--rw testb:leafR?
-|  +--rw testb:leafS?
-|  +--rw testb:leafT?
-|  +--rw testb:leafV
+|  |     +--rw testb:leafN? <string>
+|  +--rw leafA? <typA(int16)>
+|  +--ro leafB <typA(int16)>
+|  +--rw testb:leafR? <leafref>
+|  +--rw testb:leafS? <instance-identifier>
+|  +--rw testb:leafT? <identityref>
+|  +--rw testb:leafV <typE(int16)>
 |  +--rw listA* [leafE leafF]
 |     +--rw contD
 |     |  +---x acA
 |     |  |  +--ro input
 |     |  |  +--ro output
-|     |  |     +--ro leafL
+|     |  |     +--ro leafL <boolean>
 |     |  +--rw contE!
-|     |  |  +--rw leafJ?
-|     |  |  +--rw leafP?
-|     |  |  +--rw leafU?
-|     |  +--rw leafG?
-|     +--rw leafE
-|     +--rw leafF
-|     +--rw leafW?
+|     |  |  +--rw leafJ? <empty>
+|     |  |  +--rw leafP? <uint8>
+|     |  |  +--rw leafU? <boolean>
+|     |  +--rw leafG? <yang-identifier(string)>
+|     +--rw leafE <hex-number(string)>
+|     +--rw leafF <boolean>
+|     +--rw leafW? <typE(leafref)>
 +--rw test:contT
-|  +--rw binary?
-|  +--rw bits?
-|  +--rw boolean?
-|  +--rw decimal64?
-|  +--rw enumeration?
-|  +--rw int16?
-|  +--rw int32?
-|  +--rw int64?
-|  +--rw int8?
-|  +--rw string?
-|  +--rw uint16?
-|  +--rw uint32?
-|  +--rw uint64?
-|  +--rw uint8?
+|  +--rw binary? <binary>
+|  +--rw bits? <typD(bits)>
+|  +--rw boolean? <boolean>
+|  +--rw decimal64? <decimal64>
+|  +--rw enumeration? <typC(enumeration)>
+|  +--rw int16? <int16>
+|  +--rw int32? <int32>
+|  +--rw int64? <int64>
+|  +--rw int8? <int8>
+|  +--rw string? <string>
+|  +--rw uint16? <uint16>
+|  +--rw uint32? <uint32>
+|  +--rw uint64? <uint64>
+|  +--rw uint8? <uint8>
 +---n testb:noA
-|  +--ro testb:leafO?
+|  +--ro testb:leafO? <boolean>
 +---x testb:rpcA
    +--ro testb:input
-   |  +--ro testb:leafK?
+   |  +--ro testb:leafK? <typA(int16)>
    +--ro testb:output
-      +--ro testb:llistC*
+      +--ro testb:llistC* <boolean>
 """
 
 @pytest.fixture

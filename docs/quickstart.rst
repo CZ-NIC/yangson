@@ -43,11 +43,11 @@ Here is an ASCII art depicting the schema tree:
 
    >>> print(dm.ascii_tree(), end='')
    +--rw example-2:bag
-      +--rw bar
-      +--rw baz?
+      +--rw bar <boolean>
+      +--rw baz? <decimal64>
       +--rw foo* [number]
-         +--rw in-words?
-         +--rw number
+         +--rw in-words? <string>
+         +--rw number <uint8>
 
 Loading and Validating Instance Data
 ====================================

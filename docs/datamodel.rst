@@ -165,8 +165,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.ascii_tree()
-	 '+--rw example-1:greeting?\n'
+	 >>> print(dm.ascii_tree(), end='')
+	 +--rw example-1:greeting? <string>
 
       .. staticmethod:: schema_digest() -> str
 
