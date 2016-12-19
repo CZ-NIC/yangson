@@ -18,7 +18,7 @@ Installation
 
     python -m pip install yangson
 
-Note that *Yangson* requires Python 3.
+Note that *Yangson* requires Python 3.5.
 
 Development
 ===========
