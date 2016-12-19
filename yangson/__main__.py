@@ -23,7 +23,8 @@ import sys
 from typing import List
 from yangson import DataModel
 from yangson.context import (BadYangLibraryData, FeaturePrerequisiteError,
-                                 MultipleImplementedRevisions, ModuleNotFound)
+                                 MultipleImplementedRevisions, ModuleNotFound,
+                                 ModuleNotRegistered)
 from yangson.enumerations import ContentType, ValidationScope
 from yangson.schema import (RawMemberError, RawTypeError, SchemaError,
                                 SemanticError)
@@ -93,6 +94,9 @@ def main(ylib: str = None, path: List[str] = ["."],
         return 2
     except ModuleNotFound as e:
         print("Module not found:" , str(e), file=sys.stderr)
+        return 2
+    except ModuleNotRegistered as e:
+        print("Module not registered:" , str(e), file=sys.stderr)
         return 2
     if set_id:
         print(dm.module_set_id())
