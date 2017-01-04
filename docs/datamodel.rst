@@ -216,7 +216,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
 	 >>> len(dm.schema_digest())
-	 161
+	 118
 
 .. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
 .. _7.5.1: https://tools.ietf.org/html/rfc7950#section-7.5.1
