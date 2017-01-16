@@ -55,7 +55,7 @@ import re
 from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from .exceptions import YangsonException
-from .context import Context
+from .schemadata import SchemaContext
 from .instance import InstanceNode, InstanceIdParser, InstanceRoute
 from .parser import ParserException
 from .statement import Statement
@@ -71,9 +71,9 @@ class DataType:
 
     _option_template = '<option value="{}"{}>{}</option>'
 
-    def __init__(self, mid: ModuleId, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
-        self.module_id = mid
+        self.sctx = sctx
         self.default = None
         self.name = name
 
@@ -116,7 +116,7 @@ class DataType:
         """Return canonical form of a value."""
         return str(val)
 
-    def from_yang(self, text: str, mid: ModuleId) -> ScalarValue:
+    def from_yang(self, text: str, sctx: SchemaContext) -> ScalarValue:
         """Parse value specified in a YANG module."""
         return self.parse_value(text)
 
@@ -139,46 +139,40 @@ class DataType:
         return True
 
     @classmethod
-    def _resolve_type(cls, stmt: Statement, mid: ModuleId) -> "DataType":
+    def _resolve_type(cls, stmt: Statement, sctx: SchemaContext) -> "DataType":
         typ = stmt.argument
         if typ in cls.dtypes:
-            res = cls.dtypes[typ](mid, None)
-            res._handle_properties(stmt, mid)
+            res = cls.dtypes[typ](sctx, None)
+            res._handle_properties(stmt, sctx)
         else:
             p, s, loc = typ.partition(":")
-            res = cls._derived_type(stmt, mid, loc if s else typ)
+            res = cls._derived_type(stmt, sctx, loc if s else typ)
         return res
 
     @classmethod
-    def _derived_type(cls, stmt: Statement, mid: ModuleId,
+    def _derived_type(cls, stmt: Statement, sctx: SchemaContext,
                           name: YangIdentifier) -> "DataType":
-        """Completely resolve a derived type.
-
-        Args:
-            stmt: Derived type statement.
-            mid: Id of the context module.
-        """
         tchain = []
-        s = stmt
-        m = mid
+        ts = stmt
+        sc = sctx
         while True:
-            tdef, m = Context.get_definition(s, m)
-            s = tdef.find1("type", required=True)
-            tchain.append((tdef, s, m))
-            if s.argument in cls.dtypes: break
-        res = cls.dtypes[s.argument](mid, name)
+            tdef, sc = sctx.schema_data.get_definition(ts, sc)
+            ts = tdef.find1("type", required=True)
+            tchain.append((tdef, ts, sc))
+            if ts.argument in cls.dtypes: break
+        res = cls.dtypes[ts.argument](sctx, name)
         btyp = True
         while tchain:
-            tdef, typst, tid = tchain.pop()
+            tdef, typst, tsc = tchain.pop()
             if btyp:
-                res._handle_properties(s, m)
+                res._handle_properties(ts, sc)
                 btyp = False
             else:
-                res._handle_restrictions(typst, tid)
+                res._handle_restrictions(typst, tsc)
             dfst = tdef.find1("default")
             if dfst:
-                res.default = res.from_yang(dfst.argument, mid)
-        res._handle_restrictions(stmt, mid)
+                res.default = res.from_yang(dfst.argument, tsc)
+        res._handle_restrictions(stmt, sctx)
         return res
 
     @staticmethod
@@ -225,22 +219,12 @@ class DataType:
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         return []
 
-    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type substatements.
+    def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
+        """Handle type substatements."""
+        self._handle_restrictions(stmt, sctx)
 
-        Args:
-            stmt: YANG ``type`` statement.
-            mid: Id of the context module.
-        """
-        self._handle_restrictions(stmt, mid)
-
-    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type restriction substatements.
-
-        Args:
-            stmt: YANG ``type`` statement.
-            mid: Id of the context module.
-        """
+    def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
+        """Handle type restriction substatements."""
         pass
 
 class EmptyType(DataType, metaclass=_Singleton):
@@ -264,9 +248,9 @@ class EmptyType(DataType, metaclass=_Singleton):
 class BitsType(DataType):
     """Class representing YANG "bits" type."""
 
-    def __init__(self, mid: ModuleId, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid, name)
+        super().__init__(sctx, name)
         self.bit = {}
 
     def sorted_bits(self) -> List[Tuple[str, int]]:
@@ -297,11 +281,11 @@ class BitsType(DataType):
             raise YangTypeError(self, val) from None
         return res
 
-    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle **bit** statements."""
         nextpos = 0
         for bst in stmt.find_all("bit"):
-            if not Context.if_features(bst, mid):
+            if not sctx.schema_data.if_features(bst, sctx.text_mid):
                 continue
             label = bst.argument
             pst = bst.find1("position")
@@ -314,10 +298,11 @@ class BitsType(DataType):
                 self.bit[label] = nextpos
             nextpos += 1
 
-    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         bst = stmt.find_all("bit")
         if not bst: return
-        new = set([ b.argument for b in bst if Context.if_features(b, mid) ])
+        new = set([b.argument for b in bst if
+                        sctx.schema_data.if_features(b, sctx.text_mid)])
         for bit in set(self.bit) - new:
             del self.bit[bit]
 
@@ -354,19 +339,13 @@ class StringType(DataType):
 
     length = [[0, 4294967295]] # type: Range
 
-    def __init__(self, mid: ModuleId, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid, name)
+        super().__init__(sctx, name)
         self.patterns = [] # type: List[Pattern]
         self.invert_patterns = [] # type: List[Pattern]
 
-    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type restrictions.
-
-        Args:
-            stmt: YANG string type statement.
-            mid: Id of the context module.
-        """
+    def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         lstmt = stmt.find1("length")
         if lstmt:
             self.length = self._combine_ranges(self.length,
@@ -408,9 +387,9 @@ class BinaryType(StringType):
 class EnumerationType(DataType):
     """Class representing YANG "enumeration" type."""
 
-    def __init__(self, mid: ModuleId, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid, name)
+        super().__init__(sctx, name)
         self.enum = {} # type: Dict[str, int]
 
     def sorted_enums(self) -> List[Tuple[str, int]]:
@@ -420,11 +399,11 @@ class EnumerationType(DataType):
     def _constraints(self, val: str) -> bool:
         return val in self.enum
 
-    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle **enum** statements."""
         nextval = 0
         for est in stmt.find_all("enum"):
-            if not Context.if_features(est, mid):
+            if not sctx.schema_data.if_features(est, sctx.text_mid):
                 continue
             label = est.argument
             vst = est.find1("value")
@@ -437,50 +416,39 @@ class EnumerationType(DataType):
                 self.enum[label] = nextval
             nextval += 1
 
-    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         est = stmt.find_all("enum")
         if not est: return
-        new = set([ e.argument for e in est if Context.if_features(e, mid) ])
+        new = set([ e.argument for e in est if
+                        sctx.schema_data.if_features(e, sctx.text_mid) ])
         for en in set(self.enum) - new:
             del self.enum[en]
 
 class LinkType(DataType):
     """Abstract class for instance-referencing types."""
 
-    def __init__(self, mid: ModuleId, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid, name)
+        super().__init__(sctx, name)
         self.require_instance = True # type: bool
 
-    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type substatements.
-
-        Args:
-            stmt: YANG ``type leafref/instance-identifier`` statement.
-            mid: Id of the context module.
-        """
+    def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         if stmt.find1("require-instance", "false"):
             self.require_instance = False
 
 class LeafrefType(LinkType):
     """Class representing YANG "leafref" type."""
 
-    def __init__(self, mid: ModuleId, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid, name)
+        super().__init__(sctx, name)
         self.path = None
         self.ref_type = None
 
-    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type substatements.
-
-        Args:
-            stmt: YANG ``type leafref`` statement.
-            mid: Id of the context module.
-        """
-        super()._handle_properties(stmt, mid)
+    def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
+        super()._handle_properties(stmt, sctx)
         self.path = XPathParser(
-            stmt.find1("path", required=True).argument, mid).parse()
+            stmt.find1("path", required=True).argument, sctx).parse()
 
     def canonical_string(self, val: ScalarValue) -> str:
         return self.ref_type.canonical_string(val)
@@ -524,9 +492,9 @@ class InstanceIdentifierType(LinkType):
 class IdentityrefType(DataType):
     """Class representing YANG "identityref" type."""
 
-    def __init__(self, mid: ModuleId, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid, name)
+        super().__init__(sctx, name)
         self.bases = [] # type: List[QualName]
 
     def _convert_raw(self, raw: str) -> QualName:
@@ -534,34 +502,31 @@ class IdentityrefType(DataType):
             i1, s, i2 = raw.partition(":")
         except AttributeError:
             return None
-        return (i2, i1) if s else (i1, Context.namespace(self.module_id))
+        return (i2, i1) if s else (i1, self.namespace)
 
     def _constraints(self, val: QualName) -> bool:
         for b in self.bases:
-            if not Context.is_derived_from(val, b): return False
+            if not self.sctx.schema_data.is_derived_from(val, b):
+                return False
         return True
 
     def to_raw(self, val: QualName) -> str:
         return self.canonical_string(val)
 
-    def from_yang(self, text: str, mid: ModuleId) -> QualName:
+    def from_yang(self, text: str, sctx: SchemaContext) -> QualName:
         """Override the superclass method."""
         try:
-            res = Context.translate_pname(text, mid)
+            res = sctx.schema_data.translate_pname(text, self.sctx.text_mid)
         except:
             raise YangTypeError(self, text) from None
         if self._constraints(res): return res
         raise YangTypeError(self, text)
 
-    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type substatements.
-
-        Args:
-            stmt: YANG ``type identityref`` statement.
-            mid: Id of the context module.
-        """
-        self.bases = [ Context.translate_pname(b.argument, mid)
-                       for b in stmt.find_all("base") ]
+    def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
+        self.bases = []
+        for b in stmt.find_all("base"):
+            self.bases.append(
+                sctx.schema_data.translate_pname(b.argument, sctx.text_mid))
 
     def canonical_string(self, val: ScalarValue) -> str:
         """Return canonical form of a value."""
@@ -573,13 +538,7 @@ class NumericType(DataType):
     def _constraints(self, val: Union[int, decimal.Decimal]) -> bool:
         return self._in_range(val, self._range)
 
-    def _handle_restrictions(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type substatements.
-
-        Args:
-            stmt: YANG ``type`` statement.
-            mid: Id of the context module.
-        """
+    def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         rstmt = stmt.find1("range")
         if rstmt:
             self._range = self._combine_ranges(self._range, rstmt.argument,
@@ -588,24 +547,18 @@ class NumericType(DataType):
 class Decimal64Type(NumericType):
     """Class representing YANG "decimal64" type."""
 
-    def __init__(self, mid: ModuleId, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid, name)
+        super().__init__(sctx, name)
         self._epsilon = decimal.Decimal(0) # type: decimal.Decimal
 
-    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type substatements.
-
-        Args:
-            stmt: YANG ``type decimal64`` statement.
-            mid: Id of the context module.
-        """
+    def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         fd = int(stmt.find1("fraction-digits", required=True).argument)
         self._epsilon = decimal.Decimal(10) ** -fd
         quot = decimal.Decimal(10**fd)
         lim = decimal.Decimal(9223372036854775808)
         self._range = [[-lim / quot, (lim - 1) / quot]]
-        super()._handle_properties(stmt, mid)
+        super()._handle_properties(stmt, sctx)
 
     def _convert_raw(self, raw: str) -> decimal.Decimal:
         if not isinstance(raw, (str, numbers.Real)):
@@ -705,9 +658,9 @@ class Uint64Type(IntegralType):
 class UnionType(DataType):
     """Class representing YANG "union" type."""
 
-    def __init__(self, mid: ModuleId, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
-        super().__init__(mid, name)
+        super().__init__(sctx, name)
         self.types = [] # type: List[DataType]
 
     def to_raw(self, val: ScalarValue) -> RawScalar:
@@ -740,14 +693,8 @@ class UnionType(DataType):
                 continue
         return False
 
-    def _handle_properties(self, stmt: Statement, mid: ModuleId) -> None:
-        """Handle type substatements.
-
-        Args:
-            stmt: YANG ``type`` statement.
-            mid: Id of the context module.
-        """
-        self.types = [ self._resolve_type(ts, mid)
+    def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
+        self.types = [ self._resolve_type(ts, sctx)
                        for ts in stmt.find_all("type") ]
 
 class YangTypeError(YangsonException):

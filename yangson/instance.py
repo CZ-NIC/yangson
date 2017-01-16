@@ -42,7 +42,6 @@ import json
 from typing import Any, Callable, List, Tuple, Union
 from urllib.parse import unquote
 from .exceptions import YangsonException
-from .context import Context
 from .enumerations import ContentType, ValidationScope
 from .instvalue import *
 from .parser import EndOfInput, Parser, UnexpectedInput
@@ -1078,6 +1077,6 @@ class NonexistentInstance(InstanceException):
     def __str__(self):
         return "{} {}".format(super().__str__(), self.detail)
 
-from .schema import (AnydataNode, CaseNode, ChoiceNode, DataNode, InternalNode,
-                        LeafNode, LeafListNode, ListNode, NonexistentSchemaNode,
-                        SequenceNode, TerminalNode)
+from .schemanode import (AnydataNode, CaseNode, ChoiceNode, DataNode,
+                             InternalNode, LeafNode, LeafListNode, ListNode,
+                             NonexistentSchemaNode, SequenceNode, TerminalNode)

@@ -2,13 +2,14 @@ import json
 import pytest
 from decimal import Decimal
 from yangson import DataModel
-from yangson.context import (Context, FeatureExprParser, BadPath,
+from yangson.schemadata import (SchemaContext, FeatureExprParser, BadPath,
                              InvalidFeatureExpression, UnknownPrefix)
 from yangson.datatype import YangTypeError
 from yangson.enumerations import ContentType
 from yangson.instance import NonexistentInstance
 from yangson.instvalue import ArrayValue, ObjectValue
-from yangson.schema import SequenceNode, NonexistentSchemaNode, RawTypeError, SchemaError
+from yangson.schemanode import (SequenceNode, NonexistentSchemaNode,
+                                    RawTypeError, SchemaError)
 from yangson.xpathast import XPathTypeError
 from yangson.xpathparser import InvalidXPath, NotSupported, XPathParser
 
@@ -123,25 +124,25 @@ def instance(data_model):
     """
     return data_model.from_raw(json.loads(data))
 
-def test_context(data_model):
-    assert len(Context.implement) == 2
+def test_schema_data(data_model):
+    assert len(data_model.schema_data.implement) == 2
     assert data_model.module_set_id() == "b6d7e0614440c5ad8a7370fe46c777254d331983"
-    tid = Context.last_revision("test")
-    stid = Context.last_revision("subtest")
-    tbid = Context.last_revision("testb")
-    assert Context.modules[tid].statement.argument == "test"
-    assert Context.translate_pname("t:foo", tbid) == ("foo", "test")
-    assert Context.translate_pname("sd:foo", stid) == ("foo", "defs")
+    tid = data_model.schema_data.last_revision("test")
+    stid = data_model.schema_data.last_revision("subtest")
+    tbid = data_model.schema_data.last_revision("testb")
+    assert data_model.schema_data.modules[tid].statement.argument == "test"
+    assert data_model.schema_data.translate_pname("t:foo", tbid) == ("foo", "test")
+    assert data_model.schema_data.translate_pname("sd:foo", stid) == ("foo", "defs")
     with pytest.raises(UnknownPrefix):
-        Context.translate_pname("d:foo", stid)
-    assert FeatureExprParser("feA and not (not feA or feB)", tid).parse()
+        data_model.schema_data.translate_pname("d:foo", stid)
+    assert FeatureExprParser("feA and not (not feA or feB)", data_model.schema_data, tid).parse()
     with pytest.raises(InvalidFeatureExpression):
-        FeatureExprParser("feA andnot (not feA or feB)", tid).parse()
-    assert not Context.is_derived_from(("all-uses", "test"), ("all-uses", "test"))
-    assert Context.is_derived_from(("all-uses", "test"), ("licence-property", "test"))
-    assert Context.is_derived_from(("CC-BY-SA", "testb"), ("share-alike", "test"))
-    assert not Context.is_derived_from(("CC-BY-SA", "testb"), ("derivatives", "test"))
-    assert Context.is_derived_from(("CC-BY-SA", "testb"), ("all-uses", "test"))
+        FeatureExprParser("feA andnot (not feA or feB)", data_model.schema_data, tid).parse()
+    assert not data_model.schema_data.is_derived_from(("all-uses", "test"), ("all-uses", "test"))
+    assert data_model.schema_data.is_derived_from(("all-uses", "test"), ("licence-property", "test"))
+    assert data_model.schema_data.is_derived_from(("CC-BY-SA", "testb"), ("share-alike", "test"))
+    assert not data_model.schema_data.is_derived_from(("CC-BY-SA", "testb"), ("derivatives", "test"))
+    assert data_model.schema_data.is_derived_from(("CC-BY-SA", "testb"), ("all-uses", "test"))
 
 def test_schema(data_model):
     ca = data_model.get_data_node("/test:contA")
@@ -155,14 +156,14 @@ def test_schema(data_model):
     lla = cc.get_child("llistA", "test")
     chb = data_model.get_schema_node("/test:contA/testb:choiB")
     cb = chb.get_data_child("contB", "testb")
-    ln = chb.get_schema_descendant(Context.path2route(
+    ln = chb.get_schema_descendant(data_model.schema_data.path2route(
         "/testb:leafN/leafN"))
     lc = cb.get_data_child("leafC", "testb")
     llb = data_model.get_schema_node("/test:choiA/llistB/llistB")
     lj = data_model.get_data_node("/test:contA/listA/contD/contE/leafJ")
     assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
     llc = data_model.get_schema_node("/testb:rpcA/output/llistC")
-    ll = lsta.get_schema_descendant(Context.path2route(
+    ll = lsta.get_schema_descendant(data_model.schema_data.path2route(
         "test:contD/acA/output/leafL"))
     lo = data_model.get_schema_node("/testb:noA/leafO")
     lp = data_model.get_data_node("/test:contA/listA/contD/contE/leafP")
@@ -316,10 +317,11 @@ def test_instance(instance):
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln._ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
 
-def test_xpath(instance):
+def test_xpath(data_model, instance):
     def xptest(expr, res=True, node=instance, module="test"):
-        mid = Context.last_revision(module)
-        assert XPathParser(expr, mid).parse().evaluate(node) == res
+        mid = data_model.schema_data.last_revision(module)
+        xpp = XPathParser(expr, SchemaContext(data_model.schema_data, module, mid))
+        assert xpp.parse().evaluate(node) == res
     conta = instance["test:contA"]
     lr = conta["testb:leafR"]
     with pytest.raises(InvalidXPath):

@@ -1,4 +1,4 @@
-# Copyright © 2016 CZ.NIC, z. s. p. o.
+# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -55,7 +55,7 @@ This module defines the following exceptions:
 
 from typing import Any, Dict, List, MutableSet, Optional, Set, Tuple, Union
 from .exceptions import YangsonException
-from .context import Context
+from .schemadata import SchemaData, SchemaContext
 from .datatype import (DataType, EmptyType, LeafrefType, LinkType,
                        RawScalar, IdentityrefType, YangTypeError)
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
@@ -100,6 +100,13 @@ class SchemaNode:
     def mandatory(self) -> bool:
         """Is the receiver a mandatory node?"""
         return False
+
+    def schema_root(self) -> "GroupNode":
+        """Return the root node of the schema."""
+        sn = self
+        while sn.parent:
+            sn = sn.parent
+        return sn
 
     def content_type(self) -> ContentType:
         """Return receiver's content type."""
@@ -176,16 +183,18 @@ class SchemaNode:
     def _flatten(self) -> List["SchemaNode"]:
         return [self]
 
-    def _handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_substatements(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Dispatch actions for substatements of `stmt`."""
         for s in stmt.substatements:
             if s.prefix:
-                key = Context.modules[mid].prefix_map[s.prefix][0] + ":" + s.keyword
+                key = (
+                    sctx.schema_data.modules[sctx.text_mid].prefix_map[s.prefix][0]
+                    + ":" + s.keyword)
             else:
                 key = s.keyword
             mname = SchemaNode._stmt_callback.get(key, "_noop")
             method = getattr(self, mname)
-            method(s, mid)
+            method(s, sctx)
 
     def _follow_leafref(
             self, xpath: "Expr", init: "TerminalNode") -> Optional["DataNode"]:
@@ -208,37 +217,37 @@ class SchemaNode:
                                  else (xpath.qname[0], init.ns))
                     return self.get_data_child(*qname)
         elif isinstance(xpath, Root):
-            return Context.schema
+            return self.schema_root()
         return None
 
-    def _noop(self, stmt: Statement, mid: ModuleId) -> None:
+    def _noop(self, stmt: Statement, sctx: SchemaContext) -> None:
         pass
 
-    def _config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _config_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         if stmt.argument == "true" and self.parent.config:
             self._ctype = ContentType.all
         elif stmt.argument == "false":
             self._ctype = ContentType.nonconfig
 
-    def _description_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _description_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.description = stmt.argument
 
-    def _must_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        xpp = XPathParser(stmt.argument, mid)
+    def _must_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
+        xpp = XPathParser(stmt.argument, sctx)
         mex = xpp.parse()
         if not xpp.at_end():
             raise WrongArgument(stmt)
         ems = stmt.find1("error-message")
         self.must.append((mex, ems.argument if ems else None))
 
-    def _when_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        xpp = XPathParser(stmt.argument, mid)
+    def _when_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
+        xpp = XPathParser(stmt.argument, sctx)
         wex = xpp.parse()
         if not xpp.at_end():
             raise WrongArgument(stmt)
         self.when = wex
 
-    def _mandatory_stmt(self, stmt, mid: ModuleId) -> None:
+    def _mandatory_stmt(self, stmt, sctx: SchemaContext) -> None:
         if stmt.argument == "true":
             self._mandatory = True
         elif stmt.argument == "false":
@@ -301,7 +310,6 @@ class InternalNode(SchemaNode):
         """Initialize the class instance."""
         super().__init__()
         self.children = [] # type: List[SchemaNode]
-        self._new_ns = None # type: Optional[ModuleId]
         self._mandatory_children = set() # type: MutableSet[SchemaNode]
 
     @property
@@ -470,40 +478,38 @@ class InternalNode(SchemaNode):
         return res
 
     def _handle_child(
-            self, node: SchemaNode, stmt: Statement, mid: ModuleId) -> None:
+            self, node: SchemaNode, stmt: Statement, sctx: SchemaContext) -> None:
         """Add child node to the receiver and handle substatements."""
-        if not Context.if_features(stmt, mid): return
+        if not sctx.schema_data.if_features(stmt, sctx.text_mid): return
         node.name = stmt.argument
-        node.ns = self._new_ns if self._new_ns else self.ns
+        node.ns = sctx.default_ns
         self._add_child(node)
-        node._handle_substatements(stmt, mid)
+        node._handle_substatements(stmt, sctx)
 
-    def _augment_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _augment_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle **augment** statement."""
-        if not Context.if_features(stmt, mid): return
-        path = Context.sni2route(stmt.argument, mid)
+        if not sctx.schema_data.if_features(stmt, sctx.text_mid): return
+        path = sctx.schema_data.sni2route(stmt.argument, sctx)
         target = self.get_schema_descendant(path)
         if stmt.find1("when"):
             gr = GroupNode()
             target._add_child(gr)
             target = gr
-        myns = Context.namespace(mid)
-        target._new_ns = None if target.ns == myns else myns
-        target._handle_substatements(stmt, mid)
+        target._handle_substatements(stmt, sctx)
 
-    def _refine_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _refine_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle **refine** statement."""
         target = self.get_schema_descendant(
-            Context.sni2route(stmt.argument, mid))
-        if not Context.if_features(stmt, mid):
+            sctx.schema_data.sni2route(stmt.argument, sctx))
+        if not sctx.schema_data.if_features(stmt, sctx.text_mid):
             target.parent.children.remove(target)
         else:
-            target._handle_substatements(stmt, mid)
+            target._handle_substatements(stmt, sctx)
 
-    def _uses_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _uses_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle uses statement."""
-        if not Context.if_features(stmt, mid): return
-        grp, gid = Context.get_definition(stmt, mid)
+        if not sctx.schema_data.if_features(stmt, sctx.text_mid): return
+        grp, gid = sctx.schema_data.get_definition(stmt, sctx)
         if stmt.find1("when"):
             sn = GroupNode()
             self._add_child(sn)
@@ -511,59 +517,62 @@ class InternalNode(SchemaNode):
             sn = self
         sn._handle_substatements(grp, gid)
         for augst in stmt.find_all("augment"):
-            sn._augment_stmt(augst, mid)
+            sn._augment_stmt(augst, sctx)
         for refst in stmt.find_all("refine"):
-            sn._refine_stmt(refst, mid)
+            sn._refine_stmt(refst, sctx)
 
-    def _container_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _container_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle container statement."""
-        self._handle_child(ContainerNode(), stmt, mid)
+        self._handle_child(ContainerNode(), stmt, sctx)
 
-    def _identity_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _identity_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle identity statement."""
-        if not Context.if_features(stmt, mid): return
-        bases = stmt.find_all("base")
-        Context.identity_bases[
-            (stmt.argument, Context.namespace(mid))] = set(
-                [Context.translate_pname(ist.argument, mid) for ist in bases])
+        if not sctx.schema_data.if_features(stmt, sctx.text_mid): return
+        bstmts = stmt.find_all("base")
+        bases = set()
+        for bst in bstmts:
+            bases.add(
+                sctx.schema_data.translate_pname(bst.argument, sctx.text_mid))
+        sctx.schema_data.identity_bases[
+            (stmt.argument, sctx.schema_data.namespace(sctx.text_mid))] = bases
 
-    def _list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _list_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle list statement."""
-        self._handle_child(ListNode(), stmt, mid)
+        self._handle_child(ListNode(), stmt, sctx)
 
-    def _choice_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _choice_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle choice statement."""
-        self._handle_child(ChoiceNode(), stmt, mid)
+        self._handle_child(ChoiceNode(), stmt, sctx)
 
-    def _case_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _case_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle case statement."""
-        self._handle_child(CaseNode(), stmt, mid)
+        self._handle_child(CaseNode(), stmt, sctx)
 
-    def _leaf_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _leaf_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle leaf statement."""
         node = LeafNode()
         node.type = DataType._resolve_type(
-            stmt.find1("type", required=True), mid)
-        self._handle_child(node, stmt, mid)
+            stmt.find1("type", required=True), sctx)
+        self._handle_child(node, stmt, sctx)
 
-    def _leaf_list_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _leaf_list_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle leaf-list statement."""
         node = LeafListNode()
         node.type = DataType._resolve_type(
-            stmt.find1("type", required=True), mid)
-        self._handle_child(node, stmt, mid)
+            stmt.find1("type", required=True), sctx)
+        self._handle_child(node, stmt, sctx)
 
-    def _rpc_action_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _rpc_action_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle rpc or action statement."""
-        self._handle_child(RpcActionNode(), stmt, mid)
+        self._handle_child(RpcActionNode(), stmt, sctx)
 
-    def _notification_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _notification_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle notification statement."""
-        self._handle_child(NotificationNode(), stmt, mid)
+        self._handle_child(NotificationNode(), stmt, sctx)
 
-    def _anydata_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _anydata_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle anydata statement."""
-        self._handle_child(AnydataNode(), stmt, mid)
+        self._handle_child(AnydataNode(), stmt, sctx)
 
     def _ascii_tree(self, indent: str) -> str:
         """Return the receiver's subtree as ASCII art."""
@@ -593,15 +602,15 @@ class GroupNode(InternalNode):
         return []
 
     def _handle_child(self, node: SchemaNode, stmt: Statement,
-                     mid: ModuleId) -> None:
+                     sctx: SchemaContext) -> None:
         if not isinstance(self.parent, ChoiceNode) or isinstance(node, CaseNode):
-            super()._handle_child(node, stmt, mid)
+            super()._handle_child(node, stmt, sctx)
         else:
             cn = CaseNode()
             cn.name = stmt.argument
-            cn.ns = self._new_ns if self._new_ns else self.ns
+            cn.ns = sctx.default_ns
             self._add_child(cn)
-            cn._handle_child(node, stmt, mid)
+            cn._handle_child(node, stmt, sctx)
 
     def _pattern_entry(self) -> SchemaPattern:
         return super()._schema_pattern()
@@ -655,7 +664,7 @@ class DataNode(SchemaNode):
         return super()._tree_line_prefix() + (
             "ro" if self.content_type() == ContentType.nonconfig else "rw")
 
-    def _nacm_default_deny_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _nacm_default_deny_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Set NACM default access."""
         if stmt.keyword == "default-deny-all":
             self.default_deny = DefaultDeny.all
@@ -778,7 +787,7 @@ class ContainerNode(DataNode, InternalNode):
             return [res]
         return []
 
-    def _presence_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _presence_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.presence = True
 
     def _tree_line(self) -> str:
@@ -828,17 +837,17 @@ class SequenceNode(DataNode):
         if self.min_elements > 0:
             self.parent._add_mandatory_child(self)
 
-    def _min_elements_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _min_elements_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.min_elements = int(stmt.argument)
 
-    def _max_elements_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _max_elements_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         arg = stmt.argument
         if arg == "unbounded":
             self.max_elements = None
         else:
             self.max_elements = int(arg)
 
-    def _ordered_by_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _ordered_by_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.user_ordered = stmt.argument == "user"
 
     def _tree_line(self) -> str:
@@ -932,15 +941,16 @@ class ListNode(SequenceNode, InternalNode):
                 kn._mandatory = True
                 self._mandatory_children.add(kn)
 
-    def _key_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _key_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.keys = []
         for k in stmt.argument.split():
-            self.keys.append(Context.translate_pname(k, mid) if ":" in k
-                             else (k, self.ns))
+            self.keys.append(sctx.schema_data.translate_node_id(k, sctx))
 
-    def _unique_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self.unique.append(
-            [Context.sni2route(sid, mid) for sid in stmt.argument.split()])
+    def _unique_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
+        uspec = []
+        for sid in stmt.argument.split():
+            uspec.append(sctx.schema_data.sni2route(sid, sctx))
+        self.unique.append(uspec)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -1002,7 +1012,7 @@ class ChoiceNode(InternalNode):
         if self._mandatory:
             self.parent._add_mandatory_child(self)
 
-    def _config_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _config_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         if stmt.argument == "false":
             self._ctype = ContentType.nonconfig
 
@@ -1018,18 +1028,19 @@ class ChoiceNode(InternalNode):
             "ro" if self.content_type() == ContentType.nonconfig else "rw")
 
     def _handle_child(self, node: SchemaNode, stmt: Statement,
-                     mid: ModuleId) -> None:
+                     sctx: SchemaContext) -> None:
         if isinstance(node, CaseNode):
-            super()._handle_child(node, stmt, mid)
+            super()._handle_child(node, stmt, sctx)
         else:
             cn = CaseNode()
             cn.name = stmt.argument
-            cn.ns = self._new_ns if self._new_ns else self.ns
+            cn.ns = sctx.default_ns
             self._add_child(cn)
-            cn._handle_child(node, stmt, mid)
+            cn._handle_child(node, stmt, sctx)
 
-    def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self.default_case = Context.translate_pname(stmt.argument, mid)
+    def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
+        self.default_case = sctx.schema_data.translate_node_id(
+            stmt.argument, sctx)
 
     def _tree_line(self) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -1077,8 +1088,8 @@ class LeafNode(DataNode, TerminalNode):
         return "{}{} <{}>".format(
             super()._tree_line(), "" if self._mandatory else "?", self.type)
 
-    def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
-        self._default = self.type.from_yang(stmt.argument, mid)
+    def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
+        self._default = self.type.from_yang(stmt.argument, sctx)
 
 class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
@@ -1099,7 +1110,7 @@ class LeafListNode(SequenceNode, TerminalNode):
             len(set(inst.value)) < len(inst.value)):
             raise SemanticError(inst, "non-unique leaf-list values")
 
-    def _default_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         val = self.type.parse_value(stmt.argument)
         if self._default is None:
             self._default = ArrayValue([val])
@@ -1168,10 +1179,10 @@ class RpcActionNode(GroupNode):
         super().__init__()
         self._ctype = ContentType.nonconfig
 
-    def _handle_substatements(self, stmt: Statement, mid: ModuleId) -> None:
+    def _handle_substatements(self, stmt: Statement, sctx: SchemaContext) -> None:
         self._add_child(InputNode(self.ns))
         self._add_child(OutputNode(self.ns))
-        super()._handle_substatements(stmt, mid)
+        super()._handle_substatements(stmt, sctx)
 
     def _flatten(self) -> List[SchemaNode]:
         return [self]
@@ -1179,13 +1190,13 @@ class RpcActionNode(GroupNode):
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "-x"
 
-    def _input_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _input_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle RPC or action input statement."""
-        self.get_child("input")._handle_substatements(stmt, mid)
+        self.get_child("input")._handle_substatements(stmt, sctx)
 
-    def _output_stmt(self, stmt: Statement, mid: ModuleId) -> None:
+    def _output_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle RPC or action output statement."""
-        self.get_child("output")._handle_substatements(stmt, mid)
+        self.get_child("output")._handle_substatements(stmt, sctx)
 
 class InputNode(GroupNode):
     """RPC or action input node."""

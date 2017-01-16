@@ -34,7 +34,7 @@ from pyxb.utils.xmlre import XMLToPython
 import re
 from typing import List, Optional, Tuple
 from .exceptions import YangsonException
-from .context import Context
+from .schemadata import SchemaContext
 from .enumerations import Axis, MultiplicativeOp
 from .instance import InstanceNode
 from .nodeset import NodeExpr, NodeSet, XPathValue
@@ -422,24 +422,26 @@ class FuncDeref(UnaryExpr):
 class FuncDerivedFrom(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr, or_self: bool,
-                 mid: ModuleId):
+                 sctx: SchemaContext):
         super().__init__(left, right)
         self.or_self = or_self
-        self.mid = mid
+        self.sctx = sctx
 
     def _properties_str(self) -> str:
         return ("OR-SELF, " if self.or_self
-                else "") + Context.namespace(self.mid)
+                else "") + self.sctx.schema_data.namespace(self.mid)
 
     def _eval(self, xctx: XPathContext) -> bool:
         ns = self.left._eval(xctx)
         if not isinstance(ns, NodeSet):
             raise XPathTypeError(ns)
-        i = Context.translate_pname(self.right._eval_string(xctx), self.mid)
+        i = self.sctx.schema_data.translate_pname(
+            self.right._eval_string(xctx), self.sctx.text_mid)
         for n in ns:
             if not n.schema_node._is_identityref(): return False
             if self.or_self and n.value == i: return True
-            if Context.is_derived_from(n.value, i): return True
+            if self.sctx.schema_data.is_derived_from(n.value, i):
+                return True
         return False
 
 class FuncEnumValue(UnaryExpr):

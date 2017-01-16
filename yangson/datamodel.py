@@ -25,43 +25,17 @@ This module implements the following class:
 import hashlib
 import json
 from typing import Dict, List, Optional
+from .enumerations import ContentType
 from .exceptions import YangsonException
-from .context import Context, BadYangLibraryData
 from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
                            RootNode)
-from .schema import DataNode, GroupNode, RawObject, SchemaNode
+from .schemadata import SchemaData, BadYangLibraryData, SchemaContext
+from .schemanode import DataNode, GroupNode, RawObject, SchemaNode
 from .typealiases import *
 from .typealiases import _Singleton
 
-class DataModel(metaclass=_Singleton):
-    """Basic user-level entry point to Yangson library.
-
-    It is a singleton class, which means that only one instance can be
-    created.
-    """
-
-    def __init__(self, yltxt: str, mod_path: List[str]):
-        """Initialize the class instance.
-        
-        Args:
-            yltxt: JSON text with YANG library data.
-            mod_path: List of directories where to look for YANG modules.
-
-        Raises:
-            BadYangLibraryData: If YANG library data is invalid.
-            FeaturePrerequisiteError: If a pre-requisite feature isn't
-                supported.
-            MultipleImplementedRevisions: If multiple revisions of an
-                implemented module are listed in YANG library.
-            ModuleNotFound: If a YANG module wasn't found in any of the
-                directories specified in `mod_path`.
-        """
-        Context.schema = GroupNode()
-        try:
-            yl = json.loads(yltxt)
-        except json.JSONDecodeError as e:
-            raise BadYangLibraryData(str(e)) from None
-        Context._from_yang_library(yl, mod_path)
+class DataModel:
+    """Basic user-level entry point to Yangson library."""
 
     @classmethod
     def from_file(cls, name: str, mod_path: List[str] = ["."]) -> "DataModel":
@@ -81,18 +55,41 @@ class DataModel(metaclass=_Singleton):
             yltxt = infile.read()
         return cls(yltxt, mod_path)
 
-    @staticmethod
-    def module_set_id() -> str:
+    def __init__(self, yltxt: str, mod_path: List[str]):
+        """Initialize the class instance.
+        
+        Args:
+            yltxt: JSON text with YANG library data.
+            mod_path: List of directories where to look for YANG modules.
+
+        Raises:
+            BadYangLibraryData: If YANG library data is invalid.
+            FeaturePrerequisiteError: If a pre-requisite feature isn't
+                supported.
+            MultipleImplementedRevisions: If multiple revisions of an
+                implemented module are listed in YANG library.
+            ModuleNotFound: If a YANG module wasn't found in any of the
+                directories specified in `mod_path`.
+        """
+        self.schema = GroupNode()
+        self.schema._ctype = ContentType.all
+        try:
+            yl = json.loads(yltxt)
+        except json.JSONDecodeError as e:
+            raise BadYangLibraryData(str(e)) from None
+        self.schema_data = SchemaData(yl, mod_path)
+        self._build_schema()
+
+    def module_set_id(self) -> str:
         """Compute unique id of YANG modules comprising the data model.
 
         Returns:
             String consisting of hexadecimal digits.
         """
-        fnames = sorted(["@".join(m) for m in Context.modules])
+        fnames = sorted(["@".join(m) for m in self.schema_data.modules])
         return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
 
-    @staticmethod
-    def from_raw(robj: RawObject) -> RootNode:
+    def from_raw(self, robj: RawObject) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
@@ -101,11 +98,10 @@ class DataModel(metaclass=_Singleton):
         Returns:
             Root instance node.
         """
-        cooked = Context.schema.from_raw(robj)
-        return RootNode(cooked, Context.schema, cooked.timestamp)
+        cooked = self.schema.from_raw(robj)
+        return RootNode(cooked, self.schema, cooked.timestamp)
 
-    @staticmethod
-    def get_schema_node(path: SchemaPath) -> Optional[SchemaNode]:
+    def get_schema_node(self, path: SchemaPath) -> Optional[SchemaNode]:
         """Return the schema node addressed by a schema path.
 
         Args:
@@ -117,10 +113,10 @@ class DataModel(metaclass=_Singleton):
         Raises:
             BadPath: If the schema path is invalid.
         """
-        return Context.schema.get_schema_descendant(Context.path2route(path))
+        return self.schema.get_schema_descendant(
+            self.schema_data.path2route(path))
 
-    @staticmethod
-    def get_data_node(path: DataPath) -> Optional[DataNode]:
+    def get_data_node(self, path: DataPath) -> Optional[DataNode]:
         """Return the data node addressed by a data path.
 
         Args:
@@ -132,35 +128,47 @@ class DataModel(metaclass=_Singleton):
         Raises:
             BadPath: If the schema path is invalid.
         """
-        addr = Context.path2route(path)
-        node = Context.schema
+        addr = self.schema_data.path2route(path)
+        node = self.schema
         for p in addr:
             node = node.get_data_child(*p)
             if node is None: return None
         return node
 
-    @staticmethod
-    def ascii_tree() -> str:
+    def ascii_tree(self) -> str:
         """Generate ASCII art representation of the schema tree.
 
         Returns:
             String with the ASCII tree.
         """
-        return Context.schema._ascii_tree("")
+        return self.schema._ascii_tree("")
 
-    @staticmethod
-    def parse_instance_id(text: str) -> InstanceRoute:
+    def parse_instance_id(self, text: str) -> InstanceRoute:
         return InstanceIdParser(text).parse()
 
-    @staticmethod
-    def parse_resource_id(text: str) -> InstanceRoute:
-        return ResourceIdParser(text, Context.schema).parse()
+    def parse_resource_id(self, text: str) -> InstanceRoute:
+        return ResourceIdParser(text, self.schema).parse()
 
-    @staticmethod
-    def schema_digest() -> str:
+    def schema_digest(self) -> str:
         """Generate schema digest (to be used primarily by clients).
 
         Returns:
             Condensed information about the schema in JSON format.
         """
-        return json.dumps(Context.schema._client_digest())
+        return json.dumps(self.schema._client_digest())
+
+    def _build_schema(self) -> None:
+        for mid in self.schema_data._module_sequence:
+            sctx = SchemaContext(
+                self.schema_data, self.schema_data.namespace(mid), mid)
+            self.schema._handle_substatements(
+                self.schema_data.modules[mid].statement, sctx)
+        for mid in self.schema_data._module_sequence:
+            sctx = SchemaContext(
+                self.schema_data, self.schema_data.namespace(mid), mid)
+            mod = self.schema_data.modules[mid].statement
+            for aug in mod.find_all("augment"):
+                self.schema._augment_stmt(aug, sctx)
+        self.schema._post_process()
+        self.schema._make_schema_patterns()
+

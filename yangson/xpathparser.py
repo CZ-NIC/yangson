@@ -28,7 +28,7 @@ The module also defines the following exceptions:
 """
 
 from typing import List, Optional, Tuple, Union
-from .context import Context
+from .schemadata import SchemaContext
 from .enumerations import Axis, MultiplicativeOp
 from .parser import Parser, ParserException, EndOfInput, UnexpectedInput
 from .typealiases import *
@@ -37,14 +37,14 @@ from .xpathast import *
 class XPathParser(Parser):
     """Parser for XPath expressions."""
 
-    def __init__(self, text: str, mid: ModuleId):
+    def __init__(self, text: str, sctx: SchemaContext):
         """Initialize the parser instance.
 
         Args:
-            mid: Id of the context module.
+            sctx: Schema context for XPath expression parsing.
         """
         super().__init__(text)
-        self.mid = mid
+        self.sctx = sctx
 
     def parse(self) -> Expr:
         """Parse an XPath expression.
@@ -273,7 +273,7 @@ class XPathParser(Parser):
                 return (axis, self._qname())
             if ws:
                 raise InvalidXPath(self)
-            nsp = Context.prefix2ns(yid, self.mid)
+            nsp = self.sctx.schema_data.prefix2ns(yid, self.sctx.text_mid)
             loc = self.yang_identifier()
             self.skip_ws()
             return (Axis.child, (loc, nsp))
@@ -303,7 +303,9 @@ class XPathParser(Parser):
         if next == "(":
             return self._node_type(ident)
         if not ws and self.test_string(":"):
-            res = (self.yang_identifier(), Context.prefix2ns(ident, self.mid))
+            res = (
+                self.yang_identifier(),
+                self.sctx.schema_data.prefix2ns(ident, self.sctx.text_mid))
         else:
             res = (ident, None)
         self.skip_ws()
@@ -349,10 +351,10 @@ class XPathParser(Parser):
         return FuncDeref(self.parse())
 
     def _func_derived_from(self) -> FuncDerivedFrom:
-        return FuncDerivedFrom(*self._two_args(), False, self.mid)
+        return FuncDerivedFrom(*self._two_args(), False, self.sctx)
 
     def _func_derived_from_or_self(self) -> FuncDerivedFrom:
-        return FuncDerivedFrom(*self._two_args(), True, self.mid)
+        return FuncDerivedFrom(*self._two_args(), True, self.sctx)
 
     def _func_enum_value(self) -> FuncEnumValue:
         return FuncEnumValue(self.parse())

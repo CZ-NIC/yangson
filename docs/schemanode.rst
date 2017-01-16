@@ -1,9 +1,9 @@
-*****************
-Data Model Schema
-*****************
+************
+Schema Nodes
+************
 
 
-.. module:: yangson.schema
+.. module:: yangson.schemanode
    :synopsis: Classes representing YANG schema nodes
 
 .. testsetup::
@@ -104,7 +104,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
 	 >>> type(rsn.parent)
-	 <class 'yangson.schema.CaseNode'>
+	 <class 'yangson.schemanode.CaseNode'>
 	 >>> rsn.parent.name
 	 'fooref'
 	 >>> rsn.parent.ns
@@ -294,7 +294,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 ('baz', 'example-4-a')
 
 
-   .. method:: get_data_child(name: YangIdentifier, ns: YangIdentifier
+   .. method:: get_data_child(name: YangIdentifier, ns: YangIdentifier \
 	       = None) -> Optional[DataNode]
 
       Return receiver's data child whose name is *name* and namespace
