@@ -121,7 +121,7 @@ class Expr:
             for i in range(size):
                 pval = p._eval(XPathContext(ns[i], xctx.origin, i+1, size))
                 try:
-                    if isinstance(pval, float):
+                    if isinstance(pval, float) and pval > 0:
                         res.append(ns[int(pval) - 1])
                         break
                 except IndexError:
