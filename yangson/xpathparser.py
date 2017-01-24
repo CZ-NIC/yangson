@@ -215,7 +215,12 @@ class XPathParser(Parser):
         return res
 
     def _location_path(self, root: bool = False) -> LocationPath:
-        op1 = Root() if root else self._step()
+        if self.test_string("/"):
+            self.skip_ws()
+            if self.at_end(): return Root()
+            op1 = LocationPath(Root(), self._step())
+        else:
+            op1 = self._step()
         while self.test_string("/"):
             self.skip_ws()
             op2 = self._step()
