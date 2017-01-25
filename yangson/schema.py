@@ -1249,7 +1249,7 @@ class NonexistentSchemaNode(SchemaNodeException):
                  ns: YangIdentifier = None):
         super().__init__(sn)
         self.name = name
-        self.ns = ns
+        self.ns = ns if ns else sn.ns
 
     def __str__(self) -> str:
         loc = ("under " + super().__str__() if self.schema_node.parent

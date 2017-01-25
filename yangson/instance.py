@@ -38,6 +38,7 @@ The module defines the following exceptions:
 """
 
 from datetime import datetime
+import json
 from typing import Any, Callable, List, Tuple, Union
 from urllib.parse import unquote
 from .exceptions import YangsonException
@@ -294,8 +295,9 @@ class InstanceNode:
             iroute: Instance route (relative to the receiver).
         """
         val = self.value
+        sn = self.schema_node
         for sel in iroute:
-            val = sel.peek_step(val)
+            val, sn = sel.peek_step(val, sn)
             if val is None: return None
         return val
 
@@ -368,7 +370,7 @@ class InstanceNode:
             if sn is None:
                 raise NonexistentSchemaNode(sn, *qn)
             if isinstance(sn, DataNode):
-                irt.append(MemberName(sn.iname()))
+                irt.append(MemberName(sn.name, sn.ns))
         return self.peek(irt)
 
     def _member_schema_node(self, name: InstanceName) -> "DataNode":
@@ -744,81 +746,123 @@ class InstanceRoute(list):
         """Return the hash value of the receiver."""
         return self.__str__().__hash__()
 
-class InstanceSelector:
-    """Components of instance identifers."""
+class MemberName:
+    """Selectors of object members."""
 
-    def __init__(self, key: InstanceKey):
+    def __init__(self, name: YangIdentifier, ns: Optional[YangIdentifier]):
         """Initialize the class instance.
 
         Args:
-            key: Member name or entry index.
+            name: Member's local name.
+            ns: Member's namespace.
         """
-        self.key = key
+        self.name = name
+        self.namespace = ns
 
     def __eq__(self, other: "InstanceSelector") -> bool:
-        return self.key == other.key
+        return self.name == other.name and self.namespace == other.namespace
 
-    def peek_step(self, val: StructuredValue) -> Value:
-        """Return the entry of `arr` addressed by the receiver.
+    def __str__(self) -> str:
+        """Return a string representation of the receiver."""
+        return "/" + self.iname()
+
+    def iname(self) -> str:
+        """Return instance name corresponding to the receiver."""
+        return ("{}:{}".format(self.namespace, self.name) if self.namespace
+                    else self.name)
+
+    def peek_step(self, val: ObjectValue, sn: "DataNode") -> Value:
+        """Return member value addressed by the receiver, and new schema node.
 
         Args:
-            val: Current value (object or array).
+            val: Current value (object).
+            sn:  Current schema node.
         """
+        cn = sn.get_data_child(self.name, self.namespace)
         try:
-            return val[self.key]
+            return (val[cn.iname()], cn)
         except (IndexError, KeyError, TypeError):
-            return None
+            return (None, cn)
 
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
-        """Return member instance of `inst` addressed by the receiver.
+        """Return member instance addressed by the receiver.
 
         Args:
             inst: Current instance.
         """
-        return inst[self.key]
+        return inst[self.iname()]
 
-class MemberName(InstanceSelector):
-    """Selectors of object members."""
-
-    def __str__(self) -> str:
-        """Return a string representation of the receiver."""
-        return "/" + self.key
-
-class EntryIndex(InstanceSelector):
+class EntryIndex:
     """Numeric selectors for a list or leaf-list entry."""
+
+    def __init__(self, index: int):
+        """Initialize the class instance.
+
+        Args:
+            index: Entry's index.
+        """
+        self.index = index
+
+    def __eq__(self, other: "InstanceSelector") -> bool:
+        return self.index == other.index
 
     def __str__(self) -> str:
         """Return a string representation of the receiver."""
         return "[{0:d}]".format(self.key)
 
-class EntryValue(InstanceSelector):
+    def peek_step(self, val: ArrayValue, sn: "DataNode") -> Value:
+        """Return entry value addressed by the receiver, and its schema node.
+
+        Args:
+            val: Current value (array).
+            sn:  Current schema node.
+        """
+        try:
+            return (val[self.index], sn)
+        except (IndexError, KeyError, TypeError):
+            return (None, sn)
+
+    def goto_step(self, inst: InstanceNode) -> InstanceNode:
+        """Return entry instance addressed by the receiver.
+
+        Args:
+            inst: Current instance.
+        """
+        return inst[self.index]
+
+class EntryValue:
     """Value-based selectors of an array entry."""
 
-    def __init__(self, value: ScalarValue):
+    def __init__(self, value: str):
         """Initialize the class instance.
 
         Args:
-            value: Value of a leaf-list entry.
+            value: Canonical value of a leaf-list entry.
         """
         self.value = value
 
     def __str__(self) -> str:
         """Return a string representation of the receiver."""
-        return "[.=" + str(self.value) +"]"
+        return "[.=" + json.dumps(self.value) +"]"
 
     def __eq__(self, other: "EntryValue") -> bool:
         return self.value == other.value
 
-    def peek_step(self, arr: ArrayValue) -> Value:
-        """Return the entry of `arr` addressed by the receiver.
+    def parse_value(self, sn: "DataNode") -> ScalarValue:
+        """Let schema node's type parse the receiver's value."""
+        return sn.type.parse_value(self.value)
+
+    def peek_step(self, val: ArrayValue, sn: "DataNode") -> Value:
+        """Return entry value addressed by the receiver, and its schema node.
 
         Args:
-            arr: Current array.
+            val: Current value (array).
+            sn:  Current schema node.
         """
         try:
-            return arr[arr.index(self.value)]
+            return (val[val.index(self.parse_value(sn))], sn)
         except ValueError:
-            return None
+            return (None, sn)
 
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.
@@ -827,15 +871,17 @@ class EntryValue(InstanceSelector):
             inst: Current instance.
         """
         try:
-            return inst._entry(inst.value.index(self.value))
+            return inst._entry(
+                inst.value.index(self.parse_value(inst.schema_node)))
         except ValueError:
             raise NonexistentInstance(
                 inst, "entry '{}'".format(str(self.value))) from None
 
-class EntryKeys(InstanceSelector):
+class EntryKeys:
     """Key-based selectors for a list entry."""
 
-    def __init__(self, keys: Dict[InstanceName, ScalarValue]):
+    def __init__(
+        self, keys: Dict[Tuple[YangIdentifier, Optional[YangIdentifier]], str]):
         """Initialize the class instance.
 
         Args:
@@ -845,25 +891,47 @@ class EntryKeys(InstanceSelector):
 
     def __str__(self) -> str:
         """Return a string representation of the receiver."""
-        return "".join(["[{}={}]".format(k, repr(self.keys[k]))
-                        for k in self.keys])
+        res = []
+        for k in self.keys:
+            kn = "{1}:{0}".format(*k) if k[1] else k[0]
+            res.append("[{}={}]".format(kn, json.dumps(self.keys[k])))
+        return "".join(res)
 
     def __eq__(self, other: "EntryKeys") -> bool:
         return self.keys == other.keys
 
-    def peek_step(self, arr: ArrayValue) -> Value:
-        """Return the entry of `arr` addressed by the receiver.
+    def parse_keys(self, sn: "DataNode") -> Dict[InstanceName, ScalarValue]:
+        """Parse key dictionary in the context of a schema node.
 
         Args:
-            arr: Current array.
+            sn: Schema node corresponding to a list.
         """
-        for en in arr:
+        res = {}
+        for k in self.keys:
+            knod = sn.get_data_child(*k)
+            if knod is None:
+                raise NonexistentSchemaNode(sn, *k)
+            res[knod.iname()] = knod.type.parse_value(self.keys[k])
+        return res
+
+    def peek_step(self, val: ArrayValue, sn: "DataNode") -> ObjectValue:
+        """Return the entry addressed by the receiver, and its schema node.
+
+        Args:
+            val: Current value (array).
+            sn:  Current schema node.
+        """
+        keys = self.parse_keys(sn)
+        for en in val:
             flag = True
-            for k in self.keys:
-                if en[k] != self.keys[k]:
-                    flag = False
-                    break
-            if flag: return en
+            try:
+                for k in keys:
+                    if en[k] != keys[k]:
+                        flag = False
+                        break
+            except KeyError:
+                continue
+        return (en, sn) if flag else (None, sn)
 
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.
@@ -871,30 +939,31 @@ class EntryKeys(InstanceSelector):
         Args:
             inst: Current instance.
         """
-        return inst.look_up(**self.keys)
+        return inst.look_up(**self.parse_keys(inst.schema_node))
 
-class InstancePathParser(Parser):
-    """Abstract class for parsers of strings identifying instances."""
-
-    def _member_name(self, sn: "InternalNode") -> Tuple[MemberName, "DataNode"]:
-        """Parser object member name."""
-        name, ns = self.prefixed_name()
-        cn = sn.get_data_child(name, ns if ns else sn.ns)
-        if cn is None:
-            raise NonexistentSchemaNode(sn, name, ns)
-        return (MemberName(cn.iname()), cn)
-
-class ResourceIdParser(InstancePathParser):
+class ResourceIdParser(Parser):
     """Parser for RESTCONF resource identifiers."""
+
+    def __init__(self, text: str, sn: "DataNode"):
+        """Extend the superclass method.
+
+        Args:
+            sn: Schema node from which the path starts.
+        """
+        super().__init__(text)
+        self.schema_node = sn
 
     def parse(self) -> InstanceRoute:
         """Parse resource identifier."""
         if self.peek() == "/": self.offset += 1
         res = InstanceRoute()
-        sn = Context.schema
+        sn = self.schema_node
         while True:
-            mnam, cn = self._member_name(sn)
-            res.append(mnam)
+            name, ns = self.prefixed_name()
+            cn = sn.get_data_child(name, ns)
+            if cn is None:
+                raise NonexistentSchemaNode(sn, name, ns)
+            res.append(MemberName(name, ns))
             try:
                 next = self.one_of("/=")
             except EndOfInput:
@@ -913,7 +982,7 @@ class ResourceIdParser(InstancePathParser):
         if not keys:
             raise UnexpectedInput(self, "entry value or keys")
         if isinstance(sn, LeafListNode):
-            return EntryValue(sn.type.parse_value(unquote(keys)))
+            return EntryValue(unquote(keys))
         ks = keys.split(",")
         try:
             if len(ks) != len(sn.keys):
@@ -924,21 +993,19 @@ class ResourceIdParser(InstancePathParser):
         sel = {}
         for j in range(len(ks)):
             knod = sn.get_data_child(*sn.keys[j])
-            val = knod.type.parse_value(unquote(ks[j]))
-            sel[knod.iname()] = val
+            val = unquote(ks[j])
+            sel[(knod.name, None if knod.ns == sn.ns else knod.ns)] = val
         return EntryKeys(sel)
 
-class InstanceIdParser(InstancePathParser):
+class InstanceIdParser(Parser):
     """Parser for YANG instance identifiers."""
 
     def parse(self) -> InstanceRoute:
         """Parse instance identifier."""
         res = InstanceRoute()
-        sn = Context.schema
         while True:
             self.char("/")
-            mnam, cn = self._member_name(sn)
-            res.append(mnam)
+            res.append(MemberName(*self.prefixed_name()))
             try:
                 next = self.peek()
             except EndOfInput:
@@ -946,22 +1013,22 @@ class InstanceIdParser(InstancePathParser):
             if next == "[":
                 self.offset += 1
                 self.skip_ws()
-                if self.peek() in "0123456789":
+                next = self.peek()
+                if next in "0123456789":
                     ind = self.unsigned_integer() - 1
                     if ind < 0:
                         raise UnexpectedInput(self, "positive index")
                     self.skip_ws()
                     self.char("]")
                     res.append(EntryIndex(ind))
-                elif isinstance(cn, LeafListNode):
-                    self.char(".")
-                    res.append(EntryValue(self._get_value(cn)))
+                elif next == '.':
+                    self.offset += 1
+                    res.append(EntryValue(self._get_value()))
                 else:
-                    res.append(self._key_predicates(cn))
+                    res.append(self._key_predicates())
                 if self.at_end(): return res
-            sn = cn
 
-    def _get_value(self, tn: "TerminalNode") -> ScalarValue:
+    def _get_value(self) -> str:
         self.skip_ws()
         self.char("=")
         self.skip_ws()
@@ -969,22 +1036,16 @@ class InstanceIdParser(InstancePathParser):
         val = self.up_to(quote)
         self.skip_ws()
         self.char("]")
-        return tn.type.parse_value(val)
+        return val
 
-    def _key_predicates(self, sn: "ListNode") -> EntryKeys:
+    def _key_predicates(self) -> EntryKeys:
         "Parse one or more key predicates."""
         sel = {}
         while True:
-            name, ns = self.prefixed_name()
-            knod = sn.get_data_child(name, ns)
-            val = self._get_value(knod)
-            sel[knod.iname()] = val
-            try:
-                next = self.peek()
-            except EndOfInput:
+            kn = self.prefixed_name()
+            sel[kn] = self._get_value()
+            if not self.test_string("["):
                 break
-            if next != "[": break
-            self.offset += 1
             self.skip_ws()
         return EntryKeys(sel)
 
@@ -1018,5 +1079,5 @@ class NonexistentInstance(InstanceException):
         return "{} {}".format(super().__str__(), self.detail)
 
 from .schema import (AnydataNode, CaseNode, ChoiceNode, DataNode, InternalNode,
-                     LeafNode, LeafListNode, ListNode,
-                     NonexistentSchemaNode, SequenceNode, TerminalNode)
+                        LeafNode, LeafListNode, ListNode, NonexistentSchemaNode,
+                        SequenceNode, TerminalNode)

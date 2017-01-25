@@ -24,7 +24,6 @@ to the appropriate directory:
    >>> import os
    >>> import json
    >>> from yangson import DataModel
-   >>> from yangson.instance import ResourceIdParser
    >>> os.chdir("examples/ex2")
 
 Initializing the Data Model
@@ -78,7 +77,7 @@ to parse it from a RESTCONF data resource identifier:
 
 .. doctest::
 
-   >>> irt = ResourceIdParser('/example-2:bag/foo=3/in-words').parse()
+   >>> irt = dm.parse_resource_id('/example-2:bag/foo=3/in-words')
    >>> type(irt)
    <class 'yangson.instance.InstanceRoute'>
 

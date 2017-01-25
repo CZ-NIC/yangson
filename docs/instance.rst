@@ -10,7 +10,6 @@
    import json
    import os
    from yangson import DataModel
-   from yangson.instance import InstanceIdParser, ResourceIdParser
    os.chdir("examples/ex2")
 
 .. testcleanup::
@@ -25,9 +24,6 @@ The *instance* module implements the following classes:
 * :class:`ObjectMember`: Instance node that is an object member.
 * :class:`ArrayEntry`: Instance node that is an array entry.
 * :class:`InstanceRoute`: Route into an instance value.
-* :class:`ResourceIdParser`: Parser for RESTCONF :term:`resource
-  identifier`\ s.
-* :class:`InstanceIdParser`: Parser for :term:`instance identifier`\ s.
 
 This module also defines the following exceptions:
 
@@ -402,14 +398,15 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       receiver) that identifies the target instance.
 
       The easiest way for obtaining an :class:`InstanceRoute` is to
-      parse it either from a :term:`resource identifier` (see
-      :class:`ResourceIdParser`) or an :term:`instance identifier`
-      (see :class:`InstanceIdParser`).
+      parse it either from a :term:`resource identifier` or
+      :term:`instance identifier` using methods
+      :meth:`.DataModel.parse_resource_id` and
+      :meth:`.DataModel.parse_instance_id`, respectively.
 
       .. doctest::
 
-	 >>> irt = ResourceIdParser('/example-2:bag/foo=3/in-words').parse()
-	 >>> irt2 = InstanceIdParser('/example-2:bag/baz').parse()
+	 >>> irt = dm.parse_resource_id('/example-2:bag/foo=3/in-words')
+	 >>> irt2 = dm.parse_instance_id('/example-2:bag/baz')
 
       This method raises :exc:`InstanceValueError` if *iroute* isn't
       compatible with the schema, and :exc:`NonexistentInstance` if
@@ -445,7 +442,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> irt3 = ResourceIdParser('/example-2:bag/foo=3').parse()
+	 >>> irt3 = dm.parse_resource_id('/example-2:bag/foo=3')
 	 >>> e2inst.peek(irt3)['in-words'] = 'tres'
 	 >>> e2inst.value['example-2:bag']['foo'][1]['in-words'] # changed!
 	 'tres'
@@ -669,9 +666,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 .. autoclass:: InstanceRoute
    :show-inheritance:
 
-   Instances are expected to be created by using either the class
-   method :meth:`from_schema_route` or one of the parser classes
-   :class:`ResourceIdParser` and :class:`InstanceIdParser`.
+   Instances of this class can be conveniently created by using one of
+   the methods :meth:`~.DataModel.parse_resource_id` and
+   :meth:`~.DataModel.parse_instance_id` in the :class:`~.datamodel.DataModel`
+   class.
 
    .. rubric:: Public Methods
 
@@ -680,43 +678,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
 	 >>> str(irt)
-	 '/example-2:bag/foo[number=3]/in-words'
+	 '/example-2:bag/foo[number="3"]/in-words'
 	 >>> str(irt2)
 	 '/example-2:bag/baz'
-
-.. class:: ResourceIdParser(text: str)
-
-   This class is a subclass of :class:`~.parser.Parser`, and
-   implements a parser for RESTCONF :term:`resource
-   identifier`\ s. The constructor argument *text* is the resource
-   identifier to be parsed.
-
-   .. rubric:: Public Methods
-
-   .. method:: parse() -> InstanceRoute
-
-      Return an :class:`InstanceRoute` by parsing a :term:`resource
-      identifier` contained in the instance attribute :attr:`text`.
-
-      The returned value can be passed as the argument to
-      :meth:`InstanceNode.goto` and :meth:`InstanceNode.peek` methods.
-
-.. class:: InstanceIdParser(text: str)
-
-   This class is a subclass of :class:`~.parser.Parser`, and
-   implements a parser for :term:`instance identifier`\ s. The
-   constructor argument *text* is the instance identifier to be
-   parsed.
-
-   .. rubric:: Public Methods
-
-   .. method:: parse() -> InstanceRoute
-
-      Return an :class:`InstanceRoute` by parsing an :term:`instance
-      identifier` contained in the instance attribute :attr:`text`.
-
-      The returned value can be passed as the argument to
-      :meth:`InstanceNode.goto` and :meth:`InstanceNode.peek` methods.
 
 .. autoexception:: InstanceException(inst: InstanceNode)
    :show-inheritance:

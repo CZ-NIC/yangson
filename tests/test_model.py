@@ -6,8 +6,7 @@ from yangson.context import (Context, FeatureExprParser, BadPath,
                              InvalidFeatureExpression, UnknownPrefix)
 from yangson.datatype import YangTypeError
 from yangson.enumerations import ContentType
-from yangson.instance import (InstanceIdParser, NonexistentInstance,
-                              ResourceIdParser)
+from yangson.instance import NonexistentInstance
 from yangson.instvalue import ArrayValue, ObjectValue
 from yangson.schema import SequenceNode, NonexistentSchemaNode, RawTypeError, SchemaError
 from yangson.xpathast import XPathTypeError
@@ -451,28 +450,26 @@ def test_xpath(instance):
     xptest("bit-is-set(., 'dos')", False, conta)
 
 def test_instance_paths(data_model, instance):
-    rid1 = ResourceIdParser("/test:contA/testb:leafN").parse()
-    rid2 = ResourceIdParser(
-        "/test:contA/listA=C0FFEE,true/contD/contE").parse()
-    iid1 = InstanceIdParser("/test:contA/testb:leafN").parse()
-    iid2 = InstanceIdParser(
-        "/test:contA/listA[leafE='C0FFEE'][leafF = 'true']/contD/contE").parse()
-    iid3 = InstanceIdParser("/test:contA/listA[1]/contD/contE").parse()
+    rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
+    rid2 = data_model.parse_resource_id("/test:contA/listA=C0FFEE,true/contD/contE")
+    iid1 = data_model.parse_instance_id("/test:contA/testb:leafN")
+    iid2 = data_model.parse_instance_id(
+        "/test:contA/listA[leafE='C0FFEE'][leafF = 'true']/contD/contE")
+    iid3 = data_model.parse_instance_id("/test:contA/listA[1]/contD/contE")
     bad_pth = "/test:contA/listA=ABBA,true/contD/contE"
     assert instance.peek(rid1) == instance.peek(iid1) == "hi!"
     assert (instance.goto(rid2)["leafP"].value ==
             instance.goto(iid2)["leafP"].value ==
             instance.goto(iid3)["leafP"].value == 10)
     with pytest.raises(NonexistentSchemaNode):
-        ResourceIdParser("/test:contA/leafX").parse()
-    with pytest.raises(NonexistentSchemaNode):
-        InstanceIdParser("/test:contA/llX[. = 'foo']").parse()
-    assert instance.peek(ResourceIdParser(bad_pth).parse()) == None
+        data_model.parse_resource_id("/test:contA/leafX")
+    assert str(data_model.parse_instance_id("/test:contA/llX[. = 'foo']")) == '/test:contA/llX[.="foo"]'
+    assert instance.peek(data_model.parse_resource_id(bad_pth)) == None
     with pytest.raises(NonexistentInstance):
-        instance.goto(ResourceIdParser(bad_pth).parse())
+        instance.goto(data_model.parse_resource_id(bad_pth))
 
 def test_edits(data_model, instance):
-    laii = InstanceIdParser("/test:contA/listA").parse()
+    laii = data_model.parse_instance_id("/test:contA/listA")
     la = instance.goto(laii)
     inst1 = la[1].update(
         {"leafE": "B00F", "leafF": False}, raw=True).top()

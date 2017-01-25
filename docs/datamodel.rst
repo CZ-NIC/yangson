@@ -168,6 +168,14 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> print(dm.ascii_tree(), end='')
 	 +--rw example-1:greeting? <string>
 
+    .. staticmethod:: parse_instance_id(text: str) -> InstanceRoute
+
+       Parse :term:`instance identifier` into :class:`~.instance.InstanceRoute`.
+
+    .. staticmethod:: parse_resource_id(text: str) -> InstanceRoute
+
+       Parse :term:`resource identifier` into :class:`~.instance.InstanceRoute`.
+
       .. staticmethod:: schema_digest() -> str
 
       Generate digest of the data model schema. This information is

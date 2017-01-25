@@ -27,7 +27,8 @@ import json
 from typing import Dict, List, Optional
 from .exceptions import YangsonException
 from .context import Context, BadYangLibraryData
-from .instance import RootNode
+from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
+                           RootNode)
 from .schema import DataNode, GroupNode, RawObject, SchemaNode
 from .typealiases import *
 from .typealiases import _Singleton
@@ -146,6 +147,14 @@ class DataModel(metaclass=_Singleton):
             String with the ASCII tree.
         """
         return Context.schema._ascii_tree("")
+
+    @staticmethod
+    def parse_instance_id(text: str) -> InstanceRoute:
+        return InstanceIdParser(text).parse()
+
+    @staticmethod
+    def parse_resource_id(text: str) -> InstanceRoute:
+        return ResourceIdParser(text, Context.schema).parse()
 
     @staticmethod
     def schema_digest() -> str:
