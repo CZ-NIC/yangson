@@ -102,7 +102,7 @@ class SchemaNode:
         return False
 
     def schema_root(self) -> "GroupNode":
-        """Return the root node of the schema."""
+        """Return the root node of the receiver's schema."""
         sn = self
         while sn.parent:
             sn = sn.parent
@@ -1180,8 +1180,8 @@ class RpcActionNode(GroupNode):
         self._ctype = ContentType.nonconfig
 
     def _handle_substatements(self, stmt: Statement, sctx: SchemaContext) -> None:
-        self._add_child(InputNode(self.ns))
-        self._add_child(OutputNode(self.ns))
+        self._add_child(InputNode(sctx.default_ns))
+        self._add_child(OutputNode(sctx.default_ns))
         super()._handle_substatements(stmt, sctx)
 
     def _flatten(self) -> List[SchemaNode]:
