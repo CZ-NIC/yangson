@@ -10,13 +10,11 @@ YANG Statements
    import os
    os.chdir("examples/ex5")
    from yangson import DataModel
-   from yangson.context import Context
    from yangson.statement import ModuleParser
 
 .. testcleanup::
 
    os.chdir("../..")
-   del DataModel._instances[DataModel]
 
 This module implements the following classes:
 
@@ -37,7 +35,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 .. doctest::
 
    >>> dm = DataModel.from_file("yang-library-ex5.json")
-   >>> mex5a = Context.modules[('example-5-a', '')].statement
+   >>> mex5a = dm.schema_data.modules[('example-5-a', '')].statement
 
 .. class:: Statement(kw: YangIdentifier, arg: Optional[str], pref: \
 	   YangIdentifier = None)

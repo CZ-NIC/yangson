@@ -4,6 +4,6 @@ Advanced Usage
 
 .. toctree::
 
-   context
+   schemadata
    schemanode
    datatype

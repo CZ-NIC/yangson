@@ -12,13 +12,13 @@ functions, default namespace, and other features.
    import json
    import os
    from yangson import DataModel
+   from yangson.schemadata import SchemaContext
    from yangson.xpathparser import XPathParser
    os.chdir("examples/ex4")
 
 .. testcleanup::
 
    os.chdir("../..")
-   del DataModel._instances[DataModel]
 
 Doctest__ snippets in this section use the data model and instance
 document from :ref:`sec-ex4`.
@@ -96,21 +96,20 @@ The module also defines the following exceptions:
 * :exc:`InvalidXPath`: An XPath expression is invalid.
 * :exc:`NotSupported`: An XPath 1.0 feature isn't supported.
 
-.. class:: XPathParser(text: str, mid: ModuleId) -> Expr
+.. class:: XPathParser(text: str, sctx: SchemaContext) -> Expr
 
    This class is a subclass of :class:~.parser.Parser`, and implements
    a recursive-descent parser for XPath expressions. Constructor
    argument *text* contains the textual form of an XPath expression
-   (see also the :attr:`.Parser.input` attribute), and *mid* initializes
-   the value of the :attr:`mid` instance attribute.
+   (see also the :attr:`.Parser.input` attribute), and *sctx* initializes
+   the value of the :attr:`sctx` instance attribute.
 
    .. rubric:: Instance Attributes
 
-   .. attribute:: mid
+   .. attribute:: sctx
 
-      :term:`Module identifier` that specifies the YANG module in the
-      context of which namespace prefixes contained in the parsed
-      XPath expression are resolved.
+      :class:`~.schemadata.SchemaContext` that specifies the schema
+      context in which the XPath expression is parsed.
 
    .. rubric:: Public Methods
 
@@ -133,7 +132,8 @@ The module also defines the following exceptions:
 
    >>> fref = inst["example-4-a:bag"]["example-4-b:fooref"]
    >>> xp = 'deref(.)/../../quux[2]/preceding-sibling::quux = 3.1415'
-   >>> cxp = XPathParser(xp, ('example-4-b', '')).parse()
+   >>> sctx = SchemaContext(dm.schema_data, 'example-4-b', ('example-4-b', ''))
+   >>> cxp = XPathParser(xp, sctx).parse()
    >>> print(cxp, end='')
    EqualityExpr (=)
      PathExpr

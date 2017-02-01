@@ -1,25 +1,26 @@
-******************
-Data Model Context
-******************
+***********
+Schema Data
+***********
 
-.. module:: yangson.context
-   :synopsis: Global repository of data model information and methods.
+.. module:: yangson.schemadata
+   :synopsis: Repository of schema data extracted from YANG modules + related methods.
 
 .. testsetup::
 
    import os
    from yangson import DataModel
+   from yangson.schemadata import SchemaContext
    os.chdir("examples/ex3")
 
 .. testcleanup::
 
    os.chdir("../..")
-   del DataModel._instances[DataModel]
 
 The *context* module implements the following classes:
 
+* :class:`SchemaContext`: Schema data and current schema context.
 * :class:`ModuleData`: Data related to a YANG module or submodule.
-* :class:`Context`: Repository of data model structures and methods.
+* :class:`SchemaData`: Repository of data model structures and methods.
 * :class:`FeatureExprParser`: Parser for **if-feature** expressions.
 
 This module also defines the following exceptions:
@@ -30,6 +31,7 @@ This module also defines the following exceptions:
 * :exc:`FeaturePrerequisiteError`: Pre-requisite feature is not supported.
 * :exc:`InvalidFeatureExpression`: Invalid **if-feature** expression.
 * :exc:`ModuleNotFound`: A module or submodule registered in YANG library is not found.
+* :exc:`ModuleNotImplemented`: A module is not implemented in the data model.
 * :exc:`ModuleNotImported`: A module is not imported.
 * :exc:`ModuleNotRegistered`: An imported module is not registered in YANG library.
 * :exc:`MultipleImplementedRevisions`: A module has multiple implemented revisions.
@@ -44,11 +46,38 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    >>> dm = DataModel.from_file("yang-library-ex3.json",
    ... [".", "../../../yang-modules/ietf"])
 
+.. class:: SchemaContext(schema_data: SchemaData, default_ns: \
+	   YangIdentifier, text_mid: ModuleId)
+
+   An object of this class contains the current schema context that is
+   passed along during the processing of YANG modules. Its instance
+   attributes are initialized from constructor arguments of the same
+   name.
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: schema_data
+
+      An object of the :class:`SchemaData` class.
+
+   .. attribute:: default_ns
+
+      Current default namespace (module name) that is assigned to
+      unprefixed node identifiers. This attribute may differ from the
+      namespace of the module identified by *text_mid* inside a
+      **grouping** or **typedef** definition that is used in another
+      module (see [RFC7950]_, sec. `6.4.1`_).
+
+   .. attribute:: text_mid
+
+      Identifier of the current YANG module that defines the context
+      for resolving namespace prefixes.
+
 .. class:: ModuleData(main_module: YangIdentifier)
 
    An object of this class contains data related to a single module or
    submodule that is a part of the data model. Such objects are values
-   of the dictionary :attr:`Context.modules`.
+   of the dictionary :attr:`SchemaData.modules`.
 
    The constructor argument *main_module* contains the value for
    :attr:`main_module` instance attribute.
@@ -81,27 +110,19 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       Set of submodules of the receiver module. If the receiver is a
       submodule, then this set is by definition empty.
 
-.. class:: Context
+.. class:: SchemaData(yang_lib: Dict[str, Any], mod_path: List[str])
 
-   This class serves as a global repository for the data model schema
-   and several other important data structures that are stored as
-   class attributes. This means that
+   This class serves as a global for various data structures related
+   to the schema that are extracted from YANG modules, and provides a
+   number of methods for retrieving and processing this data.
 
-   * it is possible to work with only one data model at a time,
+   The *yang_lib* constructor argument contains a dictionary with YANG
+   library data [RFC7895]_ that is typically parsed from JSON text
+   using the functions :func:`json.load` or :func:`json.loads`. The
+   second constructor argument, *mod_path*, initializes the instance
+   attribute :attr:`module_search_path`.
 
-   * no instances of this class are expected to be created.
-
-   The :class:`Context` class also provides a number of class methods
-   for retrieving and transforming this global data.
-
-   Other Python modules that need the data model information and/or
-   methods should import the :class:`Context` class.
-
-   .. doctest::
-
-      >>> from yangson.context import Context
-
-   .. rubric:: Class Attributes
+   .. rubric:: Instance Attributes
 
    .. attribute:: identity_bases
 
@@ -113,7 +134,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> sorted(Context.identity_bases[('idZ', 'example-3-b')])
+	 >>> sorted(dm.schema_data.identity_bases[('idZ', 'example-3-b')])
 	 [('idX', 'example-3-a'), ('idY', 'example-3-b')]
 
    .. attribute:: implement
@@ -128,7 +149,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> Context.implement['example-3-b']
+	 >>> dm.schema_data.implement['example-3-b']
 	 '2016-08-22'
 
    .. attribute:: module_search_path
@@ -140,7 +161,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> Context.module_search_path
+	 >>> dm.schema_data.module_search_path
 	 ['.', '../../../yang-modules/ietf']
 
    .. attribute:: modules
@@ -152,20 +173,20 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> len(Context.modules)
+	 >>> len(dm.schema_data.modules)
 	 5
-	 >>> Context.modules[('example-3-a', '2016-06-18')].main_module
+	 >>> dm.schema_data.modules[('example-3-a', '2016-06-18')].main_module
 	 ('example-3-a', '2016-06-18')
-	 >>> Context.modules[('example-3-suba', '2016-07-21')].main_module
+	 >>> dm.schema_data.modules[('example-3-suba', '2016-07-21')].main_module
 	 ('example-3-a', '2016-06-18')
-	 >>> Context.modules[('example-3-suba', '2016-07-21')].prefix_map['inet']
+	 >>> dm.schema_data.modules[('example-3-suba', '2016-07-21')].prefix_map['inet']
 	 ('ietf-inet-types', '2013-07-15')
-	 >>> sorted(Context.modules[('example-3-a', '2016-06-18')].features)
+	 >>> sorted(dm.schema_data.modules[('example-3-a', '2016-06-18')].features)
 	 ['fea1', 'fea2']
 
    .. rubric:: Public Methods
 
-   .. classmethod:: namespace(mid: ModuleId) -> YangIdentifier
+   .. method:: namespace(mid: ModuleId) -> YangIdentifier
 
       Return the namespace corresponding to a module or submodule. The
       argument *mid* is the :term:`module identifier` of the
@@ -179,10 +200,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> Context.namespace(('example-3-suba', '2016-07-21'))
+	 >>> dm.schema_data.namespace(('example-3-suba', '2016-07-21'))
 	 'example-3-a'
 
-   .. classmethod:: last_revision(name: YangIdentifier) -> ModuleId
+   .. method:: last_revision(name: YangIdentifier) -> ModuleId
 
       Return :term:`module identifier` of the most recent revision of
       a module or submodule *name*.
@@ -192,10 +213,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> Context.last_revision('ietf-inet-types')
+	 >>> dm.schema_data.last_revision('ietf-inet-types')
 	 ('ietf-inet-types', '2013-07-15')
 
-   .. classmethod:: prefix2ns(prefix: YangIdentifier, mid: ModuleId) \
+   .. method:: prefix2ns(prefix: YangIdentifier, mid: ModuleId) \
 		    -> YangIdentifier
 
       Return namespace identifier corresponding to *prefix*. The
@@ -209,17 +230,18 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> Context.prefix2ns('oin', ('example-3-b', '2016-08-22'))
+	 >>> dm.schema_data.prefix2ns('oin', ('example-3-b', '2016-08-22'))
 	 'ietf-inet-types'
 
-   .. classmethod:: resolve_pname(pname: PrefName, mid: ModuleId) \
+   .. method:: resolve_pname(pname: PrefName, mid: ModuleId) \
 		    -> Tuple[YangIdentifier, ModuleId]
 
       Resolve :term:`prefixed name` *pname* and return a tuple
       consisting of an unprefixed name and a :term:`module identifier`
       of the (sub)module in which that name is defined. The argument
       *mid* specifies the (sub)module in which *pname* is to be
-      resolved.
+      resolved. If *pname* has no prefix, *mid* is used as the second
+      component of the result.
 
       This method raises :exc:`ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
@@ -228,16 +250,18 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> Context.resolve_pname('oin:port-number', ('example-3-b', '2016-08-22'))
+	 >>> dm.schema_data.resolve_pname('oin:port-number', ('example-3-b', '2016-08-22'))
 	 ('port-number', ('ietf-inet-types', '2010-09-24'))
 
 
-   .. classmethod:: translate_pname(pname: PrefName, mid: ModuleId) \
-		    -> QualName
+   .. method:: translate_pname(pname: PrefName, mid: ModuleId) \
+	       -> QualName
 
       Translate :term:`prefixed name` *pname* to a :term:`qualified
       name`. The argument *mid* specifies the (sub)module in which
-      *pname* is to be resolved.
+      *pname* is to be resolved. If *pname* has no prefix, the
+      namespace of the module identified by *mid* is assigned by
+      default.
 
       This method raises :exc:`ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
@@ -246,10 +270,29 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> Context.translate_pname('oin:port-number', ('example-3-b', '2016-08-22'))
+	 >>> dm.schema_data.translate_pname('oin:port-number', ('example-3-b', '2016-08-22'))
 	 ('port-number', 'ietf-inet-types')
 
-   .. classmethod:: prefix(imod: YangIdentifier, mid: ModuleId) -> \
+   .. method:: translate_node_id(ni: PrefName, sctx:SchemaContext) \
+	       -> QualName
+
+      Translate :term:`node identifier` *ni* to a :term:`qualified
+      name`. The argument *sctx* contains a :class:`SchemaContext` in
+      which *ni* is resolved.
+
+      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      identified by the :attr:`~.SchemaContext.text_mid` attribute of
+      *sctx* is not part of the data model, and :exc:`UnknownPrefix`
+      if the prefix specified in *ni* is not declared in that
+      (sub)module.
+
+      .. doctest::
+
+         >>> sctx1 = SchemaContext(dm.schema_data, 'example-3-b', ('example-3-a', '2016-08-18'))
+         >>> dm.schema_data.translate_node_id('bar', sctx1)
+	 ('bar', 'example-3-b')
+
+   .. method:: prefix(imod: YangIdentifier, mid: ModuleId) -> \
 		    YangIdentifier
 
       Return namespace prefix declared for :term:`implemented module`
@@ -267,15 +310,15 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> Context.prefix("example-3-a", ("example-3-b", "2016-08-22"))
+	 >>> dm.schema_data.prefix("example-3-a", ("example-3-b", "2016-08-22"))
 	 'ex3a'
 
-   .. classmethod:: sni2route(sni: SchemaNodeId, mid: ModuleId) \
+   .. method:: sni2route(sni: SchemaNodeId, sctx: SchemaContext) \
 		    -> SchemaRoute
 
       Translate :term:`schema node identifier` *sni* to a
-      :term:`schema route`.  The argument *mid* specifies the
-      (sub)module in which *sni* is to be resolved.
+      :term:`schema route`.  The argument *sctx* specifies the
+      schema context in which *sni* is to be resolved.
 
       This method raises :exc:`ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
@@ -284,10 +327,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> Context.sni2route('/ex3a:top/ex3a:bar', ('example-3-b', '2016-08-22'))
+         >>> sctx2 = SchemaContext(dm.schema_data, 'example-3-b', ('example-3-b', '2016-08-22')) 
+	 >>> dm.schema_data.sni2route('/ex3a:top/ex3a:bar', sctx2)
 	 [('top', 'example-3-a'), ('bar', 'example-3-a')]
 
-   .. classmethod:: path2route(path: SchemaPath) -> SchemaRoute
+   .. staticmethod:: path2route(path: SchemaPath) -> SchemaRoute
 
       Translate :term:`schema path` or :term:`data path` in the *path*
       argument to a :term:`schema route` or :term:`data route`,
@@ -298,18 +342,18 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> Context.path2route('/example-3-a:top/bar')
+	 >>> dm.schema_data.path2route('/example-3-a:top/bar')
 	 [('top', 'example-3-a'), ('bar', 'example-3-a')]
 
-   .. classmethod:: get_definition(stmt: Statement, mid: ModuleId) \
-		    -> Tuple[Statement, ModuleId]
+   .. method:: get_definition(stmt: Statement, sctx: SchemaContext) \
+		    -> Tuple[Statement, SchemaContext]
 
       Find the **grouping** or **typedef** statement to which the
-      statement in the *stmt* argument refers. The argument *mid*
-      specifies the (sub)module in which the name of the grouping or
-      type is to be resolved. The returned value is a tuple consisting
-      of the definition statement and :term:`module identifier` of the
-      (sub)module where the definition appears.
+      statement in the *stmt* argument refers. The argument *sctx*
+      specifies the schema context in which the name of the grouping
+      or type is to be resolved. The returned value is a tuple
+      consisting of the definition statement and a new
+      :class:`SchemaContext` in which the definition appears.
 
       This method may raise the following exceptions:
 
@@ -325,17 +369,17 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> bmod = Context.modules[('example-3-b', '2016-08-22')].statement
+	 >>> bmod = dm.schema_data.modules[('example-3-b', '2016-08-22')].statement
 	 >>> baztype = bmod.find1("augment").find1("leaf").find1("type")
-	 >>> pn = Context.get_definition(baztype, ('example-3-b', '2016-08-22'))
+	 >>> pn = dm.schema_data.get_definition(baztype, sctx2)
 	 >>> pn[0].keyword
 	 'typedef'
 	 >>> pn[0].argument
 	 'port-number'
-	 >>> pn[1]
+	 >>> pn[1].text_mid
 	 ('ietf-inet-types', '2010-09-24')
 
-   .. classmethod:: is_derived_from(identity: QualName, base: \
+   .. method:: is_derived_from(identity: QualName, base: \
 		    QualName) -> bool
 
       Return ``True`` if the identity specified in the *identity*
@@ -344,10 +388,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> Context.is_derived_from(('idZ', 'example-3-b'), ('idX', 'example-3-a'))
+	 >>> dm.schema_data.is_derived_from(('idZ', 'example-3-b'), ('idX', 'example-3-a'))
 	 True
 
-   .. classmethod:: if_features(stmt: Statement, mid: ModuleId) -> bool
+   .. method:: if_features(stmt: Statement, mid: ModuleId) -> bool
 
       Evaluate all **if-feature** statements that are substatements of
       *stmt*. Return ``False`` if any of them is false, otherwise
@@ -367,12 +411,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> amod = Context.modules[('example-3-a', '2016-06-18')].statement
+	 >>> amod = dm.schema_data.modules[('example-3-a', '2016-06-18')].statement
 	 >>> foo = amod.find1("container").find1("leaf")
-	 >>> Context.if_features(foo, ('example-3-a', '2016-06-18'))
+	 >>> dm.schema_data.if_features(foo, ('example-3-a', '2016-06-18'))
 	 True
 
-.. class:: FeatureExprParser(text: str, mid: ModuleId)
+.. class:: FeatureExprParser(text: str, schema_data: SchemaData, mid: ModuleId)
 
    This class implements a parser and evaluator of expressions
    appearing in the argument of **if-feature** statements. It is a
@@ -380,7 +424,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    The arguments of the class constructor are:
 
-   * *text* – text to parse,
+   * *text* – feature expression text to parse,
+   * *schema_data* - 
    * *mid* – value for :attr:`mid` attribute.
 
    The constructor may raise :exc:`ModuleNotRedistered` if the
@@ -394,7 +439,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       that provides context for parsing and evaluating the feature
       expression.
 
-   Two other instance variables (:attr:`~.Parser.input` and
+   .. attribute:: schema_data
+
+      This attribute contains a :class:`SchemaData` object describing the
+      current schema for which the feature expression is to be evaluated.
+
+   Two other instance attributes (:attr:`~.Parser.input` and
    :attr:`~.Parser.offset`) are inherited from the :class:`Parser`
    class.
 
@@ -413,9 +463,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> from yangson.context import FeatureExprParser
+	 >>> from yangson.schemadata import FeatureExprParser
 	 >>> FeatureExprParser('ex3a:fea1 and not (ex3a:fea1 or ex3a:fea2)',
-	 ... ('example-3-a', '2016-06-18')).parse()
+	 ... dm.schema_data, ('example-3-a', '2016-06-18')).parse()
 	 False
 
 .. autoexception:: MissingModule(name: YangIdentifier, rev: str = "")
@@ -476,3 +526,4 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 .. _5.6.5: https://tools.ietf.org/html/rfc7950#section-5.6.5
 .. _5.1: https://tools.ietf.org/html/rfc7950#section-5.1
+.. _6.4.1: https://tools.ietf.org/html/rfc7950#section-6.4.1

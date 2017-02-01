@@ -4,7 +4,6 @@ Quick Start
 .. testcleanup::
 
    os.chdir("../..")
-   del DataModel._instances[DataModel]
 
 This section contains a series of hands-on examples that illustrate
 basic ways of using the *Yangson* library. The snippets below should
@@ -206,7 +205,7 @@ happens to be the key of the *foo* list:
    >>> broken1.validate()
    Traceback (most recent call last):
    ...
-   yangson.schema.SemanticError: [/example-2:bag/foo] non-unique list key: (6,)
+   yangson.schemanode.SemanticError: [/example-2:bag/foo] non-unique list key: (6,)
 
 Correct! Both entries of the *foo* list now have the same key, namely ``6``.
 
@@ -218,7 +217,7 @@ doesn't match the leaf's type, as in the following example:
    >>> inw.update('INFINITY').validate()
    Traceback (most recent call last):
    ...
-   yangson.schema.SchemaError: [/example-2:bag/foo/1/in-words] invalid type: 'INFINITY'
+   yangson.schemanode.SchemaError: [/example-2:bag/foo/1/in-words] invalid type: 'INFINITY'
 
 This is again correct because the new value ``INFINITY`` doesn't match
 the regular expression pattern in the definition of the *in-words* leaf.
@@ -236,4 +235,4 @@ mandatory in the data model:
    >>> broken2.validate()
    Traceback (most recent call last):
    ...
-   yangson.schema.SchemaError: [/example-2:bag] missing: member 'bar'
+   yangson.schemanode.SchemaError: [/example-2:bag] missing: member 'bar'

@@ -20,6 +20,7 @@ Essential YANG schema structures and methods.
 
 This module implements the following classes:
 
+* SchemaContext: Schema data and current schema context.
 * ModuleData: Data related to a YANG module or submodule.
 * SchemaData: Repository of YANG schema structures and methods.
 * FeatureExprParser: Parser for if-feature expressions.
@@ -31,9 +32,10 @@ This module defines the following exceptions:
 * CyclicImports: Imports of YANG modules form a cycle.
 * FeaturePrerequisiteError: Pre-requisite feature isn't supported.
 * InvalidFeatureExpression: Invalid if-feature expression.
-* ModuleNotFound: YANG module not found.
-* ModuleNotImported: YANG module is not imported.
-* ModuleNotRegistered: Module is not registered in YANG library.
+* ModuleNotFound: A module not found.
+* ModuleNotImplemented: A module is not implemented in the data model.
+* ModuleNotImported: A module is not imported.
+* ModuleNotRegistered: An imported module is not registered in YANG library.
 * MultipleImplementedRevisions: A module has multiple implemented revisions.
 * UnknownPrefix: Unknown namespace prefix.
 """
@@ -82,12 +84,12 @@ class SchemaData:
 
     def __init__(self, yang_lib: Dict[str, Any], mod_path: List[str]) -> None:
         """Initialize the schema structures."""
-        self.module_search_path = mod_path
-        """List of directories where to look for YANG modules."""
         self.identity_bases = {} # type: Dict[QualName, MutableSet[QualName]]
         """Dictionary of identity bases."""
         self.implement = {} # type: Dict[YangIdentifier, RevisionDate]
         """Dictionary of implemented revisions."""
+        self.module_search_path = mod_path
+        """List of directories where to look for YANG modules."""
         self.modules = {} # type: Dict[ModuleId, ModuleData]
         """Dictionary of module data."""
         self._module_sequence = [] # type: List[ModuleId]
@@ -460,8 +462,8 @@ class FeatureExprParser(Parser):
             ModuleNotRegistered: If `mid` is not registered in the data model.
         """
         super().__init__(text)
-        self.schema_data = schema_data
         self.mid = mid
+        self.schema_data = schema_data
 
     def parse(self) -> bool:
         """Parse and evaluate a complete feature expression.
@@ -544,7 +546,7 @@ class ModuleNotRegistered(MissingModule):
     pass
 
 class ModuleNotImplemented(MissingModule):
-    """A module is not implemented."""
+    """A module is not implemented in the data model."""
     pass
 
 class BadYangLibraryData(YangsonException):

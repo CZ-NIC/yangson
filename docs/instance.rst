@@ -15,7 +15,6 @@
 .. testcleanup::
 
    os.chdir("../..")
-   del DataModel._instances[DataModel]
 
 The *instance* module implements the following classes:
 
@@ -265,7 +264,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       Return ``True`` if the receiver is an instance of an internal
       schema node, i.e. its :attr:`schema_node` is an
-      :class:`~.schema.InternalNode`. Otherwise return ``False``.
+      :class:`~.schemanode.InternalNode`. Otherwise return ``False``.
 
       .. doctest::
 
@@ -299,7 +298,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> bag.put_member('quux', 0)
 	 Traceback (most recent call last):
 	 ...
-	 yangson.schema.NonexistentSchemaNode: quux in module example-2
+	 yangson.schemanode.NonexistentSchemaNode: quux in module example-2
 
    .. method:: delete_item(key: InstanceKey) -> InstanceNode
 
@@ -473,9 +472,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       The method returns ``None`` if the validation succeeds,
       otherwise one of the following exceptions is raised:
 
-      * :exc:`.schema.SchemaError` – if the value doesn't conform to
+      * :exc:`.schemanode.SchemaError` – if the value doesn't conform to
 	the schema,
-      * :exc:`.schema.SemanticError` – if the value violates a
+      * :exc:`.schemanode.SemanticError` – if the value violates a
 	semantic constraint.
 
       .. doctest::
@@ -485,7 +484,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> badinst.validate()
 	 Traceback (most recent call last):
 	 ...
-	 yangson.schema.SchemaError: [/example-2:bag/baz] invalid type: 'ILLEGAL'
+	 yangson.schemanode.SchemaError: [/example-2:bag/baz] invalid type: 'ILLEGAL'
 
       In the following example, member ``baz`` is not allowed because
       it is a conditional leaf and its **when** constraint evaluates
@@ -499,7 +498,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> bad2.validate()
 	 Traceback (most recent call last):
 	 ...
-	 yangson.schema.SchemaError: [/example-2:bag] not allowed: member 'baz'
+	 yangson.schemanode.SchemaError: [/example-2:bag] not allowed: member 'baz'
 
    .. method:: add_defaults(ctype: ContentType = None) -> InstanceNode
 

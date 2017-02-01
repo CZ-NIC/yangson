@@ -14,7 +14,6 @@ Data Model
 .. testcleanup::
 
    os.chdir("../..")
-   del DataModel._instances[DataModel]
 
 The *datamodel* module implements the following class:
 
@@ -34,11 +33,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    The constructor argument *yltxt* is a string with JSON-encoded YANG
    library data [RFC7895]_, and *mod_path* is a list of filesystem
    directories in which *Yangson* searches for YANG modules.
-
-   :class:`DataModel` is a *singleton* class which means that only one
-   instance can be created. This limitation corresponds to the fact
-   that it is not possible to work with multiple data models at the
-   same time.
 
    The class constructor may raise the following exceptions:
 
@@ -77,7 +71,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 	 >>> dm = DataModel.from_file("yang-library-ex1.json")
 
-   .. staticmethod:: module_set_id() -> str
+   .. method:: module_set_id() -> str
 
       Return a unique identifier of the set of modules comprising the
       data model. This string, which consists of hexadecimal digits,
@@ -101,7 +95,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> dm.module_set_id()
 	 'ae4bf1ddf85a67ab94a9ab71593cd1c78b7f231d'
 
-   .. staticmethod:: from_raw(robj: RawObject) -> RootNode
+   .. method:: from_raw(robj: RawObject) -> RootNode
 
       Create a root instance node from a raw data tree contained in
       the *robj* argument. The latter will typically be a Python
@@ -124,7 +118,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> inst.value
 	 {'example-1:greeting': 'Hi!'}
 
-   .. staticmethod:: get_schema_node(path: SchemaPath) -> Optional[SchemaNode]
+   .. method:: get_schema_node(path: SchemaPath) -> Optional[SchemaNode]
 
       Return the schema node addressed by *path*, or ``None`` if no
       such schema node exists. The *path* argument is a :term:`schema
@@ -136,7 +130,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> root.parent is None
 	 True
 
-   .. staticmethod:: get_data_node(path: DataPath) -> Optional[DataNode]
+   .. method:: get_data_node(path: DataPath) -> Optional[DataNode]
 
       Return the data node addressed by *path*, or ``None`` if such a
       data node doesn't exist. As opposed to the
@@ -149,7 +143,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> leaf.parent is root
 	 True
 
-    .. staticmethod:: ascii_tree() -> str
+    .. method:: ascii_tree() -> str
 
       Generate ASCII art representation of the schema tree.
       
@@ -168,63 +162,63 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> print(dm.ascii_tree(), end='')
 	 +--rw example-1:greeting? <string>
 
-    .. staticmethod:: parse_instance_id(text: str) -> InstanceRoute
+    .. method:: parse_instance_id(text: str) -> InstanceRoute
 
        Parse :term:`instance identifier` into :class:`~.instance.InstanceRoute`.
 
-    .. staticmethod:: parse_resource_id(text: str) -> InstanceRoute
+    .. method:: parse_resource_id(text: str) -> InstanceRoute
 
        Parse :term:`resource identifier` into :class:`~.instance.InstanceRoute`.
 
-      .. staticmethod:: schema_digest() -> str
+    .. method:: schema_digest() -> str
 
-      Generate digest of the data model schema. This information is
-      primarily intended to aid client applications.
+       Generate digest of the data model schema. This information is
+       primarily intended to aid client applications.
 
-      The returned string contains a structure of JSON
-      objects that follows the data model hierarchy. Every JSON
-      object also contains members with information about the corresponding
-      data node (including the anonymous root node), namely:
+       The returned string contains a structure of JSON objects that
+       follows the data model hierarchy. Every JSON object also
+       contains members with information about the corresponding data
+       node (including the anonymous root node), namely:
 
-      * The following members are available for all nodes:
+       * The following members are available for all nodes:
 
-	- ``class`` – class of the node, with these possible values:
-	  ``root``, ``container``, ``leaf``, ``list``, ``leaf-list``,
-	  ``anydata`` and ``anyxml``.
+	 - ``class`` – class of the node, with these possible values:
+	   ``root``, ``container``, ``leaf``, ``list``, ``leaf-list``,
+	   ``anydata`` and ``anyxml``.
 
-	- ``description`` – description string as defined in the data
-	  model, or empty string if the node has no description.
+	 - ``description`` – description string as defined in the data
+	   model, or empty string if the node has no description.
 
-      * Internal nodes (the root node, containers, and lists) have the
-	``children`` member. Its value is an object with a name/value
-	pair for every child data node that is defined in the data
-	model. The name is the identifier of the child identical to
-	the name of the node's instance – for example, it is
-	``foomod:bar`` for the ``bar`` data node defined in the
-	``foomod`` module. The value of each member of the
-	``children`` object is then another object containing the
-	child's schema digest.
+       * Internal nodes (the root node, containers, and lists) have the
+         ``children`` member. Its value is an object with a name/value
+	 pair for every child data node that is defined in the data
+	 model. The name is the identifier of the child identical to
+	 the name of the node's instance – for example, it is
+	 ``foomod:bar`` for the ``bar`` data node defined in the
+	 ``foomod`` module. The value of each member of the
+	 ``children`` object is then another object containing the
+	 child's schema digest.
 
-      * The following members are added for terminal nodes (leafs and
-	leaf-lists):
+       * The following members are added for terminal nodes (leafs and
+	 leaf-lists):
 
-	- ``base-type`` – base type of the terminal node such as
-	  ``uint8``, ``string`` etc.
+	 - ``base-type`` – base type of the terminal node such as
+	   ``uint8``, ``string`` etc.
 
-	- ``derived`` – this member is present only if the node's type
-	  is derived, and contains the name of the derived type.
+	 - ``derived`` – this member is present only if the node's type
+	   is derived, and contains the name of the derived type.
 
-      * Container nodes also have the ``presence`` member that is
-	``true`` for containers with presence (see sec. `7.5.1`_ of
-	[RFC7950]_), and ``false`` otherwise.
+       * Container nodes also have the ``presence`` member that is
+         ``true`` for containers with presence (see sec. `7.5.1`_ of
+	 [RFC7950]_), and ``false`` otherwise.
 
-      * List nodes also have the ``keys`` member whose value is an
-	array with names of the list's keys.
+       * List nodes also have the ``keys`` member whose value is an
+         array with names of the list's keys.
 
-      .. doctest::
+       .. doctest::
 
-	 >>> len(dm.schema_digest())
-	 118
+	  >>> len(dm.schema_digest())
+	  118
 
 .. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
 .. _7.5.1: https://tools.ietf.org/html/rfc7950#section-7.5.1

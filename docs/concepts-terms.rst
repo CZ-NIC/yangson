@@ -148,7 +148,7 @@ configuration and state data makes no sense at all, and **config**
 statements, if present, are ignored there.
 
 The approach adopted by the *Yangson* library is to assign a content
-type to every :class:`~.schema.SchemaNode`. The values are members of
+type to every :class:`~.schemadata.SchemaNode`. The values are members of
 the enumeration :class:`~.enumerations.ContentType`:
 
 * :attr:`~.ContentType.config`

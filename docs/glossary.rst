@@ -103,6 +103,11 @@ specification, see section `3`_ of [RFC7950]_.
        analogical to how :term:`data route` is related to
        :term:`schema route`.
 
+   node identifier
+
+      Name of a single schema node with optional namespace prefix. See
+      production ``node-identifier`` in [RFC7950]_, sec. `14`_.
+
    schema node identifier
 
        A sequence of :term:`prefixed name`\ s of schema nodes
@@ -179,3 +184,4 @@ specification, see section `3`_ of [RFC7950]_.
 .. _6.11: https://tools.ietf.org/html/rfc7951#section-6.11
 .. _6.5: https://tools.ietf.org/html/rfc7950#section-6.5
 .. _9.13: https://tools.ietf.org/html/rfc7950#section-9.13
+.. _14: https://tools.ietf.org/html/rfc7950#section-14

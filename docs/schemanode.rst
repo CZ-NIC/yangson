@@ -17,7 +17,6 @@ Schema Nodes
 .. testcleanup::
 
    os.chdir("../..")
-   del DataModel._instances[DataModel]
 
 The *schema* module defines the following classes:
 
@@ -170,6 +169,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 False
 
    .. rubric:: Public Methods
+
+   .. automethod:: schema_root() -> GroupNode
+
+      .. doctest::
+
+	 >>> rsn.schema_root().parent is None
+	 True
 
    .. automethod:: content_type() -> ContentType
 

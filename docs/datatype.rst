@@ -10,12 +10,12 @@ Data Types
 
    import os
    from yangson import DataModel
+   from yangson.schemadata import SchemaContext
    os.chdir("examples/ex5")
 
 .. testcleanup::
 
    os.chdir("../..")
-   del DataModel._instances[DataModel]
 
 The *datatype* module defines the following classes:
 
@@ -77,27 +77,27 @@ corresponds to a Python class and restrictions are represented as
 values of appropriate instance attributes. Instances of subclasses
 of :class:`DataType` typically appear as values
 of :attr:`~.TerminalNode.type` attribute that is common to
-all :class:`~.schema.TerminalNode` instances.
+all :class:`~.schemanode.TerminalNode` instances.
 
-.. class:: DataType(mid: ModuleId)
+.. class:: DataType(sctx: SchemaContext, name: YangIdentifier)
 
    This is the abstract superclass for all classes representing YANG
    data types. The methods described in this class comprise common API
    for all type, some subclasses then introduce type-specific methods.
 
-   The constructor argument *mid* is the value for the
-   :attr:`module_id` instance attribute.
+   The constructor arguments *sctx* and *name* initialize values of the
+   instance attributes :attr:`sctx` and :attr:`name`, respectively.
 
    .. rubric:: Instance Attributes
 
-   .. attribute:: module_id
+   .. attribute:: sctx
 
-      Identifier of the module in the context of which the type
-      definition and restrictions are to be interpreted.
+      :class:`~.schemadata.SchemaContext` in which the type definition
+      and restrictions are to be interpreted.
 
       .. doctest::
 
-	 >>> string_t.module_id
+	 >>> string_t.sctx.text_mid
 	 ('example-5-a', '')
 
    .. attribute:: default
@@ -198,22 +198,24 @@ all :class:`~.schema.TerminalNode` instances.
 	 >>> decimal64_t.canonical_string(e)
 	 '2.7183'
 
-   .. method:: from_yang(text: str, mid: ModuleId) -> ScalarValue
+   .. method:: from_yang(text: str, sctx: SchemaContext) -> ScalarValue
 
-      Return a value of receiver's type parsed from a string that may
-      appear in the module specified by :term:`module identifier`
-      *mid*.
+      Return a value of receiver's type parsed from a string
+      appearing in a YANG module. The *sctx* argument is the
+      :class:`~.schemadata.SchemaContext` in which *text* is
+      interpreted as a scalar value.
 
       This method raises :exc:`YangTypeError` if the string in *text*
       cannot be parsed into a valid value of receiver's type in the
-      context of module *mid*.
+      given schema context.
 
       This method is useful, e.g., for parsing arguments of the **default**
       statement.
 
       .. doctest::
 
-	 >>> identityref_t.from_yang('ex5b:derived-identity', ('example-5-a', ''))
+	 >>> sctx = SchemaContext(dm.schema_data, 'example-5-a', ('example-5-a', ''))
+	 >>> identityref_t.from_yang('ex5b:derived-identity', sctx)
 	 ('derived-identity', 'example-5-b')
 
    .. method:: contains(val: ScalarValue) -> bool
