@@ -39,7 +39,7 @@ JSONPointer = str
 """JSON Pointer [RFC6901]_."""
 
 ResourceIdentifier = str
-"""RESTCONF resource identifier, see sec. `3.5.3`_ of [BBW16]_."""
+"""RESTCONF resource identifier, see sec. `3.5.3`_ of [RFC8040]_."""
 
 ScalarValue = Union[int, Decimal, str, Tuple[None]]
 """Scalar value of an InstanceNode."""

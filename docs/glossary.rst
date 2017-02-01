@@ -129,7 +129,7 @@ specification, see section `3`_ of [RFC7950]_.
 
        A string identifying an instance in the data tree that is
        suitable for use in URLs. The syntax of resource identifiers is
-       defined in [BBW16]_, sec. `3.5.1`.
+       defined in [RFC8040]_, sec. `3.5.3`.
 
    implemented module
 
@@ -143,7 +143,7 @@ specification, see section `3`_ of [RFC7950]_.
        model. Other modules import such a module in order to use its
        typedefs and/or groupings. In YANG library, implemented modules
        have the *conformance-type* parameter set to ``import``. See
-       [BBW16]_, sec. `2.2`_.
+       [RFC7895]_, sec. `2.2`_.
 
    namespace identifier
 
@@ -172,7 +172,7 @@ specification, see section `3`_ of [RFC7950]_.
 
 .. _2.2: https://tools.ietf.org/html/rfc7895#section-2.2
 .. _3: https://tools.ietf.org/html/rfc7950#section-3
-.. _3.5.1: https://tools.ietf.org/html/draft-ietf-netconf-restconf#section-3.5.1
+.. _3.5.3: https://tools.ietf.org/html/rfc8040#section-3.5.3
 .. _4: https://tools.ietf.org/html/rfc7951#section-4
 .. _6.2: https://tools.ietf.org/html/rfc7950#section-6.2
 .. _6.2.1: https://tools.ietf.org/html/rfc7950#section-6.2.1

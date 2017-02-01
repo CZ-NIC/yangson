@@ -171,7 +171,7 @@ of the receiver.
 
 The above rules allow for a straightforward implementation of content
 filtering in RESTCONF based on the ``content`` query parameter, see
-sec. `4.8.1`_ in [BBW16]_.
+sec. `4.8.1`_ in [RFC8040]_.
 
 .. _4.2.3: https://tools.ietf.org/html/rfc7950#section-4.2.3
-.. _4.8.1: https://tools.ietf.org/html/draft-ietf-netconf-restconf#section-4.8.1
+.. _4.8.1: https://tools.ietf.org/html/rfc8040#section-4.8.1

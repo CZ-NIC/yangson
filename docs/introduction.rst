@@ -24,7 +24,7 @@ Main Features
 
 * Complete validation of instance data against the data model.
 
-* Support for RESTCONF data resources [BBW16]_ (timestamps and
+* Support for RESTCONF data resources [RFC8040]_ (timestamps and
   entity-tags) and resource identifiers.
 
 * Support for NETCONF Access Control Module (NACM) [RFC6536]_.
