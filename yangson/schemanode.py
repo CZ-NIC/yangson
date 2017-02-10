@@ -637,6 +637,39 @@ class DataNode(SchemaNode):
         """
         return ObjectMember(self.iname(), {}, value, None, self, value.timestamp)
 
+    def split_instance_route(self, route: "InstanceRoute") -> Optional[Tuple[
+        "InstanceRoute", "InstanceRoute"]]:
+        """Split `route` into the part up to receiver and the rest.
+
+        Args:
+            route: Absolute instance route (the receiver should correspond to an
+                instance node on this route).
+
+        Returns:
+            A tuple consisting of
+                - the part of `route` from the root up to and including the
+                  instance whose schema node is the receiver, and
+                - the rest of `route`.
+                ``None`` is returned if the receiver is not on the route.
+        """
+        sroute = []
+        sn = self
+        while sn:
+            sroute.append(sn.iname())
+            sn = sn.data_parent()
+        i = 0
+        while True:
+            if not sroute: break
+            inst = sroute.pop()
+            if inst != route[i].iname(): return None
+            while True:         # skip up to next MemberName
+                i += 1
+                if i >=  len(route) or isinstance(route[i], MemberName):
+                    break
+            if not sroute:
+                return (InstanceRoute(route[:i]), InstanceRoute(route[i:]))
+            if i >= len(route): return None
+
     def _yang_class(self) -> str:
         return self.__class__.__name__[:-4].lower()
 
@@ -1340,5 +1373,5 @@ class SemanticError(ValidationError):
     pass
 
 from .xpathast import Expr, LocationPath, Step, Root
-from .instance import (ArrayEntry, EmptyList, InstanceNode,
-                           NonexistentInstance, ObjectMember)
+from .instance import (ArrayEntry, EmptyList, InstanceNode, InstanceRoute,
+                           MemberName, NonexistentInstance, ObjectMember)
