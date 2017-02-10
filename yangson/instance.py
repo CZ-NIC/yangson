@@ -123,10 +123,11 @@ class EmptyList(LinkedList, metaclass=_Singleton):
 class InstanceNode:
     """YANG data node instance implemented as a zipper structure."""
 
-    def __init__(self, key: InstanceKey, value: Value, parinst: "InstanceNode",
+    def __init__(self, key: InstanceKey, value: Value,
+                     parinst: Optional["InstanceNode"],
                      schema_node: "DataNode", timestamp: datetime):
         """Initialize the class instance."""
-        self.path = parinst.path + (key,)   # type: List[InstanceKey]
+        self.path = (parinst.path if parinst else ()) + (key,)   # type: Tuple[InstanceKey]
         """Path in the data tree."""
         self.parinst = parinst         # type: Optional["InstanceNode"]
         """Parent instance node, or ``None`` for the root node."""
@@ -478,7 +479,7 @@ class ObjectMember(InstanceNode):
     """This class represents an object member."""
 
     def __init__(self, key: InstanceName, siblings: Dict[InstanceName, Value],
-                 value: Value, parinst: InstanceNode,
+                 value: Value, parinst: Optional[InstanceNode],
                  schema_node: "DataNode", timestamp: datetime ):
         super().__init__(key, value, parinst, schema_node, timestamp)
         self.siblings = siblings # type: Dict[InstanceName, Value]
@@ -578,7 +579,7 @@ class ArrayEntry(InstanceNode):
     """This class represents an array entry."""
 
     def __init__(self, key: int, before: LinkedList, after: LinkedList,
-                     value: Value, parinst: InstanceNode,
+                     value: Value, parinst: Optional[InstanceNode],
                      schema_node: "DataNode", timestamp: datetime = None):
         super().__init__(key, value, parinst, schema_node, timestamp)
         self.before = before # type: LinkedList

@@ -629,6 +629,14 @@ class DataNode(SchemaNode):
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
+    def orphaned_instance(self, value: Value) -> "ObjectMember":
+        """Return orphaned instance of the receiver.
+
+        Args:
+            value: Cooked value of the returned instance.
+        """
+        return ObjectMember(self.iname(), {}, value, None, self, value.timestamp)
+
     def _yang_class(self) -> str:
         return self.__class__.__name__[:-4].lower()
 
@@ -878,6 +886,15 @@ class SequenceNode(DataNode):
             YangTypeError: If a scalar value inside `rval` is of incorrect type.
         """
         return super().from_raw(rval, jptr)
+
+    def orphaned_entry(self, value: Value) -> "ArrayEntry":
+        """Return orphaned entry of the receiver.
+
+        Args:
+            value: Cooked value of the returned entry.
+        """
+        return ArrayEntry(0, EmptyList(), EmptyList(), value,
+                              None, self, value.timestamp)
 
 class ListNode(SequenceNode, InternalNode):
     """List node."""
@@ -1323,4 +1340,5 @@ class SemanticError(ValidationError):
     pass
 
 from .xpathast import Expr, LocationPath, Step, Root
-from .instance import ArrayEntry, InstanceNode, NonexistentInstance
+from .instance import (ArrayEntry, EmptyList, InstanceNode,
+                           NonexistentInstance, ObjectMember)
