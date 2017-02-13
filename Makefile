@@ -1,5 +1,5 @@
 PROJECT = yangson
-VERSION = 1.3.0
+VERSION = 1.3.2
 .PHONY = tags deps install-deps test
 
 tags:
@@ -15,7 +15,8 @@ test:
 	@py.test tests
 
 release:
-	git tag -a -m "Yangson release $(VERSION)" $(VERSION)
+	git tag -a -s -m "Yangson release $(VERSION)" $(VERSION)
+	git push --follow-tags
 	rm -f dist/*
 	python setup.py sdist
 	python setup.py bdist_wheel
