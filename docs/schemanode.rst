@@ -18,7 +18,7 @@ Schema Nodes
 
    os.chdir("../..")
 
-The *schema* module defines the following classes:
+The *schemanode* module defines the following classes:
 
 * :class:`SchemaNode`: Abstract class for schema nodes.
 * :class:`InternalNode`: Abstract class for schema nodes that have children.
@@ -63,10 +63,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 .. doctest::
 
    >>> dm = DataModel.from_file('yang-library-ex4.json',
-   ... mod_path=[".", "../../../yang-modules/ietf"])
-   >>> fsn = dm.get_schema_node("/example-4-a:bag/foo")
-   >>> rsn = dm.get_schema_node("/example-4-a:bag/opts/example-4-b:fooref/fooref")
-   >>> with open("example-data.json") as infile:
+   ... mod_path=['.', '../../../yang-modules/ietf'])
+   >>> fsn = dm.get_schema_node('/example-4-a:bag/foo')
+   >>> rsn = dm.get_schema_node('/example-4-a:bag/opts/example-4-b:fooref/fooref')
+   >>> with open('example-data.json') as infile:
    ...     ri = json.load(infile)
    >>> inst = dm.from_raw(ri)
 
@@ -116,7 +116,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.get_data_node("/example-4-a:bag").description
+	 >>> dm.get_data_node('/example-4-a:bag').description
 	 'Top-level container.'
 	 >>> rsn.description is None
 	 True
@@ -248,7 +248,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> raw = {'baz': [None]}
 	 >>> type(raw)
 	 <class 'dict'>
-	 >>> cooked = bsn.from_raw(raw, "/example-4-a:bag")
+	 >>> cooked = bsn.from_raw(raw, '/example-4-a:bag')
 	 >>> cooked
 	 {'baz': (None,)}
 	 >>> type(cooked)
@@ -282,7 +282,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> barsn = bsn.get_child("bar", "example-4-a")
+	 >>> barsn = bsn.get_child('bar', 'example-4-a')
 	 >>> barsn.qual_name
 	 ('bar', 'example-4-a')
 
@@ -373,6 +373,43 @@ or **uses** statement if this statement is conditional, i.e. has a
 
 	 >>> fsn.default_deny
 	 <DefaultDeny.write: 2>
+
+   .. rubric:: Public Methods
+
+   .. method:: orphan_instance(rval: RawValue) -> ObjectMember
+
+      Return an :class:`~.instance.ObjectMember` as an isolated
+      instance of the receiver data node, i.e. one that has neither
+      parent instance nor siblings. The *rval* argument provides the
+      :term:`raw value` to be cooked and used for the instance.
+
+      .. doctest::
+
+	 >>> obag = bsn.orphan_instance({'foo': 54, 'bar': True})
+	 >>> obag.name
+	 'example-4-a:bag'
+	 >>> obag['foo'].value
+	 54
+	 >>> obag.parinst is None
+	 True
+	 >>> obag.siblings
+	 {}
+
+   .. method:: split_instance_route(route: InstanceRoute) -> \
+	       Optional[Tuple[InstanceRoute, InstanceRoute]]
+
+      Split *route* into two :class:`~.instance.InstanceRoute`\ s. The
+      first item of the returned tuple is the part up to the receiver,
+      and the second item is the rest.
+
+      .. doctest::
+
+	 >>> irt = dm.parse_resource_id('/example-4-a:bag/foo')
+	 >>> pre, post = bsn.split_instance_route(irt)
+	 >>> str(pre)
+	 '/example-4-a:bag'
+	 >>> str(post)
+	 '/foo'
 
 .. class:: TerminalNode
 
@@ -490,7 +527,7 @@ or **uses** statement if this statement is conditional, i.e. has a
 
       .. doctest::
 
-	 >>> qsn.entry_from_raw("2.7182")
+	 >>> qsn.entry_from_raw('2.7182')
 	 Decimal('2.7182')
 
 .. class:: ListNode
@@ -517,6 +554,15 @@ or **uses** statement if this statement is conditional, i.e. has a
       group of descendant leafs whose values are required to be unique
       across all list entries. See **unique** statement in [RFC7950]_,
       sec. `7.8.3`_.
+
+   .. rubric:: Public Methods
+
+   .. method:: orphan_entry(rval: RawObject) -> ArrayEntry
+
+      Return an :class:`~.instance.ArrayEntry` as an isolated entry of
+      the receiver list, i.e. one that has neither parent instance nor
+      sibling entries. The *rval* argument provides the :term:`raw
+      value` (object) to be cooked and used for the entry.
 
 .. class:: ChoiceNode(InternalNode)
 
