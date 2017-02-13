@@ -629,13 +629,14 @@ class DataNode(SchemaNode):
         super().__init__()
         self.default_deny = DefaultDeny.none # type: "DefaultDeny"
 
-    def orphaned_instance(self, value: Value) -> "ObjectMember":
-        """Return orphaned instance of the receiver.
+    def orphan_instance(self, rval: RawValue) -> "ObjectMember":
+        """Return an isolated instance of the receiver.
 
         Args:
-            value: Cooked value of the returned instance.
+            rval: Raw value to be used for the returned instance.
         """
-        return ObjectMember(self.iname(), {}, value, None, self, value.timestamp)
+        val = self.from_raw(rval)
+        return ObjectMember(self.iname(), {}, val, None, self, val.timestamp)
 
     def split_instance_route(self, route: "InstanceRoute") -> Optional[Tuple[
         "InstanceRoute", "InstanceRoute"]]:
@@ -920,15 +921,6 @@ class SequenceNode(DataNode):
         """
         return super().from_raw(rval, jptr)
 
-    def orphaned_entry(self, value: Value) -> "ArrayEntry":
-        """Return orphaned entry of the receiver.
-
-        Args:
-            value: Cooked value of the returned entry.
-        """
-        return ArrayEntry(0, EmptyList(), EmptyList(), value,
-                              None, self, value.timestamp)
-
 class ListNode(SequenceNode, InternalNode):
     """List node."""
 
@@ -1007,6 +999,16 @@ class ListNode(SequenceNode, InternalNode):
         keys = (" [" + " ".join([ k[0] for k in self.keys ]) + "]"
                 if self.keys else "")
         return super()._tree_line() + keys
+
+    def orphan_entry(self, rval: RawObject) -> "ArrayEntry":
+        """Return an isolated entry of the receiver.
+
+        Args:
+            rval: Raw object to be used for the returned entry.
+        """
+        val = self.entry_from_raw(rval)
+        return ArrayEntry(0, EmptyList(), EmptyList(), val, None, self,
+                              val.timestamp)
 
 class ChoiceNode(InternalNode):
     """Choice node."""
