@@ -18,14 +18,10 @@
 """Abstract syntax tree for XPath 1.0 expressions with YANG extensions.
 
 This module defines a number of classes that mostly correspond to
-variables (non-terminals) of the XPath 1.0 grammar. Only th efollowing
+variables (non-terminals) of the XPath 1.0 grammar. Only the following
 class is intended to be public:
 
-* Expr: XPath 1.0 expression with YANG 1.0 extensions.
-
-The module also defines the following exception:
-
-* XPathTypeError: A subexpression is of a wrong type.
+* Expr: XPath 1.0 expression with YANG 1.1 extensions.
 """
 
 import decimal
@@ -33,9 +29,9 @@ from math import ceil, copysign, floor
 from pyxb.utils.xmlre import XMLToPython
 import re
 from typing import List, Optional, Tuple
-from .exceptions import YangsonException
 from .schemadata import SchemaContext
 from .enumerations import Axis, MultiplicativeOp
+from .exceptions import XPathTypeError
 from .instance import InstanceNode
 from .nodeset import NodeExpr, NodeSet, XPathValue
 from .typealiases import *
@@ -289,7 +285,7 @@ class PathExpr(BinaryExpr):
     def _eval(self, xctx: XPathContext) -> XPathValue:
         ns = self.left._eval(xctx)
         if not isinstance(ns, NodeSet):
-            raise XPathTypeError(ns)
+            raise XPathTypeError(str(ns))
         res = NodeSet([])
         for n in ns:
             res = res.union(self.right._eval(xctx.update_cnode(n)))
@@ -365,7 +361,7 @@ class FuncBitIsSet(BinaryExpr):
     def _eval(self, xctx: XPathContext) -> bool:
         ns = self.left._eval(xctx)
         if not isinstance(ns, NodeSet):
-            raise XPathTypeError(ns)
+            raise XPathTypeError(str(ns))
         bit = self.right._eval_string(xctx)
         try:
             return bit in ns[0].value
@@ -415,7 +411,7 @@ class FuncDeref(UnaryExpr):
     def _eval(self, xctx: XPathContext) -> NodeSet:
         ns = self.expr._eval(xctx)
         if not isinstance(ns, NodeSet):
-            raise XPathTypeError(ns)
+            raise XPathTypeError(str(ns))
         ref = ns[0]
         return NodeSet(ref._deref())
 
@@ -434,7 +430,7 @@ class FuncDerivedFrom(BinaryExpr):
     def _eval(self, xctx: XPathContext) -> bool:
         ns = self.left._eval(xctx)
         if not isinstance(ns, NodeSet):
-            raise XPathTypeError(ns)
+            raise XPathTypeError(str(ns))
         i = self.sctx.schema_data.translate_pname(
             self.right._eval_string(xctx), self.sctx.text_mid)
         for n in ns:
@@ -449,7 +445,7 @@ class FuncEnumValue(UnaryExpr):
     def _eval(self, xctx: XPathContext) -> float:
         ns = self.expr._eval(xctx)
         if not isinstance(ns, NodeSet):
-            raise XPathTypeError(ns)
+            raise XPathTypeError(str(ns))
         try:
             node = ns[0]
             return float(node.schema_node.type.enum[node.value])
@@ -488,7 +484,7 @@ class FuncName(UnaryExpr):
             try:
                 node = ns[0]
             except TypeError:
-                raise XPathTypeError(ns)
+                raise XPathTypeError(str(ns))
             except IndexError:
                 return ""
         if node.path is (): return ""
@@ -603,7 +599,7 @@ class FuncSum(UnaryExpr):
     def _eval(self, xctx: XPathContext) -> float:
         ns = self.expr._eval(xctx)
         if not isinstance(ns, NodeSet):
-            raise XPathTypeError(ns)
+            raise XPathTypeError(str(ns))
         try:
             return float(sum([n.value for n in ns]))
         except TypeError:
@@ -628,12 +624,3 @@ class FuncTrue(Expr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         return True
-
-class XPathTypeError(YangsonException):
-    """The value of an XPath (sub)expression is of a wrong type."""
-
-    def __init__(self, value: XPathValue):
-        self.value = value
-
-    def __str__(self) -> str:
-        return str(self.value)

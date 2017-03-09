@@ -26,10 +26,10 @@ import hashlib
 import json
 from typing import Dict, List, Optional
 from .enumerations import ContentType
-from .exceptions import YangsonException
+from .exceptions import BadYangLibraryData
 from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
                            RootNode)
-from .schemadata import SchemaData, BadYangLibraryData, SchemaContext
+from .schemadata import SchemaData, SchemaContext
 from .schemanode import DataNode, GroupNode, RawObject, SchemaNode
 from .typealiases import *
 from .typealiases import _Singleton

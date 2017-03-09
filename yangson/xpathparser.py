@@ -23,14 +23,13 @@ This module defines the following classes:
 
 The module also defines the following exceptions:
 
-* InvalidXPath: An XPath expression is invalid.
-* NotSupported: A given XPath 1.0 feature isn't (currently) supported.
 """
 
 from typing import List, Optional, Tuple, Union
 from .schemadata import SchemaContext
 from .enumerations import Axis, MultiplicativeOp
-from .parser import Parser, ParserException, EndOfInput, UnexpectedInput
+from .exceptions import EndOfInput, InvalidXPath, NotSupported, UnexpectedInput
+from .parser import Parser
 from .typealiases import *
 from .xpathast import *
 
@@ -90,10 +89,10 @@ class XPathParser(Parser):
                 try:
                     next = self.peek()
                 except EndOfInput:
-                    raise InvalidXPath(self)
+                    raise InvalidXPath(self.line_column())
             if next != "=":
                 if negate:
-                    raise InvalidXPath(self)
+                    raise InvalidXPath(self.line_column())
                 return op1
             self.adv_skip_ws()
             op2 = self._relational_expr()
@@ -199,9 +198,9 @@ class XPathParser(Parser):
                 prim = getattr(self, mname)()
             except AttributeError:
                 if fname in ("id", "lang", "namespace-uri"):
-                    raise NotSupported(
+                    raise NotSupported(self.line_column(),
                         "function '{}()'".format(fname)) from None
-                raise InvalidXPath(self) from None
+                raise InvalidXPath(self.line_column()) from None
         self.char(")")
         self.skip_ws()
         return FilterExpr(prim, self._predicates())
@@ -250,7 +249,7 @@ class XPathParser(Parser):
         try:
             yid = self.yang_identifier()
         except UnexpectedInput:
-            raise InvalidXPath(self) from None
+            raise InvalidXPath(self.line_column()) from None
         ws = self.skip_ws()
         try:
             next = self.peek()
@@ -268,11 +267,12 @@ class XPathParser(Parser):
                 except KeyError:
                     if yid in ("attribute", "following",
                                "namespace", "preceding"):
-                        raise NotSupported("axis '{}::'".format(yid)) from None
-                    raise InvalidXPath(self) from None
+                        raise NotSupported(
+                            self.line_column(), "axis '{}::'".format(yid)) from None
+                    raise InvalidXPath(self.line_column()) from None
                 return (axis, self._qname())
             if ws:
-                raise InvalidXPath(self)
+                raise InvalidXPath(self.line_column())
             nsp = self.sctx.schema_data.prefix2ns(yid, self.sctx.text_mid)
             loc = self.yang_identifier()
             self.skip_ws()
@@ -287,7 +287,7 @@ class XPathParser(Parser):
             return None
         elif typ in ("comment", "processing-instruction", "text"):
             raise NotSupported("node type '{}()'".format(typ))
-        raise InvalidXPath(self)
+        raise InvalidXPath(self.line_column())
 
     def _qname(self) -> Optional[QualName]:
         """Parse XML QName."""
@@ -335,7 +335,7 @@ class XPathParser(Parser):
             self.skip_ws()
             res.append(self.parse())
         if len(res) < 2:
-            raise InvalidXPath(self)
+            raise InvalidXPath(self.line_column())
         return FuncConcat(res)
 
     def _func_contains(self) -> FuncContains:
@@ -427,18 +427,3 @@ class XPathParser(Parser):
 
     def _func_true(self) -> FuncTrue:
         return FuncTrue()
-
-class InvalidXPath(ParserException):
-    """Exception to be raised for an invalid XPath expression."""
-
-    def __str__(self) -> str:
-        return str(self.parser)
-
-class NotSupported(ParserException):
-    """Exception to be raised for unimplemented XPath features."""
-
-    def __init__(self, feature: str):
-        self.feature = feature
-
-    def __str__(self) -> str:
-        return str(self.feature)

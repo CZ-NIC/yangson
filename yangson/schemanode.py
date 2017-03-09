@@ -38,31 +38,18 @@ This module implements the following classes:
 * AnyContentNode: Abstract superclass for anydata and anyxml nodes..
 * AnydataNode: YANG anydata node.
 * AnyxmlNode: YANG anyxml node.
-
-This module defines the following exceptions:
-
-* SchemaNodeException: Abstract exception class for schema node errors.
-* NonexistentSchemaNode: A schema node doesn't exist.
-* BadSchemaNodType: A schema node is of a wrong type.
-* BadLeafrefPath: A leafref path is incorrect.
-* RawDataError: Abstract exception class for errors in raw data.
-* RawMemberError: Object member in raw data doesn't exist in the schema.
-* RawTypeError: Raw data value is of incorrect type.
-* ValidationError: Abstract exception class for instance validation errors.
-* SchemaError: An instance violates a schema constraint.
-* SemanticError: An instance violates a semantic rule.
 """
 
 from typing import Any, Dict, List, MutableSet, Optional, Set, Tuple, Union
-from .exceptions import YangsonException
 from .schemadata import SchemaData, SchemaContext
 from .datatype import (DataType, EmptyType, LeafrefType, LinkType,
-                       RawScalar, IdentityrefType, YangTypeError)
+                       RawScalar, IdentityrefType)
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
+from .exceptions import RawTypeError, SchemaError, YangTypeError, WrongArgument
 from .instvalue import (ArrayValue, EntryValue, ObjectValue, StructuredValue,
                             Value)
 from .schpattern import *
-from .statement import Statement, WrongArgument
+from .statement import Statement
 from .typealiases import *
 from .xpathparser import XPathParser
 
@@ -236,7 +223,7 @@ class SchemaNode:
         xpp = XPathParser(stmt.argument, sctx)
         mex = xpp.parse()
         if not xpp.at_end():
-            raise WrongArgument(stmt)
+            raise WrongArgument(stmt.arg)
         ems = stmt.find1("error-message")
         self.must.append((mex, ems.argument if ems else None))
 
@@ -244,7 +231,7 @@ class SchemaNode:
         xpp = XPathParser(stmt.argument, sctx)
         wex = xpp.parse()
         if not xpp.at_end():
-            raise WrongArgument(stmt)
+            raise WrongArgument(stmt.arg)
         self.when = wex
 
     def _mandatory_stmt(self, stmt, sctx: SchemaContext) -> None:
@@ -771,7 +758,7 @@ class TerminalNode(SchemaNode):
         if isinstance(self.type, LeafrefType):
             ref = self._follow_leafref(self.type.path, self)
             if ref is None:
-                raise BadLeafrefPath(self)
+                raise BadLeafrefPath(self.qual_name)
             self.type.ref_type = ref.type
 
     def _is_identityref(self) -> bool:
@@ -1296,84 +1283,6 @@ class NotificationNode(GroupNode):
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "-n"
 
-class SchemaNodeException(YangsonException):
-    """Abstract exception class for schema node errors."""
-
-    def __init__(self, sn: SchemaNode):
-        self.schema_node = sn
-
-    def __str__(self) -> str:
-        return str(self.schema_node.qual_name)
-
-class NonexistentSchemaNode(SchemaNodeException):
-    """A schema node doesn't exist."""
-
-    def __init__(self, sn: SchemaNode, name: YangIdentifier,
-                 ns: YangIdentifier = None):
-        super().__init__(sn)
-        self.name = name
-        self.ns = ns if ns else sn.ns
-
-    def __str__(self) -> str:
-        loc = ("under " + super().__str__() if self.schema_node.parent
-                   else "top level")
-        return loc + " – name '{}', namespace '{}'".format(self.name, self.ns)
-
-class BadSchemaNodeType(SchemaNodeException):
-    """A schema node is of a wrong type."""
-
-    def __init__(self, sn: SchemaNode, expected: str):
-        super().__init__(sn)
-        self.expected = expected
-
-    def __str__(self) -> str:
-        return super().__str__() + " is not a " + self.expected
-
-class BadLeafrefPath(SchemaNodeException):
-    """A leafref path is incorrect."""
-    pass
-
-class RawDataError(YangsonException):
-    """Abstract exception class for errors in raw data."""
-
-    def __init__(self, jptr: JSONPointer):
-        self.jptr = jptr
-
-    def __str__(self) -> JSONPointer:
-        return self.jptr
-
-class RawMemberError(RawDataError):
-    """Object member in the raw value doesn't exist in the schema."""
-    pass
-
-class RawTypeError(RawDataError):
-    """Raw value is of an incorrect type."""
-
-    def __init__(self, jptr: JSONPointer, detail: str):
-        super().__init__(jptr)
-        self.detail = detail
-
-    def __str__(self):
-        return "[{}] {}".format(self.jptr, self.detail)
-
-class ValidationError(YangsonException):
-    """Abstract exception class for instance validation errors."""
-
-    def __init__(self, inst: "InstanceNode", detail: str):
-        self.inst = inst
-        self.detail = detail
-
-    def __str__(self) -> str:
-        return "[{}] {}".format(self.inst.json_pointer(), self.detail)
-
-class SchemaError(ValidationError):
-    """An instance violates a schema constraint."""
-    pass
-
-class SemanticError(ValidationError):
-    """An instance violates a semantic rule."""
-    pass
-
 from .xpathast import Expr, LocationPath, Step, Root
 from .instance import (ArrayEntry, EmptyList, InstanceNode, InstanceRoute,
-                           MemberName, NonexistentInstance, ObjectMember)
+                           MemberName, ObjectMember)

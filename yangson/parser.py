@@ -20,18 +20,12 @@
 This module implements the following class:
 
 * Parser: Recursive-descent parser.
-
-This module defines the following exceptions:
-
-* EndOfInput: Unexpected end of input.
-* ParserException: Base class for parser exceptions.
-* UnexpectedInput: Unexpected input.
 """
 
 import re
 from typing import Any, Callable, List, Dict, Optional, Tuple
 from typing.re import Pattern
-from .exceptions import YangsonException
+from .exceptions import EndOfInput, UnexpectedInput
 from .typealiases import *
 
 # Local type aliases
@@ -94,7 +88,7 @@ class Parser:
         if self.peek() == c:
             self.offset += 1
         else:
-            raise UnexpectedInput(self, "char " + c)
+            raise UnexpectedInput(self.line_column(), "char " + c)
 
     def dfa(self, ttab: TransitionTable, init: int = 0) -> int:
         """Run a DFA and return the final (negative) state.
@@ -139,7 +133,7 @@ class Parser:
             self.offset = mo.end()
             return mo.group()
         if required:
-            raise UnexpectedInput(self, meaning)
+            raise UnexpectedInput(self.line_column(), meaning)
 
     def one_of(self, chset: str) -> str:
         """Parse one character form the specified set.
@@ -157,7 +151,7 @@ class Parser:
         if res in chset:
             self.offset += 1
             return res
-        raise UnexpectedInput(self, "one of " + chset)
+        raise UnexpectedInput(self.line_column(), "one of " + chset)
 
     def peek(self) -> str:
         """Return the next character without advancing offset.
@@ -168,7 +162,7 @@ class Parser:
         try:
             return self.input[self.offset]
         except IndexError:
-            raise EndOfInput(self)
+            raise EndOfInput(self.line_column())
 
     def prefixed_name(self) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
         """Parse identifier with an optional colon-separated prefix."""
@@ -221,7 +215,7 @@ class Parser:
         """
         end = self.input.find(term, self.offset)
         if end < 0:
-            raise EndOfInput(self)
+            raise EndOfInput(self.line_column())
         res = self.input[self.offset:end]
         self.offset = end + 1
         return res
@@ -233,32 +227,3 @@ class Parser:
             UnexpectedInput: If no syntactically correct keyword is found.
         """
         return self.match_regex(self.ident_re, True, "YANG identifier")
-
-class ParserException(YangsonException):
-    """Base class for parser exceptions."""
-
-    def __init__(self, p: Parser):
-        self.parser = p
-
-    def __str__(self) -> str:
-        """Print line and column number.
-        """
-        if "\n" in self.parser.input:
-            return "line {0}, column {1}".format(*self.parser.line_column())
-        return str(self.parser)
-
-class EndOfInput(ParserException):
-    """Unexpected end of input."""
-    pass
-
-class UnexpectedInput(ParserException):
-    """Unexpected input."""
-
-    def __init__(self, p: Parser, expected: str = None):
-        super().__init__(p)
-        self.expected = expected
-
-    def __str__(self) -> str:
-        """Add info about expected input if available."""
-        ex = "" if self.expected is None else ": expected " + self.expected
-        return super().__str__() + ex

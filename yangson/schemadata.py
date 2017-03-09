@@ -24,26 +24,12 @@ This module implements the following classes:
 * ModuleData: Data related to a YANG module or submodule.
 * SchemaData: Repository of YANG schema structures and methods.
 * FeatureExprParser: Parser for if-feature expressions.
-
-This module defines the following exceptions:
-
-* BadPath: Invalid schema path
-* BadYangLibraryData: Invalid YANG library data.
-* CyclicImports: Imports of YANG modules form a cycle.
-* FeaturePrerequisiteError: Pre-requisite feature isn't supported.
-* InvalidFeatureExpression: Invalid if-feature expression.
-* ModuleNotFound: A module not found.
-* ModuleNotImplemented: A module is not implemented in the data model.
-* ModuleNotImported: A module is not imported.
-* ModuleNotRegistered: An imported module is not registered in YANG library.
-* MultipleImplementedRevisions: A module has multiple implemented revisions.
-* UnknownPrefix: Unknown namespace prefix.
 """
 
 from typing import Dict, List, MutableSet, Optional, Tuple
-from .exceptions import YangsonException
-from .parser import Parser, ParserException
-from .statement import DefinitionNotFound, ModuleParser, Statement
+from .exceptions import DefinitionNotFound, InvalidFeatureExpression, UnknownPrefix
+from .parser import Parser
+from .statement import ModuleParser, Statement
 from .typealiases import *
 
 class SchemaContext:
@@ -477,14 +463,14 @@ class FeatureExprParser(Parser):
         res = self._feature_disj()
         self.skip_ws()
         if not self.at_end():
-            raise InvalidFeatureExpression(self)
+            raise InvalidFeatureExpression(self.line_column())
         return res
 
     def _feature_disj(self) -> bool:
         x = self._feature_conj()
         if self.test_string("or"):
             if not self.skip_ws():
-                raise InvalidFeatureExpression(self)
+                raise InvalidFeatureExpression(self.line_column())
             return self._feature_disj() or x
         return x
 
@@ -492,14 +478,14 @@ class FeatureExprParser(Parser):
         x = self._feature_term()
         if self.test_string("and"):
             if not self.skip_ws():
-                raise InvalidFeatureExpression(self)
+                raise InvalidFeatureExpression(self.line_column())
             return self._feature_conj() and x
         return x
 
     def _feature_term(self) -> bool:
         if self.test_string("not"):
             if not self.skip_ws():
-                raise InvalidFeatureExpression(self)
+                raise InvalidFeatureExpression(self.line_column())
             return not self._feature_atom()
         return self._feature_atom()
 
@@ -524,92 +510,3 @@ class FeatureExprParser(Parser):
             except KeyError:
                 raise UnknownPrefix(p, self.mid) from None
         return n in self.schema_data.modules[fid].features
-
-class MissingModule(YangsonException):
-    """Abstract exception class – a module is missing."""
-
-    def __init__(self, name: YangIdentifier, rev: str = ""):
-        self.name = name
-        self.rev = rev
-
-    def __str__(self) -> str:
-        if self.rev:
-            return self.name + "@" + self.rev
-        return self.name
-
-class ModuleNotFound(MissingModule):
-    """A module or submodule registered in YANG library is not found."""
-    pass
-
-class ModuleNotRegistered(MissingModule):
-    """A module is not registered in YANG library."""
-    pass
-
-class ModuleNotImplemented(MissingModule):
-    """A module is not implemented in the data model."""
-    pass
-
-class BadYangLibraryData(YangsonException):
-    """Broken YANG library data."""
-
-    def __init__(self, reason: str):
-        self.reason = reason
-
-    def __str__(self) -> str:
-        return self.reason
-
-class BadPath(YangsonException):
-    """Invalid schema or data path."""
-
-    def __init__(self, path: str):
-        self.path = path
-
-    def __str__(self) -> str:
-        return self.path
-
-class UnknownPrefix(YangsonException):
-    """Unknown namespace prefix."""
-
-    def __init__(self, prefix: YangIdentifier, mid: ModuleId):
-        self.prefix = prefix
-        self.mid = mid
-
-    def __str__(self) -> str:
-        return "prefix {} is not defined in {}".format(self.prefix, self.mid)
-
-class ModuleNotImported(YangsonException):
-    """Module is not imported."""
-
-    def __init__(self, mod: YangIdentifier, mid: ModuleId):
-        self.mod = mod
-        self.mid = mid
-
-    def __str__(self) -> str:
-        return "{} not imported in {}".format(self.mod, self.mid)
-
-class InvalidFeatureExpression(ParserException):
-    """Invalid **if-feature** expression."""
-    pass
-
-class FeaturePrerequisiteError(YangsonException):
-    """Pre-requisite feature is not supported."""
-
-    def __init__(self, name: YangIdentifier, ns: YangIdentifier):
-        self.name = name
-        self.ns = ns
-
-    def __str__(self) -> str:
-        return "{}:{}".format(self.ns, self.name)
-
-class MultipleImplementedRevisions(YangsonException):
-    """A module has multiple implemented revisions."""
-
-    def __init__(self, module: YangIdentifier):
-        self.module = module
-
-    def __str__(self) -> str:
-        return self.module
-
-class CyclicImports(YangsonException):
-    """YANG modules are imported in a cyclic fashion."""
-    pass

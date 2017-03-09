@@ -42,10 +42,6 @@ This module implements the following classes:
 * Uint32Type: YANG uint32 type.
 * Uint64Type: YANG uint64 type.
 * UnionType: YANG union type.
-
-The module also defines the following exceptions:
-
-* YangTypeError: A scalar value is of incorrect type.
 """
 
 import base64
@@ -54,10 +50,9 @@ import numbers
 import re
 from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from .exceptions import YangsonException
+from .exceptions import YangTypeError
 from .schemadata import SchemaContext
 from .instance import InstanceNode, InstanceIdParser, InstanceRoute
-from .parser import ParserException
 from .statement import Statement
 from .typealiases import *
 from .typealiases import _Singleton
@@ -696,16 +691,6 @@ class UnionType(DataType):
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.types = [ self._resolve_type(ts, sctx)
                        for ts in stmt.find_all("type") ]
-
-class YangTypeError(YangsonException):
-    """A value doesn't match its expected type."""
-
-    def __init__(self, typ, value):
-        self.typ = typ
-        self.value = value
-
-    def __str__(self) -> str:
-        return "{}, expected {}".format(repr(self.value), str(self.typ))
 
 DataType.dtypes = { "binary": BinaryType,
                     "bits": BitsType,

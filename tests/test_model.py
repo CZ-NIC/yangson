@@ -2,16 +2,15 @@ import json
 import pytest
 from decimal import Decimal
 from yangson import DataModel
-from yangson.schemadata import (SchemaContext, FeatureExprParser, BadPath,
-                             InvalidFeatureExpression, UnknownPrefix)
-from yangson.datatype import YangTypeError
+from yangson.exceptions import (
+    BadPath, InvalidFeatureExpression, UnknownPrefix, YangTypeError,
+    NonexistentInstance, NonexistentSchemaNode, RawTypeError, SchemaError,
+    XPathTypeError, InvalidXPath, NotSupported)
+from yangson.schemadata import SchemaContext, FeatureExprParser
 from yangson.enumerations import ContentType
-from yangson.instance import NonexistentInstance
 from yangson.instvalue import ArrayValue, ObjectValue
-from yangson.schemanode import (SequenceNode, NonexistentSchemaNode,
-                                    RawTypeError, SchemaError)
-from yangson.xpathast import XPathTypeError
-from yangson.xpathparser import InvalidXPath, NotSupported, XPathParser
+from yangson.schemanode import SequenceNode
+from yangson.xpathparser import XPathParser
 
 tree = """+--rw (test:choiA)?
 |  +--:(test:caseA)

@@ -21,17 +21,11 @@ This module implements the following classes:
 
 * ModuleParser: Recursive-descent parser for YANG modules.
 * Statement: YANG statements.
-
-The module also defines the following exceptions:
-
-* DefinitionNotFound: Requested definition does not exist.
-* StatementNotFound: Required statement does not exist.
-* WrongArgument: Statement argument is invalid.
 """
 
 from typing import Dict, List, Optional, Tuple
-from .exceptions import YangsonException
-from .parser import EndOfInput, Parser, UnexpectedInput
+from .exceptions import EndOfInput, UnexpectedInput
+from .parser import Parser
 from .typealiases import YangIdentifier
 
 class Statement:
@@ -89,7 +83,7 @@ class Statement:
             if (sub.keyword == kw and sub.prefix == pref and
                 (arg is None or sub.argument == arg)):
                 return sub
-        if required: raise StatementNotFound(self, kw)
+        if required: raise StatementNotFound(str(self), kw)
 
     def find_all(self, kw: YangIdentifier,
                  pref: YangIdentifier = None) -> List["Statement"]:
@@ -142,12 +136,12 @@ class ModuleParser(Parser):
         res = self.statement()
         if res.keyword not in ["module", "submodule"]:
             self.offset = start
-            raise UnexpectedInput(self, "'module' or 'submodule'")
+            raise UnexpectedInput(self.line_column(), "'module' or 'submodule'")
         try:
             self.opt_separator()
         except EndOfInput:
             return res
-        raise UnexpectedInput(self, "end of input")
+        raise UnexpectedInput(self.line_column(), "end of input")
 
     def _back_break(self) -> int:
         self.offset -= 1
@@ -216,7 +210,7 @@ class ModuleParser(Parser):
             UnexpectedInput: If no separator is found.
         """
         present = self.opt_separator()
-        if not present: raise UnexpectedInput(self, "separator")
+        if not present: raise UnexpectedInput(self.line_column(), "separator")
 
     def keyword(self) -> Tuple[Optional[str], str]:
         """Parse a YANG statement keyword.
@@ -249,7 +243,7 @@ class ModuleParser(Parser):
             arg = None
             sub = True
         elif not pres:
-            raise UnexpectedInput(self, "separator")
+            raise UnexpectedInput(self.line_column(), "separator")
         else:
             self._arg = ""
             sub = self.argument()
@@ -278,7 +272,7 @@ class ModuleParser(Parser):
             quoted = False
             self.unq_argument()
         else:
-            raise UnexpectedInput(self, "single or double quote")
+            raise UnexpectedInput(self.line_column(), "single or double quote")
         self.opt_separator()
         next = self.peek()
         if next == ";":
@@ -290,7 +284,7 @@ class ModuleParser(Parser):
             self.opt_separator();
             return self.argument()
         else:
-            raise UnexpectedInput(self, "';', '{'" +
+            raise UnexpectedInput(self.line_column(), "';', '{'" +
                                   (" or '+'" if quoted else ""))
 
     def sq_argument(self) -> str:
@@ -365,33 +359,3 @@ class ModuleParser(Parser):
             self.opt_separator()
         self.offset += 1
         return res
-
-class StatementNotFound(YangsonException):
-    """Required statement does not exist."""
-
-    def __init__(self, parent: Statement, kw: YangIdentifier):
-        self.parent = parent
-        self.keyword = kw
-
-    def __str__(self) -> str:
-        """Print the statement's keyword."""
-        return "`{}' in `{}'".format(self.keyword, self.parent)
-
-class DefinitionNotFound(YangsonException):
-    """Requested definition does not exist."""
-
-    def __init__(self, kw: YangIdentifier, name: YangIdentifier):
-        self.keyword = kw
-        self.name = name
-
-    def __str__(self) -> str:
-        return "{} {}".format(self.keyword, self.name)
-
-class WrongArgument(YangsonException):
-    """Statement argument is invalid."""
-
-    def __init__(self, stmt: Statement):
-        self.stmt = stmt
-
-    def __str__(self) -> str:
-        return str(self.stmt)

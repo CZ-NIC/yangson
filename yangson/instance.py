@@ -27,24 +27,17 @@ This module implements the following classes:
 * InstanceRoute: Route into an instance value.
 * ResourceIdParser: Parser for RESTCONF resource identifiers.
 * InstanceIdParser: Parser for instance identifiers.
-
-The module defines the following exceptions:
-
-* InstanceException: Base class for exceptions related to operations
-  on instance nodes.
-* InstanceValueError: The instance value is incompatible with the called method.
-* NonexistentInstance: Attempt to access an instance node that doesn't
-  exist.
 """
 
 from datetime import datetime
 import json
 from typing import Any, Callable, List, Tuple, Union
 from urllib.parse import unquote
-from .exceptions import YangsonException
 from .enumerations import ContentType, ValidationScope
+from .exceptions import (
+    EndOfInput, NonexistentInstance, NonexistentSchemaNode, UnexpectedInput)
 from .instvalue import *
-from .parser import EndOfInput, Parser, UnexpectedInput
+from .parser import Parser
 from .typealiases import *
 from .typealiases import _Singleton
 
@@ -168,7 +161,7 @@ class InstanceNode:
             return self._member(key)
         if isinstance(self.value, ArrayValue):
             return self._entry(key)
-        raise InstanceValueError(self, "scalar instance")
+        raise InstanceValueError(self.json_pointer(), "scalar instance")
 
     def __iter__(self):
         """Return receiver's iterator.
@@ -189,7 +182,7 @@ class InstanceNode:
             return it()
         if isinstance(self.value, ObjectValue):
             return iter(self.value)
-        raise InstanceValueError(self, "scalar instance")
+        raise InstanceValueError(self.json_pointer(), "scalar instance")
 
     def is_internal(self) -> bool:
         """Return ``True`` if the receiver is an instance of an internal node.
@@ -214,7 +207,7 @@ class InstanceNode:
             InstanceValueError: If the receiver's value is not an object.
         """
         if not isinstance(self.value, ObjectValue):
-            raise InstanceValueError(self, "member of non-object")
+            raise InstanceValueError(self.json_pointer(), "member of non-object")
         csn = self._member_schema_node(name)
         newval = self.value.copy()
         newval[name] = csn.from_raw(value, self.json_pointer()) if raw else value
@@ -231,12 +224,12 @@ class InstanceNode:
             InstanceValueError: If the receiver's value is a scalar.
         """
         if not isinstance(self.value, StructuredValue):
-            raise InstanceValueError(self, "scalar value")
+            raise InstanceValueError(self.json_pointer(), "scalar value")
         newval = self.value.copy()
         try:
             del newval[key]
         except (KeyError, IndexError, TypeError):
-            raise NonexistentInstance(self, "item " + key) from None
+            raise NonexistentInstance(self.json_pointer(), "item " + key) from None
         return self._copy(newval)
 
     def up(self) -> "InstanceNode":
@@ -349,7 +342,7 @@ class InstanceNode:
                 name, sibs, sibs.pop(name), self,
                 self._member_schema_node(name), self.value.timestamp)
         except KeyError:
-            raise NonexistentInstance(self, "member " + name) from None
+            raise NonexistentInstance(self.json_pointer(), "member " + name) from None
 
     def _entry(self, index: int) -> "ArrayEntry":
         val = self.value
@@ -360,7 +353,7 @@ class InstanceNode:
                                   val[index], self, self.schema_node,
                                   val.timestamp)
         except (IndexError, TypeError):
-            raise NonexistentInstance(self, "entry " + str(index)) from None
+            raise NonexistentInstance(self.json_pointer(), "entry " + str(index)) from None
 
     def _peek_schema_route(self, sroute: SchemaRoute) -> Value:
         irt = InstanceRoute()
@@ -368,7 +361,7 @@ class InstanceNode:
         for qn in sroute:
             sn = sn.get_child(*qn)
             if sn is None:
-                raise NonexistentSchemaNode(sn, *qn)
+                raise NonexistentSchemaNode(sn.qual_name, *qn)
             if isinstance(sn, DataNode):
                 irt.append(MemberName(sn.name, sn.ns))
         return self.peek(irt)
@@ -377,7 +370,7 @@ class InstanceNode:
         qname = self.schema_node._iname2qname(name)
         res = self.schema_node.get_data_child(*qname)
         if res is None:
-            raise NonexistentSchemaNode(self.schema_node, *qname)
+            raise NonexistentSchemaNode(self.schema_node.qual_name, *qname)
         return res
 
     def _node_set(self) -> List["InstanceNode"]:
@@ -459,7 +452,7 @@ class RootNode(InstanceNode):
         Raises:
             NonexistentInstance: root node has no parent
         """
-        raise NonexistentInstance(self, "up of top")
+        raise NonexistentInstance(self.json_pointer(), "up of top")
 
     def _copy(self, newval: Value, newts: datetime = None) -> InstanceNode:
         return RootNode(
@@ -519,7 +512,7 @@ class ObjectMember(InstanceNode):
             return ObjectMember(name, sibs, newval, self.parinst,
                                 ssn, self.timestamp)
         except KeyError:
-            raise NonexistentInstance(self, "member " + name) from None
+            raise NonexistentInstance(self.json_pointer(), "member " + name) from None
 
     def look_up(self, **keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
         """Return the entry with matching keys.
@@ -532,7 +525,7 @@ class ObjectMember(InstanceNode):
             NonexistentInstance: If no entry with matching keys exists.
         """
         if not isinstance(self.schema_node, ListNode):
-            raise InstanceValueError(self, "lookup on non-list")
+            raise InstanceValueError(self.json_pointer(), "lookup on non-list")
         try:
             for i in range(len(self.value)):
                 en = self.value[i]
@@ -542,11 +535,11 @@ class ObjectMember(InstanceNode):
                         flag = False
                         break
                 if flag: return self._entry(i)
-            raise NonexistentInstance(self, "entry lookup failed")
+            raise NonexistentInstance(self.json_pointer(), "entry lookup failed")
         except KeyError:
-            raise NonexistentInstance(self, "entry lookup failed") from None
+            raise NonexistentInstance(self.json_pointer(), "entry lookup failed") from None
         except TypeError:
-            raise InstanceValueError(self, "lookup on non-list") from None
+            raise InstanceValueError(self.json_pointer(), "lookup on non-list") from None
 
     def _zip(self) -> ObjectValue:
         """Zip the receiver into an object and return it."""
@@ -625,7 +618,7 @@ class ArrayEntry(InstanceNode):
         try:
             newval, nbef = self.before.pop()
         except IndexError:
-            raise NonexistentInstance(self, "previous of first") from None
+            raise NonexistentInstance(self.json_pointer(), "previous of first") from None
         return ArrayEntry(
             self.index - 1, nbef, self.after.cons(self.value), newval,
             self.parinst, self.schema_node, self.timestamp)
@@ -639,7 +632,7 @@ class ArrayEntry(InstanceNode):
         try:
             newval, naft = self.after.pop()
         except IndexError:
-            raise NonexistentInstance(self, "next of last") from None
+            raise NonexistentInstance(self.json_pointer(), "next of last") from None
         return ArrayEntry(
             self.index + 1, self.before.cons(self.value), naft, newval,
             self.parinst, self.schema_node, self.timestamp)
@@ -875,7 +868,7 @@ class EntryValue:
                 inst.value.index(self.parse_value(inst.schema_node)))
         except ValueError:
             raise NonexistentInstance(
-                inst, "entry '{}'".format(str(self.value))) from None
+                inst.json_pointer(), "entry '{}'".format(str(self.value))) from None
 
 class EntryKeys:
     """Key-based selectors for a list entry."""
@@ -910,7 +903,7 @@ class EntryKeys:
         for k in self.keys:
             knod = sn.get_data_child(*k)
             if knod is None:
-                raise NonexistentSchemaNode(sn, *k)
+                raise NonexistentSchemaNode(sn.qual_name, *k)
             res[knod.iname()] = knod.type.parse_value(self.keys[k])
         return res
 
@@ -962,7 +955,7 @@ class ResourceIdParser(Parser):
             name, ns = self.prefixed_name()
             cn = sn.get_data_child(name, ns)
             if cn is None:
-                raise NonexistentSchemaNode(sn, name, ns)
+                raise NonexistentSchemaNode(sn.qual_name, name, ns)
             res.append(MemberName(name, ns))
             try:
                 next = self.one_of("/=")
@@ -980,16 +973,16 @@ class ResourceIdParser(Parser):
         except EndOfInput:
             keys = self.remaining()
         if not keys:
-            raise UnexpectedInput(self, "entry value or keys")
+            raise UnexpectedInput(self.line_column(), "entry value or keys")
         if isinstance(sn, LeafListNode):
             return EntryValue(unquote(keys))
         ks = keys.split(",")
         try:
             if len(ks) != len(sn.keys):
                 raise UnexpectedInput(
-                    self, "exactly {} keys".format(len(sn.keys)))
+                    self.line_column(), "exactly {} keys".format(len(sn.keys)))
         except AttributeError:
-            raise BadSchemaNodeType(sn, "list")
+            raise BadSchemaNodeType(sn.qual_name, "list")
         sel = {}
         for j in range(len(ks)):
             knod = sn.get_data_child(*sn.keys[j])
@@ -1017,7 +1010,7 @@ class InstanceIdParser(Parser):
                 if next in "0123456789":
                     ind = self.unsigned_integer() - 1
                     if ind < 0:
-                        raise UnexpectedInput(self, "positive index")
+                        raise UnexpectedInput(self.line_column(), "positive index")
                     self.skip_ws()
                     self.char("]")
                     res.append(EntryIndex(ind))
@@ -1049,35 +1042,6 @@ class InstanceIdParser(Parser):
             self.skip_ws()
         return EntryKeys(sel)
 
-class InstanceException(YangsonException):
-    """Abstract class for exceptions related to operations on instance nodes."""
-
-    def __init__(self, inst: InstanceNode):
-        self.instance = inst
-
-    def __str__(self):
-        return "[" + self.instance.json_pointer() + "]"
-
-class InstanceValueError(InstanceException):
-    """The instance value is incompatible with the called method."""
-
-    def __init__(self, inst: InstanceNode, detail: str):
-        super().__init__(inst)
-        self.detail = detail
-
-    def __str__(self):
-        return "{} {}".format(super().__str__(), self.detail)
-
-class NonexistentInstance(InstanceException):
-    """Attempt to access an instance node that doesn't exist."""
-
-    def __init__(self, inst: InstanceNode, detail: str):
-        super().__init__(inst)
-        self.detail = detail
-
-    def __str__(self):
-        return "{} {}".format(super().__str__(), self.detail)
-
 from .schemanode import (AnydataNode, CaseNode, ChoiceNode, DataNode,
                              InternalNode, LeafNode, LeafListNode, ListNode,
-                             NonexistentSchemaNode, SequenceNode, TerminalNode)
+                             SequenceNode, TerminalNode)
