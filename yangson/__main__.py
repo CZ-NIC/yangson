@@ -22,12 +22,11 @@ import json
 import sys
 from typing import List
 from yangson import DataModel
-from yangson.schemadata import (BadYangLibraryData, FeaturePrerequisiteError,
-                                 MultipleImplementedRevisions, ModuleNotFound,
-                                 ModuleNotRegistered)
 from yangson.enumerations import ContentType, ValidationScope
-from yangson.schemanode import (RawMemberError, RawTypeError, SchemaError,
-                                SemanticError)
+from yangson.exceptions import (
+    BadYangLibraryData, FeaturePrerequisiteError, MultipleImplementedRevisions,
+    ModuleNotFound, ModuleNotRegistered, RawMemberError, RawTypeError,
+    SchemaError, SemanticError)
 
 def main(ylib: str = None, path: List[str] = ["."],
              scope: ValidationScope = ValidationScope.all,

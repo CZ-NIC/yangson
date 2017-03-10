@@ -45,9 +45,11 @@ from .schemadata import SchemaData, SchemaContext
 from .datatype import (DataType, EmptyType, LeafrefType, LinkType,
                        RawScalar, IdentityrefType)
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
-from .exceptions import RawTypeError, SchemaError, YangTypeError, WrongArgument
-from .instvalue import (ArrayValue, EntryValue, ObjectValue, StructuredValue,
-                            Value)
+from .exceptions import (
+    BadLeafrefPath, RawMemberError, RawTypeError, SchemaError, SemanticError,
+    WrongArgument, YangsonException, YangTypeError)
+from .instvalue import (
+    ArrayValue, EntryValue, ObjectValue, StructuredValue, Value)
 from .schpattern import *
 from .statement import Statement
 from .typealiases import *

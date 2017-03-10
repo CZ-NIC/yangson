@@ -35,7 +35,8 @@ from typing import Any, Callable, List, Tuple, Union
 from urllib.parse import unquote
 from .enumerations import ContentType, ValidationScope
 from .exceptions import (
-    EndOfInput, NonexistentInstance, NonexistentSchemaNode, UnexpectedInput)
+    BadSchemaNodeType, EndOfInput, InstanceValueError, NonexistentInstance,
+    NonexistentSchemaNode, UnexpectedInput)
 from .instvalue import *
 from .parser import Parser
 from .typealiases import *

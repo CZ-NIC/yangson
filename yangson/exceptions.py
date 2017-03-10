@@ -15,48 +15,48 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Common exception classes.
+"""Exceptions used by the Yangson library.
 
 This module defines the following exceptions:
 
-* BadPath: Invalid schema path
-* BadLeafrefPath: A leafref path is incorrect.
-* BadSchemaNodeType: A schema node is of a wrong type.
-* BadYangLibraryData: Invalid YANG library data.
-* CyclicImports: Imports of YANG modules form a cycle.
-* DefinitionNotFound: Requested definition does not exist.
-* EndOfInput: Unexpected end of input.
-* FeaturePrerequisiteError: Pre-requisite feature isn't supported.
-* InstanceException: Base class for exceptions related to operations
+* :exc:`BadPath`: Invalid schema path
+* :exc:`BadLeafrefPath`: A leafref path is incorrect.
+* :exc:`BadSchemaNodeType`: A schema node is of a wrong type.
+* :exc:`BadYangLibraryData`: Invalid YANG library data.
+* :exc:`CyclicImports`: Imports of YANG modules form a cycle.
+* :exc:`DefinitionNotFound`: Requested definition does not exist.
+* :exc:`EndOfInput`: Unexpected end of input.
+* :exc:`FeaturePrerequisiteError`: Pre-requisite feature isn't supported.
+* :exc:`InstanceException`: Base class for exceptions related to operations
   on instance nodes.
-* InstanceValueError: The instance value is incompatible with the called method.
-* InvalidFeatureExpression: Invalid if-feature expression.
-* InvalidXPath: An XPath expression is invalid.
-* MissingModule: Abstract exception class – a module is missing.
-* ModuleNotFound: A module not found.
-* ModuleNotImplemented: A module is not implemented in the data model.
-* ModuleNotImported: A module is not imported.
-* ModuleNotRegistered: An imported module is not registered in YANG library.
-* MultipleImplementedRevisions: A module has multiple implemented revisions.
-* NonexistentInstance: Attempt to access an instance node that doesn't
+* :exc:`InstanceValueError`: The instance value is incompatible with the called method.
+* :exc:`InvalidFeatureExpression`: Invalid if-feature expression.
+* :exc:`InvalidXPath`: An XPath expression is invalid.
+* :exc:`MissingModule`: Abstract exception class – a module is missing.
+* :exc:`ModuleNotFound`: A module not found.
+* :exc:`ModuleNotImplemented`: A module is not implemented in the data model.
+* :exc:`ModuleNotImported`: A module is not imported.
+* :exc:`ModuleNotRegistered`: An imported module is not registered in YANG library.
+* :exc:`MultipleImplementedRevisions`: A module has multiple implemented revisions.
+* :exc:`NonexistentInstance`: Attempt to access an instance node that doesn't
   exist.
-* NonexistentSchemaNode: A schema node doesn't exist.
-* NotSupported: A given XPath 1.0 feature isn't (currently) supported.
-* ParserException: Base class for parser exceptions.
-* RawDataError: Abstract exception class for errors in raw data.
-* RawMemberError: Object member in raw data doesn't exist in the schema.
-* RawTypeError: Raw data value is of incorrect type.
-* SchemaError: An instance violates a schema constraint.
-* SchemaNodeException: Abstract exception class for schema node errors.
-* SemanticError: An instance violates a semantic rule.
-* StatementNotFound: Required statement does not exist.
-* UnexpectedInput: Unexpected input.
-* UnknownPrefix: Unknown namespace prefix.
-* ValidationError: Abstract exception class for instance validation errors.
-* WrongArgument: Statement argument is invalid.
-* XPathTypeError: A subexpression is of a wrong type.
-* YangsonException: Base class for all Yangson exceptions.
-* YangTypeError: A scalar value is of incorrect type.
+* :exc:`NonexistentSchemaNode`: A schema node doesn't exist.
+* :exc:`NotSupported`: A given XPath 1.0 feature isn't (currently) supported.
+* :exc:`ParserException`: Base class for parser exceptions.
+* :exc:`RawDataError`: Abstract exception class for errors in raw data.
+* :exc:`RawMemberError`: Object member in raw data doesn't exist in the schema.
+* :exc:`RawTypeError`: Raw data value is of incorrect type.
+* :exc:`SchemaError`: An instance violates a schema constraint.
+* :exc:`SchemaNodeException`: Abstract exception class for schema node errors.
+* :exc:`SemanticError`: An instance violates a semantic rule.
+* :exc:`StatementNotFound`: Required statement does not exist.
+* :exc:`UnexpectedInput`: Unexpected input.
+* :exc:`UnknownPrefix`: Unknown namespace prefix.
+* :exc:`ValidationError`: Abstract exception class for instance validation errors.
+* :exc:`WrongArgument`: Statement argument is invalid.
+* :exc:`XPathTypeError`: A subexpression is of a wrong type.
+* :exc:`YangsonException`: Base class for all Yangson exceptions.
+* :exc:`YangTypeError`: A scalar value is of incorrect type.
 """
 
 from typing import Tuple
@@ -299,12 +299,12 @@ class RawTypeError(RawDataError):
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
 
-    def __init__(self, inst: "InstanceNode", detail: str):
-        self.inst = inst
+    def __init__(self, path: JSONPointer, detail: str):
+        self.path = path
         self.detail = detail
 
     def __str__(self) -> str:
-        return "[{}] {}".format(self.inst.json_pointer(), self.detail)
+        return "[{}] {}".format(self.path, self.detail)
 
 class SchemaError(ValidationError):
     """An instance violates a schema constraint."""

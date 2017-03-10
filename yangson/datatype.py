@@ -50,7 +50,7 @@ import numbers
 import re
 from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from .exceptions import YangTypeError
+from .exceptions import ParserException, YangTypeError
 from .schemadata import SchemaContext
 from .instance import InstanceNode, InstanceIdParser, InstanceRoute
 from .statement import Statement

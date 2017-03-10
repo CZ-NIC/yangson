@@ -27,7 +27,11 @@ This module implements the following classes:
 """
 
 from typing import Dict, List, MutableSet, Optional, Tuple
-from .exceptions import DefinitionNotFound, InvalidFeatureExpression, UnknownPrefix
+from .exceptions import (
+    BadPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
+    FeaturePrerequisiteError, InvalidFeatureExpression, ModuleNotFound,
+    ModuleNotImplemented, ModuleNotImported, ModuleNotRegistered,
+    MultipleImplementedRevisions, UnknownPrefix)
 from .parser import Parser
 from .statement import ModuleParser, Statement
 from .typealiases import *

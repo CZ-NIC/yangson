@@ -24,7 +24,9 @@ This module implements the following classes:
 """
 
 from typing import Dict, List, Optional, Tuple
-from .exceptions import EndOfInput, UnexpectedInput
+from .exceptions import (
+    DefinitionNotFound, EndOfInput, StatementNotFound, UnexpectedInput,
+    WrongArgument)
 from .parser import Parser
 from .typealiases import YangIdentifier
 
