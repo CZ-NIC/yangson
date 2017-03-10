@@ -548,8 +548,6 @@ all :class:`~.schemanode.TerminalNode` instances.
 	 >>> type(union_t.types[0])
 	 <class 'yangson.datatype.StringType'>
 
-.. autoexception:: YangTypeError
-
 .. _7.3: https://tools.ietf.org/html/rfc7950#section-7.3
 .. _9.1: https://tools.ietf.org/html/rfc7950#section-9.1
 .. _9.7.4.2: https://tools.ietf.org/html/rfc7950#section-9.7.4.2

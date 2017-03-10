@@ -278,17 +278,3 @@ This module also defines the following exceptions:
 
 	 >>> q.yang_identifier()
 	 'foo-bar'
-
-.. autoexception:: ParserException(p: Parser)
-   :show-inheritance:
-
-   The argument *p* is the parser instance that caused the exception.
-
-.. autoexception:: EndOfInput(p: Parser)
-   :show-inheritance:
-
-.. autoexception:: UnexpectedInput(p: Parser, expected: str = None)
-   :show-inheritance:
-
-   The argument *expected* is the string that was expected instead, if
-   there is any.

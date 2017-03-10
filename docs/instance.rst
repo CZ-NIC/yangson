@@ -681,23 +681,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> str(irt2)
 	 '/example-2:bag/baz'
 
-.. autoexception:: InstanceException(inst: InstanceNode)
-   :show-inheritance:
-
-   The *inst* argument is the initial instance from which the failed
-   operation was attempted.
-
-.. autoexception:: InstanceValueError
-   :show-inheritance:
-
-   The *detail* argument gives details about the value mismatch.
-
-.. autoexception:: NonexistentInstance
-   :show-inheritance:
-
-   The *detail* argument gives details about why the instance doesn't
-   exist.
-
 .. _4: https://tools.ietf.org/html/rfc7951#section-4
 .. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
 .. _7.6.1: https://tools.ietf.org/html/rfc7950#section-7.6.1

@@ -174,18 +174,3 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 ...     m5atxt = infile.read()
 	 >>> str(ModuleParser(m5atxt).parse())
 	 'module "example-5-a" { ... }'
-
-.. exception:: StatementNotFound(parent: Statement, kw: YangIdentifier)
-
-   A statement with keyword *kw* was not found as a substatement of
-   *parent*.
-
-.. exception:: DefinitionNotFound(kw: YangIdentifier, name: YangIdentifier)
-
-   Definition of a grouping or typedef was not found. Argument *kw*
-   is the keyword of the definition statement (``grouping`` or
-   ``typedef``), and *name* is the name of the definition.
-
-.. exception:: WrongArgument(stmt: Statement)
-
-   The argument of statement *stmt* is invalid.

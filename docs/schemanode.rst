@@ -650,49 +650,6 @@ or **uses** statement if this statement is conditional, i.e. has a
    This class is a subclass of :class:`GroupNode`. Its instances
    represent YANG **notification** nodes.
 
-.. autoexception:: SchemaNodeException(sn: SchemaNode)
-
-   The schema node for which the exception occurred is passed in the
-   *sn* argument.
-
-.. autoexception:: NonexistentSchemaNode(sn: SchemaNode, name: YangIdentifier, ns: YangIdentifier)
-   :show-inheritance:
-
-   The arguments *name* and *ns* give the name and namespace of the
-   non-existent schema node.
-
-.. autoexception:: BadSchemaNodeType(sn: SchemaNode, expected: str)
-   :show-inheritance:
-
-   The argument *expected* describes what type was expected.
-
-.. autoexception:: BadLeafrefPath(sn: SchemaNode)
-   :show-inheritance:
-
-.. autoexception:: RawDataError(jptr: JSONPointer)
-
-.. autoexception:: RawMemberError(jptr: JSONPointer)
-   :show-inheritance:
-
-.. autoexception:: RawTypeError(jptr: JSONPointer, detail: str)
-   :show-inheritance:
-
-.. autoexception:: ValidationError(inst: InstanceNode, detail: str)
-
-   The *inst* argument contains the instance node that was found
-   invalid, and *detail* provides additional information about the
-   error.
-
-.. autoexception:: SchemaError
-   :show-inheritance:
-
-   See :term:`schema error`.
-
-.. autoexception:: SemanticError
-   :show-inheritance:
-
-   See :term:`semantic error`.
-
 .. _7.5.3: https://tools.ietf.org/html/rfc7950#section-7.5.3
 .. _7.8.3: https://tools.ietf.org/html/rfc7950#section-7.8.3
 .. _7.9.2: https://tools.ietf.org/html/rfc7950#section-7.9.2

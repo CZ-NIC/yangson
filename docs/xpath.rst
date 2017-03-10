@@ -73,11 +73,6 @@ The module also defines the following exception:
       evaluates to a value whose type is not allowed at a given
       place.
 
-.. autoexception:: XPathTypeError(value: XPathValue)
-
-   The *value* argument contains the XPath value that causes the
-   problem.
-
 Parser of XPath Expressions
 ===========================
 

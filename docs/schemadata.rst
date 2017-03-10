@@ -468,62 +468,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 ... dm.schema_data, ('example-3-a', '2016-06-18')).parse()
 	 False
 
-.. autoexception:: MissingModule(name: YangIdentifier, rev: str = "")
-
-   The arguments specify the name and optional revision of the missing
-   module.
-
-.. autoexception:: ModuleNotFound(name: YangIdentifier, rev: str = "")
-   :show-inheritance:
-
-.. autoexception:: ModuleNotRegistered(name: YangIdentifier, rev: str = "")
-   :show-inheritance:
-
-.. autoexception:: ModuleNotImplemented(name: YangIdentifier, rev: str = "")
-   :show-inheritance:
-
-.. autoexception:: BadYangLibraryData
-   :show-inheritance:
-
-   The *reason* argument is a text describing the problem.
-
-.. autoexception:: BadPath
-   :show-inheritance:
-
-   The *path* argument contains the invalid path.
-
-.. autoexception:: UnknownPrefix
-   :show-inheritance:
-
-   The *prefix* argument contains the unknown prefix.
-
-.. autoexception:: ModuleNotImported(mod: YangIdentifier, mid: ModuleId)
-   :show-inheritance:
-
-   Module *mod* is expected to be imported from a module or
-   submodule whose :term:`module identifier` is *mid*.
-
-.. autoexception:: InvalidFeatureExpression
-   :show-inheritance:
-
-.. autoexception:: FeaturePrerequisiteError(name: YangIdentifier, ns: YangIdentifier)
-   :show-inheritance:
-
-   The *name* and *ns* arguments contain the name and namespace of the
-   feature for which a pre-requisite feature is not supported by the
-   data model.
-
-.. autoexception:: MultipleImplementedRevisions(module: YangIdentifier)
-   :show-inheritance:
-
-   See sec. `5.6.5`_ of [RFC7950]_ for further explanation. The *module*
-   argument contains the name of the module with multiple implemented revisions.
-
-.. autoexception:: CyclicImports
-   :show-inheritance:
-
-   See sec. `5.1`_ of [RFC7950]_ for further explanation.
-
 .. _5.6.5: https://tools.ietf.org/html/rfc7950#section-5.6.5
 .. _5.1: https://tools.ietf.org/html/rfc7950#section-5.1
 .. _6.4.1: https://tools.ietf.org/html/rfc7950#section-6.4.1

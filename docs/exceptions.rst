@@ -1,9 +1,7 @@
-********************
-Base Exception Class
-********************
+**********
+Exceptions
+**********
 
-.. module:: yangson.exceptions
-   :synopsis: Base exception class
-
-.. autoexception:: YangsonException
+.. automodule:: yangson.exceptions
+   :members:
    :show-inheritance:
