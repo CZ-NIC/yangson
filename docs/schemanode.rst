@@ -340,7 +340,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       Return the list of receiver's data children, i.e. descendant
       data nodes that are either direct children of the receiver, or
       that have no ancestor data nodes that are also descendants of
-      the receiver. See also :meth:`get_data_child`.
+      the receiver. Child nodes that are instances of
+      :class:`SchemaTree` (i.e. rpc, action, input, output or
+      notification node) are not included. See also
+      :meth:`get_data_child`.
 
       .. doctest::
 

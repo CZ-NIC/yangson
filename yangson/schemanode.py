@@ -371,7 +371,7 @@ class InternalNode(SchemaNode):
         for child in self.children:
             if isinstance(child, DataNode):
                 res.append(child)
-            else:
+            elif not isinstance(child, SchemaTree):
                 res.extend(child.data_children())
         return res
 
@@ -579,13 +579,6 @@ class InternalNode(SchemaNode):
 
 class GroupNode(InternalNode):
     """Anonymous group of schema nodes."""
-
-    def state_roots(self) -> List[DataPath]:
-        """Override superclass method."""
-        return []
-
-    def _state_roots(self) -> List[SchemaNode]:
-        return []
 
     def _handle_child(self, node: SchemaNode, stmt: Statement,
                      sctx: SchemaContext) -> None:
