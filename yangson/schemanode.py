@@ -584,9 +584,6 @@ class GroupNode(InternalNode):
         """Override superclass method."""
         return []
 
-    def _yang_class(self) -> str:
-        return "root"
-
     def _state_roots(self) -> List[SchemaNode]:
         return []
 
@@ -609,6 +606,12 @@ class GroupNode(InternalNode):
         for c in self.children:
             res.extend(c._flatten())
         return res
+
+class SchemaTree(GroupNode):
+    """Root node of a schema tree."""
+
+    def _yang_class(self) -> str:
+        return "root"
 
 class DataNode(SchemaNode):
     """Abstract superclass for all data nodes."""
@@ -1212,7 +1215,7 @@ class AnyxmlNode(AnyContentNode):
     """Anyxml node."""
     pass
 
-class RpcActionNode(GroupNode):
+class RpcActionNode(SchemaTree):
     """RPC or action node."""
 
     def __init__(self):
@@ -1239,7 +1242,7 @@ class RpcActionNode(GroupNode):
         """Handle RPC or action output statement."""
         self.get_child("output")._handle_substatements(stmt, sctx)
 
-class InputNode(GroupNode):
+class InputNode(SchemaTree):
     """RPC or action input node."""
 
     def __init__(self, ns):
@@ -1255,7 +1258,7 @@ class InputNode(GroupNode):
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
 
-class OutputNode(GroupNode):
+class OutputNode(SchemaTree):
     """RPC or action output node."""
 
     def __init__(self, ns):
@@ -1271,7 +1274,7 @@ class OutputNode(GroupNode):
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
 
-class NotificationNode(GroupNode):
+class NotificationNode(SchemaTree):
     """Notification node."""
 
     def __init__(self):

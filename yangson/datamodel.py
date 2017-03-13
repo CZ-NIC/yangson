@@ -30,7 +30,7 @@ from .exceptions import BadYangLibraryData
 from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
                            RootNode)
 from .schemadata import SchemaData, SchemaContext
-from .schemanode import DataNode, GroupNode, RawObject, SchemaNode
+from .schemanode import DataNode, SchemaTree, RawObject, SchemaNode
 from .typealiases import *
 from .typealiases import _Singleton
 
@@ -71,7 +71,7 @@ class DataModel:
             ModuleNotFound: If a YANG module wasn't found in any of the
                 directories specified in `mod_path`.
         """
-        self.schema = GroupNode()
+        self.schema = SchemaTree()
         self.schema._ctype = ContentType.all
         try:
             yl = json.loads(yltxt)

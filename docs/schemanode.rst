@@ -23,6 +23,7 @@ The *schemanode* module defines the following classes:
 * :class:`SchemaNode`: Abstract class for schema nodes.
 * :class:`InternalNode`: Abstract class for schema nodes that have children.
 * :class:`GroupNode`: Anonymous group of schema nodes.
+* :class:`SchemaTree`: Root node of a schema tree.
 * :class:`DataNode`: Abstract class for data nodes.
 * :class:`TerminalNode`: Abstract class for schema nodes that have no children.
 * :class:`ContainerNode`: YANG **container** node.
@@ -352,6 +353,12 @@ This class is a subclass of :class:`InternalNode`. Its instances are
 used as anonymous groups of schema nodes contained in an **augment**
 or **uses** statement if this statement is conditional, i.e. has a
 **when** substatement.
+
+.. class:: SchemaTree
+
+This class is a subclass of :class:`GroupNode`. Each instance
+represents the root node of a schema tree (main tree, RPC operation or
+action, input or output node, or notification).
 
 .. class:: DataNode
 
