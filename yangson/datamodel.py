@@ -111,7 +111,7 @@ class DataModel:
             Schema node if found in the schema, or ``None``.
 
         Raises:
-            BadPath: If the schema path is invalid.
+            InvalidSchemaPath: If the schema path is invalid.
         """
         return self.schema.get_schema_descendant(
             self.schema_data.path2route(path))
@@ -126,7 +126,7 @@ class DataModel:
             Data node if found in the schema, or ``None``.
 
         Raises:
-            BadPath: If the schema path is invalid.
+            InvalidSchemaPath: If the schema path is invalid.
         """
         addr = self.schema_data.path2route(path)
         node = self.schema

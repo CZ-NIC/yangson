@@ -41,15 +41,16 @@ This module implements the following classes:
 """
 
 from typing import Any, Dict, List, MutableSet, Optional, Set, Tuple, Union
-from .schemadata import SchemaData, SchemaContext
+from .constraint import Must
 from .datatype import (DataType, EmptyType, LeafrefType, LinkType,
                        RawScalar, IdentityrefType)
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
 from .exceptions import (
-    BadLeafrefPath, RawMemberError, RawTypeError, SchemaError, SemanticError,
-    WrongArgument, YangsonException, YangTypeError)
+    InvalidLeafrefPath, InvalidArgument, RawMemberError, RawTypeError, SchemaError,
+    SemanticError, WrongArgument, YangsonException, YangTypeError)
 from .instvalue import (
     ArrayValue, EntryValue, ObjectValue, StructuredValue, Value)
+from .schemadata import SchemaData, SchemaContext
 from .schpattern import *
 from .statement import Statement
 from .typealiases import *
@@ -68,7 +69,7 @@ class SchemaNode:
         """Parent schema node."""
         self.description = None # type: Optional[str]
         """Description of the receiver."""
-        self.must = [] # type: List[Tuple["Expr", Optional[str]]]
+        self.must = [] # type: List[Must]
         """List of "must" expressions attached to the receiver."""
         self.when = None # type: Optional["Expr"]
         """Optional "when" expression that makes the receiver conditional."""
@@ -226,8 +227,7 @@ class SchemaNode:
         mex = xpp.parse()
         if not xpp.at_end():
             raise WrongArgument(stmt.arg)
-        ems = stmt.find1("error-message")
-        self.must.append((mex, ems.argument if ems else None))
+        self.must.append(Must(mex, *stmt.get_error_info()))
 
     def _when_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         xpp = XPathParser(stmt.argument, sctx)
@@ -418,11 +418,10 @@ class InternalNode(SchemaNode):
         for m in inst.value:
             p = p.deriv(m, ctype)
             if isinstance(p, NotAllowed):
-                raise SchemaError(inst, "not allowed: member {}{}".format(
-                    m, ("" if ctype == ContentType.all else
-                        " (" + ctype.name + ")")))
+                raise SchemaError(inst, "member-not-allowed", m + (
+                    "" if ctype == ContentType.all else " (" + ctype.name + ")"))
         if not p.nullable(ctype):
-            raise SchemaError(inst, "missing: " + str(p))
+            raise SchemaError(inst, "missing-data", str(p))
 
     def _make_schema_patterns(self) -> None:
         """Build schema pattern for the receiver and its data descendants."""
@@ -678,10 +677,9 @@ class DataNode(SchemaNode):
         return pnode
 
     def _check_must(self, inst: "InstanceNode") -> None:
-        for mex in self.must:
-            if not mex[0].evaluate(inst):
-                msg = "'must' expression is false" if mex[1] is None else mex[1]
-                raise SemanticError(inst, msg)
+        for m in self.must:
+            if not m.expression.evaluate(inst):
+                raise SemanticError(inst, m.error_tag, m.error_message)
 
     def _pattern_entry(self) -> SchemaPattern:
         m = Member(self.iname(), self.content_type(), self.when)
@@ -716,10 +714,10 @@ class TerminalNode(SchemaNode):
 
     def from_raw(self, rval: RawScalar, jptr: JSONPointer = "") -> ScalarValue:
         """Override the superclass method."""
-        try:
-            return self.type.from_raw(rval)
-        except YangTypeError as e:
-            raise RawTypeError(jptr, str(e))
+        res = self.type.from_raw(rval)
+        if res is None:
+            raise RawTypeError(jptr, str(self.type))
+        return res
 
     def _client_digest(self) -> Dict[str, Any]:
         res = super()._client_digest()
@@ -735,16 +733,17 @@ class TerminalNode(SchemaNode):
                       ctype: ContentType) -> None:
         """Extend the superclass method."""
         if (scope.value & ValidationScope.syntax.value and
-                not self.type.contains(inst.value)):   # data type
-            raise SchemaError(inst, "invalid type: " + repr(inst.value))
+                inst.value not in self.type):
+            raise SchemaError(inst, self.type.error_tag, self.type.error_message)
         if (isinstance(self.type, LinkType) and        # referential integrity
                 scope.value & ValidationScope.semantics.value and
                 self.type.require_instance):
             try:
-                if not inst._deref():
-                    raise SemanticError(inst, "required instance missing")
+                tgt = inst._deref()
             except YangsonException:
-                raise SemanticError(inst, "required instance missing") from None
+                tgt = []
+            if not tgt:
+                raise SemanticError(inst, "instance-required")
 
     def _default_value(self, inst: "InstanceNode", ctype: ContentType,
                        lazy: bool) -> "InstanceNode":
@@ -756,7 +755,7 @@ class TerminalNode(SchemaNode):
         if isinstance(self.type, LeafrefType):
             ref = self._follow_leafref(self.type.path, self)
             if ref is None:
-                raise BadLeafrefPath(self.qual_name)
+                raise InvalidLeafrefPath(self.qual_name)
             self.type.ref_type = ref.type
 
     def _is_identityref(self) -> bool:
@@ -850,14 +849,10 @@ class SequenceNode(DataNode):
 
     def _check_cardinality(self, inst: "InstanceNode") -> None:
         if len(inst.value) < self.min_elements:
-            raise SemanticError(inst,
-                              "number of entries < min-elements ({})".format(
-                                  self.min_elements))
+            raise SemanticError(inst, "too-few-elements")
         if (self.max_elements is not None and
             len(inst.value) > self.max_elements):
-            raise SemanticError(inst,
-                              "number of entries > max-elements ({})".format(
-                                  self.max_elements))
+            raise SemanticError(inst, "too-many-elements")
 
     def _post_process(self) -> None:
         super()._post_process()
@@ -936,10 +931,9 @@ class ListNode(SequenceNode, InternalNode):
                 kval = tuple([en[k] for k in self._key_members])
             except KeyError as e:
                 raise SchemaError(
-                    inst._entry(i),
-                    "missing list key '{}'".format(e.args[0])) from None
+                    inst._entry(i), "list-key-missing", e.args[0]) from None
             if kval in ukeys:
-                raise SemanticError(inst, "non-unique list key: " + repr(
+                raise SemanticError(inst, "non-unique-key", repr(
                     kval[0] if len(kval) < 2 else kval))
             ukeys.add(kval)
 
@@ -951,7 +945,7 @@ class ListNode(SequenceNode, InternalNode):
             uval = tuple([den._peek_schema_route(sr) for sr in unique])
             if None not in uval:
                 if uval in uvals:
-                    raise SemanticError(inst, "unique constraint violated")
+                    raise SemanticError(inst, "data-not-unique")
                 else:
                     uvals.add(uval)
 
@@ -1127,6 +1121,7 @@ class LeafNode(DataNode, TerminalNode):
 
     def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self._default = self.type.from_yang(stmt.argument, sctx)
+        if self._default is None: raise InvalidArgument(stmt)
 
 class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
@@ -1145,10 +1140,11 @@ class LeafListNode(SequenceNode, TerminalNode):
     def _check_list_props(self, inst: "InstanceNode") -> None:
         if (self.content_type() == ContentType.config and
             len(set(inst.value)) < len(inst.value)):
-            raise SemanticError(inst, "non-unique leaf-list values")
+            raise SemanticError(inst, "repeated-leaf-list-value")
 
     def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         val = self.type.parse_value(stmt.argument)
+        if val is None: raise InvalidArgument(stmt)
         if self._default is None:
             self._default = ArrayValue([val])
         else:

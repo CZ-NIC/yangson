@@ -135,10 +135,8 @@ all :class:`~.schemanode.TerminalNode` instances.
 
 	 >>> bits_t.from_raw('dos tres')
 	 ('dos', 'tres')
-	 >>> bits_t.from_raw('tres cuatro')
-	 Traceback (most recent call last):
-	 ...
-	 yangson.datatype.YangTypeError: value 'tres cuatro'
+	 >>> bits_t.from_raw(0) is None
+	 True
 
    .. method:: to_raw(val: ScalarValue) -> RawScalar
 
@@ -156,10 +154,8 @@ all :class:`~.schemanode.TerminalNode` instances.
 	 >>> from test import *
 	 >>> bits_t.to_raw(('dos', 'tres'))
 	 'dos tres'
-	 >>> bits_t.to_raw((2,3))
-	 Traceback (most recent call last):
-	 ...
-	 yangson.datatype.YangTypeError: value (2, 3)
+	 >>> bits_t.to_raw((2,3)) is None
+	 True
 
    .. method:: parse_value(text: str) -> ScalarValue
 
@@ -172,10 +168,8 @@ all :class:`~.schemanode.TerminalNode` instances.
 
 	 >>> boolean_t.parse_value("true")
 	 True
-	 >>> boolean_t.parse_value(1)
-	 Traceback (most recent call last):
-	 ...
-	 yangson.datatype.YangTypeError: value 1
+	 >>> boolean_t.parse_value(1) is None
+	 True
 
    .. method:: canonical_string(val: ScalarValue) -> str
 
@@ -218,17 +212,20 @@ all :class:`~.schemanode.TerminalNode` instances.
 	 >>> identityref_t.from_yang('ex5b:derived-identity', sctx)
 	 ('derived-identity', 'example-5-b')
 
-   .. method:: contains(val: ScalarValue) -> bool
+   .. method:: __contains__(val: ScalarValue) -> bool
 
       Return ``True`` if the argument *val* contains a valid value of
       the receiver type, otherwise return ``False``.
 
+      This method enables the Python operators ``in`` and ``not in``
+      for testing whether a given value belongs to a YANG type.
+
       .. doctest::
 
-	 >>> enumeration_t.contains("Dopey")
+	 >>> "Dopey" in enumeration_t
 	 True
-	 >>> enumeration_t.contains("SnowWhite")
-	 False
+	 >>> "SnowWhite" not in enumeration_t
+	 True
 
    .. method:: yang_type() -> YangIdentifier
 
@@ -295,9 +292,9 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> string_t.length
+	 >>> string_t.length.intervals
 	 [[2, 4]]
-	 >>> string_t.contains('xxxxy')  # too long
+	 >>> 'xxxxy' in string_t  # too long
 	 False
 
    .. attribute:: patterns
@@ -309,12 +306,12 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> string_t.patterns
-	 [re.compile('^x*y$')]
-	 >>> string_t.contains('xxxy')
+	 >>> string_t.patterns[0].regex
+	 re.compile('^x*y$')
+	 >>> 'xxxy' in string_t
 	 True
-	 >>> string_t.contains('xxyy')  # pattern doesn't match
-	 False
+	 >>> 'xxyy' not in string_t  # pattern doesn't match
+	 True
 	 
    .. attribute:: invert_patterns
 
@@ -409,7 +406,7 @@ all :class:`~.schemanode.TerminalNode` instances.
 
 	 >>> type(leafref_t.ref_type)
 	 <class 'yangson.datatype.StringType'>
-	 >>> leafref_t.contains('abc')
+	 >>> 'abc' in leafref_t
 	 False
 
 .. class:: InstanceIdentifierType

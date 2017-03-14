@@ -28,7 +28,7 @@ This module implements the following classes:
 
 from typing import Dict, List, MutableSet, Optional, Tuple
 from .exceptions import (
-    BadPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
+    InvalidSchemaPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
     FeaturePrerequisiteError, InvalidFeatureExpression, ModuleNotFound,
     ModuleNotImplemented, ModuleNotImported, ModuleNotRegistered,
     MultipleImplementedRevisions, UnknownPrefix)
@@ -349,7 +349,7 @@ class SchemaData:
             path: Schema path.
 
         Raises:
-            BadPath: Invalid path.
+            InvalidSchemaPath: Invalid path.
         """
         if path == "/" or path == "": return []
         nlist = path.split("/")
@@ -358,13 +358,13 @@ class SchemaData:
         for n in (nlist[1:] if path[0] == "/" else nlist):
             p, s, loc = n.partition(":")
             if s:
-                if p == prevns: raise BadPath(path)
+                if p == prevns: raise InvalidSchemaPath(path)
                 res.append((loc, p))
                 prevns = p
             elif prevns:
                 res.append((p, prevns))
             else:
-                raise BadPath(path)
+                raise InvalidSchemaPath(path)
         return res
 
     def get_definition(self, stmt: Statement,

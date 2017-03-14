@@ -50,16 +50,15 @@ import numbers
 import re
 from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from .exceptions import ParserException, YangTypeError
+
+from .constraint import Lengths, Pattern, Ranges
+from .exceptions import InvalidArgument, ParserException, YangTypeError
 from .schemadata import SchemaContext
 from .instance import InstanceNode, InstanceIdParser, InstanceRoute
 from .statement import Statement
 from .typealiases import *
 from .typealiases import _Singleton
 from .xpathparser import XPathParser
-
-# Local type aliases
-Range = List[List[Union[int, decimal.Decimal]]]
 
 class DataType:
     """Abstract class for YANG data types."""
@@ -71,67 +70,61 @@ class DataType:
         self.sctx = sctx
         self.default = None
         self.name = name
+        self.error_tag = None
+        self.error_message = None
+
+    def __contains__(self, val: ScalarValue) -> bool:
+        """Return ``True`` if the receiver type contains `val`.
+
+        If the result is ``False``, set also `error_tag` and `error_message`
+        properties.
+        """
+        return True
 
     def __str__(self):
         """Return YANG name of the receiver type."""
         base = self.yang_type()
         return "{}({})".format(self.name, base) if self.name else base
 
-    def from_raw(self, raw: RawScalar) -> ScalarValue:
+    def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
         """Return a cooked value of the receiver type.
 
         Args:
             raw: Raw value obtained from JSON parser.
-
-        Raises:
-            YangTypeError: If `raw` doesn't conform to the receiver.
         """
-        try:
-            res = self._convert_raw(raw)
-            if res is not None and self._constraints(res): return res
-        except TypeError:
-            raise YangTypeError(self, raw) from None
-        raise YangTypeError(self, raw)
+        if isinstance(raw, str): return raw
 
     def to_raw(self, val: ScalarValue) -> RawScalar:
         """Return a raw value ready to be serialized in JSON."""
         return val
 
-    def parse_value(self, text: str) -> ScalarValue:
-        """Parse value of a data type.
+    def parse_value(self, text: str) -> Optional[ScalarValue]:
+        """Parse value of the receiver's type.
 
         Args:
             text: String representation of the value.
+
+        Returns:
+            A value of the receiver's type or ``None`` if parsing fails.
         """
-        res = self._parse(text)
-        if res is not None and self._constraints(res): return res
-        raise YangTypeError(self, text)
+        return self.from_raw(text)
 
     def canonical_string(self, val: ScalarValue) -> str:
         """Return canonical form of a value."""
         return str(val)
 
-    def from_yang(self, text: str, sctx: SchemaContext) -> ScalarValue:
+    def from_yang(self, text: str, sctx: SchemaContext = None) -> ScalarValue:
         """Parse value specified in a YANG module."""
         return self.parse_value(text)
-
-    def contains(self, val: ScalarValue) -> bool:
-        """Return ``True`` if the receiver type contains `val`."""
-        try:
-            return self._constraints(val)
-        except TypeError:
-            return False
 
     def yang_type(self) -> YangIdentifier:
         """Return YANG name of the receiver."""
         return self.__class__.__name__[:-4].lower()
 
-    def _convert_raw(self, raw: RawScalar) -> ScalarValue:
-        """Return a cooked value."""
-        return raw
-
-    def _constraints(self, val: Any) -> bool:
-        return True
+    def _set_error_info(self, error_tag: str = None, error_message: str = None):
+        self.error_tag = error_tag if error_tag else "str(self)"
+        if error_message:
+            self.error_message = error_message
 
     @classmethod
     def _resolve_type(cls, stmt: Statement, sctx: SchemaContext) -> "DataType":
@@ -167,49 +160,9 @@ class DataType:
             dfst = tdef.find1("default")
             if dfst:
                 res.default = res.from_yang(dfst.argument, tsc)
+                if res.default is None: raise InvalidArgument(dfst)
         res._handle_restrictions(stmt, sctx)
         return res
-
-    @staticmethod
-    def _in_range(num: Union[int, decimal.Decimal], rng: Range) -> bool:
-        """Decide whether a number fits into a range.
-
-        Args:
-            num: A number.
-            rng: Numeric range.
-        """
-        for r in rng:
-            if len(r) == 1:
-                if r[0] == num: return True
-            elif r[0] <= num <= r[1]: return True
-        return False
-
-    @staticmethod
-    def _combine_ranges(orig: Range, rex: str,
-                       parser: Callable[[str], Any]) -> Range:
-        """Combine original range with a new one specified in `rex`.
-
-        Args:
-            orig: Original range.
-            rex: Range expression.
-        """
-        to_num = lambda xs: [ parser(x) for x in xs ]
-        lo = orig[0][0]
-        hi = orig[-1][-1]
-        parts = [ p.strip() for p in rex.split("|") ]
-        ran = [ [ i.strip() for i in p.split("..") ] for p in parts ]
-        if ran[0][0] != "min":
-            lo = parser(ran[0][0])
-        if ran[-1][-1] != "max":
-            hi = parser(ran[-1][-1])
-        return (
-            [[lo, hi]] if len(ran) == 1 else
-            [[lo, parser(ran[0][-1])]] +
-            [ to_num(r) for r in ran[1:-1] ] +
-            [[parser(ran[-1][0]), hi]])
-
-    def _parse(self, text: str) -> Optional[ScalarValue]:
-        return self._convert_raw(text)
 
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         return []
@@ -222,23 +175,22 @@ class DataType:
         """Handle type restriction substatements."""
         pass
 
-class EmptyType(DataType, metaclass=_Singleton):
-    """Singleton class representing YANG "empty" type."""
+class EmptyType(DataType):
+    """Class representing YANG "empty" type."""
 
     def canonical_string(self, val: Tuple[None]) -> str:
         return ""
 
-    def _constraints(self, val: Tuple[None]) -> bool:
-        return val == (None,)
+    def __contains__(self, val: Tuple[None]) -> bool:
+        if val == (None,): return True
+        self._set_error_info()
+        return False
 
-    def _parse(self, text: str) -> Tuple[None]:
+    def parse_value(self, text: str) -> Tuple[None]:
         return None if text else (None,)
 
-    def _convert_raw(self, raw: List[None]) -> Tuple[None]:
-        try:
-            return tuple(raw)
-        except TypeError:
-            return None
+    def from_raw(self, raw: RawScalar) -> Optional[Tuple[None]]:
+        if raw == [None]: return (None,)
 
 class BitsType(DataType):
     """Class representing YANG "bits" type."""
@@ -252,15 +204,17 @@ class BitsType(DataType):
         """Return list of bit items sorted by position."""
         return sorted(self.bit.items(), key=lambda x: x[1])
 
-    def _convert_raw(self, raw: str) -> Tuple[str]:
+    def from_raw(self, raw: RawScalar) -> Optional[Tuple[str]]:
         try:
             return tuple(raw.split())
         except AttributeError:
             return None
 
-    def _constraints(self, val: Tuple[str]) -> bool:
+    def __contains__(self, val: Tuple[str]) -> bool:
         for b in val:
-            if b not in self.bit: return False
+            if b not in self.bit:
+                self._set_error_info(error_message="unknown bit " + b)
+                return False
         return True
 
     def to_raw(self, val: Tuple[str]) -> str:
@@ -273,7 +227,7 @@ class BitsType(DataType):
             for b in val:
                 res += 1 << self.bit[b]
         except KeyError:
-            raise YangTypeError(self, val) from None
+            return None
         return res
 
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
@@ -305,17 +259,23 @@ class BitsType(DataType):
         try:
             items = [(self.bit[b], b) for b in val]
         except KeyError:
-            raise YangTypeError(self, val) from None
+            return None
         items.sort()
         return " ".join([x[1] for x in items])
         
 class BooleanType(DataType):
     """Class representing YANG "boolean" type."""
 
-    def _constraints(self, val: bool) -> bool:
-        return isinstance(val, bool)
+    def __contains__(self, val: bool) -> bool:
+        if isinstance(val, bool): return True
+        self._set_error_info()
+        return False
 
-    def _parse(self, text: str) -> bool:
+    def from_raw(self, raw: RawScalar) -> Optional[bool]:
+        """Override superclass method."""
+        if isinstance(raw, bool): return raw
+
+    def parse_value(self, text: str) -> bool:
         """Parse boolean value.
 
         Args:
@@ -327,15 +287,13 @@ class BooleanType(DataType):
     def canonical_string(self, val: bool) -> str:
         if val is True: return "true"
         if val is False: return "false"
-        raise YangTypeError(self, val)
 
 class StringType(DataType):
     """Class representing YANG "string" type."""
 
-    length = [[0, 4294967295]] # type: Range
-
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
+        self.length = Lengths([[0, 4294967295]])
         super().__init__(sctx, name)
         self.patterns = [] # type: List[Pattern]
         self.invert_patterns = [] # type: List[Pattern]
@@ -343,35 +301,47 @@ class StringType(DataType):
     def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         lstmt = stmt.find1("length")
         if lstmt:
-            self.length = self._combine_ranges(self.length,
-                                                lstmt.argument, int)
+            try:
+                self.length.combine_with(lstmt.argument, *lstmt.get_error_info())
+            except:
+                raise InvalidArgument(lstmt) from None
         for pst in stmt.find_all("pattern"):
-            pat = re.compile(XMLToPython(pst.argument))
-            if pst.find1("modifier", "invert-match"):
-                self.invert_patterns.append(pat)
-            else:
-                self.patterns.append(pat)
+            invm = pst.find1("modifier", "invert-match") is not None
+            self.patterns.append(Pattern(
+                pst.argument, invm, *pst.get_error_info()))
 
-    def _constraints(self, val: str) -> bool:
-        if not (isinstance(val, str) and self._in_range(len(val), self.length)):
+    def __contains__(self, val: str) -> bool:
+        if not isinstance(val, str):
+            self._set_error_info()
+            return False
+        if len(val) not in self.length:
+            self._set_error_info(self.length.error_tag, self.length.error_message)
             return False
         for p in self.patterns:
-            if not p.match(val): return False
-        for p in self.invert_patterns:
-            if p.match(val): return False
+            if (p.regex.match(val) is not None) == p.invert_match:
+                self._set_error_info(p.error_tag, p.error_message)
+                return False
         return True
 
 class BinaryType(StringType):
     """Class representing YANG "binary" type."""
 
-    def _convert_raw(self, raw: str) -> bytes:
+    def from_raw(self, raw: RawScalar) -> Optional[bytes]:
+        """Override superclass method."""
         try:
             return base64.b64decode(raw, validate=True)
         except TypeError:
             return None
 
-    def _constraints(self, val: bytes) -> bool:
-        return isinstance(val, bytes) and self._in_range(len(val), self.length)
+    def __contains__(self, val: bytes) -> bool:
+        if not isinstance(val, bytes):
+            self._set_error_info()
+            return False
+        if len(val) not in self.length:
+            self._set_error_info(
+                self.length.error_tag, self.length.error_message)
+            return False
+        return True
 
     def to_raw(self, val: bytes) -> str:
         return self.canonical_string(val)
@@ -391,8 +361,10 @@ class EnumerationType(DataType):
         """Return list of enum items sorted by value."""
         return sorted(self.enum.items(), key=lambda x: x[1])
 
-    def _constraints(self, val: str) -> bool:
-        return val in self.enum
+    def __contains__(self, val: str) -> bool:
+        if val in self.enum: return True
+        self._set_error_info()
+        return False
 
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle **enum** statements."""
@@ -448,11 +420,11 @@ class LeafrefType(LinkType):
     def canonical_string(self, val: ScalarValue) -> str:
         return self.ref_type.canonical_string(val)
 
-    def _constraints(self, val: ScalarValue) -> bool:
-        return self.ref_type._constraints(val)
+    def __contains__(self, val: ScalarValue) -> bool:
+        return val in self.ref_type
 
-    def _convert_raw(self, raw: RawScalar) -> ScalarValue:
-        return self.ref_type._convert_raw(raw)
+    def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
+        return self.ref_type.from_raw(raw)
 
     def to_raw(self, val: ScalarValue) -> RawScalar:
         return self.ref_type.to_raw(val)
@@ -471,11 +443,11 @@ class InstanceIdentifierType(LinkType):
         """Override the superclass method."""
         return "instance-identifier"
 
-    def _convert_raw(self, raw: str) -> InstanceRoute:
+    def from_raw(self, raw: RawScalar) -> Optional[InstanceRoute]:
         try:
             return InstanceIdParser(raw).parse()
         except ParserException:
-            raise YangTypeError(self, raw) from None
+            return None
 
     def to_raw(self, val: InstanceRoute) -> str:
         """Override the superclass method."""
@@ -492,16 +464,17 @@ class IdentityrefType(DataType):
         super().__init__(sctx, name)
         self.bases = [] # type: List[QualName]
 
-    def _convert_raw(self, raw: str) -> QualName:
+    def from_raw(self, raw: RawScalar) -> Optional[QualName]:
         try:
             i1, s, i2 = raw.partition(":")
         except AttributeError:
             return None
         return (i2, i1) if s else (i1, self.namespace)
 
-    def _constraints(self, val: QualName) -> bool:
+    def __contains__(self, val: QualName) -> bool:
         for b in self.bases:
             if not self.sctx.schema_data.is_derived_from(val, b):
+                self._set_error_info(error_message="not derived from " + b)
                 return False
         return True
 
@@ -511,11 +484,9 @@ class IdentityrefType(DataType):
     def from_yang(self, text: str, sctx: SchemaContext) -> QualName:
         """Override the superclass method."""
         try:
-            res = sctx.schema_data.translate_pname(text, self.sctx.text_mid)
+            return sctx.schema_data.translate_pname(text, self.sctx.text_mid)
         except:
-            raise YangTypeError(self, text) from None
-        if self._constraints(res): return res
-        raise YangTypeError(self, text)
+            return None
 
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.bases = []
@@ -530,14 +501,18 @@ class IdentityrefType(DataType):
 class NumericType(DataType):
     """Abstract class for numeric data types."""
 
-    def _constraints(self, val: Union[int, decimal.Decimal]) -> bool:
-        return self._in_range(val, self._range)
+    def __contains__(self, val: Union[int, decimal.Decimal]) -> bool:
+        if val in self.range: return True
+        self._set_error_info(self.range.error_tag, self.range.error_message)
+        return False
 
     def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         rstmt = stmt.find1("range")
         if rstmt:
-            self._range = self._combine_ranges(self._range, rstmt.argument,
-                                               self.parse_value)
+            try:
+                self.range.combine_with(rstmt.argument, *rstmt.get_error_info())
+            except:
+                raise InvalidArgument(rstmt) from None
 
 class Decimal64Type(NumericType):
     """Class representing YANG "decimal64" type."""
@@ -552,10 +527,10 @@ class Decimal64Type(NumericType):
         self._epsilon = decimal.Decimal(10) ** -fd
         quot = decimal.Decimal(10**fd)
         lim = decimal.Decimal(9223372036854775808)
-        self._range = [[-lim / quot, (lim - 1) / quot]]
+        self.range = Ranges([[-lim / quot, (lim - 1) / quot]], self.from_yang)
         super()._handle_properties(stmt, sctx)
 
-    def _convert_raw(self, raw: str) -> decimal.Decimal:
+    def from_raw(self, raw: RawScalar) -> Optional[decimal.Decimal]:
         if not isinstance(raw, (str, numbers.Real)):
             return None
         try:
@@ -569,54 +544,68 @@ class Decimal64Type(NumericType):
     def canonical_string(self, val: decimal.Decimal) -> str:
         return "0.0" if val == 0 else str(val).rstrip("0")
 
-    def _constraints(self, val: decimal.Decimal) -> bool:
-        return isinstance(val, decimal.Decimal) and super()._constraints(val)
+    def __contains__(self, val: decimal.Decimal) -> bool:
+        if not isinstance(val, decimal.Decimal):
+            self._set_error_info()
+            return False
+        return super().__contains__(val)
 
 class IntegralType(NumericType):
     """Abstract class for integral data types."""
 
-    # Regular expressions
-    hexa_re = re.compile(r"\s*(\+|-)?0x")
+    def __contains__(self, val: int) -> bool:
+        if not isinstance(val, int):
+            self._set_error_info()
+            return False
+        return super().__contains__(val)
 
-    def _parse(self, text: str) -> int:
-        """Parse integral value.
+    def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
+        self.range = Ranges([self._range], self.from_yang)
+        super()._handle_properties(stmt, sctx)
 
-        Args:
-            text: String representation of the value.
-        """
+    def parse_value(self, text: str) -> int:
+        """Override superclass method."""
         try:
-            return (int(text, 16) if self.hexa_re.match(text) else int(text))
+            return int(text)
         except ValueError:
             return None
 
-    def _convert_raw(self, raw: str) -> int:
+    def from_raw(self, raw: RawScalar) -> Optional[int]:
         try:
             return int(raw)
         except (ValueError, TypeError):
             return None
 
-    def _constraints(self, val: int) -> bool:
-        return isinstance(val, int) and super()._constraints(val)
+    def from_yang(self, text: str, sctx: SchemaContext = None) -> int:
+        """Override the superclass method."""
+        if text.startswith("0"):
+            base = 16 if text.startswith("0x") else 8
+        else:
+            base = 10
+        try:
+            return int(text, base)
+        except (ValueError, TypeError):
+            return None
 
 class Int8Type(IntegralType):
     """Class representing YANG "int8" type."""
 
-    _range = [[-128,127]] # type: Range
+    _range = [-128,127]
 
 class Int16Type(IntegralType):
     """Class representing YANG "int16" type."""
 
-    _range = [[-32768, 32767]] # type: Range
+    _range = [-32768, 32767]
 
 class Int32Type(IntegralType):
     """Class representing YANG "int32" type."""
 
-    _range = [[-2147483648, 2147483647]]  # type: Range
+    _range = [-2147483648, 2147483647]
 
 class Int64Type(IntegralType):
     """Class representing YANG "int64" type."""
 
-    _range = [[-9223372036854775808, 9223372036854775807]] # type: Range
+    _range = [-9223372036854775808, 9223372036854775807]
 
     def to_raw(self, val: int) -> str:
         return self.canonical_string(val)
@@ -624,28 +613,22 @@ class Int64Type(IntegralType):
 class Uint8Type(IntegralType):
     """Class representing YANG "uint8" type."""
 
-    _range = [[0, 255]] # type: Range
+    _range = [0, 255]
 
 class Uint16Type(IntegralType):
     """Class representing YANG "uint16" type."""
 
-    _range = [[0, 65535]] # type: Range
+    _range = [0, 65535]
 
 class Uint32Type(IntegralType):
     """Class representing YANG "uint32" type."""
 
-    _range = [[0, 4294967295]] # type: Range
+    _range = [0, 4294967295]
 
 class Uint64Type(IntegralType):
     """Class representing YANG "uint64" type."""
 
-    _range = [[0, 18446744073709551615]] # type: Range
-
-    def _convert_raw(self, raw: str) -> int:
-        try:
-            return int(raw)
-        except ValueError:
-            return None
+    _range = [0, 18446744073709551615]
 
     def to_raw(self, val: int) -> str:
         return self.canonical_string(val)
@@ -660,30 +643,31 @@ class UnionType(DataType):
 
     def to_raw(self, val: ScalarValue) -> RawScalar:
         for t in self.types:
-            if t.contains(val):
+            if val in t:
                 return t.to_raw(val)
 
     def canonical_string(self, val: ScalarValue) -> str:
         for t in self.types:
-            if t.contains(val):
+            if val in t:
                 return t.canonical_string(val)
-
-    def _parse(self, text: str) -> Optional[ScalarValue]:
-        for t in self.types:
-            val = t._parse(text)
-            if val is not None and t._constraints(val): return val
         return None
 
-    def _convert_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
+    def parse_value(self, text: str) -> Optional[ScalarValue]:
         for t in self.types:
-            val = t._convert_raw(raw)
-            if val is not None and t._constraints(val): return val
+            val = t.parse_value(text)
+            if val is not None and val in t: return val
         return None
 
-    def _constraints(self, val: Any) -> bool:
+    def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
+        for t in self.types:
+            val = t.from_raw(raw)
+            if val is not None and val in t: return val
+        return None
+
+    def __contains__(self, val: Any) -> bool:
         for t in self.types:
             try:
-                if t._constraints(val): return True
+                if val in t: return True
             except TypeError:
                 continue
         return False

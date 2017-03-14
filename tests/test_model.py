@@ -3,7 +3,7 @@ import pytest
 from decimal import Decimal
 from yangson import DataModel
 from yangson.exceptions import (
-    BadPath, InvalidFeatureExpression, UnknownPrefix, YangTypeError,
+    InvalidSchemaPath, InvalidFeatureExpression, UnknownPrefix, YangTypeError,
     NonexistentInstance, NonexistentSchemaNode, RawTypeError, SchemaError,
     XPathTypeError, InvalidXPath, NotSupported)
 from yangson.schemadata import SchemaContext, FeatureExprParser
@@ -181,8 +181,6 @@ def test_schema(data_model):
     assert ld.type.default == 111
     assert lla.type.default == 11
     assert la.type.parse_value("99") == 99
-    with pytest.raises(YangTypeError):
-        ld.type.parse_value("99")
     assert ca.presence == (not cb.presence) == cc.presence == False
     assert llb.min_elements == 2
     assert llb.max_elements == 3
@@ -199,68 +197,69 @@ def test_tree(data_model):
 
 def test_types(data_model):
     llb = data_model.get_data_node("/test:llistB").type
-    assert llb.contains("192.168.1.254")
-    assert not llb.contains("300.1.1.1")
-    assert not llb.contains("127.0.1")
-    with pytest.raises(YangTypeError):
-        llb.parse_value("1.2.3.4.5")
-    assert llb.contains("2001:db8:0:2::1")
-    assert llb.contains("::1")
-    assert not llb.contains("2001::db8:0:2::1")
+    assert "192.168.1.254" in llb
+    assert "300.1.1.1" not in llb
+    assert "127.0.1" not in llb
+    assert llb.parse_value("1.2.3.4.5") is None
+    assert "2001:db8:0:2::1" in llb
+    assert "::1" in llb
+    assert "2001::db8:0:2::1" not in llb
     ct = data_model.get_data_node("/test:contT")
     i8 = ct.get_child("int8", "test").type
-    assert i8.contains(100) == (not i8.contains(-101)) == True
+    assert 100 in i8
+    assert -101 not in i8
     i16 = ct.get_child("int16", "test").type
-    assert i16.contains(-32768) == (not i16.contains(32768)) == True
+    assert -32768 in i16
+    assert 32768 not in i16
     i32 = ct.get_child("int32", "test").type
-    assert i32.contains(-2147483648) == (not i32.contains(2147483648)) == True
+    assert -2147483648 in i32
+    assert 2147483648 not in i32
     i64 = ct.get_child("int64", "test").type
-    assert (i64.contains(-9223372036854775808) ==
-            (not i64.contains(9223372036854775808)) == True)
+    assert -9223372036854775808 in i64
+    assert 9223372036854775808 not in i64
     assert i64.from_raw("-6378") == -6378
     ui8 = ct.get_child("uint8", "test").type
-    assert ui8.contains(150) == (not ui8.contains(99)) == True
+    assert 150 in ui8
+    assert 99 not in ui8
     ui16 = ct.get_child("uint16", "test").type
-    assert ui16.contains(65535) == (not ui16.contains(-1)) == True
+    assert 65535 in ui16
+    assert -1 not in ui16
     ui32 = ct.get_child("uint32", "test").type
-    assert ui32.contains(4294967295) == (not ui32.contains(-1)) == True
+    assert 4294967295 in ui32
+    assert -1 not in ui32
     ui64 = ct.get_child("uint64", "test").type
-    assert (ui64.contains(18446744073709551615) ==
-            (not ui64.contains(-1)) == True)
+    assert 18446744073709551615 in ui64
+    assert -1 not in ui64
     assert ui64.from_raw("6378") == 6378
-    with pytest.raises(YangTypeError):
-        ui64.from_raw("-6378")
+    assert ui64.from_raw("-6378") == -6378
     d64 = ct.get_child("decimal64", "test").type
     pi = Decimal("3.141592653589793238")
-    assert d64.contains(pi)
-    assert not d64.contains(10)
+    assert pi in d64
+    assert 10 not in d64
     assert d64.from_raw("3.14159265358979323846264338327950288") == pi
     assert d64.canonical_string(Decimal("0")) == "0.0"
     st = ct.get_child("string", "test").type
-    assert st.contains("hello world")
-    assert not st.contains("hello-world")
-    assert not st.contains("h")
-    assert st.contains("9 \tx")
-    assert not st.contains("xx xabcdefg")
+    assert "hello world" in st
+    assert "hello-world" not in st
+    assert "h" not in st
+    assert "9 \tx" in st
+    assert "xx xabcdefg" not in st
     boo = ct.get_child("boolean", "test").type
     assert boo.parse_value("true")
-    assert boo.contains(False)
+    assert False in boo
     assert boo.canonical_string(True) == "true"
-    with pytest.raises(YangTypeError):
-        boo.parse_value("boo")
+    assert boo.parse_value("boo") is None
     en = ct.get_child("enumeration", "test").type
-    assert not en.contains("Mars")
-    assert not en.contains("Deimos")
+    assert "Mars" not in en
+    assert "Deimos" not in en
     assert en.enum["Hearts"] == 101
     bits = ct.get_child("bits", "test").type
-    assert bits.as_int(bits._convert_raw("dos cuatro")) == 10
-    with pytest.raises(YangTypeError):
-        bits.parse_value("un dos")
+    assert bits.as_int(bits.from_raw("dos cuatro")) == 10
+    assert bits.parse_value("un dos") == ("un", "dos")
     assert bits.canonical_string(("cuatro", "dos")) == "dos cuatro"
-    with pytest.raises(YangTypeError):
-        bits.canonical_string("un dos")
-    assert not bits.contains("un")
-    assert not bits.contains("tres")
+    assert bits.canonical_string("un dos") is None
+    assert "un" not in bits
+    assert "tres" not in bits
     assert bits.bit["dos"] == 1
     bin = ct.get_child("binary", "test").type
     kun = "Příliš žluťoučký kůň úpěl ďábelské ódy."

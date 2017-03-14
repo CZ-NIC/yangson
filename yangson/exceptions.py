@@ -19,8 +19,6 @@
 
 This module defines the following exceptions:
 
-* :exc:`BadPath`: Invalid schema path
-* :exc:`BadLeafrefPath`: A leafref path is incorrect.
 * :exc:`BadSchemaNodeType`: A schema node is of a wrong type.
 * :exc:`BadYangLibraryData`: Invalid YANG library data.
 * :exc:`CyclicImports`: Imports of YANG modules form a cycle.
@@ -30,7 +28,11 @@ This module defines the following exceptions:
 * :exc:`InstanceException`: Base class for exceptions related to operations
   on instance nodes.
 * :exc:`InstanceValueError`: The instance value is incompatible with the called method.
+* :exc:`InvalidArgument`: Invalid argument of a statement.
 * :exc:`InvalidFeatureExpression`: Invalid if-feature expression.
+* :exc:`InvalidKeyValue`: Invalid list key or leaf-list value.
+* :exc:`InvalidLeafrefPath`: A leafref path is incorrect.
+* :exc:`InvalidSchemaPath`: Invalid schema path
 * :exc:`InvalidXPath`: An XPath expression is invalid.
 * :exc:`MissingModule`: Abstract exception class – a module is missing.
 * :exc:`ModuleNotFound`: A module not found.
@@ -66,15 +68,23 @@ class YangsonException(Exception):
     """Base class for all Yangson exceptions."""
     pass
 
-class YangTypeError(YangsonException):
-    """A value doesn't match its expected type."""
+class InvalidArgument(YangsonException):
+    """The argument of a statement is invalid."""
 
-    def __init__(self, typ, value):
-        self.typ = typ
+    def __init__(self, stmt: "Statement"):
+        self.statement = stmt
+
+    def __str(self):
+        return str(self.statement)
+
+class InvalidKeyValue(YangsonException):
+    """List key or leaf-list value is invalid."""
+
+    def __init__(self, value: ScalarValue):
         self.value = value
 
-    def __str__(self) -> str:
-        return "{}, expected {}".format(repr(self.value), str(self.typ))
+    def __str(self):
+        return str(self.value)
 
 class InstanceException(YangsonException):
     """Abstract class for exceptions related to operations on instance nodes."""
@@ -185,7 +195,7 @@ class BadYangLibraryData(YangsonException):
     def __str__(self) -> str:
         return self.reason
 
-class BadPath(YangsonException):
+class InvalidSchemaPath(YangsonException):
     """Invalid schema or data path."""
 
     def __init__(self, path: str):
@@ -269,7 +279,7 @@ class BadSchemaNodeType(SchemaNodeException):
     def __str__(self) -> str:
         return super().__str__() + " is not a " + self.expected
 
-class BadLeafrefPath(SchemaNodeException):
+class InvalidLeafrefPath(SchemaNodeException):
     """A leafref path is incorrect."""
     pass
 
@@ -299,12 +309,14 @@ class RawTypeError(RawDataError):
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
 
-    def __init__(self, path: JSONPointer, detail: str):
+    def __init__(self, path: JSONPointer, tag: str, message: str = None):
         self.path = path
-        self.detail = detail
+        self.tag = tag
+        self.message = message
 
     def __str__(self) -> str:
-        return "[{}] {}".format(self.path, self.detail)
+        msg = ": " + self.message if self.message else ""
+        return "[{}]{}{}".format(self.path, self.tag, msg)
 
 class SchemaError(ValidationError):
     """An instance violates a schema constraint."""
@@ -312,6 +324,10 @@ class SchemaError(ValidationError):
 
 class SemanticError(ValidationError):
     """An instance violates a semantic rule."""
+    pass
+
+class YangTypeError(YangsonException):
+    """A scalar value doesn't match its expected type."""
     pass
 
 class StatementNotFound(YangsonException):
@@ -352,3 +368,5 @@ class XPathTypeError(YangsonException):
 
     def __str__(self) -> str:
         return self.value
+
+from .statement import Statement

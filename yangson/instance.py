@@ -35,8 +35,8 @@ from typing import Any, Callable, List, Tuple, Union
 from urllib.parse import unquote
 from .enumerations import ContentType, ValidationScope
 from .exceptions import (
-    BadSchemaNodeType, EndOfInput, InstanceValueError, NonexistentInstance,
-    NonexistentSchemaNode, UnexpectedInput)
+    BadSchemaNodeType, EndOfInput, InstanceValueError, InvalidKeyValue,
+    NonexistentInstance, NonexistentSchemaNode, UnexpectedInput)
 from .instvalue import *
 from .parser import Parser
 from .typealiases import *
@@ -844,7 +844,8 @@ class EntryValue:
 
     def parse_value(self, sn: "DataNode") -> ScalarValue:
         """Let schema node's type parse the receiver's value."""
-        return sn.type.parse_value(self.value)
+        res = sn.type.parse_value(self.value)
+        if res is None: raise InvalidKeyValue(self.value)
 
     def peek_step(self, val: ArrayValue, sn: "DataNode") -> Value:
         """Return entry value addressed by the receiver, and its schema node.
@@ -905,7 +906,10 @@ class EntryKeys:
             knod = sn.get_data_child(*k)
             if knod is None:
                 raise NonexistentSchemaNode(sn.qual_name, *k)
-            res[knod.iname()] = knod.type.parse_value(self.keys[k])
+            kval = knod.type.parse_value(self.keys[k])
+            if kval is None:
+                raise InvalidKeyValue(self.key[k])
+            res[knod.iname()] = kval
         return res
 
     def peek_step(self, val: ArrayValue, sn: "DataNode") -> ObjectValue:

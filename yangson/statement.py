@@ -116,6 +116,12 @@ class Statement:
             stmt = stmt.superstmt
         raise DefinitionNotFound(kw, name)
 
+    def get_error_info(self) -> Tuple[Optional[str], Optional[str]]:
+        """Return receiver's error tag and error message if present."""
+        etag = self.find1("error-app-tag")
+        emsg = self.find1("error-message")
+        return (etag.argument if etag else None, emsg.argument if emsg else None)
+
 class ModuleParser(Parser):
     """Parse YANG modules."""
 
