@@ -185,7 +185,7 @@ However, if we try the same for the other data tree, we don't find the
    >>> i2wd['example-2:bag']['baz'].value
    Traceback (most recent call last):
    ...
-   yangson.instance.NonexistentInstance: [/example-2:bag] member baz
+   yangson.instance.NonexistentInstance: [/example-2:bag] member 'baz'
 
 Why is that? The reason is also hidden in the above definition of
 the *baz* leaf: due to the edit that we made, the **when** expression

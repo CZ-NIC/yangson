@@ -230,7 +230,8 @@ class InstanceNode:
         try:
             del newval[key]
         except (KeyError, IndexError, TypeError):
-            raise NonexistentInstance(self.json_pointer(), "item " + key) from None
+            raise NonexistentInstance(
+                self.json_pointer(), "item '{}'".format(key)) from None
         return self._copy(newval)
 
     def up(self) -> "InstanceNode":
@@ -343,7 +344,8 @@ class InstanceNode:
                 name, sibs, sibs.pop(name), self,
                 self._member_schema_node(name), self.value.timestamp)
         except KeyError:
-            raise NonexistentInstance(self.json_pointer(), "member " + name) from None
+            raise NonexistentInstance(
+                self.json_pointer(), "member '{}'".format(name)) from None
 
     def _entry(self, index: int) -> "ArrayEntry":
         val = self.value
@@ -513,7 +515,8 @@ class ObjectMember(InstanceNode):
             return ObjectMember(name, sibs, newval, self.parinst,
                                 ssn, self.timestamp)
         except KeyError:
-            raise NonexistentInstance(self.json_pointer(), "member " + name) from None
+            raise NonexistentInstance(
+                self.json_pointer(), "member '{}'".format(name)) from None
 
     def look_up(self, **keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
         """Return the entry with matching keys.
