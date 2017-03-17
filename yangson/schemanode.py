@@ -46,8 +46,8 @@ from .datatype import (DataType, EmptyType, LeafrefType, LinkType,
                        RawScalar, IdentityrefType)
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
 from .exceptions import (
-    InvalidLeafrefPath, InvalidArgument, RawMemberError, RawTypeError, SchemaError,
-    SemanticError, WrongArgument, YangsonException, YangTypeError)
+    InvalidLeafrefPath, InvalidArgument, RawMemberError, RawTypeError,
+    SchemaError, SemanticError, YangsonException, YangTypeError)
 from .instvalue import (
     ArrayValue, EntryValue, ObjectValue, StructuredValue, Value)
 from .schemadata import SchemaData, SchemaContext
@@ -226,14 +226,14 @@ class SchemaNode:
         xpp = XPathParser(stmt.argument, sctx)
         mex = xpp.parse()
         if not xpp.at_end():
-            raise WrongArgument(stmt.arg)
+            raise InvalidArgument(stmt.argument)
         self.must.append(Must(mex, *stmt.get_error_info()))
 
     def _when_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         xpp = XPathParser(stmt.argument, sctx)
         wex = xpp.parse()
         if not xpp.at_end():
-            raise WrongArgument(stmt.arg)
+            raise InvalidArgument(stmt.argument)
         self.when = wex
 
     def _mandatory_stmt(self, stmt, sctx: SchemaContext) -> None:
@@ -378,7 +378,7 @@ class InternalNode(SchemaNode):
     def from_raw(self, rval: RawObject, jptr: JSONPointer = "") -> ObjectValue:
         """Override the superclass method."""
         if not isinstance(rval, dict):
-            raise RawTypeError(jptr, "expected object")
+            raise RawTypeError(jptr, "object")
         res = ObjectValue()
         for qn in rval:
             cn = self._iname2qname(qn)
@@ -418,10 +418,10 @@ class InternalNode(SchemaNode):
         for m in inst.value:
             p = p.deriv(m, ctype)
             if isinstance(p, NotAllowed):
-                raise SchemaError(inst, "member-not-allowed", m + (
+                raise SchemaError(inst.json_pointer(), "member-not-allowed", m + (
                     "" if ctype == ContentType.all else " (" + ctype.name + ")"))
         if not p.nullable(ctype):
-            raise SchemaError(inst, "missing-data", str(p))
+            raise SchemaError(inst.json_pointer(), "missing-data", str(p))
 
     def _make_schema_patterns(self) -> None:
         """Build schema pattern for the receiver and its data descendants."""
@@ -679,7 +679,8 @@ class DataNode(SchemaNode):
     def _check_must(self, inst: "InstanceNode") -> None:
         for m in self.must:
             if not m.expression.evaluate(inst):
-                raise SemanticError(inst, m.error_tag, m.error_message)
+                raise SemanticError(inst.json_pointer(), m.error_tag,
+                                        m.error_message)
 
     def _pattern_entry(self) -> SchemaPattern:
         m = Member(self.iname(), self.content_type(), self.when)
@@ -734,7 +735,8 @@ class TerminalNode(SchemaNode):
         """Extend the superclass method."""
         if (scope.value & ValidationScope.syntax.value and
                 inst.value not in self.type):
-            raise SchemaError(inst, self.type.error_tag, self.type.error_message)
+            raise SchemaError(inst.json_pointer(), self.type.error_tag,
+                                  self.type.error_message)
         if (isinstance(self.type, LinkType) and        # referential integrity
                 scope.value & ValidationScope.semantics.value and
                 self.type.require_instance):
@@ -743,7 +745,7 @@ class TerminalNode(SchemaNode):
             except YangsonException:
                 tgt = []
             if not tgt:
-                raise SemanticError(inst, "instance-required")
+                raise SemanticError(inst.json_pointer(), "instance-required")
 
     def _default_value(self, inst: "InstanceNode", ctype: ContentType,
                        lazy: bool) -> "InstanceNode":
@@ -849,10 +851,10 @@ class SequenceNode(DataNode):
 
     def _check_cardinality(self, inst: "InstanceNode") -> None:
         if len(inst.value) < self.min_elements:
-            raise SemanticError(inst, "too-few-elements")
+            raise SemanticError(inst.json_pointer(), "too-few-elements")
         if (self.max_elements is not None and
             len(inst.value) > self.max_elements):
-            raise SemanticError(inst, "too-many-elements")
+            raise SemanticError(inst.json_pointer(), "too-many-elements")
 
     def _post_process(self) -> None:
         super()._post_process()
@@ -879,7 +881,7 @@ class SequenceNode(DataNode):
     def from_raw(self, rval: RawList, jptr: JSONPointer = "") -> ArrayValue:
         """Override the superclass method."""
         if not isinstance(rval, list):
-            raise RawTypeError(jptr, "expected array")
+            raise RawTypeError(jptr, "array")
         res = ArrayValue()
         i = 0
         for en in rval:
@@ -930,10 +932,10 @@ class ListNode(SequenceNode, InternalNode):
             try:
                 kval = tuple([en[k] for k in self._key_members])
             except KeyError as e:
-                raise SchemaError(
-                    inst._entry(i), "list-key-missing", e.args[0]) from None
+                raise SchemaError(inst._entry(i).json_pointer(),
+                                      "list-key-missing", e.args[0]) from None
             if kval in ukeys:
-                raise SemanticError(inst, "non-unique-key", repr(
+                raise SemanticError(inst.json_pointer(), "non-unique-key", repr(
                     kval[0] if len(kval) < 2 else kval))
             ukeys.add(kval)
 
@@ -945,7 +947,7 @@ class ListNode(SequenceNode, InternalNode):
             uval = tuple([den._peek_schema_route(sr) for sr in unique])
             if None not in uval:
                 if uval in uvals:
-                    raise SemanticError(inst, "data-not-unique")
+                    raise SemanticError(inst.json_pointer(), "data-not-unique")
                 else:
                     uvals.add(uval)
 
@@ -1121,7 +1123,7 @@ class LeafNode(DataNode, TerminalNode):
 
     def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self._default = self.type.from_yang(stmt.argument, sctx)
-        if self._default is None: raise InvalidArgument(stmt)
+        if self._default is None: raise InvalidArgument(stmt.argument)
 
 class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
@@ -1140,11 +1142,11 @@ class LeafListNode(SequenceNode, TerminalNode):
     def _check_list_props(self, inst: "InstanceNode") -> None:
         if (self.content_type() == ContentType.config and
             len(set(inst.value)) < len(inst.value)):
-            raise SemanticError(inst, "repeated-leaf-list-value")
+            raise SemanticError(inst.json_pointer(), "repeated-leaf-list-value")
 
     def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         val = self.type.parse_value(stmt.argument)
-        if val is None: raise InvalidArgument(stmt)
+        if val is None: raise InvalidArgument(stmt.argument)
         if self._default is None:
             self._default = ArrayValue([val])
         else:

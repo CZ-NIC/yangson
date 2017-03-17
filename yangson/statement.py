@@ -26,7 +26,7 @@ This module implements the following classes:
 from typing import Dict, List, Optional, Tuple
 from .exceptions import (
     DefinitionNotFound, EndOfInput, StatementNotFound, UnexpectedInput,
-    WrongArgument)
+    InvalidArgument)
 from .parser import Parser
 from .typealiases import YangIdentifier
 
@@ -168,7 +168,7 @@ class ModuleParser(Parser):
                     else chop[0] + cls.unescape_map[chop[1][0]] +
                     cls.unescape(chop[1][1:]))
         except KeyError:
-            raise WrongArgument(text) from None
+            raise InvalidArgument(text) from None
 
     def opt_separator(self) -> bool:
         """Parse an optional separator and return ``True`` if found.

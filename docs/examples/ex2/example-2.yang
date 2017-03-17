@@ -15,7 +15,9 @@ module example-2 {
       }
       leaf in-words {
         type string {
-          pattern "[a-z][a-z\\-]+[a-z]";
+          pattern "[a-z][a-z\\-]+[a-z]" {
+	    error-message "must be number in words";
+	  }
         }
       }
     }

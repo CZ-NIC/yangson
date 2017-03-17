@@ -55,7 +55,6 @@ This module defines the following exceptions:
 * :exc:`UnexpectedInput`: Unexpected input.
 * :exc:`UnknownPrefix`: Unknown namespace prefix.
 * :exc:`ValidationError`: Abstract exception class for instance validation errors.
-* :exc:`WrongArgument`: Statement argument is invalid.
 * :exc:`XPathTypeError`: A subexpression is of a wrong type.
 * :exc:`YangsonException`: Base class for all Yangson exceptions.
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
@@ -71,11 +70,11 @@ class YangsonException(Exception):
 class InvalidArgument(YangsonException):
     """The argument of a statement is invalid."""
 
-    def __init__(self, stmt: "Statement"):
-        self.statement = stmt
+    def __init__(self, arg: str):
+        self.argument = arg
 
-    def __str(self):
-        return str(self.statement)
+    def __str__(self):
+        return self.argument
 
 class InvalidKeyValue(YangsonException):
     """List key or leaf-list value is invalid."""
@@ -83,7 +82,7 @@ class InvalidKeyValue(YangsonException):
     def __init__(self, value: ScalarValue):
         self.value = value
 
-    def __str(self):
+    def __str__(self):
         return str(self.value)
 
 class InstanceException(YangsonException):
@@ -254,7 +253,8 @@ class SchemaNodeException(YangsonException):
         self.qn = qn
 
     def __str__(self) -> str:
-        return str(self.qn)
+        return ("/" if self.qn[0] is None else
+                    "{}:{}".format(self.qn[1], self.qn[0]))
 
 class NonexistentSchemaNode(SchemaNodeException):
     """A schema node doesn't exist."""
@@ -262,12 +262,12 @@ class NonexistentSchemaNode(SchemaNodeException):
     def __init__(self, qn: QualName, name: YangIdentifier,
                  ns: YangIdentifier = None):
         super().__init__(qn)
-        self.qn = ("{}:".format(ns) if ns else "") + name
+        self.name = name
+        self.ns = ns
 
     def __str__(self) -> str:
-        loc = ("under " + super().__str__() if self.schema_node.parent
-                   else "top level")
-        return "{} – {}".format(loc, self.qn)
+        prefix = "" if self.ns == self.qn[1] else self.ns + ":"
+        return "{}{} under {}".format(prefix, self.name, super().__str__())
 
 class BadSchemaNodeType(SchemaNodeException):
     """A schema node is of a wrong type."""
@@ -299,12 +299,12 @@ class RawMemberError(RawDataError):
 class RawTypeError(RawDataError):
     """Raw value is of an incorrect type."""
 
-    def __init__(self, jptr: JSONPointer, detail: str):
+    def __init__(self, jptr: JSONPointer, expected: str):
         super().__init__(jptr)
-        self.detail = detail
+        self.expected = expected
 
     def __str__(self):
-        return "[{}] {}".format(self.jptr, self.detail)
+        return "[{}] expected {}".format(self.jptr, self.expected)
 
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
@@ -316,7 +316,7 @@ class ValidationError(YangsonException):
 
     def __str__(self) -> str:
         msg = ": " + self.message if self.message else ""
-        return "[{}]{}{}".format(self.path, self.tag, msg)
+        return "[{}] {}{}".format(self.path, self.tag, msg)
 
 class SchemaError(ValidationError):
     """An instance violates a schema constraint."""
@@ -351,15 +351,6 @@ class DefinitionNotFound(YangsonException):
     def __str__(self) -> str:
         return "{} {}".format(self.keyword, self.name)
 
-class WrongArgument(YangsonException):
-    """Statement argument is invalid."""
-
-    def __init__(self, arg: str):
-        self.arg = arg
-
-    def __str__(self) -> str:
-        return self.arg
-
 class XPathTypeError(YangsonException):
     """The value of an XPath (sub)expression is of a wrong type."""
 
@@ -368,5 +359,3 @@ class XPathTypeError(YangsonException):
 
     def __str__(self) -> str:
         return self.value
-
-from .statement import Statement

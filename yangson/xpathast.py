@@ -523,7 +523,10 @@ class FuncReMatch(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         lres, rres = self._eval_ops_string(xctx)
-        return re.match(XMLToPython(rres), lres) is not None
+        try:
+            return re.match(XMLToPython(rres), lres) is not None
+        except:
+            raise InvalidArgument(rres) from None
 
 class FuncRound(UnaryExpr):
 

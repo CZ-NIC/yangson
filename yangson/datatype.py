@@ -48,7 +48,6 @@ import base64
 import decimal
 import numbers
 import re
-from pyxb.utils.xmlre import XMLToPython
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 from .constraint import Lengths, Pattern, Ranges
@@ -122,9 +121,9 @@ class DataType:
         return self.__class__.__name__[:-4].lower()
 
     def _set_error_info(self, error_tag: str = None, error_message: str = None):
-        self.error_tag = error_tag if error_tag else "str(self)"
-        if error_message:
-            self.error_message = error_message
+        self.error_tag = error_tag if error_tag else "invalid-type"
+        self.error_message = (error_message if error_message else
+                                  "expected " + str(self))
 
     @classmethod
     def _resolve_type(cls, stmt: Statement, sctx: SchemaContext) -> "DataType":
@@ -160,7 +159,7 @@ class DataType:
             dfst = tdef.find1("default")
             if dfst:
                 res.default = res.from_yang(dfst.argument, tsc)
-                if res.default is None: raise InvalidArgument(dfst)
+                if res.default is None: raise InvalidArgument(dfst.argument)
         res._handle_restrictions(stmt, sctx)
         return res
 
@@ -304,7 +303,7 @@ class StringType(DataType):
             try:
                 self.length.combine_with(lstmt.argument, *lstmt.get_error_info())
             except:
-                raise InvalidArgument(lstmt) from None
+                raise InvalidArgument(lstmt.argument) from None
         for pst in stmt.find_all("pattern"):
             invm = pst.find1("modifier", "invert-match") is not None
             self.patterns.append(Pattern(
@@ -512,7 +511,7 @@ class NumericType(DataType):
             try:
                 self.range.combine_with(rstmt.argument, *rstmt.get_error_info())
             except:
-                raise InvalidArgument(rstmt) from None
+                raise InvalidArgument(rstmt.argument) from None
 
 class Decimal64Type(NumericType):
     """Class representing YANG "decimal64" type."""

@@ -205,29 +205,30 @@ happens to be the key of the *foo* list:
    >>> broken1.validate()
    Traceback (most recent call last):
    ...
-   yangson.schemanode.SemanticError: [/example-2:bag/foo] non-unique list key: (6,)
+   yangson.schemanode.SemanticError: [/example-2:bag/foo] non-unique-key: 6
 
 Correct! Both entries of the *foo* list now have the same key, namely ``6``.
 
 Other thing that YANG doesn't permit is to install a leaf value that
-doesn't match the leaf's type, as in the following example:
+doesn't conform to the leaf's type, as in the following example:
 
 .. doctest::
 
    >>> inw.update('INFINITY').validate()
    Traceback (most recent call last):
    ...
-   yangson.schemanode.SchemaError: [/example-2:bag/foo/1/in-words] invalid type: 'INFINITY'
+   yangson.schemanode.SchemaError: [/example-2:bag/foo/1/in-words] invalid-type: must be number in words
 
 This is again correct because the new value ``INFINITY`` doesn't match
-the regular expression pattern in the definition of the *in-words* leaf.
+the regular expression pattern in the definition of the *in-words*
+leaf. Note that the traceback displays the custom error message that
+is defined for the pattern.
 
-Note also that validation needn't be performed only on entire data
-trees, it can start from any instance node and validate just its
-subtree.
+And note also that validation needn't be performed only on entire data
+trees, it can start from any instance node (``inw`` in this case) and
+check just its subtree.
 
-As the third and last sabotage, we now delete a leaf that's defined as
-mandatory in the data model:
+And finally, we delete a leaf that's defined as mandatory in the data model:
 
 .. doctest::
 
@@ -235,4 +236,4 @@ mandatory in the data model:
    >>> broken2.validate()
    Traceback (most recent call last):
    ...
-   yangson.schemanode.SchemaError: [/example-2:bag] missing: member 'bar'
+   yangson.schemanode.SchemaError: [/example-2:bag] missing-data: member 'bar'

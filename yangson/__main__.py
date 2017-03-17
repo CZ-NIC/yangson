@@ -124,7 +124,7 @@ def main(ylib: str = None, path: List[str] = ["."],
         print("Illegal object member:" , str(e), file=sys.stderr)
         return 3
     except RawTypeError as e:
-        print("Wrong type:" , str(e), file=sys.stderr)
+        print("Invalid type:" , str(e), file=sys.stderr)
         return 3
     try:
         i.validate(scope, ctype)

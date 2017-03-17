@@ -23,6 +23,7 @@ import re
 from typing import Callable, List, Optional, Tuple, Union
 from pyxb.utils.xmlre import XMLToPython
 
+from .exceptions import InvalidArgument
 from .typealiases import *
 from .xpathast import Expr
 
@@ -113,7 +114,10 @@ class Pattern(Constraint):
         """Initialize the class instance."""
         super().__init__(error_tag, error_message)
         self.invert_match = invert_match
-        self.regex = re.compile(XMLToPython(pattern))
+        try:
+            self.regex = re.compile(XMLToPython(pattern))
+        except:
+            raise InvalidArgument(pattern) from None
 
 class Must(Constraint):
     """Class representing the constraint specified by a **must** statement."""
