@@ -117,15 +117,49 @@ all :class:`~.schemanode.TerminalNode` instances.
 	 >>> boolean_t.name is None
 	 True
 
+   .. attribute:: error_tag
+
+      This attribute records the error tag of the most recent type
+      validation that failed.
+
+   .. attribute:: error_message
+
+      This attribute records the error message specified for the most
+      recent type validation that failed.
+
+      .. doctest::
+
+	 >>> 'abc' in string_t
+	 False
+	 >>> string_t.error_tag
+	 'invalid-type'
+	 >>> string_t.error_message
+	 'xes and y'
+
    .. rubric:: Public Methods
 
-   .. method:: from_raw(raw: RawScalar) -> ScalarValue
+   .. method:: __contains__(val: ScalarValue) -> bool
 
-      Convert a :term:`raw value` *raw* to a :term:`cooked value`
-      according to the rules of the receiver data type.
+      Return ``True`` if the argument *val* contains a valid value of
+      the receiver type, otherwise return ``False``.
 
-      This method raises :exc:`~.YangTypeError` if the value in *raw*
-      cannot be converted.
+      This method enables the Python operators ``in`` and ``not in``
+      for use with types.
+
+      .. doctest::
+
+	 >>> "Dopey" in enumeration_t
+	 True
+	 >>> "SnowWhite" not in enumeration_t
+	 True
+
+   .. automethod:: __str__
+
+   .. method:: from_raw(raw: RawScalar) -> Optional[ScalarValue]
+
+      Return :term:`cooked value` converted from a :term:`raw value`
+      *raw* according to the rules of the receiver data type, or
+      ``None`` if the value in *raw* cannot be converted.
 
       .. doctest::
 
@@ -134,16 +168,14 @@ all :class:`~.schemanode.TerminalNode` instances.
 	 >>> bits_t.from_raw(0) is None
 	 True
 
-   .. method:: to_raw(val: ScalarValue) -> RawScalar
+   .. method:: to_raw(val: ScalarValue) -> Optional[RawScalar]
 
-      Convert a :term:`cooked value` *val* to a :term:`raw value`
-      according to the rules of the receiver data type.. This method
-      is inverse to :meth:`from_raw`, and the result can be encoded
+      Return a :term:`raw value` converted from a :term:`cooked value`
+      *val* according to the rules of the receiver data type, or
+      ``None`` if the conversion fails. This method is essentially
+      inverse to :meth:`from_raw`. The returned value can be encoded
       into JSON text by using the standard library functions
       :func:`json.dump` and :func:`json.dumps`.
-
-      This method raises :exc:`~.YangTypeError` if the value in *val*
-      cannot be converted.
 
       .. doctest::
 
@@ -153,28 +185,24 @@ all :class:`~.schemanode.TerminalNode` instances.
 	 >>> bits_t.to_raw((2,3)) is None
 	 True
 
-   .. method:: parse_value(text: str) -> ScalarValue
+   .. method:: parse_value(text: str) -> Optional[ScalarValue]
 
-      Return a value of receiver's type parsed from the string *text*.
-
-      This method raises :exc:`~.YangTypeError` if the string in *text*
-      cannot be parsed into a valid value of receiver's type.
+      Return a value of receiver's type parsed from the argument
+      *text*, or ``None`` if parsing fails.
 
       .. doctest::
 
-	 >>> boolean_t.parse_value("true")
+	 >>> boolean_t.parse_value('true')
 	 True
-	 >>> boolean_t.parse_value(1) is None
+	 >>> boolean_t.parse_value('foo') is None
 	 True
 
-   .. method:: canonical_string(val: ScalarValue) -> str
+   .. method:: canonical_string(val: ScalarValue) -> Optional[str]
 
-      Return canonical string representations of *val* as defined for
+      Return canonical string representation of *val* as defined for
+      the receiver type, or ``None`` if *val* is not a valid value of
       the receiver type. See sec. `9.1`_ in [RFC7950]_ for more
       information about canonical forms.
-
-      This method raises :exc:`~.YangTypeError` if *val* is not a valid
-      value of receiver's type.
 
       This method is a partial inverse of :meth:`parse_value`, the
       latter method is however able to parse non-canonical string
@@ -188,40 +216,21 @@ all :class:`~.schemanode.TerminalNode` instances.
 	 >>> decimal64_t.canonical_string(e)
 	 '2.7183'
 
-   .. method:: from_yang(text: str, sctx: SchemaContext) -> ScalarValue
+   .. method:: from_yang(text: str, sctx: SchemaContext) -> Optional[ScalarValue]
 
-      Return a value of receiver's type parsed from a string
-      appearing in a YANG module. The *sctx* argument is the
-      :class:`~.schemadata.SchemaContext` in which *text* is
-      interpreted as a scalar value.
+      Return a value of receiver's type parsed from a string appearing
+      in a YANG module, or ``None`` if parsing fails. The *sctx*
+      argument is the :class:`~.schemadata.SchemaContext` in which
+      *text* is interpreted as a scalar value.
 
-      This method raises :exc:`~.YangTypeError` if the string in *text*
-      cannot be parsed into a valid value of receiver's type in the
-      given schema context.
-
-      This method is useful, e.g., for parsing arguments of the **default**
-      statement.
+      This method is mainly useful for parsing arguments of the
+      **default** statement.
 
       .. doctest::
 
 	 >>> sctx = SchemaContext(dm.schema_data, 'example-5-a', ('example-5-a', ''))
 	 >>> identityref_t.from_yang('ex5b:derived-identity', sctx)
 	 ('derived-identity', 'example-5-b')
-
-   .. method:: __contains__(val: ScalarValue) -> bool
-
-      Return ``True`` if the argument *val* contains a valid value of
-      the receiver type, otherwise return ``False``.
-
-      This method enables the Python operators ``in`` and ``not in``
-      for use with instances of this class.
-
-      .. doctest::
-
-	 >>> "Dopey" in enumeration_t
-	 True
-	 >>> "SnowWhite" not in enumeration_t
-	 True
 
    .. method:: yang_type() -> YangIdentifier
 

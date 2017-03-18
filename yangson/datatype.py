@@ -93,7 +93,7 @@ class DataType:
         """
         if isinstance(raw, str): return raw
 
-    def to_raw(self, val: ScalarValue) -> RawScalar:
+    def to_raw(self, val: ScalarValue) -> Optional[RawScalar]:
         """Return a raw value ready to be serialized in JSON."""
         return val
 
@@ -108,11 +108,12 @@ class DataType:
         """
         return self.from_raw(text)
 
-    def canonical_string(self, val: ScalarValue) -> str:
+    def canonical_string(self, val: ScalarValue) -> Optional[str]:
         """Return canonical form of a value."""
         return str(val)
 
-    def from_yang(self, text: str, sctx: SchemaContext = None) -> ScalarValue:
+    def from_yang(self, text: str, sctx: SchemaContext
+                      = None) -> Optional[ScalarValue]:
         """Parse value specified in a YANG module."""
         return self.parse_value(text)
 
@@ -177,7 +178,7 @@ class DataType:
 class EmptyType(DataType):
     """Class representing YANG "empty" type."""
 
-    def canonical_string(self, val: Tuple[None]) -> str:
+    def canonical_string(self, val: Tuple[None]) -> Optional[str]:
         return ""
 
     def __contains__(self, val: Tuple[None]) -> bool:
@@ -254,7 +255,7 @@ class BitsType(DataType):
         for bit in set(self.bit) - new:
             del self.bit[bit]
 
-    def canonical_string(self, val: Tuple[str]) -> str:
+    def canonical_string(self, val: Tuple[str]) -> Optional[str]:
         try:
             items = [(self.bit[b], b) for b in val]
         except KeyError:
@@ -283,7 +284,7 @@ class BooleanType(DataType):
         if text == "true": return True
         if text == "false": return False
 
-    def canonical_string(self, val: bool) -> str:
+    def canonical_string(self, val: bool) -> Optional[str]:
         if val is True: return "true"
         if val is False: return "false"
 
@@ -342,7 +343,7 @@ class BinaryType(StringType):
     def to_raw(self, val: bytes) -> str:
         return self.canonical_string(val)
 
-    def canonical_string(self, val: bytes) -> str:
+    def canonical_string(self, val: bytes) -> Optional[str]:
         return base64.b64encode(val).decode("ascii")
 
 class EnumerationType(DataType):
@@ -413,7 +414,7 @@ class LeafrefType(LinkType):
         self.path = XPathParser(
             stmt.find1("path", required=True).argument, sctx).parse()
 
-    def canonical_string(self, val: ScalarValue) -> str:
+    def canonical_string(self, val: ScalarValue) -> Optional[str]:
         return self.ref_type.canonical_string(val)
 
     def __contains__(self, val: ScalarValue) -> bool:
@@ -477,7 +478,7 @@ class IdentityrefType(DataType):
     def to_raw(self, val: QualName) -> str:
         return self.canonical_string(val)
 
-    def from_yang(self, text: str, sctx: SchemaContext) -> QualName:
+    def from_yang(self, text: str, sctx: SchemaContext) -> Optional[QualName]:
         """Override the superclass method."""
         try:
             return sctx.schema_data.translate_pname(text, self.sctx.text_mid)
@@ -490,7 +491,7 @@ class IdentityrefType(DataType):
             self.bases.append(
                 sctx.schema_data.translate_pname(b.argument, sctx.text_mid))
 
-    def canonical_string(self, val: ScalarValue) -> str:
+    def canonical_string(self, val: ScalarValue) -> Optional[str]:
         """Return canonical form of a value."""
         return "{}:{}".format(val[1], val[0])
 
@@ -535,7 +536,7 @@ class Decimal64Type(NumericType):
     def to_raw(self, val: decimal.Decimal) -> str:
         return self.canonical_string(val)
 
-    def canonical_string(self, val: decimal.Decimal) -> str:
+    def canonical_string(self, val: decimal.Decimal) -> Optional[str]:
         return "0.0" if val == 0 else str(val).rstrip("0")
 
     def __contains__(self, val: decimal.Decimal) -> bool:
@@ -570,7 +571,7 @@ class IntegralType(NumericType):
         except (ValueError, TypeError):
             return None
 
-    def from_yang(self, text: str, sctx: SchemaContext = None) -> int:
+    def from_yang(self, text: str, sctx: SchemaContext = None) -> Optional[int]:
         """Override the superclass method."""
         if text.startswith("0"):
             base = 16 if text.startswith("0x") else 8
@@ -640,7 +641,7 @@ class UnionType(DataType):
             if val in t:
                 return t.to_raw(val)
 
-    def canonical_string(self, val: ScalarValue) -> str:
+    def canonical_string(self, val: ScalarValue) -> Optional[str]:
         for t in self.types:
             if val in t:
                 return t.canonical_string(val)

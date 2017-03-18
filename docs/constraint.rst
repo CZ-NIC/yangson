@@ -98,9 +98,7 @@ The *constraint* module implements the following classes:
          >>> 5 in iints
 	 True
 
-   .. method:: __str__() -> str
-
-      Return string representation of the receiver.
+   .. automethod:: __str__
 
       .. doctest::
 

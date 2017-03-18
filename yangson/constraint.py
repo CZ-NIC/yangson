@@ -124,8 +124,8 @@ class Pattern(Constraint):
                      error_tag: str = None,
                      error_message: str = None):
         """Initialize the class instance."""
-        super().__init__(
-            error_tag, error_message if error_message else "pattern " + pattern)
+        super().__init__(error_tag, error_message if error_message else
+                             "pattern '{}'".format(pattern))
         self.invert_match = invert_match
         try:
             self.regex = re.compile(XMLToPython(pattern))

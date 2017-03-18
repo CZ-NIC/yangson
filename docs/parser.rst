@@ -49,12 +49,12 @@ The *parser* module implements the following class:
 
    .. rubric:: Public Methods
 
-   .. method:: __str__() -> str
+   .. automethod:: __str__
 
-      String representation of a parser instance is the :attr:`input`
-      string with the character ``§`` inserted at the position of
-      :attr:`offset`. In the following example, the position is right
-      at the start of the input text.
+      The returned value is the :attr:`input` string with the
+      character ``§`` inserted at the position of :attr:`offset`. In
+      the following example, the position is right at the start of the
+      input text.
 
       .. doctest:
 

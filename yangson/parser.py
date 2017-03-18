@@ -63,7 +63,7 @@ class Parser:
         """Current position in the input text."""
 
     def __str__(self) -> str:
-        """Return string representation of the parser state."""
+        """Return string representation of the receiver's input text and state."""
         return self.input[:self.offset] + "§" + self.input[self.offset:]
 
     def adv_skip_ws(self) -> bool:

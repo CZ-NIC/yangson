@@ -13,7 +13,9 @@ module example-5-a {
   typedef my-string {
     type string {
       length "2..4";
-      pattern "x*y";
+      pattern "x*y" {
+	error-message "xes and y";
+      }
     }
     default "xxy";
   }
