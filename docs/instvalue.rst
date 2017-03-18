@@ -32,6 +32,8 @@ data structures with additional attributs and methods:
   its last modification (to be used in HTTP ``Last-Modified``
   headers).
 
+.. rubric:: Type Aliases
+
 .. data:: Value
 
    This type alias covers all possible types of cooked values of an

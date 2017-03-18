@@ -48,10 +48,6 @@ __ https://en.wikipedia.org/wiki/Abstract_syntax_tree
 
 * :class:`Expr`: XPath 1.0 expression with YANG 1.0 extensions.
 
-The module also defines the following exception:
-
-* :exc:`XPathTypeError`: A subexpression is of a wrong type.
-
 .. class:: Expr
 
    An abstract superclass for nodes of the XPath abstract syntax
@@ -69,7 +65,7 @@ The module also defines the following exception:
       :class:`~.instance.InstanceNode` that is used as the context
       node for XPath evaluation.
 
-      This method raises :exc:`XPathTypeError` if a subexpression
+      This method raises :exc:`~.XPathTypeError` if a subexpression
       evaluates to a value whose type is not allowed at a given
       place.
 
@@ -85,11 +81,6 @@ expressions with YANG 1.1 extensions.
 The module defines the following classes:
 
 * :class:`XPathParser`: Recursive-descent parser for XPath expressions.
-
-The module also defines the following exceptions:
-
-* :exc:`InvalidXPath`: An XPath expression is invalid.
-* :exc:`NotSupported`: An XPath 1.0 feature isn't supported.
 
 .. class:: XPathParser(text: str, sctx: SchemaContext) -> Expr
 
@@ -115,9 +106,9 @@ The module also defines the following exceptions:
 
       This method may raise the following exceptions:
 
-      * :exc:`InvalidXPath` – if the input XPath expression is
+      * :exc:`~.InvalidXPath` – if the input XPath expression is
 	invalid.
-      * :exc:`NotSupported` – if the input XPath expression contains a
+      * :exc:`~.NotSupported` – if the input XPath expression contains a
 	feature that isn't supported by the implementation, such as
 	the ``preceding::`` axis.
       * other exceptions that are defined in the :mod:`.parser`

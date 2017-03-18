@@ -18,7 +18,7 @@ Schema Nodes
 
    os.chdir("../..")
 
-The *schemanode* module defines the following classes:
+The *schemanode* module implements the following classes:
 
 * :class:`SchemaNode`: Abstract class for schema nodes.
 * :class:`InternalNode`: Abstract class for schema nodes that have children.
@@ -42,19 +42,6 @@ The *schemanode* module defines the following classes:
   or **anyxml** nodes.
 * :class:`AnydataNode`: YANG **anydata** or **anyxml** node.
 * :class:`AnydataNode`: YANG **anydata** or **anyxml** node.
-
-This module also defines the following exceptions:
-
-* :exc:`SchemaNodeException`: Abstract exception class for schema node errors.
-* :exc:`NonexistentSchemaNode`: A schema node doesn't exist.
-* :exc:`BadSchemaNodType`: A schema node is of a wrong type.
-* :exc:`BadLeafrefPath`: A leafref path is incorrect.
-* :exc:`RawDataError`: Abstract exception class for errors in raw data.
-* :exc:`RawMemberError`: Object member in raw data doesn't exist in the schema.
-* :exc:`RawTypeError`: Raw data value is of incorrect type.
-* :exc:`ValidationError`: Abstract exeption class for instance validation errors.
-* :exc:`SchemaError`: An instance violates a schema constraint, see :term:`schema error`.
-* :exc:`SemanticError`: An instance violates a semantic rule, see :term:`semantic error`.
 
 Doctest__ snippets for this module use the data model and instance
 document from :ref:`sec-ex4`.
@@ -239,9 +226,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       the instance node for the cooked value is intended (if known,
       otherwise the second argument needn't be present).
 
-      This method raises :exc:`NonexistentSchemaNode` if *rval*
+      This method raises :exc:`~.NonexistentSchemaNode` if *rval*
       contains a member that is not defined in the schema, and
-      :exc:`~.datatype.YangTypeError` if a scalar value inside *rval*
+      :exc:`~.YangTypeError` if a scalar value inside *rval*
       is of incorrect type.
 
       .. doctest::
@@ -530,9 +517,9 @@ action, input or output node, or notification).
       Pointer [RFC6901]_ of the entry for the cooked value is intended
       (if known, otherwise the second argument needn't be present).
 
-      This method raises :exc:`NonexistentSchemaNode` if *rval*
+      This method raises :exc:`~.NonexistentSchemaNode` if *rval*
       contains a member that is not defined in the schema, and
-      :exc:`~.datatype.YangTypeError` if a scalar value inside *rval*
+      :exc:`~.YangTypeError` if a scalar value inside *rval*
       is of incorrect type.
 
       .. doctest::

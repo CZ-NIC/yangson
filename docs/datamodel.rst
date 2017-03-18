@@ -36,13 +36,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    The class constructor may raise the following exceptions:
 
-   * :exc:`BadYangLibraryData` – if YANG library data is invalid.
-   * :exc:`FeaturePrerequisiteError` – If a pre-requisite feature
+   * :exc:`~.BadYangLibraryData` – if YANG library data is invalid.
+   * :exc:`~.FeaturePrerequisiteError` – If a pre-requisite feature
      isn't supported.
-   * :exc:`MultipleImplementedRevisions` – If multiple revisions of the
+   * :exc:`~.MultipleImplementedRevisions` – If multiple revisions of the
      same module are listed in YANG library with conformance type
      ``implement``.
-   * :exc:`ModuleNotFound` – If a YANG module specified in YANG
+   * :exc:`~.ModuleNotFound` – If a YANG module specified in YANG
      library cannot be found in any of the directories specified in
      *mod_path*.
 

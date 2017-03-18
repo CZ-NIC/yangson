@@ -21,12 +21,6 @@ This module implements the following classes:
 * :class:`ModuleParser`: Recursive-descent parser for YANG modules.
 * :class:`Statement`: YANG statements.
 
-The module also defines the following exceptions:
-
-* :exc:`DefinitionNotFound`: Requested definition does not exist.
-* :exc:`StatementNotFound`: Required statement does not exist.
-* :exc:`WrongArgument`: Statement argument is invalid.
-
 Doctest__ snippets for this module use the YANG module *example-5-a*,
 see :ref:`sec-ex5`.
 
@@ -100,7 +94,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       If *pref* is ``None``, only built-in statements match. The last
       argument, *required*, controls what happens if a matching
       substatement is not found: if *required* is ``True``, then
-      :exc:`StatementNotFound` is raised, otherwise ``None`` is
+      :exc:`~.StatementNotFound` is raised, otherwise ``None`` is
       returned. If *arg* is ``None``, then the arguments of
       substatements are not taken into account.
 
@@ -141,7 +135,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       ``typedef``, and controls whtehr the method looks for the
       definition of a grouping or typedef, respectively.
 
-      This method raises :exc:`DefinitionNotFound` if the search
+      This method raises :exc:`~.DefinitionNotFound` if the search
       is not successful.
 
       .. doctest::
@@ -164,7 +158,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. automethod:: parse
 
-      This method raises :exc:`WrongArgument` if a statement argument
+      This method raises :exc:`~.WrongArgument` if a statement argument
       is invalid. It may also raise parsing exceptions defined in the
       :mod:`.parser` module.
 

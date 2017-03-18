@@ -7,6 +7,7 @@ Supporting Modules
    typealiases
    enumerations
    exceptions
+   constraint
    parser
    statement
    xpath

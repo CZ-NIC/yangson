@@ -14,12 +14,6 @@ The *parser* module implements the following class:
 
 * :class:`Parser`: Recursive-descent parser.
 
-This module also defines the following exceptions:
-
-* :exc:`EndOfInput`: Unexpected end of input.
-* :exc:`ParserException`: Base class for parser exceptions.
-* :exc:`UnexpectedInput`: Unexpected input.
-
 .. rubric:: Type Alias
 
 .. autodata:: TransitionTable
@@ -93,8 +87,8 @@ This module also defines the following exceptions:
 
       This method may raise these exceptions:
 
-      * :exc:`EndOfInput` – if the parser is past the end of input.
-      * :exc:`UnexpectedInput` – if the next character is different
+      * :exc:`~.EndOfInput` – if the parser is past the end of input.
+      * :exc:`~.UnexpectedInput` – if the next character is different
 	from *c*.
 
       .. doctest::
@@ -160,7 +154,7 @@ This module also defines the following exceptions:
 
       The *required* flag controls what happens if the regular
       expression doesn't match: if it is ``True``, then
-      :exc:`UnexpectedInput` is raised, otherwise ``None`` is
+      :exc:`~.UnexpectedInput` is raised, otherwise ``None`` is
       returned.
 
       The optional *meaning* argument can be used to describe what the
@@ -176,7 +170,7 @@ This module also defines the following exceptions:
       Parse one character from the set of alternatives specified in
       *chset*. If a match is found, :attr:`offset` is advanced by one
       position, and the matching character is returned. Otherwise,
-      :exc:`UnexpectedInput` is raised.
+      :exc:`~.UnexpectedInput` is raised.
 
       .. doctest::
 
@@ -187,7 +181,7 @@ This module also defines the following exceptions:
 
       Return the next input character without advancing
       :attr:`offset`. If the parser is past the end of input,
-      :exc:`EndOfInput` is raised.
+      :exc:`~.EndOfInput` is raised.
 
       .. doctest::
 
@@ -264,7 +258,7 @@ This module also defines the following exceptions:
    .. method:: up_to(term: str) -> str
 
       Parse and return a segment of input text up to the terminating
-      string *term*. Raise :exc:`EndOfInput` if *term* does not occur
+      string *term*. Raise :exc:`~.EndOfInput` if *term* does not occur
       in the rest of the input string.
 
       .. doctest::

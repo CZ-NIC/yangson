@@ -24,15 +24,6 @@ The *instance* module implements the following classes:
 * :class:`ArrayEntry`: Instance node that is an array entry.
 * :class:`InstanceRoute`: Route into an instance value.
 
-This module also defines the following exceptions:
-
-* :exc:`InstanceException`: Base class for exceptions related to
-  operations on instance nodes.
-* :exc:`InstanceValueError`: The instance value is incompatible with
-  the called method.
-* :exc:`NonexistentInstance`: Attempt to access an instance node that
-  doesn't exist.
-
 Doctest__ snippets for this module use the data model and instance
 document from :ref:`sec-ex2`.
 
@@ -208,8 +199,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       The value returned by this method is either an
       :class:`ObjectMember` or :class:`ArrayEntry`.
 
-      This method raises :exc:`InstanceValueError` if receiver's value
-      is not structured, and :exc:`NonexistentInstance` if the member
+      This method raises :exc:`~.InstanceValueError` if receiver's value
+      is not structured, and :exc:`~.NonexistentInstance` if the member
       or entry identified by *key* doesn't exist in the actual
       receiver's value.
 
@@ -258,7 +249,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 ['/example-2:bag/foo/0', '/example-2:bag/foo/1']
 
       An attempt to iterate over an :class:`InstanceNode` that has a
-      scalar value raises :exc:`InstanceValueError`.
+      scalar value raises :exc:`~.InstanceValueError`.
 
    .. method:: is_internal() -> bool
 
@@ -281,8 +272,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       If member *name* doesn't exist in the receiver's value, it is
       created (provided that the schema permits it).
 
-      This method raises :exc:`InstanceValueError` if the receiver's
-      value is not an object, and :exc:`NonexistentSchemaNode` if the
+      This method raises :exc:`~.InstanceValueError` if the receiver's
+      value is not an object, and :exc:`~.NonexistentSchemaNode` if the
       schema doesn't permit member *name*.
 
       .. doctest::
@@ -305,8 +296,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       Return a new instance node that is an exact copy of the
       receiver, except that item *key* is deleted from its value.
 
-      This method raises :exc:`InstanceValueError` if the receiver's
-      value is a scalar, and:exc:`NonexistentInstance` if the item
+      This method raises :exc:`~.InstanceValueError` if the receiver's
+      value is a scalar, and:exc:`~.NonexistentInstance` if the item
       isn't present in the actual receiver's value.
 
       .. doctest::
@@ -332,8 +323,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       name`\ s of a list key, and ``value`` is the corresponding list
       key value.
 
-      This method raises :exc:`InstanceValueError` if the receiver is
-      not a YANG list, and :exc:`NonexistentInstance` if no entry with
+      This method raises :exc:`~.InstanceValueError` if the receiver is
+      not a YANG list, and :exc:`~.NonexistentInstance` if no entry with
       matching keys exists.
 
       .. doctest::
@@ -346,7 +337,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       Return an instance node corresponding to the receiver's parent.
 
-      This method raises :exc:`NonexistentInstance` if the receiver is
+      This method raises :exc:`~.NonexistentInstance` if the receiver is
       the root of the data tree and thus has no parent.
 
       .. doctest::
@@ -407,8 +398,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> irt = dm.parse_resource_id('/example-2:bag/foo=3/in-words')
 	 >>> irt2 = dm.parse_instance_id('/example-2:bag/baz')
 
-      This method raises :exc:`InstanceValueError` if *iroute* isn't
-      compatible with the schema, and :exc:`NonexistentInstance` if
+      This method raises :exc:`~.InstanceValueError` if *iroute* isn't
+      compatible with the schema, and :exc:`~.NonexistentInstance` if
       the target instance doesn't exist in the receiver's value.
 
       .. doctest::
@@ -472,9 +463,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       The method returns ``None`` if the validation succeeds,
       otherwise one of the following exceptions is raised:
 
-      * :exc:`.schemanode.SchemaError` – if the value doesn't conform to
+      * :exc:`~.SchemaError` – if the value doesn't conform to
 	the schema,
-      * :exc:`.schemanode.SemanticError` – if the value violates a
+      * :exc:`~.SemanticError` – if the value violates a
 	semantic constraint.
 
       .. doctest::
@@ -554,9 +545,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       Return the instance node corresponding to sibling member *name*.
 
-      This method raises :exc:`NonexistentSchemaNode` if member *name*
+      This method raises :exc:`~.NonexistentSchemaNode` if member *name*
       is not permitted by the parent's schema, and
-      :exc:`NonexistentInstance` if sibling member *name* doesn't
+      :exc:`~.NonexistentInstance` if sibling member *name* doesn't
       exist.
 
       .. doctest::
@@ -605,7 +596,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       Return an instance node corresponding to the previous entry in
       the parent array.
 
-      This method raises :exc:`NonexistentInstance` if the receiver
+      This method raises :exc:`~.NonexistentInstance` if the receiver
       is the first entry of the parent array.
 
       .. doctest::
@@ -622,7 +613,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       Return an instance node corresponding to the next entry in the
       parent array.
 
-      This method raises :exc:`NonexistentInstance` if the receiver is
+      This method raises :exc:`~.NonexistentInstance` if the receiver is
       the last entry of the parent array.
 
       .. doctest::

@@ -23,20 +23,6 @@ The *context* module implements the following classes:
 * :class:`SchemaData`: Repository of data model structures and methods.
 * :class:`FeatureExprParser`: Parser for **if-feature** expressions.
 
-This module also defines the following exceptions:
-
-* :exc:`BadPath`: Invalid :term:`schema path` or :term:`data path`.
-* :exc:`BadYangLibraryData`: Broken YANG library data.
-* :exc:`CyclicImports`: YANG modules are imported in a cyclic fashion.
-* :exc:`FeaturePrerequisiteError`: Pre-requisite feature is not supported.
-* :exc:`InvalidFeatureExpression`: Invalid **if-feature** expression.
-* :exc:`ModuleNotFound`: A module or submodule registered in YANG library is not found.
-* :exc:`ModuleNotImplemented`: A module is not implemented in the data model.
-* :exc:`ModuleNotImported`: A module is not imported.
-* :exc:`ModuleNotRegistered`: An imported module is not registered in YANG library.
-* :exc:`MultipleImplementedRevisions`: A module has multiple implemented revisions.
-* :exc:`UnknownPrefix`: Unknown namespace prefix.
-
 Doctest__ snippets for this module use the data model from :ref:`sec-ex3`.
 
 __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
@@ -195,7 +181,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       Note that *Yangson* uses main module module names rather than
       URIs as namespace identifiers.
 
-      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      This method raises :exc:`~.ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model.
 
       .. doctest::
@@ -208,7 +194,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       Return :term:`module identifier` of the most recent revision of
       a module or submodule *name*.
 
-      The method raises :exc:`ModuleNotRegistered` if no (sub)module
+      The method raises :exc:`~.ModuleNotRegistered` if no (sub)module
       of that name is part of the data model.
 
       .. doctest::
@@ -223,9 +209,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       module or submodule context, in which the prefix is resolved, is
       specified by the *mid* argument.
 
-      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      This method raises :exc:`~.ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
-      :exc:`UnknownPrefix` if *prefix* is not declared in that
+      :exc:`~.UnknownPrefix` if *prefix* is not declared in that
       (sub)module.
 
       .. doctest::
@@ -243,9 +229,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       resolved. If *pname* has no prefix, *mid* is used as the second
       component of the result.
 
-      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      This method raises :exc:`~.ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
-      :exc:`UnknownPrefix` if the prefix specified in *pname* is not
+      :exc:`~.UnknownPrefix` if the prefix specified in *pname* is not
       declared in that (sub)module.
 
       .. doctest::
@@ -263,9 +249,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       namespace of the module identified by *mid* is assigned by
       default.
 
-      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      This method raises :exc:`~.ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
-      :exc:`UnknownPrefix` if the prefix specified in *pname* is not
+      :exc:`~.UnknownPrefix` if the prefix specified in *pname* is not
       declared in that (sub)module.
 
       .. doctest::
@@ -280,9 +266,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       name`. The argument *sctx* contains a :class:`SchemaContext` in
       which *ni* is resolved.
 
-      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      This method raises :exc:`~.ModuleNotRegistered` if the (sub)module
       identified by the :attr:`~.SchemaContext.text_mid` attribute of
-      *sctx* is not part of the data model, and :exc:`UnknownPrefix`
+      *sctx* is not part of the data model, and :exc:`~.UnknownPrefix`
       if the prefix specified in *ni* is not declared in that
       (sub)module.
 
@@ -301,11 +287,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       This method may raise the following exceptions:
 
-      * :exc:`ModuleNotImplemented` – if module *imod* is not
+      * :exc:`~.ModuleNotImplemented` – if module *imod* is not
 	implemented.
-      * :exc:`ModuleNotRegistered` – if (sub)module identified by
+      * :exc:`~.ModuleNotRegistered` – if (sub)module identified by
 	*mid* is not registered in YANG library.
-      * :exc:`ModuleNotImported` – if *imod* is not imported in the
+      * :exc:`~.ModuleNotImported` – if *imod* is not imported in the
 	(sub)module identified by *mid*.
 
       .. doctest::
@@ -320,9 +306,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       :term:`schema route`.  The argument *sctx* specifies the
       schema context in which *sni* is to be resolved.
 
-      This method raises :exc:`ModuleNotRegistered` if the (sub)module
+      This method raises :exc:`~.ModuleNotRegistered` if the (sub)module
       identified by *mid* is not part of the data model, and
-      :exc:`UnknownPrefix` if a prefix specified in *sni* is not
+      :exc:`~.UnknownPrefix` if a prefix specified in *sni* is not
       declared in that (sub)module.
 
       .. doctest::
@@ -337,7 +323,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       argument to a :term:`schema route` or :term:`data route`,
       respectively.
 
-      This method raises :exc:`BadPath` if *path* is not a valid
+      This method raises :exc:`~.BadPath` if *path* is not a valid
       schema or data path.
 
       .. doctest::
@@ -357,14 +343,14 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       This method may raise the following exceptions:
 
-      * :exc:`ValueError` – if the *stmt* statement is neither
+      * :exc:`~.ValueError` – if the *stmt* statement is neither
 	**uses** nor **type** statement.
-      * :exc:`ModuleNotRegistered` – if the (sub)module identified by
+      * :exc:`~.ModuleNotRegistered` – if the (sub)module identified by
 	*mid* is not part of the data model.
-      * :exc:`UnknownPrefix` – if the prefix specified in the argument
+      * :exc:`~.UnknownPrefix` – if the prefix specified in the argument
 	of the *stmt* statement is not declared in the *mid*
 	(sub)module.
-      * :exc:`DefinitionNotFound` – if the corresponding definition
+      * :exc:`~.DefinitionNotFound` – if the corresponding definition
 	statement is not found.
 
       .. doctest::
@@ -402,11 +388,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       This method may raise the following exceptions:
 
-      * :exc:`InvalidFeatureExpression` – if the argument of an
+      * :exc:`~.InvalidFeatureExpression` – if the argument of an
 	**if-feature** statement is not syntactically correct.
-      * :exc:`ModuleNotRegistered` – if the (sub)module identified by
+      * :exc:`~.ModuleNotRegistered` – if the (sub)module identified by
 	*mid* is not part of the data model.
-      * :exc:`UnknownPrefix` – if a prefix of a feature name is not
+      * :exc:`~.UnknownPrefix` – if a prefix of a feature name is not
 	declared in the *mid* (sub)module.
 
       .. doctest::
@@ -428,7 +414,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    * *schema_data* - 
    * *mid* – value for :attr:`mid` attribute.
 
-   The constructor may raise :exc:`ModuleNotRedistered` if the
+   The constructor may raise :exc:`~.ModuleNotRedistered` if the
    (sub)module identified by *mid* is not part of the data model.
 
    .. rubric:: Instance Attributes
@@ -456,9 +442,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       This method may raise the following exceptions:
 
-      * :exc:`InvalidFeatureExpression` – if the input is not a
+      * :exc:`~.InvalidFeatureExpression` – if the input is not a
 	syntactically correct feature expression.
-      * :exc:`UnknownPrefix` – if a prefix of a feature name is not
+      * :exc:`~.UnknownPrefix` – if a prefix of a feature name is not
 	declared.
 
       .. doctest::

@@ -43,10 +43,6 @@ The *datatype* module defines the following classes:
 * :class:`Uint64Type`: YANG **uint64** type.
 * :class:`UnionType`: YANG **union** type.
 
-The module also defines the following exceptions:
-
-* :exc:`YangTypeError`: A scalar value is of incorrect type.
-
 Doctest__ snippets for this module use the data model from :ref:`sec-ex5`.
 
 __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
@@ -128,7 +124,7 @@ all :class:`~.schemanode.TerminalNode` instances.
       Convert a :term:`raw value` *raw* to a :term:`cooked value`
       according to the rules of the receiver data type.
 
-      This method raises :exc:`YangTypeError` if the value in *raw*
+      This method raises :exc:`~.YangTypeError` if the value in *raw*
       cannot be converted.
 
       .. doctest::
@@ -146,7 +142,7 @@ all :class:`~.schemanode.TerminalNode` instances.
       into JSON text by using the standard library functions
       :func:`json.dump` and :func:`json.dumps`.
 
-      This method raises :exc:`YangTypeError` if the value in *val*
+      This method raises :exc:`~.YangTypeError` if the value in *val*
       cannot be converted.
 
       .. doctest::
@@ -161,7 +157,7 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       Return a value of receiver's type parsed from the string *text*.
 
-      This method raises :exc:`YangTypeError` if the string in *text*
+      This method raises :exc:`~.YangTypeError` if the string in *text*
       cannot be parsed into a valid value of receiver's type.
 
       .. doctest::
@@ -177,7 +173,7 @@ all :class:`~.schemanode.TerminalNode` instances.
       the receiver type. See sec. `9.1`_ in [RFC7950]_ for more
       information about canonical forms.
 
-      This method raises :exc:`YangTypeError` if *val* is not a valid
+      This method raises :exc:`~.YangTypeError` if *val* is not a valid
       value of receiver's type.
 
       This method is a partial inverse of :meth:`parse_value`, the
@@ -199,7 +195,7 @@ all :class:`~.schemanode.TerminalNode` instances.
       :class:`~.schemadata.SchemaContext` in which *text* is
       interpreted as a scalar value.
 
-      This method raises :exc:`YangTypeError` if the string in *text*
+      This method raises :exc:`~.YangTypeError` if the string in *text*
       cannot be parsed into a valid value of receiver's type in the
       given schema context.
 
@@ -218,7 +214,7 @@ all :class:`~.schemanode.TerminalNode` instances.
       the receiver type, otherwise return ``False``.
 
       This method enables the Python operators ``in`` and ``not in``
-      for testing whether a given value belongs to a YANG type.
+      for use with instances of this class.
 
       .. doctest::
 
