@@ -50,7 +50,7 @@ import numbers
 import re
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from .constraint import Lengths, Pattern, Ranges
+from .constraint import Intervals, Pattern
 from .exceptions import InvalidArgument, ParserException, YangTypeError
 from .schemadata import SchemaContext
 from .instance import InstanceNode, InstanceIdParser, InstanceRoute
@@ -185,8 +185,8 @@ class EmptyType(DataType):
         self._set_error_info()
         return False
 
-    def parse_value(self, text: str) -> Tuple[None]:
-        return None if text else (None,)
+    def parse_value(self, text: str) -> Optional[Tuple[None]]:
+        if test == "": return (None,)
 
     def from_raw(self, raw: RawScalar) -> Optional[Tuple[None]]:
         if raw == [None]: return (None,)
@@ -274,7 +274,7 @@ class BooleanType(DataType):
         """Override superclass method."""
         if isinstance(raw, bool): return raw
 
-    def parse_value(self, text: str) -> bool:
+    def parse_value(self, text: str) -> Optional[bool]:
         """Parse boolean value.
 
         Args:
@@ -292,7 +292,7 @@ class StringType(DataType):
 
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
-        self.length = Lengths([[0, 4294967295]])
+        self.length = Intervals([[0, 4294967295]], error_message="invalid length")
         super().__init__(sctx, name)
         self.patterns = [] # type: List[Pattern]
         self.invert_patterns = [] # type: List[Pattern]
@@ -300,10 +300,7 @@ class StringType(DataType):
     def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         lstmt = stmt.find1("length")
         if lstmt:
-            try:
-                self.length.combine_with(lstmt.argument, *lstmt.get_error_info())
-            except:
-                raise InvalidArgument(lstmt.argument) from None
+            self.length.restrict_with(lstmt.argument, *lstmt.get_error_info())
         for pst in stmt.find_all("pattern"):
             invm = pst.find1("modifier", "invert-match") is not None
             self.patterns.append(Pattern(
@@ -508,10 +505,7 @@ class NumericType(DataType):
     def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         rstmt = stmt.find1("range")
         if rstmt:
-            try:
-                self.range.combine_with(rstmt.argument, *rstmt.get_error_info())
-            except:
-                raise InvalidArgument(rstmt.argument) from None
+            self.range.restrict_with(rstmt.argument, *rstmt.get_error_info())
 
 class Decimal64Type(NumericType):
     """Class representing YANG "decimal64" type."""
@@ -526,7 +520,8 @@ class Decimal64Type(NumericType):
         self._epsilon = decimal.Decimal(10) ** -fd
         quot = decimal.Decimal(10**fd)
         lim = decimal.Decimal(9223372036854775808)
-        self.range = Ranges([[-lim / quot, (lim - 1) / quot]], self.from_yang)
+        self.range = Intervals([[-lim / quot, (lim - 1) / quot]],
+                                   self.from_yang, error_message="not in range")
         super()._handle_properties(stmt, sctx)
 
     def from_raw(self, raw: RawScalar) -> Optional[decimal.Decimal]:
@@ -559,10 +554,10 @@ class IntegralType(NumericType):
         return super().__contains__(val)
 
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
-        self.range = Ranges([self._range], self.from_yang)
+        self.range = Intervals([self._range], error_message="not in range")
         super()._handle_properties(stmt, sctx)
 
-    def parse_value(self, text: str) -> int:
+    def parse_value(self, text: str) -> Optional[int]:
         """Override superclass method."""
         try:
             return int(text)

@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU Lesser General Public License along
 # with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Classes representing YANG schema nodes.
+"""YANG schema nodes.
 
 This module implements the following classes:
 
