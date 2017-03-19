@@ -214,9 +214,7 @@ class SchemaNode:
         pass
 
     def _config_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
-        if stmt.argument == "true" and self.parent.config:
-            self._ctype = ContentType.all
-        elif stmt.argument == "false":
+        if stmt.argument == "false":
             self._ctype = ContentType.nonconfig
 
     def _description_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
@@ -1044,10 +1042,6 @@ class ChoiceNode(InternalNode):
         super()._post_process()
         if self._mandatory:
             self.parent._add_mandatory_child(self)
-
-    def _config_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
-        if stmt.argument == "false":
-            self._ctype = ContentType.nonconfig
 
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
         res = []
