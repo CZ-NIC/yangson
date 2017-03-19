@@ -25,14 +25,21 @@ document from :ref:`sec-ex1`.
 
 __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
-.. class:: DataModel(yltxt: str, mod_path: List[str])
+.. class:: DataModel(yltxt: str, mod_path: List[str], \
+	   description: str = None)
 
    This class provides a basic user-level entry point to the *Yangson*
    library.
 
    The constructor argument *yltxt* is a string with JSON-encoded YANG
    library data [RFC7895]_, and *mod_path* is a list of filesystem
-   directories in which *Yangson* searches for YANG modules.
+   directories in which *Yangson* searches for YANG modules (by
+   default it is only the current directory).
+
+   The *description* argument allows for adding a description text to
+   the entire data model. If it is ``None``, then a default
+   description is added which contains the ``module-set-id`` value
+   from the YANG library data.
 
    The class constructor may raise the following exceptions:
 
@@ -55,14 +62,14 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. rubric:: Public Methods
 
-   .. classmethod:: from_file(name: str, mod_path: List[str] = ["."] ) \
-		    -> DataModel
+   .. classmethod:: from_file(name: str, mod_path: List[str] = ["."], \
+		    description: str = None) -> DataModel
 
       Initialize the data model from a file containing JSON-encoded
       YANG library data and return the :class:`DataModel`
-      instance. The *name* argument is the name of that file, and
-      *mod_path* has the same meaning as in the class constructor. By
-      default, *mod_path* includes only the current directory.
+      instance. The *name* argument is the name of that file. The
+      remaining two arguments are passed unchanged to the
+      :class:`DataModel` class constructor.
 
       This method may raise the same exceptions as the class
       constructor.
@@ -218,7 +225,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
        .. doctest::
 
 	  >>> len(dm.schema_digest())
-	  134
+	  208
 
 .. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
 .. _7.5.1: https://tools.ietf.org/html/rfc7950#section-7.5.1

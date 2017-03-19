@@ -38,12 +38,14 @@ class DataModel:
     """Basic user-level entry point to Yangson library."""
 
     @classmethod
-    def from_file(cls, name: str, mod_path: List[str] = ["."]) -> "DataModel":
+    def from_file(cls, name: str, mod_path: List[str] = ["."],
+                      description: str = None) -> "DataModel":
         """Initialize the data model from a file with YANG library data.
 
         Args:
             name: Name of a file with YANG library data.
             mod_path: List of directories where to look for YANG modules.
+            description:  Optional description of the data model.
 
         Returns:
             The data model instance.
@@ -53,14 +55,16 @@ class DataModel:
         """
         with open(name, encoding="utf-8") as infile:
             yltxt = infile.read()
-        return cls(yltxt, mod_path)
+        return cls(yltxt, mod_path, description)
 
-    def __init__(self, yltxt: str, mod_path: List[str]):
+    def __init__(self, yltxt: str, mod_path: List[str] = ["."],
+                     description: str = None):
         """Initialize the class instance.
         
         Args:
             yltxt: JSON text with YANG library data.
             mod_path: List of directories where to look for YANG modules.
+            description: Optional description of the data model.
 
         Raises:
             BadYangLibraryData: If YANG library data is invalid.
@@ -79,6 +83,8 @@ class DataModel:
             raise BadYangLibraryData(str(e)) from None
         self.schema_data = SchemaData(yl, mod_path)
         self._build_schema()
+        self.schema.description = description if description else (
+            "Data model ID: " + yl["ietf-yang-library:modules-state"]["module-set-id"])
 
     def module_set_id(self) -> str:
         """Compute unique id of YANG modules comprising the data model.
