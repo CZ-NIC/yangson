@@ -389,8 +389,11 @@ class InternalNode(SchemaNode):
 
     def _client_digest(self) -> Dict[str, Any]:
         res = super()._client_digest()
-        res["children"] = {
-            c.iname(): c._client_digest() for c in self.data_children() }
+        rc = res["children"] = {}
+        for c in self.data_children():
+            cdig = rc[c.iname()] = c._client_digest()
+            if self.config and not c.config:
+                cdig["config"] = False
         return res
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
