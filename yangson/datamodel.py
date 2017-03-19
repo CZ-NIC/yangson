@@ -155,7 +155,9 @@ class DataModel:
         Returns:
             Condensed information about the schema in JSON format.
         """
-        return json.dumps(self.schema._client_digest())
+        res = self.schema._client_digest()
+        res["config"] = True
+        return json.dumps(res)
 
     def _build_schema(self) -> None:
         for mid in self.schema_data._module_sequence:
