@@ -22,6 +22,7 @@ This module implements the following classes:
 * SchemaNode: Abstract class for schema nodes.
 * InternalNode: Abstract class for schema nodes that have children.
 * GroupNode: Anonymous group of schema nodes.
+* SchemaTreeNode: Root node of a schema tree.
 * DataNode: Abstract class for data nodes.
 * TerminalNode: Abstract class for schema nodes that have no children.
 * ContainerNode: YANG container node.
@@ -143,6 +144,9 @@ class SchemaNode:
         dst = stmt.find1("description")
         if dst is not None:
             self.description = dst.argument
+
+    def _yang_class(self) -> str:
+        return self.__class__.__name__[:-4].lower()
 
     def _client_digest(self) -> Dict[str, Any]:
         """Return dictionary of receiver's properties suitable for clients."""
@@ -373,7 +377,7 @@ class InternalNode(SchemaNode):
         for child in self.children:
             if isinstance(child, DataNode):
                 res.append(child)
-            elif not isinstance(child, SchemaTree):
+            elif not isinstance(child, SchemaTreeNode):
                 res.extend(child.data_children())
         return res
 
@@ -398,6 +402,8 @@ class InternalNode(SchemaNode):
             cdig = rc[c.iname()] = c._client_digest()
             if self.config and not c.config:
                 cdig["config"] = False
+        for c in [c for c in self.children if isinstance(c, SchemaTreeNode)]:
+            rc[c.iname()] = c._client_digest()
         return res
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
@@ -605,11 +611,12 @@ class GroupNode(InternalNode):
             res.extend(c._flatten())
         return res
 
-class SchemaTree(GroupNode):
+class SchemaTreeNode(GroupNode):
     """Root node of a schema tree."""
 
-    def _yang_class(self) -> str:
-        return "root"
+    def data_parent(self) -> InternalNode:
+        """Override the superclass method."""
+        return self.parent
 
 class DataNode(SchemaNode):
     """Abstract superclass for all data nodes."""
@@ -660,9 +667,6 @@ class DataNode(SchemaNode):
             if not sroute:
                 return (InstanceRoute(route[:i]), InstanceRoute(route[i:]))
             if i >= len(route): return None
-
-    def _yang_class(self) -> str:
-        return self.__class__.__name__[:-4].lower()
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
                       ctype: ContentType) -> None:
@@ -1208,7 +1212,7 @@ class AnyxmlNode(AnyContentNode):
     """Anyxml node."""
     pass
 
-class RpcActionNode(SchemaTree):
+class RpcActionNode(SchemaTreeNode):
     """RPC or action node."""
 
     def __init__(self):
@@ -1235,7 +1239,7 @@ class RpcActionNode(SchemaTree):
         """Handle RPC or action output statement."""
         self.get_child("output")._handle_substatements(stmt, sctx)
 
-class InputNode(SchemaTree):
+class InputNode(SchemaTreeNode):
     """RPC or action input node."""
 
     def __init__(self, ns):
@@ -1251,7 +1255,7 @@ class InputNode(SchemaTree):
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
 
-class OutputNode(SchemaTree):
+class OutputNode(SchemaTreeNode):
     """RPC or action output node."""
 
     def __init__(self, ns):
@@ -1267,7 +1271,7 @@ class OutputNode(SchemaTree):
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "ro"
 
-class NotificationNode(SchemaTree):
+class NotificationNode(SchemaTreeNode):
     """Notification node."""
 
     def __init__(self):

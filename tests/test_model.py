@@ -71,9 +71,9 @@ tree = """+--rw (test:choiA)?
 +---n testb:noA
 |  +--ro testb:leafO? <boolean>
 +---x testb:rpcA
-   +--ro testb:input
+   +--ro input
    |  +--ro testb:leafK? <typA(int16)>
-   +--ro testb:output
+   +--ro output
       +--ro testb:llistC* <boolean>
 """
 

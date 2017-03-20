@@ -23,7 +23,7 @@ The *schemanode* module implements the following classes:
 * :class:`SchemaNode`: Abstract class for schema nodes.
 * :class:`InternalNode`: Abstract class for schema nodes that have children.
 * :class:`GroupNode`: Anonymous group of schema nodes.
-* :class:`SchemaTree`: Root node of a schema tree.
+* :class:`SchemaTreeNode`: Root node of a schema tree.
 * :class:`DataNode`: Abstract class for data nodes.
 * :class:`TerminalNode`: Abstract class for schema nodes that have no children.
 * :class:`ContainerNode`: YANG **container** node.
@@ -328,7 +328,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       data nodes that are either direct children of the receiver, or
       that have no ancestor data nodes that are also descendants of
       the receiver. Child nodes that are instances of
-      :class:`SchemaTree` (i.e. rpc, action, input, output or
+      :class:`SchemaTreeNode` (i.e. rpc, action, input, output or
       notification node) are not included. See also
       :meth:`get_data_child`.
 
@@ -344,7 +344,7 @@ used as anonymous groups of schema nodes contained in an **augment**
 or **uses** statement if this statement is conditional, i.e. has a
 **when** substatement.
 
-.. class:: SchemaTree
+.. class:: SchemaTreeNode
 
 This class is a subclass of :class:`GroupNode`. Each instance
 represents the root node of a schema tree (main tree, RPC operation or
