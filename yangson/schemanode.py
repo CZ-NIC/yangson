@@ -139,6 +139,11 @@ class SchemaNode:
         """
         raise NotImplementedError
 
+    def _get_description(self, stmt: Statement):
+        dst = stmt.find1("description")
+        if dst is not None:
+            self.description = dst.argument
+
     def _client_digest(self) -> Dict[str, Any]:
         """Return dictionary of receiver's properties suitable for clients."""
         res = { "kind": self._yang_class() }
@@ -265,7 +270,6 @@ class SchemaNode:
         "config": "_config_stmt",
         "container": "_container_stmt",
         "default": "_default_stmt",
-        "description": "_description_stmt",
         "identity": "_identity_stmt",
         "ietf-netconf-acm:default-deny-all": "_nacm_default_deny_stmt",
         "ietf-netconf-acm:default-deny-write": "_nacm_default_deny_stmt",
@@ -472,6 +476,7 @@ class InternalNode(SchemaNode):
         if not sctx.schema_data.if_features(stmt, sctx.text_mid): return
         node.name = stmt.argument
         node.ns = sctx.default_ns
+        node._get_description(stmt)
         self._add_child(node)
         node._handle_substatements(stmt, sctx)
 
