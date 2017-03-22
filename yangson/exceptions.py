@@ -117,14 +117,13 @@ class NonexistentInstance(InstanceException):
 class ParserException(YangsonException):
     """Base class for parser exceptions."""
 
-    def __init__(self, coord: Tuple[int, int]):
-        self.coord = coord
+    def __init__(self, parser: "Parser"):
+        self.parser = parser
 
     def __str__(self) -> str:
-        """Print line and column number.
-        """
+        """Print parser state."""
         if "\n" in self.parser.input:
-            return "line {0}, column {1}".format(*self.coord)
+            return "line {0}, column {1}".format(*self.parser.line_column())
         return str(self.parser)
 
 class EndOfInput(ParserException):
@@ -134,8 +133,8 @@ class EndOfInput(ParserException):
 class UnexpectedInput(ParserException):
     """Unexpected input."""
 
-    def __init__(self, coord: Tuple[int, int], expected: str = None):
-        super().__init__(coord)
+    def __init__(self, parser: "Parser", expected: str = None):
+        super().__init__(parser)
         self.expected = expected
 
     def __str__(self) -> str:
@@ -154,8 +153,8 @@ class InvalidXPath(ParserException):
 class NotSupported(ParserException):
     """Exception to be raised for unimplemented XPath features."""
 
-    def __init__(self, coord: Tuple[int, int], feature: str):
-        super().__init__(coord)
+    def __init__(self, parser: "Parser", feature: str):
+        super().__init__(parser)
         self.feature = feature
 
     def __str__(self) -> str:
@@ -359,3 +358,5 @@ class XPathTypeError(YangsonException):
 
     def __str__(self) -> str:
         return self.value
+
+from .parser import Parser

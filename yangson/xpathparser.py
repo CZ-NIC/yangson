@@ -89,10 +89,10 @@ class XPathParser(Parser):
                 try:
                     next = self.peek()
                 except EndOfInput:
-                    raise InvalidXPath(self.line_column())
+                    raise InvalidXPath(self)
             if next != "=":
                 if negate:
-                    raise InvalidXPath(self.line_column())
+                    raise InvalidXPath(self)
                 return op1
             self.adv_skip_ws()
             op2 = self._relational_expr()
@@ -198,9 +198,9 @@ class XPathParser(Parser):
                 prim = getattr(self, mname)()
             except AttributeError:
                 if fname in ("id", "lang", "namespace-uri"):
-                    raise NotSupported(self.line_column(),
+                    raise NotSupported(self,
                         "function '{}()'".format(fname)) from None
-                raise InvalidXPath(self.line_column()) from None
+                raise InvalidXPath(self) from None
         self.char(")")
         self.skip_ws()
         return FilterExpr(prim, self._predicates())
@@ -249,7 +249,7 @@ class XPathParser(Parser):
         try:
             yid = self.yang_identifier()
         except UnexpectedInput:
-            raise InvalidXPath(self.line_column()) from None
+            raise InvalidXPath(self) from None
         ws = self.skip_ws()
         try:
             next = self.peek()
@@ -268,11 +268,11 @@ class XPathParser(Parser):
                     if yid in ("attribute", "following",
                                "namespace", "preceding"):
                         raise NotSupported(
-                            self.line_column(), "axis '{}::'".format(yid)) from None
-                    raise InvalidXPath(self.line_column()) from None
+                            self, "axis '{}::'".format(yid)) from None
+                    raise InvalidXPath(self) from None
                 return (axis, self._qname())
             if ws:
-                raise InvalidXPath(self.line_column())
+                raise InvalidXPath(self)
             nsp = self.sctx.schema_data.prefix2ns(yid, self.sctx.text_mid)
             loc = self.yang_identifier()
             self.skip_ws()
@@ -286,8 +286,8 @@ class XPathParser(Parser):
             self.skip_ws()
             return None
         elif typ in ("comment", "processing-instruction", "text"):
-            raise NotSupported("node type '{}()'".format(typ))
-        raise InvalidXPath(self.line_column())
+            raise NotSupported(self, "node type '{}()'".format(typ))
+        raise InvalidXPath(self)
 
     def _qname(self) -> Optional[QualName]:
         """Parse XML QName."""
@@ -335,7 +335,7 @@ class XPathParser(Parser):
             self.skip_ws()
             res.append(self.parse())
         if len(res) < 2:
-            raise InvalidXPath(self.line_column())
+            raise InvalidXPath(self)
         return FuncConcat(res)
 
     def _func_contains(self) -> FuncContains:

@@ -88,7 +88,7 @@ class Parser:
         if self.peek() == c:
             self.offset += 1
         else:
-            raise UnexpectedInput(self.line_column(), "char " + c)
+            raise UnexpectedInput(self, "char " + c)
 
     def dfa(self, ttab: TransitionTable, init: int = 0) -> int:
         """Run a DFA and return the final (negative) state.
@@ -133,7 +133,7 @@ class Parser:
             self.offset = mo.end()
             return mo.group()
         if required:
-            raise UnexpectedInput(self.line_column(), meaning)
+            raise UnexpectedInput(self, meaning)
 
     def one_of(self, chset: str) -> str:
         """Parse one character form the specified set.
@@ -151,7 +151,7 @@ class Parser:
         if res in chset:
             self.offset += 1
             return res
-        raise UnexpectedInput(self.line_column(), "one of " + chset)
+        raise UnexpectedInput(self, "one of " + chset)
 
     def peek(self) -> str:
         """Return the next character without advancing offset.
@@ -162,7 +162,7 @@ class Parser:
         try:
             return self.input[self.offset]
         except IndexError:
-            raise EndOfInput(self.line_column())
+            raise EndOfInput(self)
 
     def prefixed_name(self) -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
         """Parse identifier with an optional colon-separated prefix."""
@@ -215,7 +215,7 @@ class Parser:
         """
         end = self.input.find(term, self.offset)
         if end < 0:
-            raise EndOfInput(self.line_column())
+            raise EndOfInput(self)
         res = self.input[self.offset:end]
         self.offset = end + 1
         return res

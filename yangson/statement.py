@@ -144,12 +144,12 @@ class ModuleParser(Parser):
         res = self.statement()
         if res.keyword not in ["module", "submodule"]:
             self.offset = start
-            raise UnexpectedInput(self.line_column(), "'module' or 'submodule'")
+            raise UnexpectedInput(self, "'module' or 'submodule'")
         try:
             self.opt_separator()
         except EndOfInput:
             return res
-        raise UnexpectedInput(self.line_column(), "end of input")
+        raise UnexpectedInput(self, "end of input")
 
     def _back_break(self) -> int:
         self.offset -= 1
@@ -218,7 +218,7 @@ class ModuleParser(Parser):
             UnexpectedInput: If no separator is found.
         """
         present = self.opt_separator()
-        if not present: raise UnexpectedInput(self.line_column(), "separator")
+        if not present: raise UnexpectedInput(self, "separator")
 
     def keyword(self) -> Tuple[Optional[str], str]:
         """Parse a YANG statement keyword.
@@ -251,7 +251,7 @@ class ModuleParser(Parser):
             arg = None
             sub = True
         elif not pres:
-            raise UnexpectedInput(self.line_column(), "separator")
+            raise UnexpectedInput(self, "separator")
         else:
             self._arg = ""
             sub = self.argument()
@@ -280,7 +280,7 @@ class ModuleParser(Parser):
             quoted = False
             self.unq_argument()
         else:
-            raise UnexpectedInput(self.line_column(), "single or double quote")
+            raise UnexpectedInput(self, "single or double quote")
         self.opt_separator()
         next = self.peek()
         if next == ";":
@@ -292,7 +292,7 @@ class ModuleParser(Parser):
             self.opt_separator();
             return self.argument()
         else:
-            raise UnexpectedInput(self.line_column(), "';', '{'" +
+            raise UnexpectedInput(self, "';', '{'" +
                                   (" or '+'" if quoted else ""))
 
     def sq_argument(self) -> str:

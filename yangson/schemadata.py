@@ -467,14 +467,14 @@ class FeatureExprParser(Parser):
         res = self._feature_disj()
         self.skip_ws()
         if not self.at_end():
-            raise InvalidFeatureExpression(self.line_column())
+            raise InvalidFeatureExpression(self)
         return res
 
     def _feature_disj(self) -> bool:
         x = self._feature_conj()
         if self.test_string("or"):
             if not self.skip_ws():
-                raise InvalidFeatureExpression(self.line_column())
+                raise InvalidFeatureExpression(self)
             return self._feature_disj() or x
         return x
 
@@ -482,14 +482,14 @@ class FeatureExprParser(Parser):
         x = self._feature_term()
         if self.test_string("and"):
             if not self.skip_ws():
-                raise InvalidFeatureExpression(self.line_column())
+                raise InvalidFeatureExpression(self)
             return self._feature_conj() and x
         return x
 
     def _feature_term(self) -> bool:
         if self.test_string("not"):
             if not self.skip_ws():
-                raise InvalidFeatureExpression(self.line_column())
+                raise InvalidFeatureExpression(self)
             return not self._feature_atom()
         return self._feature_atom()
 

@@ -981,14 +981,14 @@ class ResourceIdParser(Parser):
         except EndOfInput:
             keys = self.remaining()
         if not keys:
-            raise UnexpectedInput(self.line_column(), "entry value or keys")
+            raise UnexpectedInput(self, "entry value or keys")
         if isinstance(sn, LeafListNode):
             return EntryValue(unquote(keys))
         ks = keys.split(",")
         try:
             if len(ks) != len(sn.keys):
                 raise UnexpectedInput(
-                    self.line_column(), "exactly {} keys".format(len(sn.keys)))
+                    self, "exactly {} keys".format(len(sn.keys)))
         except AttributeError:
             raise BadSchemaNodeType(sn.qual_name, "list")
         sel = {}
@@ -1018,7 +1018,7 @@ class InstanceIdParser(Parser):
                 if next in "0123456789":
                     ind = self.unsigned_integer() - 1
                     if ind < 0:
-                        raise UnexpectedInput(self.line_column(), "positive index")
+                        raise UnexpectedInput(self, "positive index")
                     self.skip_ws()
                     self.char("]")
                     res.append(EntryIndex(ind))
