@@ -29,7 +29,7 @@ from typing import Dict, List, Union
 from .typealiases import *
 
 # Type aliases
-Value = Union[ScalarValue, "StructuredValue"]
+Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
 """All possible types of cooked values (scalar and structured)."""
 
 EntryValue = Union[ScalarValue, "ObjectValue"]
