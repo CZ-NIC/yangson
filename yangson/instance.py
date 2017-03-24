@@ -956,8 +956,10 @@ class ResourceIdParser(Parser):
 
     def parse(self) -> InstanceRoute:
         """Parse resource identifier."""
-        if self.peek() == "/": self.offset += 1
         res = InstanceRoute()
+        if self.at_end(): return res
+        if self.peek() == "/": self.offset += 1
+        if self.at_end(): return res
         sn = self.schema_node
         while True:
             name, ns = self.prefixed_name()
