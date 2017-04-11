@@ -8,6 +8,7 @@ from yangson.exceptions import (
     XPathTypeError, InvalidXPath, NotSupported)
 from yangson.schemadata import SchemaContext, FeatureExprParser
 from yangson.enumerations import ContentType
+from yangson.instance import ResourceIdParser
 from yangson.instvalue import ArrayValue, ObjectValue
 from yangson.schemanode import SequenceNode
 from yangson.xpathparser import XPathParser
@@ -271,7 +272,7 @@ def test_types(data_model):
         "UMWZw61sacWhIMW+bHXFpW91xI1rw70ga8" +
         "WvxYggw7pwxJtsIMSPw6FiZWxza8OpIMOzZHku")
 
-def test_instance(instance):
+def test_instance(data_model, instance):
     def axtest(expr, res):
         assert [ i.json_pointer() for i in expr ] == res
     hi = hash(instance)
@@ -280,6 +281,11 @@ def test_instance(instance):
     hid = hash(instd)
     assert hi == hix
     assert hi != hid
+    rid1 = data_model.parse_resource_id("/test:contA/listA=C0FFEE,true/contD/contE/leafP")
+    iid1 = data_model.parse_instance_id("/test:contA/listA[1]/contD/contE/leafP")
+    assert instance.peek(rid1) == instance.peek(iid1)
+    rid2 = data_model.parse_resource_id("/test:llistB")
+    assert len(instance.peek(rid2)) == 2
     conta = instance["test:contA"]
     la1 = conta["listA"][-1]
     lt = conta["testb:leafT"]

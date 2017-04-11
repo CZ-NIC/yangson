@@ -134,7 +134,7 @@ specification, see section `3`_ of [RFC7950]_.
 
        A string identifying an instance in the data tree that is
        suitable for use in URLs. The syntax of resource identifiers is
-       defined in [RFC8040]_, sec. `3.5.3`.
+       defined in [RFC8040]_, sec. `3.5.3`_.
 
    implemented module
 

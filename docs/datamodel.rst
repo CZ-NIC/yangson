@@ -171,11 +171,21 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
     .. method:: parse_instance_id(text: str) -> InstanceRoute
 
-       Parse :term:`instance identifier` into :class:`~.instance.InstanceRoute`.
+       Parse :term:`instance identifier` into an internal object of
+       the :class:`~.instance.InstanceRoute` class that can be used as
+       a parameter to the the :meth:`~.instance.InstanceNode.goto` and
+       :meth:`~.instance.InstanceNode.peek` methods of the
+       :class:`~.instance.InstanceNode` class.
 
     .. method:: parse_resource_id(text: str) -> InstanceRoute
 
-       Parse :term:`resource identifier` into :class:`~.instance.InstanceRoute`.
+       Parse :term:`resource identifier` into an
+       :class:`~.instance.InstanceRoute` object. Yanson extends the
+       syntax of resource identifiers defined in sec. `3.5.3`_ of
+       [RFC8040]_ so as to support entire lists and leaf-lists as
+       resources: the last component of a resource identifier can be
+       the name of a list or leaf-list, with no keys or value
+       specified.
 
     .. method:: schema_digest() -> str
 
@@ -227,6 +237,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	  >>> len(dm.schema_digest())
 	  214
 
+.. _3.5.3: https://tools.ietf.org/html/rfc8040#section-3.5.3
 .. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
 .. _7.5.1: https://tools.ietf.org/html/rfc7950#section-7.5.1
 .. _pyang: https://github.com/mbj4668/pyang

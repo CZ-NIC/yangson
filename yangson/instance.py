@@ -805,7 +805,7 @@ class EntryIndex:
 
     def __str__(self) -> str:
         """Return a string representation of the receiver."""
-        return "[{0:d}]".format(self.key)
+        return "[{0:d}]".format(self.index + 1)
 
     def peek_step(self, val: ArrayValue, sn: "DataNode") -> Value:
         """Return entry value addressed by the receiver, and its schema node.
@@ -932,7 +932,8 @@ class EntryKeys:
                         break
             except KeyError:
                 continue
-        return (en, sn) if flag else (None, sn)
+            if flag: return (en, sn)
+        return (None, sn)
 
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.

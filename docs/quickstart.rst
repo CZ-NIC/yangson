@@ -74,7 +74,7 @@ Moving Around and Editing the Data Tree
 We can move around the instance data tree, either step by step or
 directly to any location by using
 an :class:`~.instance.InstanceRoute`. One way to obtain the latter is
-to parse it from a RESTCONF data resource identifier:
+to parse it from a RESTCONF :term:`resource identifier`:
 
 .. doctest::
 
