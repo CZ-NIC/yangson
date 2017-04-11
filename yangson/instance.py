@@ -768,8 +768,9 @@ class MemberName:
         return ("{}:{}".format(self.namespace, self.name) if self.namespace
                     else self.name)
 
-    def peek_step(self, val: ObjectValue, sn: "DataNode") -> Value:
-        """Return member value addressed by the receiver, and new schema node.
+    def peek_step(self, val: ObjectValue,
+                      sn: "DataNode") -> Tuple[Value, "DataNode"]:
+        """Return member value addressed by the receiver + its schema node.
 
         Args:
             val: Current value (object).
@@ -807,8 +808,9 @@ class EntryIndex:
         """Return a string representation of the receiver."""
         return "[{0:d}]".format(self.index + 1)
 
-    def peek_step(self, val: ArrayValue, sn: "DataNode") -> Value:
-        """Return entry value addressed by the receiver, and its schema node.
+    def peek_step(self, val: ArrayValue,
+                      sn: "DataNode") -> Tuple[Value, "DataNode"]:
+        """Return entry value addressed by the receiver + its schema node.
 
         Args:
             val: Current value (array).
@@ -850,8 +852,9 @@ class EntryValue:
         res = sn.type.parse_value(self.value)
         if res is None: raise InvalidKeyValue(self.value)
 
-    def peek_step(self, val: ArrayValue, sn: "DataNode") -> Value:
-        """Return entry value addressed by the receiver, and its schema node.
+    def peek_step(self, val: ArrayValue,
+                      sn: "DataNode") -> Tuple[Value, "DataNode"]:
+        """Return entry value addressed by the receiver + its schema node.
 
         Args:
             val: Current value (array).
@@ -915,8 +918,9 @@ class EntryKeys:
             res[knod.iname()] = kval
         return res
 
-    def peek_step(self, val: ArrayValue, sn: "DataNode") -> ObjectValue:
-        """Return the entry addressed by the receiver, and its schema node.
+    def peek_step(self, val: ArrayValue,
+                      sn: "DataNode") -> Tuple[ObjectValue, "DataNode"]:
+        """Return the entry addressed by the receiver + its schema node.
 
         Args:
             val: Current value (array).
