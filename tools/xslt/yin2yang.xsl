@@ -584,11 +584,13 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     </if>
     <call-template name="indent"/>
     <value-of select="name(.)"/>
-    <text> "</text>
-    <call-template name="escape-text">
-      <with-param name="text" select="@*"/>
-    </call-template>
-    <text>"</text>
+    <if test="@*">
+      <text> "</text>
+      <call-template name="escape-text">
+	<with-param name="text" select="@*"/>
+      </call-template>
+      <text>"</text>
+    </if>
     <call-template name="semi-or-sub"/>
   </template>
 
