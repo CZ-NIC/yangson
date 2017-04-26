@@ -19,6 +19,7 @@
 
 import argparse
 import json
+import os
 import sys
 from typing import List
 from yangson import DataModel
@@ -42,7 +43,8 @@ def main(ylib: str = None, path: List[str] = ["."],
             help=("name of the file with description of the data model"
                       " in JSON-encoded YANG library format [RFC 7895]"))
         parser.add_argument(
-            "-p", "--path", default=".",
+            "-p", "--path",
+            default=os.environ.get("YANG_MODPATH", "."),
             help=("colon-separated list of directories to search"
                       " for YANG modules"))
         grp = parser.add_mutually_exclusive_group()

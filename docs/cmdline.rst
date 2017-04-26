@@ -64,7 +64,9 @@ Options
 
    This option specifies directories to search for YANG modules.
    The *module_path* argument is a colon separated list of directory
-   names.
+   names. By default, the value of the ``YANG_MODPATH`` environment
+   variable is used if this variable exists, otherwise the module path
+   contains only the current directory.
 
    All YANG modules specified in YANG library need to be located in
    one of these directories, and their file names have to be in the
@@ -102,6 +104,12 @@ Options
    (configuration data, default), ``nonconfig`` (non-configuration
    data) and ``all`` (all data).  See
    also :meth:`.InstanceNode.validate`.
+
+Environment Variables
+=====================
+
+``YANG_MODPATH``
+   The default module path, see :option:`--path` option.
 
 Exit Status
 ===========
