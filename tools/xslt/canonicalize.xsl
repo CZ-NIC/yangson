@@ -25,6 +25,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 		version="1.0">
   <output method="xml" encoding="utf-8"/>
   <strip-space elements="*"/>
+  <param name="yin-ns">urn:ietf:params:xml:ns:yang:yin:1</param>
+
   <template name="preceding-comment">
     <if
 	test="count((preceding-sibling::*|preceding-sibling::comment())
@@ -39,6 +41,12 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     <apply-templates
 	select="yin:container|yin:leaf|yin:leaf-list|
 		yin:list|yin:choice|yin:anyxml|yin:uses"/>
+  </template>
+
+  <template name="copy-extensions">
+    <for-each select="*[namespace-uri() != $yin-ns]">
+      <copy-of select="."/>
+    </for-each>
   </template>
 
   <template match="yin:module">
@@ -60,6 +68,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 		  yin:grouping|yin:container|yin:leaf|yin:leaf-list|
 		  yin:list|yin:choice|yin:anyxml|yin:uses|yin:augment|
 		  yin:rpc|yin:notification|yin:deviation"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:submodule">
@@ -80,6 +89,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 		  yin:grouping|yin:container|yin:leaf|yin:leaf-list|
 		  yin:list|yin:choice|yin:anyxml|yin:uses|yin:augment|
 		  yin:rpc|yin:notification|yin:deviation"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:feature">
@@ -90,12 +100,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:status"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:if-feature">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:identity">
@@ -106,18 +118,21 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:status"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:base">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:yang-version">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:import">
@@ -128,12 +143,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:revision-date"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:revision-date">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:include">
@@ -143,18 +160,21 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:revision-date"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:namespace">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:prefix">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:belongs-to">
@@ -162,6 +182,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
       <apply-templates select="yin:prefix"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:organization">
@@ -169,12 +190,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
       <apply-templates select="yin:text"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:text">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:contact">
@@ -182,6 +205,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
       <apply-templates select="yin:text"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:description">
@@ -189,6 +213,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
       <apply-templates select="yin:text"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:reference">
@@ -196,12 +221,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
       <apply-templates select="yin:text"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:units">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:revision">
@@ -210,6 +237,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="html:*|xi:*|@*|text()"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:extension">
@@ -220,6 +248,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:status"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:argument">
@@ -227,12 +256,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
       <apply-templates select="yin:yin-element"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:yin-element">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:typedef">
@@ -245,6 +276,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:status"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:type">
@@ -261,12 +293,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:base"/>
       <apply-templates select="yin:type"/>
       <apply-templates select="yin:require-instance"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:fraction-digits">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:range">
@@ -277,6 +311,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:error-app-tag"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:length">
@@ -287,6 +322,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:error-app-tag"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:pattern">
@@ -297,12 +333,14 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:error-app-tag"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:default">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:enum">
@@ -313,6 +351,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:status"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:bit">
@@ -323,54 +362,63 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:status"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:position">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:path">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:require-instance">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:status">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:config">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:mandatory">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:presence">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:ordered-by">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:must">
@@ -381,6 +429,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:error-app-tag"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:error-message">
@@ -388,36 +437,42 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
       <apply-templates select="yin:value"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:value">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:error-app-tag">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:min-elements">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:max-elements">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:value">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:grouping">
@@ -432,6 +487,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <call-template name="data-def-stmt"/>
       <apply-templates select="yin:action"/>
       <apply-templates select="yin:notification"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:container">
@@ -451,6 +507,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <call-template name="data-def-stmt"/>
       <apply-templates select="yin:action"/>
       <apply-templates select="yin:notification"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:leaf">
@@ -468,6 +525,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:status"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:leaf-list">
@@ -487,6 +545,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:status"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:list">
@@ -510,18 +570,21 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <call-template name="data-def-stmt"/>
       <apply-templates select="yin:action"/>
       <apply-templates select="yin:notification"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:key">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:unique">
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:choice">
@@ -542,6 +605,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:list"/>
       <apply-templates select="yin:anyxml"/>
       <apply-templates select="yin:case"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:case">
@@ -554,6 +618,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
       <call-template name="data-def-stmt"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:anyxml">
@@ -568,6 +633,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:status"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:uses">
@@ -581,6 +647,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:reference"/>
       <apply-templates select="yin:refine"/>
       <apply-templates select="yin:augment"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:refine">
@@ -596,6 +663,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:max-elements"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:augment">
@@ -611,6 +679,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:case"/>
       <apply-templates select="yin:action"/>
       <apply-templates select="yin:notification"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:when">
@@ -619,6 +688,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="html:*|xi:*|@*|text()"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:action|yin:rpc">
@@ -633,6 +703,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:grouping"/>
       <apply-templates select="yin:input"/>
       <apply-templates select="yin:output"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:input">
@@ -642,6 +713,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:typedef"/>
       <apply-templates select="yin:grouping"/>
       <call-template name="data-def-stmt"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:output">
@@ -651,6 +723,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:typedef"/>
       <apply-templates select="yin:grouping"/>
       <call-template name="data-def-stmt"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:notification">
@@ -664,6 +737,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:typedef"/>
       <apply-templates select="yin:grouping"/>
       <call-template name="data-def-stmt"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:deviation">
@@ -673,6 +747,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
       <apply-templates select="yin:deviate"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:deviate">
@@ -688,6 +763,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:mandatory"/>
       <apply-templates select="yin:min-elements"/>
       <apply-templates select="yin:max-elements"/>
+      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="/">
