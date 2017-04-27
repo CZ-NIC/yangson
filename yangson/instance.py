@@ -36,7 +36,7 @@ from urllib.parse import unquote
 from .enumerations import ContentType, ValidationScope
 from .exceptions import (
     BadSchemaNodeType, EndOfInput, InstanceValueError, InvalidKeyValue,
-    NonexistentInstance, NonexistentSchemaNode, UnexpectedInput)
+    NonexistentInstance, NonDataNode, NonexistentSchemaNode, UnexpectedInput)
 from .instvalue import *
 from .parser import Parser
 from .typealiases import *
@@ -277,6 +277,8 @@ class InstanceNode:
             InstanceValueError: If `iroute` is incompatible with the receiver's
                 value.
             NonexistentInstance: If the instance node doesn't exist.
+            NonDataNode: If an instance route addresses a non-data node
+                (rpc/action/notification).
         """
         inst = self
         for sel in iroute:
@@ -790,6 +792,19 @@ class MemberName:
         """
         return inst[self.iname()]
 
+class ActionName(MemberName):
+    """Name of an action (can appear in RESTCONF resource IDs)."""
+
+    def peek_step(self, val: ObjectValue,
+                      sn: "DataNode") -> Tuple[None, "DataNode"]:
+        """Fail because there is no action instance."""
+        cn = sn.get_child(self.name, self.namespace)
+        return (None, cn)
+
+    def goto_step(self, inst: InstanceNode) -> None:
+        """Raise an exception because there is no action instance."""
+        raise NonDataNode(inst.json_pointer(), "action " + self.iname())
+
 class EntryIndex:
     """Numeric selectors for a list or leaf-list entry."""
 
@@ -970,6 +985,11 @@ class ResourceIdParser(Parser):
             name, ns = self.prefixed_name()
             cn = sn.get_data_child(name, ns)
             if cn is None:
+                for cn in sn.children:
+                    if (cn.name == name and cn.ns == ns and
+                            isinstance(cn, RpcActionNode)):
+                        res.append(ActionName(name, ns))
+                        return res
                 raise NonexistentSchemaNode(sn.qual_name, name, ns)
             res.append(MemberName(name, ns))
             try:
@@ -1059,4 +1079,4 @@ class InstanceIdParser(Parser):
 
 from .schemanode import (AnydataNode, CaseNode, ChoiceNode, DataNode,
                              InternalNode, LeafNode, LeafListNode, ListNode,
-                             SequenceNode, TerminalNode)
+                             RpcActionNode, SequenceNode, TerminalNode)

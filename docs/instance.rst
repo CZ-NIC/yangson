@@ -398,9 +398,15 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> irt = dm.parse_resource_id('/example-2:bag/foo=3/in-words')
 	 >>> irt2 = dm.parse_instance_id('/example-2:bag/baz')
 
-      This method raises :exc:`~.InstanceValueError` if *iroute* isn't
-      compatible with the schema, and :exc:`~.NonexistentInstance` if
-      the target instance doesn't exist in the receiver's value.
+      This method may raise the following exceptions:
+
+      * :exc:`~.InstanceValueError` if *iroute* isn't compatible with
+	the schema
+      * :exc:`~.NonexistentInstance` if the target instance doesn't
+	exist in the receiver's value
+      * :exc:`~.NonDataNode` if the target instance represents an RPC
+	operation, action or notification (*iroute* can come from a
+	RESTCONF :term:`resource identifier`).
 
       .. doctest::
 

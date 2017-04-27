@@ -42,6 +42,8 @@ This module defines the following exceptions:
 * :exc:`MultipleImplementedRevisions`: A module has multiple implemented revisions.
 * :exc:`NonexistentInstance`: Attempt to access an instance node that doesn't
   exist.
+* :exc:`NonDataNode`: Attempt to access an instance of non-data node
+  (rpc/action/notification).
 * :exc:`NonexistentSchemaNode`: A schema node doesn't exist.
 * :exc:`NotSupported`: A given XPath 1.0 feature isn't (currently) supported.
 * :exc:`ParserException`: Base class for parser exceptions.
@@ -88,31 +90,24 @@ class InvalidKeyValue(YangsonException):
 class InstanceException(YangsonException):
     """Abstract class for exceptions related to operations on instance nodes."""
 
-    def __init__(self, path: JSONPointer):
+    def __init__(self, path: JSONPointer, detail: str):
         self.path = path
+        self.detail = detail
 
     def __str__(self):
-        return "[" + self.path + "]"
+        return "[{}] {}".format(self.path, self.detail)
 
 class InstanceValueError(InstanceException):
     """The instance value is incompatible with the called method."""
-
-    def __init__(self, path: JSONPointer, detail: str):
-        super().__init__(path)
-        self.detail = detail
-
-    def __str__(self):
-        return "{} {}".format(super().__str__(), self.detail)
+    pass
 
 class NonexistentInstance(InstanceException):
     """Attempt to access an instance node that doesn't exist."""
+    pass
 
-    def __init__(self, path: JSONPointer, detail: str):
-        super().__init__(path)
-        self.detail = detail
-
-    def __str__(self):
-        return "{} {}".format(super().__str__(), self.detail)
+class NonDataNode(InstanceException):
+    """Attempt to access an instance of non-data node (rpc/action/notification)."""
+    pass
 
 class ParserException(YangsonException):
     """Base class for parser exceptions."""
