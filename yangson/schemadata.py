@@ -152,6 +152,7 @@ class SchemaData:
 
     def _process_imports(self) -> None:
         impl = set(self.implement.items())
+        if len(impl) == 0: return
         deps = { mid: set() for mid in impl }
         impby = { mid: set() for mid in impl }
         for mid in self.modules:
