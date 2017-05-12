@@ -235,7 +235,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
        .. doctest::
 
 	  >>> len(dm.schema_digest())
-	  214
+	  217
 
 .. _3.5.3: https://tools.ietf.org/html/rfc8040#section-3.5.3
 .. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1

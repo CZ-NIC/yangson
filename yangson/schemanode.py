@@ -737,7 +737,7 @@ class TerminalNode(SchemaNode):
             res["derived"] = self.type.name
         df = self.default
         if df is not None:
-            res["dflt"] = self.type.to_raw(df)
+            res["default"] = self.type.to_raw(df)
         return res
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
@@ -776,7 +776,6 @@ class TerminalNode(SchemaNode):
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
         di = self._default_instance(inst, ContentType.all)
         return [] if di is None else [self]
-        return inst.put_member(self.iname(), dflt)._node_set()
 
     def _ascii_tree(self, indent: str) -> str:
         return ""
