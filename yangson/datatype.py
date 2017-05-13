@@ -64,7 +64,7 @@ class DataType:
 
     _option_template = '<option value="{}"{}>{}</option>'
 
-    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: Optional[YangIdentifier]):
         """Initialize the class instance."""
         self.sctx = sctx
         self.default = None
@@ -175,6 +175,12 @@ class DataType:
         """Handle type restriction substatements."""
         pass
 
+    def _type_digest(self) -> Dict[str, Any]:
+        """Return receiver's type digest."""
+        res = { "base": self.yang_type() }
+        if self.name is not None: res["derived"] = self.name
+        return res
+
 class EmptyType(DataType):
     """Class representing YANG "empty" type."""
 
@@ -230,6 +236,14 @@ class BitsType(DataType):
             return None
         return res
 
+    def canonical_string(self, val: Tuple[str]) -> Optional[str]:
+        try:
+            items = [(self.bit[b], b) for b in val]
+        except KeyError:
+            return None
+        items.sort()
+        return " ".join([x[1] for x in items])
+
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle **bit** statements."""
         nextpos = 0
@@ -255,14 +269,18 @@ class BitsType(DataType):
         for bit in set(self.bit) - new:
             del self.bit[bit]
 
-    def canonical_string(self, val: Tuple[str]) -> Optional[str]:
-        try:
-            items = [(self.bit[b], b) for b in val]
-        except KeyError:
-            return None
-        items.sort()
-        return " ".join([x[1] for x in items])
-        
+    def _type_digest(self) -> Dict[str, Any]:
+        res = super()._type_digest()
+        bits = []
+        i = 0
+        for b in self.sorted_bits():
+            while i < b[1]:
+                bits.append(None)
+                i += 1
+            bits.append(b[0])
+        res["bits"] = bits
+        return res
+
 class BooleanType(DataType):
     """Class representing YANG "boolean" type."""
 
@@ -288,20 +306,44 @@ class BooleanType(DataType):
         if val is True: return "true"
         if val is False: return "false"
 
-class StringType(DataType):
-    """Class representing YANG "string" type."""
+class LinearType(DataType):
+    """Abstract class representing character or byte sequences."""
 
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
-        self.length = Intervals([[0, 4294967295]], error_message="invalid length")
         super().__init__(sctx, name)
-        self.patterns = [] # type: List[Pattern]
-        self.invert_patterns = [] # type: List[Pattern]
+        self.length = None
 
     def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         lstmt = stmt.find1("length")
         if lstmt:
+            if self.length is None:
+                self.length = Intervals(
+                    [[0, 4294967295]], error_message="invalid length")
             self.length.restrict_with(lstmt.argument, *lstmt.get_error_info())
+
+    def __contains__(self, val: Union[str, bytes]) -> bool:
+        if self.length and len(val) not in self.length:
+            self._set_error_info(self.length.error_tag, self.length.error_message)
+            return False
+        return True
+
+    def _type_digest(self) -> Dict[str, Any]:
+        res = super()._type_digest()
+        if self.length:
+            res["length"] = self.length.intervals
+        return res
+
+class StringType(LinearType):
+    """Class representing YANG "string" type."""
+
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+        """Initialize the class instance."""
+        super().__init__(sctx, name)
+        self.patterns = [] # type: List[Pattern]
+
+    def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
+        super()._handle_restrictions(stmt, sctx)
         for pst in stmt.find_all("pattern"):
             invm = pst.find1("modifier", "invert-match") is not None
             self.patterns.append(Pattern(
@@ -311,8 +353,7 @@ class StringType(DataType):
         if not isinstance(val, str):
             self._set_error_info()
             return False
-        if len(val) not in self.length:
-            self._set_error_info(self.length.error_tag, self.length.error_message)
+        if not super().__contains__(val):
             return False
         for p in self.patterns:
             if (p.regex.match(val) is not None) == p.invert_match:
@@ -320,7 +361,17 @@ class StringType(DataType):
                 return False
         return True
 
-class BinaryType(StringType):
+    def _type_digest(self) -> Dict[str, Any]:
+        res = super()._type_digest()
+        pats = [p.pattern for p in self.patterns if not p.invert_match]
+        ipats = [p.pattern for p in self.patterns if p.invert_match]
+        if pats:
+            res["patterns"] = pats
+        if ipats:
+            res["neg_patterns"] = ipats
+        return res
+
+class BinaryType(LinearType):
     """Class representing YANG "binary" type."""
 
     def from_raw(self, raw: RawScalar) -> Optional[bytes]:
@@ -334,11 +385,7 @@ class BinaryType(StringType):
         if not isinstance(val, bytes):
             self._set_error_info()
             return False
-        if len(val) not in self.length:
-            self._set_error_info(
-                self.length.error_tag, self.length.error_message)
-            return False
-        return True
+        return super().__contains(val)
 
     def to_raw(self, val: bytes) -> str:
         return self.canonical_string(val)
@@ -388,6 +435,11 @@ class EnumerationType(DataType):
         for en in set(self.enum) - new:
             del self.enum[en]
 
+    def _type_digest(self) -> Dict[str, Any]:
+        res = super()._type_digest()
+        res["enums"] = list(self.enum.keys())
+        return res
+
 class LinkType(DataType):
     """Abstract class for instance-referencing types."""
 
@@ -429,6 +481,11 @@ class LeafrefType(LinkType):
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         ns = self.path.evaluate(node)
         return [n for n in ns if str(n) == str(node)]
+
+    def _type_digest(self) -> Dict[str, Any]:
+        res = super()._type_digest()
+        res["ref_type"] = self.ref_type._type_digest()
+        return res
 
 class InstanceIdentifierType(LinkType):
     """Class representing YANG "instance-identifier" type."""
@@ -498,7 +555,18 @@ class IdentityrefType(DataType):
 class NumericType(DataType):
     """Abstract class for numeric data types."""
 
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+        """Initialize the class instance."""
+        super().__init__(sctx, name)
+        self.range = None # type: Optional[Intervals]
+
     def __contains__(self, val: Union[int, decimal.Decimal]) -> bool:
+        if self.range is None:
+            if self._range[0] <= val <= self._range[1]:
+                return True
+            else:
+                self._set_error_info()
+                return False
         if val in self.range: return True
         self._set_error_info(self.range.error_tag, self.range.error_message)
         return False
@@ -506,7 +574,17 @@ class NumericType(DataType):
     def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         rstmt = stmt.find1("range")
         if rstmt:
+            if self.range is None:
+                self.range = Intervals(
+                    [self._range], error_message="not in range")
             self.range.restrict_with(rstmt.argument, *rstmt.get_error_info())
+
+    def _type_digest(self) -> Dict[str, Any]:
+        res = super()._type_digest()
+        if self.range:
+            res["range"] = [[self.to_raw(r[0]), self.to_raw(r[0])]
+                                for r in self.range.intervals]
+        return res
 
 class Decimal64Type(NumericType):
     """Class representing YANG "decimal64" type."""
@@ -516,13 +594,16 @@ class Decimal64Type(NumericType):
         super().__init__(sctx, name)
         self._epsilon = decimal.Decimal(0) # type: decimal.Decimal
 
-    def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
-        fd = int(stmt.find1("fraction-digits", required=True).argument)
-        self._epsilon = decimal.Decimal(10) ** -fd
-        quot = decimal.Decimal(10**fd)
+    @property
+    def _range(self) -> List[decimal.Decimal]:
+        quot = decimal.Decimal(10**self.fraction_digits)
         lim = decimal.Decimal(9223372036854775808)
-        self.range = Intervals([[-lim / quot, (lim - 1) / quot]],
-                                   self.from_yang, error_message="not in range")
+        return [-lim / quot, (lim - 1) / quot]
+
+    def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
+        self.fraction_digits = int(
+            stmt.find1("fraction-digits", required=True).argument)
+        self._epsilon = decimal.Decimal(10) ** -self.fraction_digits
         super()._handle_properties(stmt, sctx)
 
     def from_raw(self, raw: RawScalar) -> Optional[decimal.Decimal]:
@@ -545,6 +626,11 @@ class Decimal64Type(NumericType):
             return False
         return super().__contains__(val)
 
+    def _type_digest(self) -> Dict[str, Any]:
+        res = super()._type_digest()
+        res["fraction_digits"] = self.fraction_digits
+        return res
+
 class IntegralType(NumericType):
     """Abstract class for integral data types."""
 
@@ -553,10 +639,6 @@ class IntegralType(NumericType):
             self._set_error_info()
             return False
         return super().__contains__(val)
-
-    def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
-        self.range = Intervals([self._range], error_message="not in range")
-        super()._handle_properties(stmt, sctx)
 
     def parse_value(self, text: str) -> Optional[int]:
         """Override superclass method."""
