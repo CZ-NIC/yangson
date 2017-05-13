@@ -148,7 +148,7 @@ class SchemaNode:
     def _yang_class(self) -> str:
         return self.__class__.__name__[:-4].lower()
 
-    def _client_digest(self) -> Dict[str, Any]:
+    def _node_digest(self) -> Dict[str, Any]:
         """Return dictionary of receiver's properties suitable for clients."""
         res = { "kind": self._yang_class() }
         if self.description:
@@ -395,15 +395,15 @@ class InternalNode(SchemaNode):
             res[ch.iname()] = ch.from_raw(rval[qn], npath)
         return res
 
-    def _client_digest(self) -> Dict[str, Any]:
-        res = super()._client_digest()
+    def _node_digest(self) -> Dict[str, Any]:
+        res = super()._node_digest()
         rc = res["children"] = {}
         for c in self.data_children():
-            cdig = rc[c.iname()] = c._client_digest()
+            cdig = rc[c.iname()] = c._node_digest()
             if self.config and not c.config:
                 cdig["config"] = False
         for c in [c for c in self.children if isinstance(c, SchemaTreeNode)]:
-            rc[c.iname()] = c._client_digest()
+            rc[c.iname()] = c._node_digest()
         return res
 
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
@@ -730,11 +730,9 @@ class TerminalNode(SchemaNode):
             raise RawTypeError(jptr, str(self.type))
         return res
 
-    def _client_digest(self) -> Dict[str, Any]:
-        res = super()._client_digest()
-        res["base_type"] = self.type.yang_type()
-        if self.type.name:
-            res["derived"] = self.type.name
+    def _node_digest(self) -> Dict[str, Any]:
+        res = super()._node_digest()
+        res["type"] = self.type._type_digest()
         df = self.default
         if df is not None:
             res["default"] = self.type.to_raw(df)
@@ -796,8 +794,8 @@ class ContainerNode(DataNode, InternalNode):
         """Is the receiver a mandatory node?"""
         return not self.presence and super().mandatory
 
-    def _client_digest(self) -> Dict[str, Any]:
-        res = super()._client_digest()
+    def _node_digest(self) -> Dict[str, Any]:
+        res = super()._node_digest()
         res["presence"] = self.presence
         return res
 
@@ -922,8 +920,8 @@ class ListNode(SequenceNode, InternalNode):
         self._key_members = []
         self.unique = [] # type: List[List[SchemaRoute]]
 
-    def _client_digest(self) -> Dict[str, Any]:
-        res = super()._client_digest()
+    def _node_digest(self) -> Dict[str, Any]:
+        res = super()._node_digest()
         res["keys"] = self._key_members
         return res
 
