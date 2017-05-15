@@ -542,15 +542,20 @@ class IdentityrefType(DataType):
         except:
             return None
 
+    def canonical_string(self, val: ScalarValue) -> Optional[str]:
+        """Return canonical form of a value."""
+        return "{}:{}".format(val[1], val[0])
+
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.bases = []
         for b in stmt.find_all("base"):
             self.bases.append(
                 sctx.schema_data.translate_pname(b.argument, sctx.text_mid))
 
-    def canonical_string(self, val: ScalarValue) -> Optional[str]:
-        """Return canonical form of a value."""
-        return "{}:{}".format(val[1], val[0])
+    def _type_digest(self) -> Dict[str, Any]:
+        res = super()._type_digest()
+        res["identities"] = list(sctx.schema_data.derived_from_all(self.bases))
+        return res
 
 class NumericType(DataType):
     """Abstract class for numeric data types."""
