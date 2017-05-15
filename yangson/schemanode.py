@@ -51,7 +51,7 @@ from .exceptions import (
     SchemaError, SemanticError, YangsonException, YangTypeError)
 from .instvalue import (
     ArrayValue, EntryValue, ObjectValue, StructuredValue, Value)
-from .schemadata import SchemaData, SchemaContext
+from .schemadata import IdentityAdjacency, SchemaData, SchemaContext
 from .schpattern import *
 from .statement import Statement
 from .typealiases import *
@@ -528,13 +528,15 @@ class InternalNode(SchemaNode):
     def _identity_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle identity statement."""
         if not sctx.schema_data.if_features(stmt, sctx.text_mid): return
-        bstmts = stmt.find_all("base")
-        bases = set()
-        for bst in bstmts:
-            bases.add(
-                sctx.schema_data.translate_pname(bst.argument, sctx.text_mid))
-        sctx.schema_data.identity_bases[
-            (stmt.argument, sctx.schema_data.namespace(sctx.text_mid))] = bases
+        id = (stmt.argument, sctx.schema_data.namespace(sctx.text_mid))
+        adj = sctx.schema_data.identity_adjs.setdefault(id, IdentityAdjacency())
+        for bst in stmt.find_all("base"):
+            bid = sctx.schema_data.translate_pname(bst.argument, sctx.text_mid)
+            adj.bases.add(bid)
+            badj = sctx.schema_data.identity_adjs.setdefault(
+                bid, IdentityAdjacency())
+            badj.derivs.add(id)
+        sctx.schema_data.identity_adjs[id] = adj
 
     def _list_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle list statement."""

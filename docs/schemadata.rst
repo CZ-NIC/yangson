@@ -16,8 +16,9 @@ Schema Data
 
    os.chdir("../..")
 
-The *context* module implements the following classes:
+The *schemadata* module implements the following classes:
 
+* :class:`IdentityAdjacency`: Adjacency data for an identity.
 * :class:`SchemaContext`: Schema data and current schema context.
 * :class:`ModuleData`: Data related to a YANG module or submodule.
 * :class:`SchemaData`: Repository of data model structures and methods.
@@ -31,6 +32,29 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    >>> dm = DataModel.from_file("yang-library-ex3.json",
    ... [".", "../../../yang-modules/ietf"])
+
+.. class:: IdentityAdjacency()
+
+   Objects of this class hold information about adjacencies of an
+   identity, i.e. (i) its base identities and (ii) identities that are
+   directly derived from it.
+
+   These objects are intended to be used only as values of the
+   :attr:`SchemaData.identity_adjs` – each describes adjacencies of
+   the identity appearing in the corresponding key (henceforth denoted
+   as the “key identity”).
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: bases
+
+      Mutable set of :term:`qualified name`\ s of identities that are defined
+      as bases of the key identity.
+
+   .. attribute:: derivs
+
+      Mutable set of :term:`qualified name`\ s of identities that are
+      directly derived from the key identity.
 
 .. class:: SchemaContext(schema_data: SchemaData, default_ns: \
 	   YangIdentifier, text_mid: ModuleId)
@@ -110,18 +134,20 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. rubric:: Instance Attributes
 
-   .. attribute:: identity_bases
+   .. attribute:: identity_adjs
 
-      Dictionary of identity bases.
+      Dictionary containing adjacency data of all identities defined
+      by the data model.
 
       The keys are :term:`qualified name`\ s of identities, and each
-      value is a set of :term:`qualified name`\ s of identities that
-      are defined as bases for the key identity.
+      value is an object of the :class:`IdentityAdjacency` class.
 
       .. doctest::
 
-	 >>> sorted(dm.schema_data.identity_bases[('idZ', 'example-3-b')])
+	 >>> sorted(dm.schema_data.identity_adjs[('idZ', 'example-3-b')].bases)
 	 [('idX', 'example-3-a'), ('idY', 'example-3-b')]
+	 >>> dm.schema_data.identity_adjs[('idX', 'example-3-a')].derivs
+	 {('idZ', 'example-3-b')}
 
    .. attribute:: implement
 
@@ -376,6 +402,29 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 	 >>> dm.schema_data.is_derived_from(('idZ', 'example-3-b'), ('idX', 'example-3-a'))
 	 True
+
+   .. method:: derived_from(identity: QualName) -> MutableSet[QualName]
+
+      Return the set of :term:`qualified name`\ s of identities that
+      are transitively derived from *identity*.
+
+      .. doctest::
+
+	 >>> dm.schema_data.derived_from(('idX', 'example-3-a'))
+	 {('idZ', 'example-3-b')}
+
+   .. method:: derived_from_all(identities: List[QualName]) -> MutableSet[QualName]
+
+      Return the set of :term:`qualified name`\ s of identities that
+      are transitively derived from all identities contained in the
+      *identities* list.
+
+      .. doctest::
+
+	 >>> dm.schema_data.derived_from_all([('idX', 'example-3-a'), ('idY', 'example-3-b')])
+	 {('idZ', 'example-3-b')}
+	 >>> dm.schema_data.derived_from_all([('idX', 'example-3-a'), ('idZ', 'example-3-b')])
+	 set()
 
    .. method:: if_features(stmt: Statement, mid: ModuleId) -> bool
 

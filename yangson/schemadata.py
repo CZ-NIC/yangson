@@ -36,6 +36,13 @@ from .parser import Parser
 from .statement import ModuleParser, Statement
 from .typealiases import *
 
+class IdentityAdjacency:
+    """Adjacency data for an identity."""
+
+    def __init__(self):
+        self.bases = set() # type: MutableSet[QualName]
+        self.derivs = set() # type: MutableSet[QualName]
+
 class SchemaContext:
     """Schema data and current schema context."""
 
@@ -74,7 +81,7 @@ class SchemaData:
 
     def __init__(self, yang_lib: Dict[str, Any], mod_path: List[str]) -> None:
         """Initialize the schema structures."""
-        self.identity_bases = {} # type: Dict[QualName, MutableSet[QualName]]
+        self.identity_adjs = {} # type: Dict[QualName, IdentityAdjacency]
         """Dictionary of identity bases."""
         self.implement = {} # type: Dict[YangIdentifier, RevisionDate]
         """Dictionary of implemented revisions."""
@@ -408,13 +415,31 @@ class SchemaData:
     def is_derived_from(self, identity: QualName, base: QualName) -> bool:
         """Return ``True`` if `identity` is derived from `base`."""
         try:
-            bases = self.identity_bases[identity]
+            bases = self.identity_adjs[identity].bases
         except KeyError:
             return False
         if base in bases: return True
         for ib in bases:
             if self.is_derived_from(ib, base): return True
         return False
+
+    def derived_from(self, identity: QualName) -> MutableSet[QualName]:
+        """Return list of identities transitively derived from `identity`."""
+        try:
+            res = self.identity_adjs[identity].derivs
+        except KeyError:
+            return set()
+        for id in res.copy():
+            res |= self.derived_from(id)
+        return res
+
+    def derived_from_all(self, identities: List[QualName]) -> MutableSet[QualName]:
+        """Return list of identities transitively derived from all `identity`."""
+        if not identities: return set()
+        res = self.derived_from(identities[0])
+        for id in identities[1:]:
+            res &= self.derived_from(id)
+        return res
 
     def if_features(self, stmt: Statement, mid: ModuleId) -> bool:
         """Evaluate ``if-feature`` substatements on a statement, if any.
