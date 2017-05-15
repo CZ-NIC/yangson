@@ -734,7 +734,7 @@ class TerminalNode(SchemaNode):
 
     def _node_digest(self) -> Dict[str, Any]:
         res = super()._node_digest()
-        res["type"] = self.type._type_digest()
+        res["type"] = self.type._type_digest(self.config)
         df = self.default
         if df is not None:
             res["default"] = self.type.to_raw(df)

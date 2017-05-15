@@ -175,8 +175,12 @@ class DataType:
         """Handle type restriction substatements."""
         pass
 
-    def _type_digest(self) -> Dict[str, Any]:
-        """Return receiver's type digest."""
+    def _type_digest(self, config: bool) -> Dict[str, Any]:
+        """Return receiver's type digest.
+
+        Args:
+            config: Specifies whether the type is on a configuration node.
+        """
         res = { "base": self.yang_type() }
         if self.name is not None: res["derived"] = self.name
         return res
@@ -269,8 +273,8 @@ class BitsType(DataType):
         for bit in set(self.bit) - new:
             del self.bit[bit]
 
-    def _type_digest(self) -> Dict[str, Any]:
-        res = super()._type_digest()
+    def _type_digest(self, config: bool) -> Dict[str, Any]:
+        res = super()._type_digest(config)
         bits = []
         i = 0
         for b in self.sorted_bits():
@@ -328,8 +332,8 @@ class LinearType(DataType):
             return False
         return True
 
-    def _type_digest(self) -> Dict[str, Any]:
-        res = super()._type_digest()
+    def _type_digest(self, config: bool) -> Dict[str, Any]:
+        res = super()._type_digest(config)
         if self.length:
             res["length"] = self.length.intervals
         return res
@@ -361,8 +365,8 @@ class StringType(LinearType):
                 return False
         return True
 
-    def _type_digest(self) -> Dict[str, Any]:
-        res = super()._type_digest()
+    def _type_digest(self, config: bool) -> Dict[str, Any]:
+        res = super()._type_digest(config)
         pats = [p.pattern for p in self.patterns if not p.invert_match]
         ipats = [p.pattern for p in self.patterns if p.invert_match]
         if pats:
@@ -435,9 +439,10 @@ class EnumerationType(DataType):
         for en in set(self.enum) - new:
             del self.enum[en]
 
-    def _type_digest(self) -> Dict[str, Any]:
-        res = super()._type_digest()
-        res["enums"] = list(self.enum.keys())
+    def _type_digest(self, config: bool) -> Dict[str, Any]:
+        res = super()._type_digest(config)
+        if config:
+            res["enums"] = list(self.enum.keys())
         return res
 
 class LinkType(DataType):
@@ -482,9 +487,9 @@ class LeafrefType(LinkType):
         ns = self.path.evaluate(node)
         return [n for n in ns if str(n) == str(node)]
 
-    def _type_digest(self) -> Dict[str, Any]:
-        res = super()._type_digest()
-        res["ref_type"] = self.ref_type._type_digest()
+    def _type_digest(self, config: bool) -> Dict[str, Any]:
+        res = super()._type_digest(config)
+        res["ref_type"] = self.ref_type._type_digest(config)
         return res
 
 class InstanceIdentifierType(LinkType):
@@ -552,9 +557,11 @@ class IdentityrefType(DataType):
             self.bases.append(
                 sctx.schema_data.translate_pname(b.argument, sctx.text_mid))
 
-    def _type_digest(self) -> Dict[str, Any]:
-        res = super()._type_digest()
-        res["identities"] = list(sctx.schema_data.derived_from_all(self.bases))
+    def _type_digest(self, config: bool) -> Dict[str, Any]:
+        res = super()._type_digest(config)
+        if config:
+            res["identities"] = list(
+                self.sctx.schema_data.derived_from_all(self.bases))
         return res
 
 class NumericType(DataType):
@@ -584,8 +591,8 @@ class NumericType(DataType):
                     [self._range], error_message="not in range")
             self.range.restrict_with(rstmt.argument, *rstmt.get_error_info())
 
-    def _type_digest(self) -> Dict[str, Any]:
-        res = super()._type_digest()
+    def _type_digest(self, config: bool) -> Dict[str, Any]:
+        res = super()._type_digest(config)
         if self.range:
             res["range"] = [[self.to_raw(r[0]), self.to_raw(r[0])]
                                 for r in self.range.intervals]
@@ -631,8 +638,8 @@ class Decimal64Type(NumericType):
             return False
         return super().__contains__(val)
 
-    def _type_digest(self) -> Dict[str, Any]:
-        res = super()._type_digest()
+    def _type_digest(self, config: bool) -> Dict[str, Any]:
+        res = super()._type_digest(config)
         res["fraction_digits"] = self.fraction_digits
         return res
 
