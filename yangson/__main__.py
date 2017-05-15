@@ -21,6 +21,7 @@ import argparse
 import json
 import os
 import sys
+import pkg_resources
 from typing import List
 from yangson import DataModel
 from yangson.enumerations import ContentType, ValidationScope
@@ -34,6 +35,7 @@ def main(ylib: str = None, path: List[str] = ["."],
              ctype: ContentType = ContentType.config, set_id: bool = False,
              tree: bool = False, digest: bool = False, validate: str = None):
     """Entry-point for a validation script."""
+    yver = pkg_resources.get_distribution("yangson").version
     if ylib is None:
         parser = argparse.ArgumentParser(
             prog="yangson",
@@ -48,6 +50,9 @@ def main(ylib: str = None, path: List[str] = ["."],
             help=("colon-separated list of directories to search"
                       " for YANG modules"))
         grp = parser.add_mutually_exclusive_group()
+        grp.add_argument(
+            "-V", "--version", action="store_true",
+            help="print Yangson version number")
         grp.add_argument(
             "-i", "--id", action="store_true",
             help="print module set id")
@@ -67,16 +72,11 @@ def main(ylib: str = None, path: List[str] = ["."],
             "-c", "--ctype", type=str, choices=["config", "nonconfig", "all"],
             default="config", help="content type of the data instance")
         args = parser.parse_args()
-        ylib = args.ylib
-        set_id = args.id
-        tree = args.tree
-        digest = args.digest
-        validate = args.validate
         path = args.path.split(":")
         scope = ValidationScope[args.scope]
         ctype = ContentType[args.ctype]
     try:
-        with open(ylib, encoding="utf-8") as infile:
+        with open(args.ylib, encoding="utf-8") as infile:
             yl = infile.read()
     except (FileNotFoundError, PermissionError,
                 json.decoder.JSONDecodeError) as e:
@@ -99,19 +99,19 @@ def main(ylib: str = None, path: List[str] = ["."],
     except ModuleNotRegistered as e:
         print("Module not registered:" , str(e), file=sys.stderr)
         return 2
-    if set_id:
+    if args.version:
+        print("Yangson " + yver)
+        return 0
+    if args.id:
         print(dm.module_set_id())
         return 0
-    if tree:
+    if args.tree:
         print(dm.ascii_tree())
         return 0
-    if tree:
-        print(dm.ascii_tree())
-        return 0
-    if digest:
+    if args.digest:
         print(dm.schema_digest())
         return 0
-    if not validate:
+    if not args.validate:
         return 0
     try:
         with open(validate, encoding="utf-8") as infile:
