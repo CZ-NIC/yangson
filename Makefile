@@ -6,6 +6,7 @@ tags:
 	find $(PROJECT) -name "*.py" | etags -
 
 deps:
+	mv requirements.txt requirements.txt.old
 	pip freeze > requirements.txt
 
 install-deps:
