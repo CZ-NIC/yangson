@@ -151,6 +151,8 @@ class SchemaNode:
     def _node_digest(self) -> Dict[str, Any]:
         """Return dictionary of receiver's properties suitable for clients."""
         res = { "kind": self._yang_class() }
+        if self.mandatory:
+            res["mandatory"] = True
         if self.description:
             res["description"] = self.description
         return res
