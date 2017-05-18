@@ -35,11 +35,13 @@ def main(ylib: str = None, path: List[str] = ["."],
              ctype: ContentType = ContentType.config, set_id: bool = False,
              tree: bool = False, digest: bool = False, validate: str = None):
     """Entry-point for a validation script."""
-    yver = pkg_resources.get_distribution("yangson").version
     if ylib is None:
         parser = argparse.ArgumentParser(
             prog="yangson",
             description="Validate JSON data against a YANG data model.")
+        parser.add_argument(
+            "-V", "--version", action="version", version="%(prog)s {}".format(
+                pkg_resources.get_distribution("yangson").version))
         parser.add_argument(
             "ylib", metavar="YLIB",
             help=("name of the file with description of the data model"
@@ -50,9 +52,6 @@ def main(ylib: str = None, path: List[str] = ["."],
             help=("colon-separated list of directories to search"
                       " for YANG modules"))
         grp = parser.add_mutually_exclusive_group()
-        grp.add_argument(
-            "-V", "--version", action="store_true",
-            help="print Yangson version number")
         grp.add_argument(
             "-i", "--id", action="store_true",
             help="print module set id")
@@ -99,9 +98,6 @@ def main(ylib: str = None, path: List[str] = ["."],
     except ModuleNotRegistered as e:
         print("Module not registered:" , str(e), file=sys.stderr)
         return 2
-    if args.version:
-        print("Yangson " + yver)
-        return 0
     if args.id:
         print(dm.module_set_id())
         return 0
@@ -114,7 +110,7 @@ def main(ylib: str = None, path: List[str] = ["."],
     if not args.validate:
         return 0
     try:
-        with open(validate, encoding="utf-8") as infile:
+        with open(args.validate, encoding="utf-8") as infile:
             itxt = json.load(infile)
     except (FileNotFoundError, PermissionError,
                 json.decoder.JSONDecodeError) as e:

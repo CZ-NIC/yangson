@@ -389,7 +389,7 @@ class BinaryType(LinearType):
         if not isinstance(val, bytes):
             self._set_error_info()
             return False
-        return super().__contains(val)
+        return super().__contains__(val)
 
     def to_raw(self, val: bytes) -> str:
         return self.canonical_string(val)
