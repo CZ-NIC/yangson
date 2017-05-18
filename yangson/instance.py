@@ -351,8 +351,8 @@ class InstanceNode:
 
     def _entry(self, index: int) -> "ArrayEntry":
         val = self.value
-        i = len(val) + index if index < 0 else index
         try:
+            i = len(val) + index if index < 0 else index
             return ArrayEntry(i, LinkedList.from_list(val[:i]),
                                   LinkedList.from_list(val[i+1:]),
                                   val[index], self, self.schema_node,
