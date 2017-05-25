@@ -594,7 +594,7 @@ class NumericType(DataType):
     def _type_digest(self, config: bool) -> Dict[str, Any]:
         res = super()._type_digest(config)
         if self.range:
-            res["range"] = [[self.to_raw(r[0]), self.to_raw(r[0])]
+            res["range"] = [[self.to_raw(r[0]), self.to_raw(r[1])]
                                 for r in self.range.intervals]
         return res
 
