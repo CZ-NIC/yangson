@@ -587,8 +587,8 @@ class NumericType(DataType):
         rstmt = stmt.find1("range")
         if rstmt:
             if self.range is None:
-                self.range = Intervals(
-                    [self._range], error_message="not in range")
+                self.range = Intervals([self._range], parser=self.parse_value,
+                                           error_message="not in range")
             self.range.restrict_with(rstmt.argument, *rstmt.get_error_info())
 
     def _type_digest(self, config: bool) -> Dict[str, Any]:
@@ -630,7 +630,9 @@ class Decimal64Type(NumericType):
         return self.canonical_string(val)
 
     def canonical_string(self, val: decimal.Decimal) -> Optional[str]:
-        return "0.0" if val == 0 else str(val).rstrip("0")
+        if val == 0: return "0.0"
+        sval = str(val.quantize(self._epsilon)).rstrip("0")
+        return (sval + "0") if sval.endswith(".") else sval
 
     def __contains__(self, val: decimal.Decimal) -> bool:
         if not isinstance(val, decimal.Decimal):
