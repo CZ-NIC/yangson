@@ -280,11 +280,11 @@ class InvalidLeafrefPath(SchemaNodeException):
 class RawDataError(YangsonException):
     """Abstract exception class for errors in raw data."""
 
-    def __init__(self, jptr: JSONPointer):
-        self.jptr = jptr
+    def __init__(self, path: JSONPointer):
+        self.path = path
 
     def __str__(self) -> JSONPointer:
-        return self.jptr
+        return self.path
 
 class RawMemberError(RawDataError):
     """Object member in the raw value doesn't exist in the schema."""
@@ -293,12 +293,12 @@ class RawMemberError(RawDataError):
 class RawTypeError(RawDataError):
     """Raw value is of an incorrect type."""
 
-    def __init__(self, jptr: JSONPointer, expected: str):
-        super().__init__(jptr)
+    def __init__(self, path: JSONPointer, expected: str):
+        super().__init__(path)
         self.expected = expected
 
     def __str__(self):
-        return "[{}] expected {}".format(self.jptr, self.expected)
+        return "[{}] expected {}".format(self.path, self.expected)
 
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
