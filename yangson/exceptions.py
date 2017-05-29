@@ -92,7 +92,7 @@ class InstanceException(YangsonException):
 
     def __init__(self, path: JSONPointer, message: str):
         self.path = path
-        self.message = detail
+        self.message = message
 
     def __str__(self):
         return "[{}] {}".format(self.path, self.message)
