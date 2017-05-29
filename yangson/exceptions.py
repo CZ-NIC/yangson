@@ -90,12 +90,12 @@ class InvalidKeyValue(YangsonException):
 class InstanceException(YangsonException):
     """Abstract class for exceptions related to operations on instance nodes."""
 
-    def __init__(self, path: JSONPointer, detail: str):
+    def __init__(self, path: JSONPointer, message: str):
         self.path = path
-        self.detail = detail
+        self.message = detail
 
     def __str__(self):
-        return "[{}] {}".format(self.path, self.detail)
+        return "[{}] {}".format(self.path, self.message)
 
 class InstanceValueError(InstanceException):
     """The instance value is incompatible with the called method."""
@@ -182,11 +182,11 @@ class ModuleNotImplemented(MissingModule):
 class BadYangLibraryData(YangsonException):
     """Broken YANG library data."""
 
-    def __init__(self, reason: str):
-        self.reason = reason
+    def __init__(self, message: str):
+        self.message = message
 
     def __str__(self) -> str:
-        return self.reason
+        return self.message
 
 class InvalidSchemaPath(YangsonException):
     """Invalid schema or data path."""
@@ -295,10 +295,10 @@ class RawTypeError(RawDataError):
 
     def __init__(self, path: JSONPointer, expected: str):
         super().__init__(path)
-        self.expected = expected
+        self.message = "expected " + expected
 
     def __str__(self):
-        return "[{}] expected {}".format(self.path, self.expected)
+        return "[{}] {}".format(self.path, self.expected)
 
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
