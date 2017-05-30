@@ -731,7 +731,7 @@ class TerminalNode(SchemaNode):
         """Override the superclass method."""
         res = self.type.from_raw(rval)
         if res is None:
-            raise RawTypeError(jptr, str(self.type))
+            raise RawTypeError(jptr, self.type.name + " value")
         return res
 
     def _node_digest(self) -> Dict[str, Any]:
