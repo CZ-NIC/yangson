@@ -298,7 +298,7 @@ class RawTypeError(RawDataError):
         self.message = "expected " + expected
 
     def __str__(self):
-        return "[{}] {}".format(self.path, self.expected)
+        return "[{}] {}".format(self.path, self.message)
 
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
