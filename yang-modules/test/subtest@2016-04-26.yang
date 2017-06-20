@@ -54,4 +54,8 @@ submodule subtest {
     }
     default "caseA";
   }
+  leaf leafX {
+    type inet:port-number;
+    default 6378;
+  }
 }

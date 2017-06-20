@@ -69,6 +69,7 @@ tree = """+--rw (test:choiA)?
 |  +--rw uint32? <uint32>
 |  +--rw uint64? <uint64>
 |  +--rw uint8? <uint8>
++--rw test:leafX? <port-number(uint16)>
 +---n testb:noA
 |  +--ro testb:leafO? <boolean>
 +---x testb:rpcA
@@ -88,6 +89,7 @@ def instance(data_model):
     data = """
     {
         "test:llistB": ["::1", "127.0.0.1"],
+        "test:leafX": 53531,
 	    "test:contA": {
 		    "leafB": 9,
 		    "listA": [{
@@ -316,7 +318,7 @@ def test_instance(data_model, instance):
     axtest(la1._following_siblings(), [])
     assert len(conta._children()) == 10
     axtest(la1._children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance._descendants(with_self=True)) == 31
+    assert len(instance._descendants(with_self=True)) == 32
     axtest(conta._descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln._ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
@@ -369,7 +371,7 @@ def test_xpath(data_model, instance):
     xptest("local-name()", "leafR", lr)
     xptest("name()", "testb:leafR", lr)
     xptest("name(../t:listA)", "listA", lr, "testb")
-    xptest("count(descendant-or-self::*)", 31)
+    xptest("count(descendant-or-self::*)", 32)
     xptest("count(descendant::t:leafE)", 2)
     xptest("count(preceding-sibling::*)", 0, lr, "testb")
     xptest("count(following-sibling::*)", 0, lr, "testb")
