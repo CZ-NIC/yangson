@@ -444,7 +444,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 'tres'
 
    .. method:: validate(scope: ValidationScope = ValidationScope.all, \
-	       content: ContentType = ContentType.config) -> None
+	       ctype: ContentType = ContentType.config) -> None
 
       Perform validation on the receiver's value. The *scope* argument
       determines the validation scope. The options are as follows:
@@ -460,7 +460,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       * ``ValidationScope.all`` – performs all checks from both items
 	above.
 
-      The value of the *content* argument belongs to the
+      The value of the *ctype* argument belongs to the
       :class:`~.enumerations.ContentType` enumeration and specifies
       whether the receiver's value is to be validated as configuration
       (``Content.config``) or as both configuration and state data
