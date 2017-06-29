@@ -78,13 +78,14 @@ class DataModel:
         self.schema = SchemaTreeNode()
         self.schema._ctype = ContentType.all
         try:
-            yl = json.loads(yltxt)
+            self.yang_library = json.loads(yltxt)
         except json.JSONDecodeError as e:
             raise BadYangLibraryData(str(e)) from None
-        self.schema_data = SchemaData(yl, mod_path)
+        self.schema_data = SchemaData(self.yang_library, mod_path)
         self._build_schema()
         self.schema.description = description if description else (
-            "Data model ID: " + yl["ietf-yang-library:modules-state"]["module-set-id"])
+            "Data model ID: " +
+            self.yang_library["ietf-yang-library:modules-state"]["module-set-id"])
 
     def module_set_id(self) -> str:
         """Compute unique id of YANG modules comprising the data model.

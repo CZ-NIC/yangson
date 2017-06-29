@@ -60,6 +60,20 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       >>> from yangson import DataModel
 
+   .. rubric:: Instance Attributes
+
+   .. attribute:: schema
+
+      Root node of the schema tree.
+
+   .. attribute:: schema_data
+
+      Object describing various properties extracted from the data model.
+
+   .. attribute:: yang_library
+
+      Python dictionary containing parsed YANG library data.
+
    .. rubric:: Public Methods
 
    .. classmethod:: from_file(name: str, mod_path: List[str] = ["."], \
@@ -77,6 +91,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
 	 >>> dm = DataModel.from_file("yang-library-ex1.json")
+	 >>> dm.yang_library['ietf-yang-library:modules-state']['module-set-id']
+	 'ae4bf1ddf85a67ab94a9ab71593cd1c78b7f231d'
 
    .. method:: module_set_id() -> str
 
