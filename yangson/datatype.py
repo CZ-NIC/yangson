@@ -528,12 +528,12 @@ class IdentityrefType(DataType):
             i1, s, i2 = raw.partition(":")
         except AttributeError:
             return None
-        return (i2, i1) if s else (i1, self.namespace)
+        return (i2, i1) if s else (i1, self.sctx.default_ns)
 
     def __contains__(self, val: QualName) -> bool:
         for b in self.bases:
             if not self.sctx.schema_data.is_derived_from(val, b):
-                self._set_error_info(error_message="not derived from " + b)
+                self._set_error_info(error_message="not derived from {1}:{0}".format(*b))
                 return False
         return True
 
