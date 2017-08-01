@@ -9,12 +9,12 @@
           "fea2"
         ],
         "namespace": "http://example.com/example-3/a",
-        "revision": "2016-06-18",
+        "revision": "2017-08-01",
         "conformance-type": "implement",
 	"submodule": [
 	  {
 	    "name": "example-3-suba",
-	    "revision": "2016-07-21"
+	    "revision": "2017-08-01"
 	  }
 	]
       },

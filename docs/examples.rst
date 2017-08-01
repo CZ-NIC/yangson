@@ -83,16 +83,16 @@ File: ``examples/ex3/yang-library-ex3.json``
 
 .. rubric:: YANG Module *example-3-a*
 
-File: ``examples/ex3/example-3-a@2016-06-18.yang``
+File: ``examples/ex3/example-3-a@2017-08-01.yang``
 
-.. literalinclude:: examples/ex3/example-3-a@2016-06-18.yang 
+.. literalinclude:: examples/ex3/example-3-a@2017-08-01.yang 
    :language: none
 
 .. rubric:: YANG Submodule *example-3-suba*
 
-File: ``examples/ex3/example-3-suba@2016-07-21.yang``
+File: ``examples/ex3/example-3-suba@2017-08-01.yang``
 
-.. literalinclude:: examples/ex3/example-3-suba@2016-07-21.yang
+.. literalinclude:: examples/ex3/example-3-suba@2017-08-01.yang
    :language: none
 
 .. rubric:: YANG Module *example-3-b*

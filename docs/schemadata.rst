@@ -187,13 +187,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 	 >>> len(dm.schema_data.modules)
 	 5
-	 >>> dm.schema_data.modules[('example-3-a', '2016-06-18')].main_module
-	 ('example-3-a', '2016-06-18')
-	 >>> dm.schema_data.modules[('example-3-suba', '2016-07-21')].main_module
-	 ('example-3-a', '2016-06-18')
-	 >>> dm.schema_data.modules[('example-3-suba', '2016-07-21')].prefix_map['inet']
+	 >>> dm.schema_data.modules[('example-3-a', '2017-08-01')].main_module
+	 ('example-3-a', '2017-08-01')
+	 >>> dm.schema_data.modules[('example-3-suba', '2017-08-01')].main_module
+	 ('example-3-a', '2017-08-01')
+	 >>> dm.schema_data.modules[('example-3-suba', '2017-08-01')].prefix_map['inet']
 	 ('ietf-inet-types', '2013-07-15')
-	 >>> sorted(dm.schema_data.modules[('example-3-a', '2016-06-18')].features)
+	 >>> sorted(dm.schema_data.modules[('example-3-a', '2017-08-01')].features)
 	 ['fea1', 'fea2']
 
    .. rubric:: Public Methods
@@ -212,7 +212,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.namespace(('example-3-suba', '2016-07-21'))
+	 >>> dm.schema_data.namespace(('example-3-suba', '2017-08-01'))
 	 'example-3-a'
 
    .. method:: last_revision(name: YangIdentifier) -> ModuleId
@@ -300,7 +300,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-         >>> sctx1 = SchemaContext(dm.schema_data, 'example-3-b', ('example-3-a', '2016-08-18'))
+         >>> sctx1 = SchemaContext(dm.schema_data, 'example-3-b', ('example-3-a', '2017-08-01'))
          >>> dm.schema_data.translate_node_id('bar', sctx1)
 	 ('bar', 'example-3-b')
 
@@ -446,9 +446,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> amod = dm.schema_data.modules[('example-3-a', '2016-06-18')].statement
+	 >>> amod = dm.schema_data.modules[('example-3-a', '2017-08-01')].statement
 	 >>> foo = amod.find1("container").find1("leaf")
-	 >>> dm.schema_data.if_features(foo, ('example-3-a', '2016-06-18'))
+	 >>> dm.schema_data.if_features(foo, ('example-3-a', '2017-08-01'))
 	 True
 
 .. class:: FeatureExprParser(text: str, schema_data: SchemaData, mid: ModuleId)
@@ -500,7 +500,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 	 >>> from yangson.schemadata import FeatureExprParser
 	 >>> FeatureExprParser('ex3a:fea1 and not (ex3a:fea1 or ex3a:fea2)',
-	 ... dm.schema_data, ('example-3-a', '2016-06-18')).parse()
+	 ... dm.schema_data, ('example-3-a', '2017-08-01')).parse()
 	 False
 
 .. _5.6.5: https://tools.ietf.org/html/rfc7950#section-5.6.5

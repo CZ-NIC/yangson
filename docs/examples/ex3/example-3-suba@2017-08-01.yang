@@ -11,7 +11,13 @@ submodule example-3-suba {
     revision-date 2013-07-15;
   }
 
-  revision 2016-07-21;
+  revision 2017-08-01;
+
+  grouping gquux {
+    leaf quux {
+      type uint8;
+    }
+  }
 
   augment "/ex3a:top" {
     uses gbar;
