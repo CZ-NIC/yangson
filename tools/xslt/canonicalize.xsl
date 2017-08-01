@@ -197,7 +197,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     <call-template name="preceding-comment"/>
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
-      <call-template name="copy-extensions"/>
     </copy>
   </template>
   <template match="yin:contact">
