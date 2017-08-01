@@ -1123,13 +1123,15 @@ class LeafNode(DataNode, TerminalNode):
         super()._post_process()
         if self._mandatory:
             self.parent._add_mandatory_child(self)
+        elif self._default is not None:
+            self._default = self.type.from_yang(self._default)
 
     def _tree_line(self) -> str:
         return "{}{} <{}>".format(
             super()._tree_line(), "" if self._mandatory else "?", self.type)
 
     def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
-        self._default = self.type.from_yang(stmt.argument)
+        self._default = stmt.argument
 
 class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
@@ -1151,11 +1153,16 @@ class LeafListNode(SequenceNode, TerminalNode):
             raise SemanticError(inst.json_pointer(), "repeated-leaf-list-value")
 
     def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
-        val = self.type.parse_value(stmt.argument)
         if self._default is None:
-            self._default = ArrayValue([val])
+            self._default = [stmt.argument]
         else:
-            self._default.append(val)
+            self._default.append(stmt.argument)
+
+    def _post_process(self) -> None:
+        super()._post_process()
+        if self._default is not None:
+            self._default = ArrayValue(
+                [self.type.from_yang(v) for v in self._default])
 
     def _tree_line(self) -> str:
         return "{} <{}>".format(super()._tree_line(), self.type)
