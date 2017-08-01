@@ -216,12 +216,13 @@ all :class:`~.schemanode.TerminalNode` instances.
 	 >>> decimal64_t.canonical_string(e)
 	 '2.7183'
 
-   .. method:: from_yang(text: str, sctx: SchemaContext) -> Optional[ScalarValue]
+   .. method:: from_yang(text: str) -> ScalarValue
 
-      Return a value of receiver's type parsed from a string appearing
-      in a YANG module, or ``None`` if parsing fails. The *sctx*
-      argument is the :class:`~.schemadata.SchemaContext` in which
-      *text* is interpreted as a scalar value.
+      Return a value of receiver's type parsed from *text* appearing
+      in a YANG module.
+
+      This method raises :exc:`~.InvalidArgument` if the receiver type
+      cannot properly parse *text*.
 
       This method is mainly useful for parsing arguments of the
       **default** statement.
@@ -229,7 +230,7 @@ all :class:`~.schemanode.TerminalNode` instances.
       .. doctest::
 
 	 >>> sctx = SchemaContext(dm.schema_data, 'example-5-a', ('example-5-a', ''))
-	 >>> identityref_t.from_yang('ex5b:derived-identity', sctx)
+	 >>> identityref_t.from_yang('ex5b:derived-identity')
 	 ('derived-identity', 'example-5-b')
 
    .. method:: yang_type() -> YangIdentifier

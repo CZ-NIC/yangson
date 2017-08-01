@@ -1129,8 +1129,7 @@ class LeafNode(DataNode, TerminalNode):
             super()._tree_line(), "" if self._mandatory else "?", self.type)
 
     def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
-        self._default = self.type.from_yang(stmt.argument, sctx)
-        if self._default is None: raise InvalidArgument(stmt.argument)
+        self._default = self.type.from_yang(stmt.argument)
 
 class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
@@ -1153,7 +1152,6 @@ class LeafListNode(SequenceNode, TerminalNode):
 
     def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         val = self.type.parse_value(stmt.argument)
-        if val is None: raise InvalidArgument(stmt.argument)
         if self._default is None:
             self._default = ArrayValue([val])
         else:

@@ -112,10 +112,18 @@ class DataType:
         """Return canonical form of a value."""
         return str(val)
 
-    def from_yang(self, text: str, sctx: SchemaContext
-                      = None) -> Optional[ScalarValue]:
-        """Parse value specified in a YANG module."""
-        return self.parse_value(text)
+    def from_yang(self, text: str) -> ScalarValue:
+        """Parse value specified in a YANG module.
+
+        Args:
+            text: String representation of the value.
+
+        Raises:
+            InvalidArgument: If the receiver type cannot parse the text.
+        """
+        res = self.parse_value(text)
+        if res is None: raise InvalidArgument(text)
+        return res
 
     def yang_type(self) -> YangIdentifier:
         """Return YANG name of the receiver."""
@@ -159,7 +167,7 @@ class DataType:
                 res._handle_restrictions(typst, tsc)
             dfst = tdef.find1("default")
             if dfst:
-                res.default = res.from_yang(dfst.argument, tsc)
+                res.default = res.from_yang(dfst.argument)
                 if res.default is None: raise InvalidArgument(dfst.argument)
         res._handle_restrictions(stmt, sctx)
         return res
@@ -540,12 +548,12 @@ class IdentityrefType(DataType):
     def to_raw(self, val: QualName) -> str:
         return self.canonical_string(val)
 
-    def from_yang(self, text: str, sctx: SchemaContext) -> Optional[QualName]:
+    def from_yang(self, text: str) -> Optional[QualName]:
         """Override the superclass method."""
         try:
-            return sctx.schema_data.translate_pname(text, self.sctx.text_mid)
+            return self.sctx.schema_data.translate_pname(text, self.sctx.text_mid)
         except:
-            return None
+            raise InvalidArgument(text)
 
     def canonical_string(self, val: ScalarValue) -> Optional[str]:
         """Return canonical form of a value."""
@@ -667,7 +675,7 @@ class IntegralType(NumericType):
         except (ValueError, TypeError):
             return None
 
-    def from_yang(self, text: str, sctx: SchemaContext = None) -> Optional[int]:
+    def from_yang(self, text: str) -> Optional[int]:
         """Override the superclass method."""
         if text.startswith("0"):
             base = 16 if text.startswith("0x") else 8
@@ -676,7 +684,7 @@ class IntegralType(NumericType):
         try:
             return int(text, base)
         except (ValueError, TypeError):
-            return None
+            raise InvalidArgument(text)
 
 class Int8Type(IntegralType):
     """Class representing YANG "int8" type."""
