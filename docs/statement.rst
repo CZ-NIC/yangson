@@ -142,10 +142,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 	 >>> str(lfs.get_definition('my-string', 'typedef'))
 	 'typedef "my-string" { ... }'
-	 >>> lfs.get_definition('my-string', 'grouping')
-	 Traceback (most recent call last):
-	 ...
-	 yangson.statement.DefinitionNotFound: grouping my-string
+	 >>> lfs.get_definition('my-string', 'grouping') is None
+	 True
 
 .. class:: ModuleParser(text: str)
 

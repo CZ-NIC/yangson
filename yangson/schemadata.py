@@ -402,10 +402,12 @@ class SchemaData:
             raise ValueError("not a 'uses' or 'type' statement")
         loc, did = self.resolve_pname(stmt.argument, sctx.text_mid)
         if did == sctx.text_mid:
-            return (stmt.get_definition(loc, kw), sctx)
-        dstmt = self.modules[did].statement.find1(kw, loc)
-        if dstmt:
-            return (dstmt, SchemaContext(sctx.schema_data, sctx.default_ns, did))
+            dstmt = stmt.get_definition(loc, kw)
+            if dstmt: return (dstmt, sctx)
+        else:
+            dstmt = self.modules[did].statement.find1(kw, loc)
+            if dstmt:
+                return (dstmt, SchemaContext(sctx.schema_data, sctx.default_ns, did))
         for sid in self.modules[did].submodules:
             dstmt = self.modules[sid].statement.find1(kw, loc)
             if dstmt: return (

@@ -99,7 +99,7 @@ class Statement:
                 if c.keyword == kw and c.prefix == pref]
 
     def get_definition(self, name: YangIdentifier,
-                       kw: YangIdentifier) -> "Statement":
+                       kw: YangIdentifier) -> Optional["Statement"]:
         """Search ancestor statements for a definition.
 
         Args:
@@ -114,7 +114,7 @@ class Statement:
             res = stmt.find1(kw, name)
             if res: return res
             stmt = stmt.superstmt
-        raise DefinitionNotFound(kw, name)
+        return None
 
     def get_error_info(self) -> Tuple[Optional[str], Optional[str]]:
         """Return receiver's error tag and error message if present."""
