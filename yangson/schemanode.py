@@ -260,7 +260,7 @@ class SchemaNode:
     def _default_nodes(self, inst: "InstanceNode") -> List["InstanceNode"]:
         return []
 
-    def _tree_line(self) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
         return self._tree_line_prefix() + " " + self.iname()
 
@@ -578,7 +578,7 @@ class InternalNode(SchemaNode):
         """Handle anydata statement."""
         self._handle_child(AnydataNode(), stmt, sctx)
 
-    def _ascii_tree(self, indent: str) -> str:
+    def _ascii_tree(self, indent: str, no_types: bool) -> str:
         """Return the receiver's subtree as ASCII art."""
         if not self.children: return ""
         cs = []
@@ -587,10 +587,10 @@ class InternalNode(SchemaNode):
         cs.sort(key=lambda x: x.qual_name)
         res = ""
         for c in cs[:-1]:
-            res += (indent + c._tree_line() + "\n" +
-                    c._ascii_tree(indent + "|  "))
-        return (res + indent + cs[-1]._tree_line() + "\n" +
-                cs[-1]._ascii_tree(indent + "   "))
+            res += (indent + c._tree_line(no_types) + "\n" +
+                    c._ascii_tree(indent + "|  ", no_types))
+        return (res + indent + cs[-1]._tree_line(no_types) + "\n" +
+                cs[-1]._ascii_tree(indent + "   ", no_types))
 
 class GroupNode(InternalNode):
     """Anonymous group of schema nodes."""
@@ -779,7 +779,7 @@ class TerminalNode(SchemaNode):
         di = self._default_instance(inst, ContentType.all)
         return [] if di is None else [self]
 
-    def _ascii_tree(self, indent: str) -> str:
+    def _ascii_tree(self, indent: str, no_types: bool) -> str:
         return ""
 
     def _state_roots(self) -> List[SchemaNode]:
@@ -829,7 +829,7 @@ class ContainerNode(DataNode, InternalNode):
     def _presence_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.presence = True
 
-    def _tree_line(self) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
         return super()._tree_line() + ("!" if self.presence else "")
 
@@ -885,7 +885,7 @@ class SequenceNode(DataNode):
     def _ordered_by_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.user_ordered = stmt.argument == "user"
 
-    def _tree_line(self) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Extend the superclass method."""
         return super()._tree_line() + "*"
 
@@ -986,7 +986,7 @@ class ListNode(SequenceNode, InternalNode):
             uspec.append(sctx.schema_data.sni2route(sid, sctx))
         self.unique.append(uspec)
 
-    def _tree_line(self) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
         keys = (" [" + " ".join([ k[0] for k in self.keys ]) + "]"
                 if self.keys else "")
@@ -1082,7 +1082,7 @@ class ChoiceNode(InternalNode):
         self.default_case = sctx.schema_data.translate_node_id(
             stmt.argument, sctx)
 
-    def _tree_line(self) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{} ({}){}".format(
             self._tree_line_prefix(), self.iname(),
@@ -1094,7 +1094,7 @@ class CaseNode(InternalNode):
     def _pattern_entry(self) -> SchemaPattern:
         return super()._schema_pattern()
 
-    def _tree_line(self) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
         return "{}:({})".format(
             self._tree_line_prefix(), self.iname())
@@ -1126,9 +1126,9 @@ class LeafNode(DataNode, TerminalNode):
         elif self._default is not None:
             self._default = self.type.from_yang(self._default)
 
-    def _tree_line(self) -> str:
-        return "{}{} <{}>".format(
-            super()._tree_line(), "" if self._mandatory else "?", self.type)
+    def _tree_line(self, no_type: bool = False) -> str:
+        res = super()._tree_line() + ("" if self._mandatory else "?")
+        return res if no_type else "{} <{}>".format(res, self.type)
 
     def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self._default = stmt.argument
@@ -1164,8 +1164,9 @@ class LeafListNode(SequenceNode, TerminalNode):
             self._default = ArrayValue(
                 [self.type.from_yang(v) for v in self._default])
 
-    def _tree_line(self) -> str:
-        return "{} <{}>".format(super()._tree_line(), self.type)
+    def _tree_line(self, no_type: bool = False) -> str:
+        res = super()._tree_line()
+        return res if no_type else "{} <{}>".format(res, self.type)
 
 class AnyContentNode(DataNode):
     """Abstract class for anydata or anyxml nodes."""
@@ -1200,10 +1201,10 @@ class AnyContentNode(DataNode):
                           lazy: bool = False) -> "InstanceNode":
         return pnode
 
-    def _tree_line(self) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         return super()._tree_line() + ("" if self._mandatory else "?")
 
-    def _ascii_tree(self, indent: str) -> str:
+    def _ascii_tree(self, indent: str, no_types: bool) -> str:
         return ""
 
     def _post_process(self) -> None:

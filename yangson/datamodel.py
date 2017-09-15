@@ -60,7 +60,7 @@ class DataModel:
     def __init__(self, yltxt: str, mod_path: List[str] = ["."],
                      description: str = None):
         """Initialize the class instance.
-        
+
         Args:
             yltxt: JSON text with YANG library data.
             mod_path: List of directories where to look for YANG modules.
@@ -142,13 +142,16 @@ class DataModel:
             if node is None: return None
         return node
 
-    def ascii_tree(self) -> str:
+    def ascii_tree(self, no_types: bool = False) -> str:
         """Generate ASCII art representation of the schema tree.
+
+        Args:
+            no_types: Suppress output of data type info.
 
         Returns:
             String with the ASCII tree.
         """
-        return self.schema._ascii_tree("")
+        return self.schema._ascii_tree("", no_types)
 
     def parse_instance_id(self, text: str) -> InstanceRoute:
         return InstanceIdParser(text).parse()
@@ -180,4 +183,3 @@ class DataModel:
                 self.schema._augment_stmt(aug, sctx)
         self.schema._post_process()
         self.schema._make_schema_patterns()
-

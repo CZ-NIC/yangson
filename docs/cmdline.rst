@@ -105,6 +105,11 @@ Options
    data) and ``all`` (all data).  See
    also :meth:`.InstanceNode.validate`.
 
+.. option:: -n, --no_types
+
+   This option is used to suppress data type information in ASCII tree output.
+   It is relevant only for the :option:`--tree` operation. 
+
 Environment Variables
 =====================
 

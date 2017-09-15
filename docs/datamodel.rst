@@ -100,7 +100,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       data model. This string, which consists of hexadecimal digits,
       is intended to be stored in the ``module-set-id`` leaf of YANG
       library data.
-      
+
       The method computes the identifier as follows:
 
       - The list of module and sumodule names with revisions in the
@@ -166,24 +166,18 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> leaf.parent is root
 	 True
 
-    .. method:: ascii_tree() -> str
+    .. method:: ascii_tree(no_types: bool = False) -> str
 
-      Generate ASCII art representation of the schema tree.
-      
-      Note that this method returns a single tree for the entire data
-      model. Other tools, such as pyang_, often produce one tree per
-      module. Other differences are:
-
-      - Types of *leaf* and *leaf-list* nodes are not shown because
-	they often result in very long lines.
-
-      - Nodes depending on unsupported features are not shown in the
-	tree.
+      Generate ASCII art representation of the actual schema tree. If
+      *no_types* is set to ``True``, the output of type information
+      with *leaf* and *leaf-list* nodes is suppressed.
 
       .. doctest::
 
 	 >>> print(dm.ascii_tree(), end='')
 	 +--rw example-1:greeting? <string>
+	 >>> print(dm.ascii_tree(True), end='')
+	 +--rw example-1:greeting?
 
     .. method:: parse_instance_id(text: str) -> InstanceRoute
 

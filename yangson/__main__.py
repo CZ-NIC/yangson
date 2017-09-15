@@ -70,6 +70,9 @@ def main(ylib: str = None, path: List[str] = ["."],
         parser.add_argument(
             "-c", "--ctype", type=str, choices=["config", "nonconfig", "all"],
             default="config", help="content type of the data instance")
+        parser.add_argument(
+            "-n", "--no-types", action="store_true",
+            help="suppress type info in tree output")
         args = parser.parse_args()
         path = args.path.split(":")
         scope = ValidationScope[args.scope]
@@ -102,7 +105,7 @@ def main(ylib: str = None, path: List[str] = ["."],
         print(dm.module_set_id())
         return 0
     if args.tree:
-        print(dm.ascii_tree())
+        print(dm.ascii_tree(args.no_types))
         return 0
     if args.digest:
         print(dm.schema_digest())
