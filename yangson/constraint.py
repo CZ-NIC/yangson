@@ -27,11 +27,10 @@ This module implements the following classes:
 
 import decimal
 import re
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Union
 from pyxb.utils.xmlre import XMLToPython
 
 from .exceptions import InvalidArgument
-from .typealiases import *
 from .xpathast import Expr
 
 # Type aliases
@@ -41,6 +40,7 @@ Number = Union[int, decimal.Decimal]
 Interval = List[Number]
 """Numeric interval consisting either of one number or a pair of bounds."""
 
+
 class Constraint:
     """Abstract class representing annotated YANG constraints."""
 
@@ -49,12 +49,13 @@ class Constraint:
         self.error_tag = error_tag
         self.error_message = error_message
 
+
 class Intervals(Constraint):
     """Class representing a sequence of numeric intervals."""
 
     def __init__(self, intervals: List[Interval],
-                     parser: Callable[[str], Optional[Number]] = None,
-                     error_tag: str = None, error_message: str = None):
+                 parser: Callable[[str], Optional[Number]] = None,
+                 error_tag: str = None, error_message: str = None):
         """Initialize the class instance."""
         def _pint(x):                     # default parser
             try:
@@ -69,8 +70,10 @@ class Intervals(Constraint):
         """Return ``True`` if the receiver contains the value."""
         for r in self.intervals:
             if len(r) == 1:
-                if r[0] == value: return True
-            elif r[0] <= value <= r[1]: return True
+                if r[0] == value:
+                    return True
+            elif r[0] <= value <= r[1]:
+                return True
         return False
 
     def __str__(self) -> str:
@@ -80,7 +83,7 @@ class Intervals(Constraint):
             for r in self.intervals])
 
     def restrict_with(self, expr: str, error_tag: str = None,
-                         error_message: str = None) -> None:
+                      error_message: str = None) -> None:
         """Combine the receiver with new intervals.
 
         Args:
@@ -96,7 +99,8 @@ class Intervals(Constraint):
             if res is None:
                 raise InvalidArgument(expr)
             return res
-        to_num = lambda xs: [parse(x) for x in xs]
+
+        def to_num(xs): return [parse(x) for x in xs]
         lo = self.intervals[0][0]
         hi = self.intervals[-1][-1]
         ran = []
@@ -111,21 +115,22 @@ class Intervals(Constraint):
             hi = parse(ran[-1][-1])
         self.intervals = (
             [[lo, hi]] if len(ran) == 1 else [[lo, parse(ran[0][-1])]] +
-            [ to_num(r) for r in ran[1:-1] ] + [[parse(ran[-1][0]), hi]])
+            [to_num(r) for r in ran[1:-1]] + [[parse(ran[-1][0]), hi]])
         if error_tag:
             self.error_tag = error_tag
         if error_message:
             self.error_message = error_message
 
+
 class Pattern(Constraint):
     """Class representing regular expression pattern."""
 
     def __init__(self, pattern: str, invert_match: bool = False,
-                     error_tag: str = None,
-                     error_message: str = None):
+                 error_tag: str = None,
+                 error_message: str = None):
         """Initialize the class instance."""
         super().__init__(error_tag, error_message if error_message else
-                             "pattern '{}'".format(pattern))
+                         "pattern '{}'".format(pattern))
         self.pattern = pattern
         self.invert_match = invert_match
         try:
@@ -133,11 +138,12 @@ class Pattern(Constraint):
         except:
             raise InvalidArgument(pattern) from None
 
+
 class Must(Constraint):
     """Class representing the constraint specified by a "must" statement."""
 
     def __init__(self, expression: Expr, error_tag: str = None,
-                     error_message: str = None):
+                 error_message: str = None):
         """Initialize the class instance."""
         super().__init__(
             error_tag if error_tag else "must-violation", error_message)

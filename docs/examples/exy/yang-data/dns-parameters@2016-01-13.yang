@@ -1,0 +1,289 @@
+module dns-parameters {
+
+  yang-version "1.1";
+
+  namespace "http://www.nic.cz/ns/yang/dns-parameters";
+
+  prefix "dnspars";
+
+  organization
+    "CZ.NIC, z. s. p. o.";
+
+  contact
+    "Editor:   Ladislav Lhotka
+               <mailto:lhotka@nic.cz>";
+
+  description
+    "This module translates IANA registry of Domain Name System (DNS)
+     parameters to YANG enumeration types.
+
+     TODO: Complete the enumerations.";
+
+  reference
+    "IANA: Domain Name System (DNS) Parameters.
+     https://www.iana.org/assignments/dns-parameters/dns-parameters.xml";
+
+  revision 2016-01-13 {
+    description
+      "Initial revision.";
+    reference
+      "TODO: put git tag here";
+  }
+
+  typedef dns-class {
+    type enumeration {
+      enum IN {
+        value "1";
+        description
+          "Internet";
+        reference
+          "RFC 1035: Domain Names - Implementation and
+           Specification.";
+      }
+      enum CH {
+        value "3";
+        description
+          "Chaos";
+        reference
+          "D. Moon, \"Chaosnet\", A.I. Memo 628, Massachusetts
+           Institute of Technology Artificial Intelligence
+           Laboratory, June 1981.";
+      }
+      enum HS {
+        value "4";
+        description
+          "Hesiod";
+        reference
+          "Dyer, S., and F. Hsu, \"Hesiod\", Project Athena Technical
+           Plan – Name Service, April 1987.";
+      }
+      enum NONE {
+        value "254";
+        description
+          "QCLASS NONE";
+        reference
+          "RFC 2136: Dynamic Updates in the Domain Name System (DNS
+           UPDATE).";
+      }
+      enum ANY {
+        value "255";
+        description
+          "QCLASS *";
+        reference
+          "RFC 1035: Domain Names - Implementation and
+           Specification.";
+      }
+    }
+    description
+      "DNS resource record and query classes.
+
+       Values 0 and 65535 are reserved; 65280–65534 reserved for
+       private use; 2, 5–253, 256–65279 unassigned.";
+  }
+
+  typedef dns-opcode {
+    type enumeration {
+      enum query {
+        value "0";
+        description
+          "Query";
+        reference
+          "RFC 1035: Domain Names - Implementation and
+           Specification.";
+      }
+      enum iquery {
+        value "1";
+        status "obsolete";
+        description
+          "Inverse Query";
+        reference
+          "RFC 3425: Obsoleting IQUERY.";
+      }
+      enum status {
+        value "2";
+        description
+          "Status";
+        reference
+          "RFC 1035: Domain Names - Implementation and
+           Specification.";
+      }
+      enum notify {
+        value "4";
+        description
+          "Notify";
+        reference
+          "RFC 1996: A Mechanism for Prompt Notification of Zone
+           Changes (DNS NOTIFY).";
+      }
+      enum update {
+        value "5";
+        description
+          "Update";
+        reference
+          "RFC 2136: Dynamic Updates in the Domain Name System (DNS
+           UPDATE).";
+      }
+    }
+    description
+      "DNS operations codes.
+
+       Value of 3 is unassigned.";
+  }
+
+  typedef dns-rcode {
+    type enumeration {
+      enum noerror {
+        value "0";
+        description
+          "No error";
+        reference
+          "RFC 1035: Domain Names - Implementation and
+           Specification.";
+      }
+      enum formerr {
+        value "1";
+        description
+          "Format error";
+        reference
+          "RFC 1035: Domain Names - Implementation and
+           Specification.";
+      }
+      enum servfail {
+        value "2";
+        description
+          "Server failure";
+        reference
+          "RFC 1035: Domain Names - Implementation and
+           Specification.";
+      }
+      enum nxdomain {
+        value "3";
+        description
+          "Non-existent domain";
+        reference
+          "RFC 1035: Domain Names - Implementation and
+           Specification.";
+      }
+      enum notimp {
+        value "4";
+        description
+          "Not implemented";
+        reference
+          "RFC 1035: Domain Names - Implementation and
+           Specification.";
+      }
+      enum refused {
+        value "5";
+        description
+          "Query refused";
+        reference
+          "RFC 1035: Domain Names - Implementation and
+           Specification.";
+      }
+      enum yxdomain {
+        value "6";
+        description
+          "Name exists when it should not.";
+        reference
+          "- RFC 2136: Dynamic Updates in the Domain Name System (DNS
+             UPDATE).
+
+           - RFC 6672: DNAME Redirection in the DNS.";
+      }
+      enum yxrrset {
+        value "7";
+        description
+          "RR set exists when it should not.";
+        reference
+          "RFC 2136: Dynamic Updates in the Domain Name System (DNS
+           UPDATE).";
+      }
+      enum nxrrset {
+        value "8";
+        description
+          "RR set that should exist does not.";
+        reference
+          "RFC 2136: Dynamic Updates in the Domain Name System (DNS
+           UPDATE).";
+      }
+      enum notauth {
+        value "9";
+        description
+          "Not Authorized";
+        reference
+          "- RFC 2136: Dynamic Updates in the Domain Name System (DNS
+             UPDATE).
+
+           - RFC 2845: Secret Key Transaction Authentication for DNS
+             (TSIG).";
+      }
+      enum notzone {
+        value "10";
+        description
+          "Name not contained in zone.";
+        reference
+          "RFC 2136: Dynamic Updates in the Domain Name System (DNS
+           UPDATE).";
+      }
+      enum badvers {
+        value "16";
+        description
+          "Bad OPT version.";
+        reference
+          "RFC 6891: Extension Mechanisms for DNS (EDNS(0)).";
+      }
+      enum tsig-badsig {
+        description
+          "TSIG signature failure";
+        reference
+          "RFC 2845: Secret Key Transaction Authentication for DNS
+           (TSIG).";
+      }
+      enum tsig-badkey {
+        description
+          "Key not recognized";
+        reference
+          "RFC 2845: Secret Key Transaction Authentication for DNS
+           (TSIG).";
+      }
+      enum tsig-badtime {
+        description
+          "Signature out of time window";
+        reference
+          "RFC 2845: Secret Key Transaction Authentication for DNS
+           (TSIG).";
+      }
+      enum badmode {
+        description
+          "Bad TKEY mode";
+        reference
+          "RFC 2930: Secret Key Establishment for DNS (TKEY RR).";
+      }
+      enum badname {
+        description
+          "Duplicate key name";
+        reference
+          "RFC 2930: Secret Key Establishment for DNS (TKEY RR).";
+      }
+      enum badalg {
+        description
+          "Algorithm not supported";
+        reference
+          "RFC 2930: Secret Key Establishment for DNS (TKEY RR).";
+      }
+      enum badtrunc {
+        description
+          "Bad truncation";
+        reference
+          "RFC 4635: HMAC SHA TSIG Algorithm Identifiers.";
+      }
+    }
+    description
+      "DNS reply codes.
+
+       Extended rcodes (except the base 16) are not assigned numeric
+       values because they may be non-unique.
+
+       Values 11–15 are unassigned.";
+  }
+}

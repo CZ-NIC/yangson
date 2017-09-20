@@ -31,10 +31,11 @@ import re
 from typing import List, Optional, Tuple
 from .schemadata import SchemaContext
 from .enumerations import Axis, MultiplicativeOp
-from .exceptions import XPathTypeError
+from .exceptions import InvalidArgument, XPathTypeError
 from .instance import InstanceNode
 from .nodeset import NodeExpr, NodeSet, XPathValue
-from .typealiases import *
+from .typealiases import QualName
+
 
 class XPathContext:
 
@@ -47,6 +48,7 @@ class XPathContext:
 
     def update_cnode(self, new_cnode: InstanceNode) -> "XPathContext":
         return self.__class__(new_cnode, self.origin, self.position, self.size)
+
 
 class Expr:
     """Abstract class for nodes of XPath AST."""
@@ -80,18 +82,20 @@ class Expr:
         val = self._eval(xctx)
         if isinstance(val, float):
             try:
-                if int(val) == val: return str(int(val))
+                if int(val) == val:
+                    return str(int(val))
             except OverflowError:
                 return "Infinity" if val > 0 else "-Infinity"
             except ValueError:
                 return "NaN"
-        if isinstance(val, bool): return str(val).lower()
+        if isinstance(val, bool):
+            return str(val).lower()
         return str(val)
 
     def _tree(self, indent: int = 0) -> str:
         node_name = self.__class__.__name__
         attr = self._properties_str()
-        attr_str  = " (" + attr + ")\n" if attr else "\n"
+        attr_str = " (" + attr + ")\n" if attr else "\n"
         return (" " * indent + node_name + attr_str +
                 self._children_str(indent + self.indent))
 
@@ -102,7 +106,8 @@ class Expr:
         return ""
 
     def _predicates_str(self, indent) -> str:
-        if not self.predicates: return ""
+        if not self.predicates:
+            return ""
         res = " " * indent + "-- Predicates:\n"
         newi = indent + 3
         for p in self.predicates:
@@ -115,7 +120,7 @@ class Expr:
             res = NodeSet([])
             size = len(ns)
             for i in range(size):
-                pval = p._eval(XPathContext(ns[i], xctx.origin, i+1, size))
+                pval = p._eval(XPathContext(ns[i], xctx.origin, i + 1, size))
                 try:
                     if isinstance(pval, float) and pval > 0:
                         res.append(ns[int(pval) - 1])
@@ -127,6 +132,7 @@ class Expr:
             ns = res
         return ns
 
+
 class UnaryExpr(Expr):
     """Abstract superclass for unary expressions."""
 
@@ -135,6 +141,7 @@ class UnaryExpr(Expr):
 
     def _children_str(self, indent: int) -> str:
         return self.expr._tree(indent) if self.expr else ""
+
 
 class BinaryExpr(Expr):
     """Abstract superclass of binary expressions."""
@@ -155,17 +162,20 @@ class BinaryExpr(Expr):
     def _eval_ops_string(self, xctx: XPathContext) -> Tuple[str, str]:
         return (self.left._eval_string(xctx), self.right._eval_string(xctx))
 
+
 class OrExpr(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         lres, rres = self._eval_ops(xctx)
         return lres or rres
 
+
 class AndExpr(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         lres, rres = self._eval_ops(xctx)
         return lres and rres
+
 
 class EqualityExpr(BinaryExpr):
 
@@ -180,6 +190,7 @@ class EqualityExpr(BinaryExpr):
         lres, rres = self._eval_ops(xctx)
         return lres != rres if self.negate else lres == rres
 
+
 class RelationalExpr(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr, less: bool,
@@ -190,7 +201,8 @@ class RelationalExpr(BinaryExpr):
 
     def _properties_str(self) -> str:
         res = "<" if self.less else ">"
-        if self.equal: res += "="
+        if self.equal:
+            res += "="
         return res
 
     def _eval(self, xctx: XPathContext) -> bool:
@@ -198,6 +210,7 @@ class RelationalExpr(BinaryExpr):
         if self.less:
             return lres <= rres if self.equal else lres < rres
         return lres >= rres if self.equal else lres > rres
+
 
 class AdditiveExpr(BinaryExpr):
 
@@ -212,6 +225,7 @@ class AdditiveExpr(BinaryExpr):
         lres, rres = self._eval_ops_float(xctx)
         return lres + rres if self.plus else lres - rres
 
+
 class MultiplicativeExpr(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr,
@@ -220,9 +234,12 @@ class MultiplicativeExpr(BinaryExpr):
         self.operator = operator
 
     def _properties_str(self) -> str:
-        if self.operator == MultiplicativeOp.multiply: return "*"
-        if self.operator == MultiplicativeOp.divide: return "div"
-        if self.operator == MultiplicativeOp.modulo: return "mod"
+        if self.operator == MultiplicativeOp.multiply:
+            return "*"
+        if self.operator == MultiplicativeOp.divide:
+            return "div"
+        if self.operator == MultiplicativeOp.modulo:
+            return "mod"
 
     def _eval(self, xctx: XPathContext) -> float:
         lres, rres = self._eval_ops_float(xctx)
@@ -239,6 +256,7 @@ class MultiplicativeExpr(BinaryExpr):
         except ZeroDivisionError:
             return float('nan')
 
+
 class UnaryMinusExpr(UnaryExpr):
 
     def __init__(self, expr: Expr, negate: bool):
@@ -252,11 +270,13 @@ class UnaryMinusExpr(UnaryExpr):
         res = self.expr._eval_float(xctx)
         return -res if self.negate else res
 
+
 class UnionExpr(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> NodeSet:
         lres, rres = self._eval_ops(xctx)
         return lres.union(rres)
+
 
 class Literal(Expr):
 
@@ -269,6 +289,7 @@ class Literal(Expr):
     def _eval(self, xctx: XPathContext) -> str:
         return self.value
 
+
 class Number(Expr):
 
     def __init__(self, value: float):
@@ -280,6 +301,7 @@ class Number(Expr):
     def _eval(self, xctx: XPathContext) -> float:
         return float(self.value)
 
+
 class PathExpr(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> XPathValue:
@@ -290,6 +312,7 @@ class PathExpr(BinaryExpr):
         for n in ns:
             res = res.union(self.right._eval(xctx.update_cnode(n)))
         return res
+
 
 class FilterExpr(Expr):
 
@@ -304,6 +327,7 @@ class FilterExpr(Expr):
         res = self.primary._eval(xctx)
         return self._apply_predicates(res, xctx)
 
+
 class LocationPath(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> XPathValue:
@@ -311,10 +335,12 @@ class LocationPath(BinaryExpr):
         ns = lres.bind(self.right._node_trans(xctx))
         return self.right._apply_predicates(ns, xctx)
 
+
 class Root(Expr):
 
     def _eval(self, xctx: XPathContext) -> NodeSet:
         return NodeSet([xctx.cnode.top()])
+
 
 class Step(Expr):
 
@@ -332,7 +358,7 @@ class Step(Expr):
 
     def _node_trans(self, xctx) -> NodeExpr:
         qname = ((self.qname[0], xctx.origin.namespace) if
-                     self.qname and self.qname[1] is None else self.qname)
+                 self.qname and self.qname[1] is None else self.qname)
         return {
             Axis.ancestor: lambda n, qn=qname: n._ancestors(qn),
             Axis.ancestor_or_self:
@@ -350,11 +376,12 @@ class Step(Expr):
                 lambda n, qn=qname: n._preceding_siblings(qn),
             Axis.self:
                 lambda n, qn=qname: [] if qn and qn != n.qual_name else [n],
-                }[self.axis]
+        }[self.axis]
 
     def _eval(self, xctx: XPathContext) -> XPathValue:
         ns = NodeSet(self._node_trans(xctx)(xctx.cnode))
         return self._apply_predicates(ns, xctx)
+
 
 class FuncBitIsSet(BinaryExpr):
 
@@ -368,15 +395,18 @@ class FuncBitIsSet(BinaryExpr):
         except (IndexError, TypeError):
             return False
 
+
 class FuncBoolean(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         return bool(self.expr._eval(xctx))
 
+
 class FuncCeiling(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> float:
         return float(ceil(self.expr._eval_float(xctx)))
+
 
 class FuncConcat(Expr):
 
@@ -389,11 +419,13 @@ class FuncConcat(Expr):
     def _eval(self, xctx: XPathContext) -> str:
         return "".join([ex._eval_string(xctx) for ex in self.parts])
 
+
 class FuncContains(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         lres, rres = self._eval_ops_string(xctx)
         return lres.find(rres) >= 0
+
 
 class FuncCount(UnaryExpr):
 
@@ -401,10 +433,12 @@ class FuncCount(UnaryExpr):
         ns = self.expr._eval(xctx)
         return float(len(ns))
 
+
 class FuncCurrent(Expr):
 
     def _eval(self, xctx: XPathContext) -> NodeSet:
         return NodeSet([xctx.origin])
+
 
 class FuncDeref(UnaryExpr):
 
@@ -414,6 +448,7 @@ class FuncDeref(UnaryExpr):
             raise XPathTypeError(str(ns))
         ref = ns[0]
         return NodeSet(ref._deref())
+
 
 class FuncDerivedFrom(BinaryExpr):
 
@@ -434,11 +469,14 @@ class FuncDerivedFrom(BinaryExpr):
         i = self.sctx.schema_data.translate_pname(
             self.right._eval_string(xctx), self.sctx.text_mid)
         for n in ns:
-            if not n.schema_node._is_identityref(): return False
-            if self.or_self and n.value == i: return True
+            if not n.schema_node._is_identityref():
+                return False
+            if self.or_self and n.value == i:
+                return True
             if self.sctx.schema_data.is_derived_from(n.value, i):
                 return True
         return False
+
 
 class FuncEnumValue(UnaryExpr):
 
@@ -452,20 +490,24 @@ class FuncEnumValue(UnaryExpr):
         except (AttributeError, IndexError, KeyError):
             return float('nan')
 
+
 class FuncFalse(Expr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         return False
+
 
 class FuncFloor(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> float:
         return float(floor(self.expr._eval_float(xctx)))
 
+
 class FuncLast(Expr):
 
     def _eval(self, xctx: XPathContext) -> int:
         return float(xctx.size)
+
 
 class FuncName(UnaryExpr):
 
@@ -487,11 +529,13 @@ class FuncName(UnaryExpr):
                 raise XPathTypeError(str(ns))
             except IndexError:
                 return ""
-        if node.path is (): return ""
+        if node.path is ():
+            return ""
         if self.local:
             p, s, loc = node.name.partition(":")
             return loc if s else p
         return node.name
+
 
 class FuncNormalizeSpace(UnaryExpr):
 
@@ -499,10 +543,12 @@ class FuncNormalizeSpace(UnaryExpr):
         string = self.expr._eval_string(xctx) if self.expr else str(xctx.cnode)
         return " ".join(string.strip().split())
 
+
 class FuncNot(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         return not(self.expr._eval(xctx))
+
 
 class FuncNumber(UnaryExpr):
 
@@ -514,10 +560,12 @@ class FuncNumber(UnaryExpr):
                 return float('nan')
         return self.expr._eval_float(xctx)
 
+
 class FuncPosition(Expr):
 
     def _eval(self, xctx: XPathContext) -> int:
         return xctx.position
+
 
 class FuncReMatch(BinaryExpr):
 
@@ -527,6 +575,7 @@ class FuncReMatch(BinaryExpr):
             return re.match(XMLToPython(rres), lres) is not None
         except:
             raise InvalidArgument(rres) from None
+
 
 class FuncRound(UnaryExpr):
 
@@ -538,11 +587,13 @@ class FuncRound(UnaryExpr):
         except decimal.InvalidOperation:
             return float('nan')
 
+
 class FuncStartsWith(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
         lres, rres = self._eval_ops_string(xctx)
         return lres.startswith(rres)
+
 
 class FuncString(UnaryExpr):
 
@@ -551,11 +602,13 @@ class FuncString(UnaryExpr):
             return str(xctx.cnode)
         return self.expr._eval_string(xctx)
 
+
 class FuncStringLength(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> str:
         string = self.expr._eval_string(xctx) if self.expr else str(xctx.cnode)
         return float(len(string))
+
 
 class FuncSubstring(BinaryExpr):
 
@@ -583,6 +636,7 @@ class FuncSubstring(BinaryExpr):
             return string[max(start, 0):] if length == float('inf') else ""
         return string[max(start, 0):end]
 
+
 class FuncSubstringAfter(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> str:
@@ -590,12 +644,14 @@ class FuncSubstringAfter(BinaryExpr):
         ind = lres.find(rres)
         return lres[ind + len(rres):] if ind >= 0 else ""
 
+
 class FuncSubstringBefore(BinaryExpr):
 
     def _eval(self, xctx: XPathContext) -> str:
         lres, rres = self._eval_ops_string(xctx)
         ind = lres.find(rres)
         return lres[:ind] if ind >= 0 else ""
+
 
 class FuncSum(UnaryExpr):
 
@@ -607,6 +663,7 @@ class FuncSum(UnaryExpr):
             return float(sum([n.value for n in ns]))
         except TypeError:
             return float('nan')
+
 
 class FuncTranslate(BinaryExpr):
 
@@ -622,6 +679,7 @@ class FuncTranslate(BinaryExpr):
         new = self.nchars._eval_string(xctx)[:len(old)]
         ttab = str.maketrans(old[:len(new)], new, old[len(new):])
         return string.translate(ttab)
+
 
 class FuncTrue(Expr):
 

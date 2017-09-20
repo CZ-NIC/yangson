@@ -24,22 +24,22 @@ This module implements the following class:
 
 import hashlib
 import json
-from typing import Dict, List, Optional
+from typing import List, Optional
 from .enumerations import ContentType
 from .exceptions import BadYangLibraryData
 from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
-                           RootNode)
+                       RootNode)
 from .schemadata import SchemaData, SchemaContext
 from .schemanode import DataNode, SchemaTreeNode, RawObject, SchemaNode
-from .typealiases import *
-from .typealiases import _Singleton
+from .typealiases import DataPath, SchemaPath
+
 
 class DataModel:
     """Basic user-level entry point to Yangson library."""
 
     @classmethod
     def from_file(cls, name: str, mod_path: List[str] = ["."],
-                      description: str = None) -> "DataModel":
+                  description: str = None) -> "DataModel":
         """Initialize the data model from a file with YANG library data.
 
         Args:
@@ -58,7 +58,7 @@ class DataModel:
         return cls(yltxt, mod_path, description)
 
     def __init__(self, yltxt: str, mod_path: List[str] = ["."],
-                     description: str = None):
+                 description: str = None):
         """Initialize the class instance.
 
         Args:
@@ -85,7 +85,8 @@ class DataModel:
         self._build_schema()
         self.schema.description = description if description else (
             "Data model ID: " +
-            self.yang_library["ietf-yang-library:modules-state"]["module-set-id"])
+            self.yang_library["ietf-yang-library:modules-state"]
+            ["module-set-id"])
 
     def module_set_id(self) -> str:
         """Compute unique id of YANG modules comprising the data model.
@@ -139,7 +140,8 @@ class DataModel:
         node = self.schema
         for p in addr:
             node = node.get_data_child(*p)
-            if node is None: return None
+            if node is None:
+                return None
         return node
 
     def ascii_tree(self, no_types: bool = False) -> str:

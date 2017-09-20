@@ -1,0 +1,82 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "e595da11ace92c0d881995fa7e56bbe86f1f48e9",
+    "module": [
+      {
+        "name": "ietf-inet-types",
+        "revision": "2013-07-15",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
+        "conformance-type": "import",
+        "schema": "https://raw.githubusercontent.com/YangModels/yang/master/standard/ietf/RFC/ietf-inet-types.yang"
+      },
+      {
+        "name": "iana-if-type",
+        "namespace": "urn:ietf:params:xml:ns:yang:iana-if-type",
+        "revision": "2014-05-08",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-netconf-acm",
+        "revision": "2012-02-22",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-netconf-acm",
+        "conformance-type": "implement",
+        "schema": "https://raw.githubusercontent.com/YangModels/yang/master/standard/ietf/RFC/ietf-netconf-acm.yang"
+      },
+      {
+        "name": "ietf-yang-library",
+        "revision": "2016-06-21",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-library",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-yang-types",
+        "revision": "2013-07-15",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types",
+        "conformance-type": "import",
+        "schema": "https://github.com/YangModels/yang/blob/master/standard/ietf/RFC/ietf-yang-types.yang"
+      },
+      {
+        "name": "ietf-interfaces",
+        "revision": "2014-05-08",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "cznic-bridge-interface",
+        "namespace": "http://www.nic.cz/ns/yang/bridge-interface",
+        "revision": "2017-07-27",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-ip",
+        "revision": "2014-06-16",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-ip",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ieee802-dot1q-types",
+        "revision": "2016-09-22",
+        "namespace": "urn:ieee:std:802.1Q:yang:ieee802-dot1q-types",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ieee802-types",
+        "revision": "2016-07-24",
+        "namespace": "urn:ieee:std:802:yang:ieee802-types",
+        "conformance-type": "import"
+      },
+      {
+        "name": "ietf-if-l3-vlan",
+        "revision": "2017-07-03",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-if-l3-vlan",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-interfaces-common",
+        "revision": "2017-07-03",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-interfaces-common",
+        "conformance-type": "implement"
+      }
+    ]
+  }
+}

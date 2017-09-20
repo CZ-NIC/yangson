@@ -1,0 +1,16 @@
+module example-1 {
+  yang-version "1.1";
+  namespace "http://example.com/example-i";
+  prefix "exi";
+  import iana-if-type {
+    prefix ianaift;
+  }
+  identity foo {
+    base ianaift:iana-interface-type;
+  }
+  leaf test {
+    type identityref {
+      base ianaift:iana-interface-type;
+    }
+  }
+}

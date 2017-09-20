@@ -47,17 +47,16 @@ This module implements the following classes:
 import base64
 import decimal
 import numbers
-import re
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from .constraint import Intervals, Pattern
-from .exceptions import InvalidArgument, ParserException, YangTypeError
+from .exceptions import InvalidArgument, ParserException
 from .schemadata import SchemaContext
 from .instance import InstanceNode, InstanceIdParser, InstanceRoute
 from .statement import Statement
-from .typealiases import *
-from .typealiases import _Singleton
+from .typealiases import QualName, RawScalar, ScalarValue, YangIdentifier
 from .xpathparser import XPathParser
+
 
 class DataType:
     """Abstract class for YANG data types."""
@@ -91,7 +90,8 @@ class DataType:
         Args:
             raw: Raw value obtained from JSON parser.
         """
-        if isinstance(raw, str): return raw
+        if isinstance(raw, str):
+            return raw
 
     def to_raw(self, val: ScalarValue) -> Optional[RawScalar]:
         """Return a raw value ready to be serialized in JSON."""
@@ -122,7 +122,8 @@ class DataType:
             InvalidArgument: If the receiver type cannot parse the text.
         """
         res = self.parse_value(text)
-        if res is None: raise InvalidArgument(text)
+        if res is None:
+            raise InvalidArgument(text)
         return res
 
     def yang_type(self) -> YangIdentifier:
@@ -132,7 +133,7 @@ class DataType:
     def _set_error_info(self, error_tag: str = None, error_message: str = None):
         self.error_tag = error_tag if error_tag else "invalid-type"
         self.error_message = (error_message if error_message else
-                                  "expected " + str(self))
+                              "expected " + str(self))
 
     @classmethod
     def _resolve_type(cls, stmt: Statement, sctx: SchemaContext) -> "DataType":
@@ -147,7 +148,7 @@ class DataType:
 
     @classmethod
     def _derived_type(cls, stmt: Statement, sctx: SchemaContext,
-                          name: YangIdentifier) -> "DataType":
+                      name: YangIdentifier) -> "DataType":
         tchain = []
         ts = stmt
         sc = sctx
@@ -155,7 +156,8 @@ class DataType:
             tdef, sc = sctx.schema_data.get_definition(ts, sc)
             ts = tdef.find1("type", required=True)
             tchain.append((tdef, ts, sc))
-            if ts.argument in cls.dtypes: break
+            if ts.argument in cls.dtypes:
+                break
         res = cls.dtypes[ts.argument](sctx, name)
         btyp = True
         while tchain:
@@ -168,7 +170,8 @@ class DataType:
             dfst = tdef.find1("default")
             if dfst:
                 res.default = res.from_yang(dfst.argument)
-                if res.default is None: raise InvalidArgument(dfst.argument)
+                if res.default is None:
+                    raise InvalidArgument(dfst.argument)
         res._handle_restrictions(stmt, sctx)
         return res
 
@@ -189,9 +192,11 @@ class DataType:
         Args:
             config: Specifies whether the type is on a configuration node.
         """
-        res = { "base": self.yang_type() }
-        if self.name is not None: res["derived"] = self.name
+        res = {"base": self.yang_type()}
+        if self.name is not None:
+            res["derived"] = self.name
         return res
+
 
 class EmptyType(DataType):
     """Class representing YANG "empty" type."""
@@ -200,15 +205,19 @@ class EmptyType(DataType):
         return ""
 
     def __contains__(self, val: Tuple[None]) -> bool:
-        if val == (None,): return True
+        if val == (None,):
+            return True
         self._set_error_info()
         return False
 
     def parse_value(self, text: str) -> Optional[Tuple[None]]:
-        if test == "": return (None,)
+        if text == "":
+            return (None,)
 
     def from_raw(self, raw: RawScalar) -> Optional[Tuple[None]]:
-        if raw == [None]: return (None,)
+        if raw == [None]:
+            return (None,)
+
 
 class BitsType(DataType):
     """Class representing YANG "bits" type."""
@@ -275,9 +284,10 @@ class BitsType(DataType):
 
     def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         bst = stmt.find_all("bit")
-        if not bst: return
+        if not bst:
+            return
         new = set([b.argument for b in bst if
-                        sctx.schema_data.if_features(b, sctx.text_mid)])
+                   sctx.schema_data.if_features(b, sctx.text_mid)])
         for bit in set(self.bit) - new:
             del self.bit[bit]
 
@@ -293,17 +303,20 @@ class BitsType(DataType):
         res["bits"] = bits
         return res
 
+
 class BooleanType(DataType):
     """Class representing YANG "boolean" type."""
 
     def __contains__(self, val: bool) -> bool:
-        if isinstance(val, bool): return True
+        if isinstance(val, bool):
+            return True
         self._set_error_info()
         return False
 
     def from_raw(self, raw: RawScalar) -> Optional[bool]:
         """Override superclass method."""
-        if isinstance(raw, bool): return raw
+        if isinstance(raw, bool):
+            return raw
 
     def parse_value(self, text: str) -> Optional[bool]:
         """Parse boolean value.
@@ -311,12 +324,17 @@ class BooleanType(DataType):
         Args:
             text: String representation of the value.
         """
-        if text == "true": return True
-        if text == "false": return False
+        if text == "true":
+            return True
+        if text == "false":
+            return False
 
     def canonical_string(self, val: bool) -> Optional[str]:
-        if val is True: return "true"
-        if val is False: return "false"
+        if val is True:
+            return "true"
+        if val is False:
+            return "false"
+
 
 class LinearType(DataType):
     """Abstract class representing character or byte sequences."""
@@ -346,13 +364,14 @@ class LinearType(DataType):
             res["length"] = self.length.intervals
         return res
 
+
 class StringType(LinearType):
     """Class representing YANG "string" type."""
 
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.patterns = [] # type: List[Pattern]
+        self.patterns = []  # type: List[Pattern]
 
     def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         super()._handle_restrictions(stmt, sctx)
@@ -383,6 +402,7 @@ class StringType(LinearType):
             res["neg_patterns"] = ipats
         return res
 
+
 class BinaryType(LinearType):
     """Class representing YANG "binary" type."""
 
@@ -405,20 +425,22 @@ class BinaryType(LinearType):
     def canonical_string(self, val: bytes) -> Optional[str]:
         return base64.b64encode(val).decode("ascii")
 
+
 class EnumerationType(DataType):
     """Class representing YANG "enumeration" type."""
 
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.enum = {} # type: Dict[str, int]
+        self.enum = {}  # type: Dict[str, int]
 
     def sorted_enums(self) -> List[Tuple[str, int]]:
         """Return list of enum items sorted by value."""
         return sorted(self.enum.items(), key=lambda x: x[1])
 
     def __contains__(self, val: str) -> bool:
-        if val in self.enum: return True
+        if val in self.enum:
+            return True
         self._set_error_info()
         return False
 
@@ -441,9 +463,10 @@ class EnumerationType(DataType):
 
     def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         est = stmt.find_all("enum")
-        if not est: return
-        new = set([ e.argument for e in est if
-                        sctx.schema_data.if_features(e, sctx.text_mid) ])
+        if not est:
+            return
+        new = set([e.argument for e in est if
+                   sctx.schema_data.if_features(e, sctx.text_mid)])
         for en in set(self.enum) - new:
             del self.enum[en]
 
@@ -453,17 +476,19 @@ class EnumerationType(DataType):
             res["enums"] = list(self.enum.keys())
         return res
 
+
 class LinkType(DataType):
     """Abstract class for instance-referencing types."""
 
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.require_instance = True # type: bool
+        self.require_instance = True  # type: bool
 
     def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         if stmt.find1("require-instance", "false"):
             self.require_instance = False
+
 
 class LeafrefType(LinkType):
     """Class representing YANG "leafref" type."""
@@ -500,6 +525,7 @@ class LeafrefType(LinkType):
         res["ref_type"] = self.ref_type._type_digest(config)
         return res
 
+
 class InstanceIdentifierType(LinkType):
     """Class representing YANG "instance-identifier" type."""
 
@@ -523,13 +549,14 @@ class InstanceIdentifierType(LinkType):
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         return [node.top().goto(node.value)]
 
+
 class IdentityrefType(DataType):
     """Class representing YANG "identityref" type."""
 
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.bases = [] # type: List[QualName]
+        self.bases = []  # type: List[QualName]
 
     def from_raw(self, raw: RawScalar) -> Optional[QualName]:
         try:
@@ -572,13 +599,14 @@ class IdentityrefType(DataType):
                 self.sctx.schema_data.derived_from_all(self.bases))
         return res
 
+
 class NumericType(DataType):
     """Abstract class for numeric data types."""
 
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.range = None # type: Optional[Intervals]
+        self.range = None  # type: Optional[Intervals]
 
     def __contains__(self, val: Union[int, decimal.Decimal]) -> bool:
         if self.range is None:
@@ -587,7 +615,8 @@ class NumericType(DataType):
             else:
                 self._set_error_info()
                 return False
-        if val in self.range: return True
+        if val in self.range:
+            return True
         self._set_error_info(self.range.error_tag, self.range.error_message)
         return False
 
@@ -596,15 +625,16 @@ class NumericType(DataType):
         if rstmt:
             if self.range is None:
                 self.range = Intervals([self._range], parser=self.parse_value,
-                                           error_message="not in range")
+                                       error_message="not in range")
             self.range.restrict_with(rstmt.argument, *rstmt.get_error_info())
 
     def _type_digest(self, config: bool) -> Dict[str, Any]:
         res = super()._type_digest(config)
         if self.range:
             res["range"] = [[self.to_raw(r[0]), self.to_raw(r[1])]
-                                for r in self.range.intervals]
+                            for r in self.range.intervals]
         return res
+
 
 class Decimal64Type(NumericType):
     """Class representing YANG "decimal64" type."""
@@ -612,7 +642,7 @@ class Decimal64Type(NumericType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self._epsilon = decimal.Decimal(0) # type: decimal.Decimal
+        self._epsilon = decimal.Decimal(0)  # type: decimal.Decimal
 
     @property
     def _range(self) -> List[decimal.Decimal]:
@@ -638,7 +668,8 @@ class Decimal64Type(NumericType):
         return self.canonical_string(val)
 
     def canonical_string(self, val: decimal.Decimal) -> Optional[str]:
-        if val == 0: return "0.0"
+        if val == 0:
+            return "0.0"
         sval = str(val.quantize(self._epsilon)).rstrip("0")
         return (sval + "0") if sval.endswith(".") else sval
 
@@ -652,6 +683,7 @@ class Decimal64Type(NumericType):
         res = super()._type_digest(config)
         res["fraction_digits"] = self.fraction_digits
         return res
+
 
 class IntegralType(NumericType):
     """Abstract class for integral data types."""
@@ -686,20 +718,24 @@ class IntegralType(NumericType):
         except (ValueError, TypeError):
             raise InvalidArgument(text)
 
+
 class Int8Type(IntegralType):
     """Class representing YANG "int8" type."""
 
-    _range = [-128,127]
+    _range = [-128, 127]
+
 
 class Int16Type(IntegralType):
     """Class representing YANG "int16" type."""
 
     _range = [-32768, 32767]
 
+
 class Int32Type(IntegralType):
     """Class representing YANG "int32" type."""
 
     _range = [-2147483648, 2147483647]
+
 
 class Int64Type(IntegralType):
     """Class representing YANG "int64" type."""
@@ -709,20 +745,24 @@ class Int64Type(IntegralType):
     def to_raw(self, val: int) -> str:
         return self.canonical_string(val)
 
+
 class Uint8Type(IntegralType):
     """Class representing YANG "uint8" type."""
 
     _range = [0, 255]
+
 
 class Uint16Type(IntegralType):
     """Class representing YANG "uint16" type."""
 
     _range = [0, 65535]
 
+
 class Uint32Type(IntegralType):
     """Class representing YANG "uint32" type."""
 
     _range = [0, 4294967295]
+
 
 class Uint64Type(IntegralType):
     """Class representing YANG "uint64" type."""
@@ -732,13 +772,14 @@ class Uint64Type(IntegralType):
     def to_raw(self, val: int) -> str:
         return self.canonical_string(val)
 
+
 class UnionType(DataType):
     """Class representing YANG "union" type."""
 
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.types = [] # type: List[DataType]
+        self.types = []  # type: List[DataType]
 
     def to_raw(self, val: ScalarValue) -> RawScalar:
         for t in self.types:
@@ -754,45 +795,49 @@ class UnionType(DataType):
     def parse_value(self, text: str) -> Optional[ScalarValue]:
         for t in self.types:
             val = t.parse_value(text)
-            if val is not None and val in t: return val
+            if val is not None and val in t:
+                return val
         return None
 
     def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
         for t in self.types:
             val = t.from_raw(raw)
-            if val is not None and val in t: return val
+            if val is not None and val in t:
+                return val
         return None
 
     def __contains__(self, val: Any) -> bool:
         for t in self.types:
             try:
-                if val in t: return True
+                if val in t:
+                    return True
             except TypeError:
                 continue
         return False
 
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
-        self.types = [ self._resolve_type(ts, sctx)
-                       for ts in stmt.find_all("type") ]
+        self.types = [self._resolve_type(ts, sctx)
+                      for ts in stmt.find_all("type")]
 
-DataType.dtypes = { "binary": BinaryType,
-                    "bits": BitsType,
-                    "boolean": BooleanType,
-                    "decimal64": Decimal64Type,
-                    "empty": EmptyType,
-                    "enumeration": EnumerationType,
-                    "identityref": IdentityrefType,
-                    "instance-identifier": InstanceIdentifierType,
-                    "int8": Int8Type,
-                    "int16": Int16Type,
-                    "int32": Int32Type,
-                    "int64": Int64Type,
-                    "leafref": LeafrefType,
-                    "string": StringType,
-                    "uint8": Uint8Type,
-                    "uint16": Uint16Type,
-                    "uint32": Uint32Type,
-                    "uint64": Uint64Type,
-                    "union": UnionType
-                    }
+
+DataType.dtypes = {"binary": BinaryType,
+                   "bits": BitsType,
+                   "boolean": BooleanType,
+                   "decimal64": Decimal64Type,
+                   "empty": EmptyType,
+                   "enumeration": EnumerationType,
+                   "identityref": IdentityrefType,
+                   "instance-identifier": InstanceIdentifierType,
+                   "int8": Int8Type,
+                   "int16": Int16Type,
+                   "int32": Int32Type,
+                   "int64": Int64Type,
+                   "leafref": LeafrefType,
+                   "string": StringType,
+                   "uint8": Uint8Type,
+                   "uint16": Uint16Type,
+                   "uint32": Uint32Type,
+                   "uint64": Uint64Type,
+                   "union": UnionType
+                   }
 """Dictionary mapping type names to classes."""

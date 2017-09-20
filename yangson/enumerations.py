@@ -19,6 +19,7 @@
 
 from enum import Enum
 
+
 class ContentType(Enum):
     """Enumeration of instance data content types."""
 
@@ -28,6 +29,7 @@ class ContentType(Enum):
     """Data that does not represent configuration."""
     all = 3
     """All data."""
+
 
 class ValidationScope(Enum):
     """Enumeration of validation scopes."""
@@ -39,6 +41,7 @@ class ValidationScope(Enum):
     all = 3
     """Both syntax and semantics."""
 
+
 class DefaultDeny(Enum):
     """Enumeration of NACM default deny values."""
 
@@ -48,6 +51,7 @@ class DefaultDeny(Enum):
     """Sensitive security system parameter."""
     all = 3
     """Very sensitive security system parameter."""
+
 
 class Axis(Enum):
     """Enumeration of implemented XPath axes."""
@@ -72,6 +76,7 @@ class Axis(Enum):
     """Preceding siblings of the context node."""
     self = 10
     """Just the context node."""
+
 
 class MultiplicativeOp(Enum):
     """Enumeration of XPath multiplicative operators."""

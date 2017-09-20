@@ -17,7 +17,7 @@
 
 """XPath node-set"""
 
-from typing import List, Callable, Union
+from typing import Callable, Union
 from numbers import Number
 from .instance import InstanceNode
 
@@ -26,16 +26,19 @@ from .instance import InstanceNode
 NodeExpr = Callable[[InstanceNode], "NodeSet"]
 XPathValue = Union["NodeSet", str, float, bool]
 
+
 def comparison(meth):
     def wrap(self, arg):
         if isinstance(arg, NodeSet):
             for n in arg:
-                if n.is_internal(): continue
+                if n.is_internal():
+                    continue
                 if meth(self, str(n)):
                     return True
             return False
         return meth(self, arg)
     return wrap
+
 
 class NodeSet(list):
 
@@ -58,7 +61,8 @@ class NodeSet(list):
     @comparison
     def __eq__(self, val: XPathValue) -> bool:
         for n in self:
-            if n.is_internal(): continue
+            if n.is_internal():
+                continue
             if isinstance(val, str):
                 if str(n) == val:
                     return True
@@ -72,7 +76,8 @@ class NodeSet(list):
     @comparison
     def __ne__(self, val: XPathValue) -> bool:
         for n in self:
-            if n.is_internal(): continue
+            if n.is_internal():
+                continue
             if isinstance(val, str):
                 if str(n) != val:
                     return True

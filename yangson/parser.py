@@ -23,14 +23,15 @@ This module implements the following class:
 """
 
 import re
-from typing import Any, Callable, List, Dict, Optional, Tuple
+from typing import Callable, List, Dict, Optional, Tuple
 from typing.re import Pattern
 from .exceptions import EndOfInput, UnexpectedInput
-from .typealiases import *
+from .typealiases import YangIdentifier
 
 # Local type aliases
 TransitionTable = List[Dict[str, Callable[[], int]]]
 """Transition table for a DFA."""
+
 
 class Parser:
 
@@ -59,7 +60,7 @@ class Parser:
         """
         self.input = text
         """Input text for the parser."""
-        self.offset = 0 # type: int
+        self.offset = 0  # type: int
         """Current position in the input text."""
 
     def __str__(self) -> str:
@@ -122,7 +123,7 @@ class Parser:
 
         Args:
             regex: Compiled regular expression object.
-            required: Should the exception be raised on unexpected input? 
+            required: Should the exception be raised on unexpected input?
             meaning: Meaning of `regex` (for use in error messages).
 
         Raises:
@@ -171,7 +172,8 @@ class Parser:
             next = self.peek()
         except EndOfInput:
             return (i1, None)
-        if next != ":": return (i1, None)
+        if next != ":":
+            return (i1, None)
         self.offset += 1
         return (self.yang_identifier(), i1)
 

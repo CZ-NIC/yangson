@@ -62,12 +62,14 @@ This module defines the following exceptions:
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
 """
 
-from typing import Tuple
-from .typealiases import *
+from .typealiases import (JSONPointer, ModuleId, PrefName, QualName,
+                          ScalarValue, YangIdentifier)
+
 
 class YangsonException(Exception):
     """Base class for all Yangson exceptions."""
     pass
+
 
 class InvalidArgument(YangsonException):
     """The argument of a statement is invalid."""
@@ -78,6 +80,7 @@ class InvalidArgument(YangsonException):
     def __str__(self):
         return self.argument
 
+
 class InvalidKeyValue(YangsonException):
     """List key or leaf-list value is invalid."""
 
@@ -86,6 +89,7 @@ class InvalidKeyValue(YangsonException):
 
     def __str__(self):
         return str(self.value)
+
 
 class InstanceException(YangsonException):
     """Abstract class for exceptions related to operations on instance nodes."""
@@ -97,17 +101,21 @@ class InstanceException(YangsonException):
     def __str__(self):
         return "[{}] {}".format(self.path, self.message)
 
+
 class InstanceValueError(InstanceException):
     """The instance value is incompatible with the called method."""
     pass
+
 
 class NonexistentInstance(InstanceException):
     """Attempt to access an instance node that doesn't exist."""
     pass
 
+
 class NonDataNode(InstanceException):
     """Attempt to access an instance of non-data node (rpc/action/notification)."""
     pass
+
 
 class ParserException(YangsonException):
     """Base class for parser exceptions."""
@@ -121,9 +129,11 @@ class ParserException(YangsonException):
             return "line {0}, column {1}".format(*self.parser.line_column())
         return str(self.parser)
 
+
 class EndOfInput(ParserException):
     """Unexpected end of input."""
     pass
+
 
 class UnexpectedInput(ParserException):
     """Unexpected input."""
@@ -137,13 +147,16 @@ class UnexpectedInput(ParserException):
         ex = "" if self.expected is None else ": expected " + self.expected
         return super().__str__() + ex
 
+
 class InvalidFeatureExpression(ParserException):
     """Invalid **if-feature** expression."""
     pass
 
+
 class InvalidXPath(ParserException):
     """Exception to be raised for an invalid XPath expression."""
     pass
+
 
 class NotSupported(ParserException):
     """Exception to be raised for unimplemented XPath features."""
@@ -154,6 +167,7 @@ class NotSupported(ParserException):
 
     def __str__(self) -> str:
         return super().str() + ": " + str(self.feature)
+
 
 class MissingModule(YangsonException):
     """Abstract exception class – a module is missing."""
@@ -167,17 +181,21 @@ class MissingModule(YangsonException):
             return self.name + "@" + self.rev
         return self.name
 
+
 class ModuleNotFound(MissingModule):
     """A module or submodule registered in YANG library is not found."""
     pass
+
 
 class ModuleNotRegistered(MissingModule):
     """A module is not registered in YANG library."""
     pass
 
+
 class ModuleNotImplemented(MissingModule):
     """A module is not implemented in the data model."""
     pass
+
 
 class BadYangLibraryData(YangsonException):
     """Broken YANG library data."""
@@ -188,6 +206,7 @@ class BadYangLibraryData(YangsonException):
     def __str__(self) -> str:
         return self.message
 
+
 class InvalidSchemaPath(YangsonException):
     """Invalid schema or data path."""
 
@@ -196,6 +215,7 @@ class InvalidSchemaPath(YangsonException):
 
     def __str__(self) -> str:
         return self.path
+
 
 class UnknownPrefix(YangsonException):
     """Unknown namespace prefix."""
@@ -207,6 +227,7 @@ class UnknownPrefix(YangsonException):
     def __str__(self) -> str:
         return "prefix {} is not defined in {}".format(self.prefix, self.mid)
 
+
 class ModuleNotImported(YangsonException):
     """Module is not imported."""
 
@@ -216,6 +237,7 @@ class ModuleNotImported(YangsonException):
 
     def __str__(self) -> str:
         return "{} not imported in {}".format(self.mod, self.mid)
+
 
 class FeaturePrerequisiteError(YangsonException):
     """Pre-requisite feature is not supported."""
@@ -227,6 +249,7 @@ class FeaturePrerequisiteError(YangsonException):
     def __str__(self) -> str:
         return "{}:{}".format(self.ns, self.name)
 
+
 class MultipleImplementedRevisions(YangsonException):
     """A module has multiple implemented revisions."""
 
@@ -236,9 +259,11 @@ class MultipleImplementedRevisions(YangsonException):
     def __str__(self) -> str:
         return self.module
 
+
 class CyclicImports(YangsonException):
     """YANG modules are imported in a cyclic fashion."""
     pass
+
 
 class SchemaNodeException(YangsonException):
     """Abstract exception class for schema node errors."""
@@ -248,7 +273,8 @@ class SchemaNodeException(YangsonException):
 
     def __str__(self) -> str:
         return ("/" if self.qn[0] is None else
-                    "{}:{}".format(self.qn[1], self.qn[0]))
+                "{}:{}".format(self.qn[1], self.qn[0]))
+
 
 class NonexistentSchemaNode(SchemaNodeException):
     """A schema node doesn't exist."""
@@ -263,6 +289,7 @@ class NonexistentSchemaNode(SchemaNodeException):
         prefix = "" if self.ns == self.qn[1] else self.ns + ":"
         return "{}{} under {}".format(prefix, self.name, super().__str__())
 
+
 class BadSchemaNodeType(SchemaNodeException):
     """A schema node is of a wrong type."""
 
@@ -273,9 +300,11 @@ class BadSchemaNodeType(SchemaNodeException):
     def __str__(self) -> str:
         return super().__str__() + " is not a " + self.expected
 
+
 class InvalidLeafrefPath(SchemaNodeException):
     """A leafref path is incorrect."""
     pass
+
 
 class RawDataError(YangsonException):
     """Abstract exception class for errors in raw data."""
@@ -286,9 +315,11 @@ class RawDataError(YangsonException):
     def __str__(self) -> JSONPointer:
         return self.path
 
+
 class RawMemberError(RawDataError):
     """Object member in the raw value doesn't exist in the schema."""
     pass
+
 
 class RawTypeError(RawDataError):
     """Raw value is of an incorrect type."""
@@ -299,6 +330,7 @@ class RawTypeError(RawDataError):
 
     def __str__(self):
         return "[{}] {}".format(self.path, self.message)
+
 
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
@@ -312,17 +344,21 @@ class ValidationError(YangsonException):
         msg = ": " + self.message if self.message else ""
         return "[{}] {}{}".format(self.path, self.tag, msg)
 
+
 class SchemaError(ValidationError):
     """An instance violates a schema constraint."""
     pass
+
 
 class SemanticError(ValidationError):
     """An instance violates a semantic rule."""
     pass
 
+
 class YangTypeError(YangsonException):
     """A scalar value doesn't match its expected type."""
     pass
+
 
 class StatementNotFound(YangsonException):
     """Required statement does not exist."""
@@ -335,6 +371,7 @@ class StatementNotFound(YangsonException):
         """Print the statement's keyword."""
         return "`{}' in `{}'".format(self.keyword, self.parent)
 
+
 class DefinitionNotFound(YangsonException):
     """Requested definition does not exist."""
 
@@ -345,6 +382,7 @@ class DefinitionNotFound(YangsonException):
     def __str__(self) -> str:
         return "{} {}".format(self.keyword, self.name)
 
+
 class XPathTypeError(YangsonException):
     """The value of an XPath (sub)expression is of a wrong type."""
 
@@ -354,4 +392,5 @@ class XPathTypeError(YangsonException):
     def __str__(self) -> str:
         return self.value
 
-from .parser import Parser
+
+from .parser import Parser      # NOQA

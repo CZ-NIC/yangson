@@ -26,7 +26,7 @@ This module implements the following classes:
 
 from datetime import datetime
 from typing import Dict, List, Union
-from .typealiases import *
+from .typealiases import InstanceName, ScalarValue
 
 # Type aliases
 Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
@@ -37,6 +37,7 @@ EntryValue = Union[ScalarValue, "ObjectValue"]
 
 InstanceKey = Union[InstanceName, int]
 """Index of an array entry or name of an object member."""
+
 
 class StructuredValue:
     """Abstract class for array and object values."""
@@ -69,6 +70,7 @@ class StructuredValue:
         """Return hash value for the receiver."""
         raise NotImplementedError()
 
+
 class ArrayValue(StructuredValue, list):
     """This class represents cooked array values."""
 
@@ -79,6 +81,7 @@ class ArrayValue(StructuredValue, list):
     def __hash__(self) -> int:
         """Return hash value for the receiver."""
         return tuple([x.__hash__() for x in self]).__hash__()
+
 
 class ObjectValue(StructuredValue, dict):
     """This class represents cooked object values."""

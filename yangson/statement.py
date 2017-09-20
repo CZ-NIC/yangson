@@ -23,18 +23,18 @@ This module implements the following classes:
 * Statement: YANG statements.
 """
 
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 from .exceptions import (
-    DefinitionNotFound, EndOfInput, StatementNotFound, UnexpectedInput,
-    InvalidArgument)
+    EndOfInput, StatementNotFound, UnexpectedInput, InvalidArgument)
 from .parser import Parser
 from .typealiases import YangIdentifier
+
 
 class Statement:
 
     """YANG statement."""
 
-    _escape_table = str.maketrans({ '"': '\\"', '\\': '\\\\'})
+    _escape_table = str.maketrans({'"': '\\"', '\\': '\\\\'})
     """Table for translating characters to their escaped form."""
 
     def __init__(self,
@@ -83,9 +83,10 @@ class Statement:
         """
         for sub in self.substatements:
             if (sub.keyword == kw and sub.prefix == pref and
-                (arg is None or sub.argument == arg)):
+                    (arg is None or sub.argument == arg)):
                 return sub
-        if required: raise StatementNotFound(str(self), kw)
+        if required:
+            raise StatementNotFound(str(self), kw)
 
     def find_all(self, kw: YangIdentifier,
                  pref: YangIdentifier = None) -> List["Statement"]:
@@ -112,7 +113,8 @@ class Statement:
         stmt = self.superstmt
         while stmt:
             res = stmt.find1(kw, name)
-            if res: return res
+            if res:
+                return res
             stmt = stmt.superstmt
         return None
 
@@ -122,11 +124,12 @@ class Statement:
         emsg = self.find1("error-message")
         return (etag.argument if etag else None, emsg.argument if emsg else None)
 
+
 class ModuleParser(Parser):
     """Parse YANG modules."""
 
-    unescape_map = { "n" : "\n", "t": "\t", '"': '"',
-                     "\\": "\\" } # type: Dict[str,str]
+    unescape_map = {"n": "\n", "t": "\t", '"': '"',
+                    "\\": "\\"}  # type: Dict[str,str]
     """Dictionary for mapping escape sequences to characters."""
 
     def parse(self) -> Statement:
@@ -178,36 +181,36 @@ class ModuleParser(Parser):
         """
         start = self.offset
         self.dfa([
-        {  # state 0: whitespace
-           "": lambda: -1,
-           " ": lambda: 0,
-           "\t": lambda: 0,
-           "\n": lambda: 0,
-           "\r": lambda: 1,
-           "/": lambda: 2
-           },
-        { # state 1: CR/LF?
-          "": self._back_break,
-          "\n": lambda: 0
-          },
-        { # state 2: start comment?
-          "": self._back_break,
-          "/": lambda: 3,
-          "*": lambda: 4
-          },
-        { # state 3: line comment
-          "": lambda: 3,
-          "\n": lambda: 0
-          },
-        { # state 4: block comment
-          "": lambda: 4,
-          "*": lambda: 5
-          },
-        { # state 5: end block comment?
-          "": lambda: 4,
-          "/": lambda: 0,
-          "*": lambda: 5
-          }])
+            {  # state 0: whitespace
+                "": lambda: -1,
+                " ": lambda: 0,
+                "\t": lambda: 0,
+                "\n": lambda: 0,
+                "\r": lambda: 1,
+                "/": lambda: 2
+            },
+            {  # state 1: CR/LF?
+                "": self._back_break,
+                "\n": lambda: 0
+            },
+            {  # state 2: start comment?
+                "": self._back_break,
+                "/": lambda: 3,
+                "*": lambda: 4
+            },
+            {  # state 3: line comment
+                "": lambda: 3,
+                "\n": lambda: 0
+            },
+            {  # state 4: block comment
+                "": lambda: 4,
+                "*": lambda: 5
+            },
+            {  # state 5: end block comment?
+                "": lambda: 4,
+                "/": lambda: 0,
+                "*": lambda: 5
+            }])
         return start < self.offset
 
     def separator(self) -> None:
@@ -218,7 +221,8 @@ class ModuleParser(Parser):
             UnexpectedInput: If no separator is found.
         """
         present = self.opt_separator()
-        if not present: raise UnexpectedInput(self, "separator")
+        if not present:
+            raise UnexpectedInput(self, "separator")
 
     def keyword(self) -> Tuple[Optional[str], str]:
         """Parse a YANG statement keyword.
@@ -241,12 +245,12 @@ class ModuleParser(Parser):
             EndOfInput: If past the end of input.
             UnexpectedInput: If no syntactically correct statement is found.
         """
-        pref,kw = self.keyword()
+        pref, kw = self.keyword()
         pres = self.opt_separator()
         next = self.peek()
         if next == ";":
             arg = None
-            sub = False # type: bool
+            sub = False  # type: bool
         elif next == "{":
             arg = None
             sub = True
@@ -289,7 +293,7 @@ class ModuleParser(Parser):
             return True
         elif quoted and next == "+":
             self.offset += 1
-            self.opt_separator();
+            self.opt_separator()
             return self.argument()
         else:
             raise UnexpectedInput(self, "';', '{'" +
@@ -317,14 +321,14 @@ class ModuleParser(Parser):
         self.offset += 1
         start = self.offset
         self.dfa([
-        { # state 0: argument
-          "": lambda: 0,
-          '"': lambda: -1,
-          "\\": escape
-          },
-        { # state 1: after escape
-          "": lambda: 0
-          }])
+            {  # state 0: argument
+                "": lambda: 0,
+                '"': lambda: -1,
+                "\\": escape
+            },
+            {  # state 1: after escape
+                "": lambda: 0
+            }])
         self._arg += (self.unescape(self.input[start:self.offset])
                       if self._escape else self.input[start:self.offset])
         self.offset += 1
@@ -337,21 +341,21 @@ class ModuleParser(Parser):
         """
         start = self.offset
         self.dfa([
-        { # state 0: argument
-          "": lambda: 0,
-          ";": lambda: -1,
-          " ": lambda: -1,
-          "\t": lambda: -1,
-          "\r": lambda: -1,
-          "\n": lambda: -1,
-          "{": lambda: -1,
-          '/': lambda: 1
-          },
-        { # state 1: comment?
-          "": lambda: 0,
-          "/": self._back_break,
-          "*": self._back_break
-          }])
+            {  # state 0: argument
+                "": lambda: 0,
+                ";": lambda: -1,
+                " ": lambda: -1,
+                "\t": lambda: -1,
+                "\r": lambda: -1,
+                "\n": lambda: -1,
+                "{": lambda: -1,
+                '/': lambda: 1
+            },
+            {  # state 1: comment?
+                "": lambda: 0,
+                "/": self._back_break,
+                "*": self._back_break
+            }])
         self._arg = self.input[start:self.offset]
 
     def substatements(self) -> List[Statement]:

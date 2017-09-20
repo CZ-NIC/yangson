@@ -26,7 +26,7 @@ This module implements the following classes:
 * FeatureExprParser: Parser for if-feature expressions.
 """
 
-from typing import Dict, List, MutableSet, Optional, Tuple
+from typing import Any, Dict, List, MutableSet, Tuple
 from .exceptions import (
     InvalidSchemaPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
     FeaturePrerequisiteError, InvalidFeatureExpression, ModuleNotFound,
@@ -34,20 +34,23 @@ from .exceptions import (
     MultipleImplementedRevisions, UnknownPrefix)
 from .parser import Parser
 from .statement import ModuleParser, Statement
-from .typealiases import *
+from .typealiases import (ModuleId, PrefName, QualName, RevisionDate,
+                          SchemaNodeId, SchemaPath, SchemaRoute, YangIdentifier)
+
 
 class IdentityAdjacency:
     """Adjacency data for an identity."""
 
     def __init__(self):
-        self.bases = set() # type: MutableSet[QualName]
-        self.derivs = set() # type: MutableSet[QualName]
+        self.bases = set()  # type: MutableSet[QualName]
+        self.derivs = set()  # type: MutableSet[QualName]
+
 
 class SchemaContext:
     """Schema data and current schema context."""
 
     def __init__(self, schema_data: "SchemaData", default_ns: YangIdentifier,
-                     text_mid: ModuleId):
+                 text_mid: ModuleId):
         """Initialize the class instance."""
         self.schema_data = schema_data
         self.default_ns = default_ns
@@ -55,21 +58,23 @@ class SchemaContext:
         self.text_mid = text_mid
         """Identifier of the module that is currently being read."""
 
+
 class ModuleData:
     """Data related to a YANG module or submodule."""
 
     def __init__(self, main_module: YangIdentifier):
         """Initialize the class instance."""
-        self.features = set() # type: MutableSet[YangIdentifier]
+        self.features = set()  # type: MutableSet[YangIdentifier]
         """Set of supported features."""
-        self.main_module = main_module # type: ModuleId
+        self.main_module = main_module  # type: ModuleId
         """Main module of the receiver."""
-        self.prefix_map = {} # type: Dict[YangIdentifier, ModuleId]
+        self.prefix_map = {}  # type: Dict[YangIdentifier, ModuleId]
         """Map of prefixes to module identifiers."""
-        self.statement = None # type: Statement
+        self.statement = None  # type: Statement
         """Corresponding (sub)module statements."""
-        self.submodules = set() # type: MutableSet[ModuleId]
+        self.submodules = set()  # type: MutableSet[ModuleId]
         """Set of submodules."""
+
 
 class SchemaData:
     """Repository of YANG schema structures and utility methods.
@@ -81,15 +86,15 @@ class SchemaData:
 
     def __init__(self, yang_lib: Dict[str, Any], mod_path: List[str]) -> None:
         """Initialize the schema structures."""
-        self.identity_adjs = {} # type: Dict[QualName, IdentityAdjacency]
+        self.identity_adjs = {}  # type: Dict[QualName, IdentityAdjacency]
         """Dictionary of identity bases."""
-        self.implement = {} # type: Dict[YangIdentifier, RevisionDate]
+        self.implement = {}  # type: Dict[YangIdentifier, RevisionDate]
         """Dictionary of implemented revisions."""
         self.module_search_path = mod_path
         """List of directories where to look for YANG modules."""
-        self.modules = {} # type: Dict[ModuleId, ModuleData]
+        self.modules = {}  # type: Dict[ModuleId, ModuleData]
         """Dictionary of module data."""
-        self._module_sequence = [] # type: List[ModuleId]
+        self._module_sequence = []  # type: List[ModuleId]
         """List that defines the order of module processing."""
         self._from_yang_library(yang_lib)
 
@@ -143,11 +148,12 @@ class SchemaData:
         self._check_feature_dependences()
 
     def _load_module(self, name: YangIdentifier,
-                    rev: RevisionDate) -> Statement:
+                     rev: RevisionDate) -> Statement:
         """Read and parse a YANG module or submodule."""
         for d in self.module_search_path:
             fn = "{}/{}".format(d, name)
-            if rev: fn += "@" + rev
+            if rev:
+                fn += "@" + rev
             fn += ".yang"
             try:
                 with open(fn, encoding='utf-8') as infile:
@@ -159,9 +165,10 @@ class SchemaData:
 
     def _process_imports(self) -> None:
         impl = set(self.implement.items())
-        if len(impl) == 0: return
-        deps = { mid: set() for mid in impl }
-        impby = { mid: set() for mid in impl }
+        if len(impl) == 0:
+            return
+        deps = {mid: set() for mid in impl}
+        impby = {mid: set() for mid in impl}
         for mid in self.modules:
             mod = self.modules[mid].statement
             for impst in mod.find_all("import"):
@@ -171,7 +178,7 @@ class SchemaData:
                 if revst:
                     imid = (impn, revst.argument)
                     if imid not in self.modules:
-                        raise ModuleNotRegistered(impn, rev)
+                        raise ModuleNotRegistered(*imid)
                 else:                              # use last revision
                     imid = self.last_revision(impn)
                 self.modules[mid].prefix_map[prefix] = imid
@@ -180,7 +187,8 @@ class SchemaData:
                     deps[mm].add(imid)
                     impby[imid].add(mm)
         free = [mid for mid in deps if len(deps[mid]) == 0]
-        if not free: raise CyclicImports()
+        if not free:
+            raise CyclicImports()
         while free:
             nid = free.pop()
             self._module_sequence.append(nid)
@@ -197,7 +205,8 @@ class SchemaData:
         for mid in self.modules:
             for fst in self.modules[mid].statement.find_all("feature"):
                 fn, fid = self.resolve_pname(fst.argument, mid)
-                if fn not in self.modules[fid].features: continue
+                if fn not in self.modules[fid].features:
+                    continue
                 if not self.if_features(fst, mid):
                     raise FeaturePrerequisiteError(*fn)
 
@@ -297,7 +306,8 @@ class SchemaData:
             UnknownPrefix: If the prefix specified in `ni` is not declared.
         """
         p, s, loc = ni.partition(":")
-        if not s: return (ni, sctx.default_ns)
+        if not s:
+            return (ni, sctx.default_ns)
         try:
             mdata = self.modules[sctx.text_mid]
         except KeyError:
@@ -359,14 +369,16 @@ class SchemaData:
         Raises:
             InvalidSchemaPath: Invalid path.
         """
-        if path == "/" or path == "": return []
+        if path == "/" or path == "":
+            return []
         nlist = path.split("/")
         prevns = None
         res = []
         for n in (nlist[1:] if path[0] == "/" else nlist):
             p, s, loc = n.partition(":")
             if s:
-                if p == prevns: raise InvalidSchemaPath(path)
+                if p == prevns:
+                    raise InvalidSchemaPath(path)
                 res.append((loc, p))
                 prevns = p
             elif prevns:
@@ -403,14 +415,16 @@ class SchemaData:
         loc, did = self.resolve_pname(stmt.argument, sctx.text_mid)
         if did == sctx.text_mid:
             dstmt = stmt.get_definition(loc, kw)
-            if dstmt: return (dstmt, sctx)
+            if dstmt:
+                return (dstmt, sctx)
         else:
             dstmt = self.modules[did].statement.find1(kw, loc)
             if dstmt:
                 return (dstmt, SchemaContext(sctx.schema_data, sctx.default_ns, did))
         for sid in self.modules[did].submodules:
             dstmt = self.modules[sid].statement.find1(kw, loc)
-            if dstmt: return (
+            if dstmt:
+                return (
                     dstmt, SchemaContext(sctx.schema_data, sctx.default_ns, sid))
         raise DefinitionNotFound(kw, stmt.argument)
 
@@ -420,9 +434,11 @@ class SchemaData:
             bases = self.identity_adjs[identity].bases
         except KeyError:
             return False
-        if base in bases: return True
+        if base in bases:
+            return True
         for ib in bases:
-            if self.is_derived_from(ib, base): return True
+            if self.is_derived_from(ib, base):
+                return True
         return False
 
     def derived_from(self, identity: QualName) -> MutableSet[QualName]:
@@ -437,7 +453,8 @@ class SchemaData:
 
     def derived_from_all(self, identities: List[QualName]) -> MutableSet[QualName]:
         """Return list of identities transitively derived from all `identity`."""
-        if not identities: return set()
+        if not identities:
+            return set()
         res = self.derived_from(identities[0])
         for id in identities[1:]:
             res &= self.derived_from(id)
@@ -464,6 +481,7 @@ class SchemaData:
             if not FeatureExprParser(i.argument, self, mid).parse():
                 return False
         return True
+
 
 class FeatureExprParser(Parser):
     """Parser and evaluator for if-feature expressions."""

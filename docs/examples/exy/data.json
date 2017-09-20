@@ -1,0 +1,105 @@
+{
+    "ietf-interfaces:interfaces": {
+        "interface": [
+            {
+                "ietf-ip:ipv6": {
+                    "address": [
+                        {
+                            "prefix-length": 64,
+                            "ip": "2001:718:1a02:1:8cbe:b4ab:583e:ede2"
+                        },
+                        {
+                            "prefix-length": 128,
+                            "ip": "2001:718:1a02:1::9a5"
+                        },
+                        {
+                            "prefix-length": 64,
+                            "ip": "2001:718:1a02:1:f5d2:18b7:d422:7d1b"
+                        },
+                        {
+                            "prefix-length": 64,
+                            "ip": "2001:718:1a02:1:25ba:5dee:cf60:2e7a"
+                        },
+                        {
+                            "prefix-length": 64,
+                            "ip": "2001:718:1a02:1:9116:fbd6:4659:e515"
+                        },
+                        {
+                            "prefix-length": 64,
+                            "ip": "fe80::5d6f:9f13:fbe:ff6c"
+                        },
+                        {
+                            "prefix-length": 64,
+                            "ip": "2001:718:1a02:1:19cb:1acd:9380:4f08"
+                        },
+                        {
+                            "prefix-length": 64,
+                            "ip": "2001:718:1a02:1:287d:b9fd:43b7:805d"
+                        }
+                    ]
+                },
+                "enabled": true,
+                "type": "iana-if-type:ethernetCsmacd",
+                "name": "eth0",
+                "ietf-ip:ipv4": {
+                    "address": [
+                        {
+                            "prefix-length": 27,
+                            "ip": "195.113.220.111"
+                        }
+                    ]
+                }
+            },
+            {
+                "ietf-ip:ipv6": {
+                    "address": [
+                        {
+                            "prefix-length": 128,
+                            "ip": "::1"
+                        }
+                    ]
+                },
+                "enabled": true,
+                "type": "iana-if-type:ethernetCsmacd",
+                "name": "lo",
+                "ietf-ip:ipv4": {
+                    "address": [
+                        {
+                            "prefix-length": 8,
+                            "ip": "127.0.0.1"
+                        }
+                    ]
+                }
+            },
+            {
+                "enabled": false,
+                "type": "ietf-interfaces-common:ethSubInterface",
+                "ietf-ip:ipv4": {
+                    "address": [
+                        {
+                            "prefix-length": 8,
+                            "ip": "127.10.10.10"
+                        }
+                    ]
+                },
+                "ietf-ip:ipv6": {
+                    "address": []
+                },
+                "name": "eth0.3",
+                "ietf-interfaces-common:encapsulation": {
+                    "ietf-if-l3-vlan:dot1q-vlan": {
+                        "outer-tag": {
+                            "dot1q-tag": {
+                                "vlan-id": 3,
+                                "tag-type": "ieee802-dot1q-types:s-vlan"
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    },
+    "ietf-netconf-acm:nacm": {
+        "enable-nacm": false
+    }
+}

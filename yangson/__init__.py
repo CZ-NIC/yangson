@@ -1,1 +1,1 @@
-from .datamodel import DataModel
+from .datamodel import DataModel    # NOQA

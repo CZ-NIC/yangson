@@ -30,8 +30,9 @@ from .schemadata import SchemaContext
 from .enumerations import Axis, MultiplicativeOp
 from .exceptions import EndOfInput, InvalidXPath, NotSupported, UnexpectedInput
 from .parser import Parser
-from .typealiases import *
-from .xpathast import *
+from .typealiases import QualName
+from .xpathast import *  # NOQA
+
 
 class XPathParser(Parser):
     """Parser for XPath expressions."""
@@ -105,7 +106,8 @@ class XPathParser(Parser):
                 rel = self.peek()
             except EndOfInput:
                 return op1
-            if rel not in "<>": return op1
+            if rel not in "<>":
+                return op1
             self.offset += 1
             eq = self.test_string("=")
             self.skip_ws()
@@ -119,7 +121,8 @@ class XPathParser(Parser):
                 pm = self.peek()
             except EndOfInput:
                 return op1
-            if pm not in "+-": return op1
+            if pm not in "+-":
+                return op1
             self.adv_skip_ws()
             op2 = self._multiplicative_expr()
             op1 = AdditiveExpr(op1, op2, pm == "+")
@@ -166,7 +169,7 @@ class XPathParser(Parser):
             self.skip_ws()
             return Literal(val)
         if ("0" <= next <= "9" or
-            next == "." and "0" <= self.input[self.offset + 1] <= "9"):
+                next == "." and "0" <= self.input[self.offset + 1] <= "9"):
             val = self.unsigned_float()
             self.skip_ws()
             return Number(val)
@@ -199,7 +202,7 @@ class XPathParser(Parser):
             except AttributeError:
                 if fname in ("id", "lang", "namespace-uri"):
                     raise NotSupported(self,
-                        "function '{}()'".format(fname)) from None
+                                       "function '{}()'".format(fname)) from None
                 raise InvalidXPath(self) from None
         self.char(")")
         self.skip_ws()
@@ -220,7 +223,8 @@ class XPathParser(Parser):
     def _location_path(self) -> LocationPath:
         if self.test_string("/"):
             self.skip_ws()
-            if self.at_end(): return Root()
+            if self.at_end():
+                return Root()
             op1 = LocationPath(Root(), self._step())
         else:
             op1 = self._step()

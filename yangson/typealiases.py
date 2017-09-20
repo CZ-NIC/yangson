@@ -18,7 +18,7 @@
 """Type aliases for use with type hints [PEP484]_."""
 
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 RevisionDate = str
 """RevisionDate in the format ``YYYY-MM-DD``, or empty string."""
@@ -56,7 +56,7 @@ SchemaRoute = List[QualName]
 SchemaPath = str
 """Schema path similar to instance identifier containing names of schema nodes."""
 
-DataPath = str # same syntax as SchemaPath but containing only data nodes
+DataPath = str  # same syntax as SchemaPath but containing only data nodes
 """SchemaPath containing only names of data nodes."""
 
 ModuleId = Tuple[YangIdentifier, RevisionDate]
@@ -80,8 +80,10 @@ RawLeafList = List[RawScalar]
 RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
 """Raw value of any type."""
 
+
 class _Singleton(type):
     _instances = {}
+
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
             cls._instances[cls] = super(_Singleton, cls).__call__(*args, **kwargs)

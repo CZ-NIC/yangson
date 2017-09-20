@@ -17,11 +17,11 @@
 
 """This module defines classes for schema patterns."""
 
-from typing import List, Optional
 from .enumerations import ContentType
-from .typealiases import *
+from .typealiases import InstanceName, YangIdentifier
 from .typealiases import _Singleton
 from .xpathast import Expr
+
 
 class SchemaPattern:
     """Abstract class for schema patterns."""
@@ -41,6 +41,7 @@ class SchemaPattern:
 
     def _eval_when(self, cnode: "InstanceNode") -> None:
         return
+
 
 class Empty(SchemaPattern, metaclass=_Singleton):
     """Singleton class representing the empty pattern."""
@@ -63,6 +64,7 @@ class Empty(SchemaPattern, metaclass=_Singleton):
     def __str__(self) -> str:
         return "Empty"
 
+
 class NotAllowed(SchemaPattern):
 
     def deriv(self, x: str, ctype: ContentType) -> SchemaPattern:
@@ -75,13 +77,14 @@ class NotAllowed(SchemaPattern):
     def __str__(self) -> str:
         return "NotAllowed"
 
+
 class Conditional(SchemaPattern):
     """Class representing conditional pattern."""
 
     def __init__(self, when: Expr):
         """Initialize the class instance."""
         self.when = when
-        self._val_when = None # type: bool
+        self._val_when = None  # type: bool
 
     def empty(self) -> bool:
         """Override the superclass method."""
@@ -93,6 +96,7 @@ class Conditional(SchemaPattern):
     def check_when(self) -> bool:
         return not self.when or self._val_when
 
+
 class Typeable(SchemaPattern):
     """Multiple content types and their combinations."""
 
@@ -102,6 +106,7 @@ class Typeable(SchemaPattern):
 
     def match_ctype(self, ctype) -> bool:
         return self.ctype.value & ctype.value != 0
+
 
 class ConditionalPattern(Conditional):
     """Class representing conditional pattern."""
@@ -130,6 +135,7 @@ class ConditionalPattern(Conditional):
 
     def __str__(self) -> str:
         return str(self.pattern)
+
 
 class Member(Typeable, Conditional):
 
@@ -160,12 +166,15 @@ class Member(Typeable, Conditional):
     def __str__(self) -> str:
         return "member '{}'".format(self.name)
 
+
 class Alternative(SchemaPattern):
 
     @classmethod
     def combine(cls, p: SchemaPattern, q: SchemaPattern) -> "Alternative":
-        if isinstance(p, NotAllowed): return q
-        if isinstance(q, NotAllowed): return p
+        if isinstance(p, NotAllowed):
+            return q
+        if isinstance(q, NotAllowed):
+            return p
         return cls(p, q)
 
     def __init__(self, p: SchemaPattern, q: SchemaPattern):
@@ -194,12 +203,13 @@ class Alternative(SchemaPattern):
     def __str__(self) -> str:
         return str(self.left) + " or " + str(self.right)
 
+
 class ChoicePattern(Alternative, Typeable):
 
     def __init__(self, p: SchemaPattern, q: SchemaPattern,
                  name: YangIdentifier):
         super().__init__(p, q)
-        self.ctype = ContentType.all # type: ContentType
+        self.ctype = ContentType.all  # type: ContentType
         self.name = name
 
     def nullable(self, ctype: ContentType):
@@ -214,14 +224,19 @@ class ChoicePattern(Alternative, Typeable):
             self.name,
             self.left.tree(indent + 2), self.right.tree(indent + 2))
 
+
 class Pair(SchemaPattern):
 
     @classmethod
     def combine(cls, p: SchemaPattern, q: SchemaPattern):
-        if p.empty(): return q
-        if q.empty(): return p
-        if isinstance(p, NotAllowed): return p
-        if isinstance(q, NotAllowed): return q
+        if p.empty():
+            return q
+        if q.empty():
+            return p
+        if isinstance(p, NotAllowed):
+            return p
+        if isinstance(q, NotAllowed):
+            return q
         return cls(p, q)
 
     def __init__(self, p: SchemaPattern, q: SchemaPattern):

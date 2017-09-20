@@ -30,10 +30,11 @@ from yangson.exceptions import (
     ModuleNotFound, ModuleNotRegistered, RawMemberError, RawTypeError,
     SchemaError, SemanticError)
 
+
 def main(ylib: str = None, path: List[str] = ["."],
-             scope: ValidationScope = ValidationScope.all,
-             ctype: ContentType = ContentType.config, set_id: bool = False,
-             tree: bool = False, digest: bool = False, validate: str = None):
+         scope: ValidationScope = ValidationScope.all,
+         ctype: ContentType = ContentType.config, set_id: bool = False,
+         tree: bool = False, digest: bool = False, validate: str = None):
     """Entry-point for a validation script."""
     if ylib is None:
         parser = argparse.ArgumentParser(
@@ -45,12 +46,12 @@ def main(ylib: str = None, path: List[str] = ["."],
         parser.add_argument(
             "ylib", metavar="YLIB",
             help=("name of the file with description of the data model"
-                      " in JSON-encoded YANG library format [RFC 7895]"))
+                  " in JSON-encoded YANG library format [RFC 7895]"))
         parser.add_argument(
             "-p", "--path",
             default=os.environ.get("YANG_MODPATH", "."),
             help=("colon-separated list of directories to search"
-                      " for YANG modules"))
+                  " for YANG modules"))
         grp = parser.add_mutually_exclusive_group()
         grp.add_argument(
             "-i", "--id", action="store_true",
@@ -81,25 +82,25 @@ def main(ylib: str = None, path: List[str] = ["."],
         with open(args.ylib, encoding="utf-8") as infile:
             yl = infile.read()
     except (FileNotFoundError, PermissionError,
-                json.decoder.JSONDecodeError) as e:
-        print("YANG library:" , str(e), file=sys.stderr)
+            json.decoder.JSONDecodeError) as e:
+        print("YANG library:", str(e), file=sys.stderr)
         return 1
     try:
         dm = DataModel(yl, path)
     except BadYangLibraryData as e:
-        print("Invalid YANG library:" , str(e), file=sys.stderr)
+        print("Invalid YANG library:", str(e), file=sys.stderr)
         return 2
     except FeaturePrerequisiteError as e:
-        print("Unsupported pre-requisite feature:" , str(e), file=sys.stderr)
+        print("Unsupported pre-requisite feature:", str(e), file=sys.stderr)
         return 2
     except MultipleImplementedRevisions as e:
-        print("Multiple implemented revisions:" , str(e), file=sys.stderr)
+        print("Multiple implemented revisions:", str(e), file=sys.stderr)
         return 2
     except ModuleNotFound as e:
-        print("Module not found:" , str(e), file=sys.stderr)
+        print("Module not found:", str(e), file=sys.stderr)
         return 2
     except ModuleNotRegistered as e:
-        print("Module not registered:" , str(e), file=sys.stderr)
+        print("Module not registered:", str(e), file=sys.stderr)
         return 2
     if args.id:
         print(dm.module_set_id())
@@ -116,25 +117,26 @@ def main(ylib: str = None, path: List[str] = ["."],
         with open(args.validate, encoding="utf-8") as infile:
             itxt = json.load(infile)
     except (FileNotFoundError, PermissionError,
-                json.decoder.JSONDecodeError) as e:
-        print("Instance data:" , str(e), file=sys.stderr)
+            json.decoder.JSONDecodeError) as e:
+        print("Instance data:", str(e), file=sys.stderr)
         return 1
     try:
         i = dm.from_raw(itxt)
     except RawMemberError as e:
-        print("Illegal object member:" , str(e), file=sys.stderr)
+        print("Illegal object member:", str(e), file=sys.stderr)
         return 3
     except RawTypeError as e:
-        print("Invalid type:" , str(e), file=sys.stderr)
+        print("Invalid type:", str(e), file=sys.stderr)
         return 3
     try:
         i.validate(scope, ctype)
     except SchemaError as e:
-        print("Schema error:" , str(e), file=sys.stderr)
+        print("Schema error:", str(e), file=sys.stderr)
         return 3
     except SemanticError as e:
-        print("Semantic error:" , str(e), file=sys.stderr)
+        print("Semantic error:", str(e), file=sys.stderr)
         return 3
     return 0
+
 
 sys.exit(main())
