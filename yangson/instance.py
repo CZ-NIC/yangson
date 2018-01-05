@@ -77,10 +77,10 @@ class LinkedList:
 
     def __iter__(self):
         """Iterate over receiver's entries."""
-        l = self
+        cdr = self
         while True:
             try:
-                n, l = l.pop()
+                n, cdr = cdr.pop()
             except IndexError:
                 raise StopIteration from None
             yield n
