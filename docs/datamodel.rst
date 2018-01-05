@@ -166,7 +166,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> leaf.parent is root
 	 True
 
-    .. method:: ascii_tree(no_types: bool = False) -> str
+   .. method:: ascii_tree(no_types: bool = False) -> str
 
       Generate ASCII art representation of the actual schema tree. If
       *no_types* is set to ``True``, the output of type information
@@ -179,73 +179,71 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> print(dm.ascii_tree(True), end='')
 	 +--rw example-1:greeting?
 
-    .. method:: parse_instance_id(text: str) -> InstanceRoute
+   .. method:: parse_instance_id(text: str) -> InstanceRoute
 
-       Parse :term:`instance identifier` into an internal object of
-       the :class:`~.instance.InstanceRoute` class that can be used as
-       a parameter to the the :meth:`~.instance.InstanceNode.goto` and
-       :meth:`~.instance.InstanceNode.peek` methods of the
-       :class:`~.instance.InstanceNode` class.
+      Parse :term:`instance identifier` into an internal object of the
+      :class:`~.instance.InstanceRoute` class that can be used as a
+      parameter to the the :meth:`~.instance.InstanceNode.goto` and
+      :meth:`~.instance.InstanceNode.peek` methods of the
+      :class:`~.instance.InstanceNode` class.
 
-    .. method:: parse_resource_id(text: str) -> InstanceRoute
+   .. method:: parse_resource_id(text: str) -> InstanceRoute
 
-       Parse :term:`resource identifier` into an
-       :class:`~.instance.InstanceRoute` object. Yanson extends the
-       syntax of resource identifiers defined in sec. `3.5.3`_ of
-       [RFC8040]_ so as to support entire lists and leaf-lists as
-       resources: the last component of a resource identifier can be
-       the name of a list or leaf-list, with no keys or value
-       specified.
+      Parse :term:`resource identifier` into an
+      :class:`~.instance.InstanceRoute` object. Yanson extends the
+      syntax of resource identifiers defined in sec. `3.5.3`_ of
+      [RFC8040]_ so as to support entire lists and leaf-lists as
+      resources: the last component of a resource identifier can be
+      the name of a list or leaf-list, with no keys or value
+      specified.
 
-    .. method:: schema_digest() -> str
+   .. method:: schema_digest() -> str
 
-       Generate digest of the data model schema. This information is
-       primarily intended to aid client applications.
+      Generate digest of the data model schema. This information is
+      primarily intended to aid client applications.
 
-       The returned string contains a structure of JSON objects that
-       follows the data model hierarchy. Every JSON object also
-       contains members with information about the corresponding data
-       node (including the anonymous root node), namely:
+      The returned string contains a structure of JSON objects that
+      follows the data model hierarchy. Every JSON object also
+      contains members with information about the corresponding data
+      node (including the anonymous root node), namely:
 
-       * The following members are available for all nodes:
+      * The following members are available for all nodes:
 
-	 - ``class`` – class of the node, with these possible values:
-	   ``root``, ``container``, ``leaf``, ``list``, ``leaf-list``,
-	   ``anydata`` and ``anyxml``.
+	- ``class`` – class of the node, with these possible values:
+	  ``root``, ``container``, ``leaf``, ``list``, ``leaf-list``,
+	  ``anydata`` and ``anyxml``
+	- ``description`` – description string as defined in the data
+	  model, or empty string if the node has no description.
 
-	 - ``description`` – description string as defined in the data
-	   model, or empty string if the node has no description.
+      * Internal nodes (the root node, containers, and lists) have the
+        ``children`` member. Its value is an object with a name/value
+        pair for every child data node that is defined in the data
+        model. The name is the identifier of the child identical to
+        the name of the node's instance – for example, it is
+        ``foomod:bar`` for the ``bar`` data node defined in the
+        ``foomod`` module. The value of each member of the
+        ``children`` object is then another object containing the
+        child's schema digest.
 
-       * Internal nodes (the root node, containers, and lists) have the
-         ``children`` member. Its value is an object with a name/value
-	 pair for every child data node that is defined in the data
-	 model. The name is the identifier of the child identical to
-	 the name of the node's instance – for example, it is
-	 ``foomod:bar`` for the ``bar`` data node defined in the
-	 ``foomod`` module. The value of each member of the
-	 ``children`` object is then another object containing the
-	 child's schema digest.
+      * The following members are added for terminal nodes (leafs and
+	leaf-lists):
 
-       * The following members are added for terminal nodes (leafs and
-	 leaf-lists):
+	- ``base-type`` – base type of the terminal node such as
+	  ``uint8``, ``string`` etc.
+	- ``derived`` – this member is present only if the node's type
+	  is derived, and contains the name of the derived type.
 
-	 - ``base-type`` – base type of the terminal node such as
-	   ``uint8``, ``string`` etc.
+      * Container nodes also have the ``presence`` member that is
+        ``true`` for containers with presence (see sec. `7.5.1`_ of
+        [RFC7950]_), and ``false`` otherwise.
 
-	 - ``derived`` – this member is present only if the node's type
-	   is derived, and contains the name of the derived type.
+      * List nodes also have the ``keys`` member whose value is an
+        array with names of the list's keys.
 
-       * Container nodes also have the ``presence`` member that is
-         ``true`` for containers with presence (see sec. `7.5.1`_ of
-	 [RFC7950]_), and ``false`` otherwise.
+      .. doctest::
 
-       * List nodes also have the ``keys`` member whose value is an
-         array with names of the list's keys.
-
-       .. doctest::
-
-	  >>> len(dm.schema_digest())
-	  222
+	 >>> len(dm.schema_digest())
+	 222
 
 .. _3.5.3: https://tools.ietf.org/html/rfc8040#section-3.5.3
 .. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
