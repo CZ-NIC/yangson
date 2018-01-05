@@ -885,6 +885,7 @@ class EntryValue:
         res = sn.type.parse_value(self.value)
         if res is None:
             raise InvalidKeyValue(self.value)
+        return res
 
     def peek_step(self, val: ArrayValue,
                   sn: "DataNode") -> Tuple[Value, "DataNode"]:
