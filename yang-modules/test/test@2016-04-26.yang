@@ -175,7 +175,7 @@ module test {
     }
     leaf string {
       type string {
-        length "2..4 | 11";
+        length "2..4 | 11 | 12";
         pattern "[a-z0-9]+\\s{1,2}[a-z]*";
         pattern "xx x.*" {
           modifier invert-match;

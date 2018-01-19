@@ -3,14 +3,12 @@ import pytest
 from decimal import Decimal
 from yangson import DataModel
 from yangson.exceptions import (
-    InvalidSchemaPath, InvalidFeatureExpression, UnknownPrefix, YangTypeError,
-    NonexistentInstance, NonexistentSchemaNode, RawTypeError, SchemaError,
+    InvalidFeatureExpression, UnknownPrefix, NonexistentInstance,
+    NonexistentSchemaNode, RawTypeError, SchemaError,
     XPathTypeError, InvalidXPath, NotSupported)
+from yangson.instvalue import ArrayValue
 from yangson.schemadata import SchemaContext, FeatureExprParser
 from yangson.enumerations import ContentType
-from yangson.instance import ResourceIdParser
-from yangson.instvalue import ArrayValue, ObjectValue
-from yangson.schemanode import SequenceNode
 from yangson.xpathparser import XPathParser
 
 tree = """+--rw (test:choiA)?
@@ -79,10 +77,12 @@ tree = """+--rw (test:choiA)?
       +--ro testb:llistC* <boolean>
 """
 
+
 @pytest.fixture
 def data_model():
     return DataModel.from_file("yang-modules/test/yang-library.json",
                                ["yang-modules/test", "yang-modules/ietf"])
+
 
 @pytest.fixture
 def instance(data_model):
@@ -90,33 +90,34 @@ def instance(data_model):
     {
         "test:llistB": ["::1", "127.0.0.1"],
         "test:leafX": 53531,
-	    "test:contA": {
-		    "leafB": 9,
-		    "listA": [{
-			    "leafE": "C0FFEE",
-			    "leafF": true,
-			    "contD": {
-				    "leafG": "foo1-bar",
-				    "contE": {
-					    "leafJ": [null],
-					    "leafP": 10
-				    }
-			    }
-		    }, {
-			    "leafE": "ABBA",
+        "test:contA": {
+            "leafB": 9,
+            "listA": [{
+                "leafE": "C0FFEE",
+                "leafF": true,
+                "contD": {
+                    "leafG": "foo1-bar",
+                    "contE": {
+                        "leafJ": [null],
+                        "leafP": 10
+                    }
+                }
+            },
+            {
+                "leafE": "ABBA",
                 "leafW": 9,
-			    "leafF": false
-		    }],
+                "leafF": false
+            }],
             "testb:leafS":
                 "/test:contA/listA[leafE='C0FFEE'][leafF='true']/contD/contE/leafP",
             "testb:leafR": "C0FFEE",
             "testb:leafT": "test:CC-BY",
             "testb:leafV": 99,
-		    "anydA": {
-			    "foo:bar": [1, 2, 3]
-		    },
-		    "testb:leafN": "hi!"
-	    },
+            "anydA": {
+                "foo:bar": [1, 2, 3]
+            },
+            "testb:leafN": "hi!"
+        },
         "test:contT": {
             "bits": "dos cuatro",
             "decimal64": 4.50,
@@ -125,6 +126,7 @@ def instance(data_model):
     }
     """
     return data_model.from_raw(json.loads(data))
+
 
 def test_schema_data(data_model):
     assert len(data_model.schema_data.implement) == 2
@@ -141,10 +143,13 @@ def test_schema_data(data_model):
     with pytest.raises(InvalidFeatureExpression):
         FeatureExprParser("feA andnot (not feA or feB)", data_model.schema_data, tid).parse()
     assert not data_model.schema_data.is_derived_from(("all-uses", "test"), ("all-uses", "test"))
-    assert data_model.schema_data.is_derived_from(("all-uses", "test"), ("licence-property", "test"))
+    assert data_model.schema_data.is_derived_from(
+        ("all-uses", "test"), ("licence-property", "test"))
     assert data_model.schema_data.is_derived_from(("CC-BY-SA", "testb"), ("share-alike", "test"))
-    assert not data_model.schema_data.is_derived_from(("CC-BY-SA", "testb"), ("derivatives", "test"))
+    assert not data_model.schema_data.is_derived_from(
+        ("CC-BY-SA", "testb"), ("derivatives", "test"))
     assert data_model.schema_data.is_derived_from(("CC-BY-SA", "testb"), ("all-uses", "test"))
+
 
 def test_schema(data_model):
     ca = data_model.get_data_node("/test:contA")
@@ -167,8 +172,6 @@ def test_schema(data_model):
     llc = data_model.get_schema_node("/testb:rpcA/output/llistC")
     ll = lsta.get_schema_descendant(data_model.schema_data.path2route(
         "test:contD/acA/output/leafL"))
-    lo = data_model.get_schema_node("/testb:noA/leafO")
-    lp = data_model.get_data_node("/test:contA/listA/contD/contE/leafP")
     assert la.parent == chb.parent == ca
     assert ll.parent.name == "output"
     assert chb in ca._mandatory_children
@@ -178,25 +181,27 @@ def test_schema(data_model):
             ln.content_type() == ContentType.config)
     assert ca.content_type() == cha.content_type() == ContentType.all
     assert ll.content_type() == ContentType.nonconfig
-    assert lj.config == ca.config == cha.config == (not ll.config) == True
+    assert lj.config and ca.config and cha.config and not ll.config
     assert la.ns == ld.ns
     assert lc.ns == "testb"
     assert ld.type.default == 111
     assert lla.type.default == 11
     assert la.type.parse_value("99") == 99
-    assert ca.presence == (not cb.presence) == cc.presence == False
+    assert not ca.presence and cb.presence and not cc.presence
     assert llb.min_elements == 2
     assert llb.max_elements == 3
     assert lla.min_elements == llc.min_elements == 0
     assert lla.max_elements is None
-    assert llb.user_ordered == (not lla.user_ordered) == True
+    assert llb.user_ordered and (not lla.user_ordered)
     assert lsta.get_schema_descendant(lsta.keys[1:]).name == "leafF"
     assert lsta.get_schema_descendant(lsta.unique[0][0]).name == "leafG"
     assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
     assert data_model.get_data_node("/testb:noA/leafO") is None
 
+
 def test_tree(data_model):
     assert data_model.ascii_tree() == tree
+
 
 def test_types(data_model):
     llb = data_model.get_data_node("/test:llistB").type
@@ -242,6 +247,7 @@ def test_types(data_model):
     assert d64.from_raw("3.14159265358979323846264338327950288") == pi
     assert d64.canonical_string(Decimal("0")) == "0.0"
     st = ct.get_child("string", "test").type
+    assert st.length.intervals == [[2, 4], [11], [12]]
     assert "hello world" in st
     assert "hello-world" not in st
     assert "h" not in st
@@ -274,9 +280,10 @@ def test_types(data_model):
         "UMWZw61sacWhIMW+bHXFpW91xI1rw70ga8" +
         "WvxYggw7pwxJtsIMSPw6FiZWxza8OpIMOzZHku")
 
+
 def test_instance(data_model, instance):
     def axtest(expr, res):
-        assert [ i.json_pointer() for i in expr ] == res
+        assert [i.json_pointer() for i in expr] == res
     hi = hash(instance)
     instd = instance.add_defaults()
     hix = hash(instance)
@@ -313,7 +320,7 @@ def test_instance(data_model, instance):
             instance._following_siblings() == [])
     axtest(instance._ancestors_or_self(), ["/"])
     axtest(la1._ancestors(False), ["/test:contA"])
-    axtest(la1._ancestors_or_self(("listA", "test")), ["/test:contA/listA/1" ])
+    axtest(la1._ancestors_or_self(("listA", "test")), ["/test:contA/listA/1"])
     axtest(la1._preceding_siblings(), ["/test:contA/listA/0"])
     axtest(la1._following_siblings(), [])
     assert len(conta._children()) == 10
@@ -322,6 +329,7 @@ def test_instance(data_model, instance):
     axtest(conta._descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln._ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
+
 
 def test_xpath(data_model, instance):
     def xptest(expr, res=True, node=instance, module="test"):
@@ -457,6 +465,7 @@ def test_xpath(data_model, instance):
     xptest("not(bit-is-set(foo, bar))")
     xptest("bit-is-set(., 'dos')", False, conta)
 
+
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
     rid2 = data_model.parse_resource_id("/test:contA/listA=C0FFEE,true/contD/contE")
@@ -471,10 +480,12 @@ def test_instance_paths(data_model, instance):
             instance.goto(iid3)["leafP"].value == 10)
     with pytest.raises(NonexistentSchemaNode):
         data_model.parse_resource_id("/test:contA/leafX")
-    assert str(data_model.parse_instance_id("/test:contA/llX[. = 'foo']")) == '/test:contA/llX[.="foo"]'
-    assert instance.peek(data_model.parse_resource_id(bad_pth)) == None
+    assert str(data_model.parse_instance_id(
+        "/test:contA/llX[. = 'foo']")) == '/test:contA/llX[.="foo"]'
+    assert instance.peek(data_model.parse_resource_id(bad_pth)) is None
     with pytest.raises(NonexistentInstance):
         instance.goto(data_model.parse_resource_id(bad_pth))
+
 
 def test_edits(data_model, instance):
     laii = data_model.parse_instance_id("/test:contA/listA")
@@ -490,6 +501,7 @@ def test_edits(data_model, instance):
     assert modllb.value == ArrayValue(["::1", "2001:db8:0:2::1"])
     with pytest.raises(RawTypeError):
         llb1.update("2001::2::1", raw=True)
+
 
 def test_validation(instance):
     assert instance.validate(ctype=ContentType.all) is None
