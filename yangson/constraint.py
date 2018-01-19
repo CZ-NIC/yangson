@@ -28,7 +28,7 @@ This module implements the following classes:
 import decimal
 import re
 from typing import Callable, List, Optional, Union
-from pyxb.utils.xmlre import XMLToPython
+from pyxb.utils.xmlre import RegularExpressionError, XMLToPython
 
 from .exceptions import InvalidArgument
 from .xpathast import Expr
@@ -100,6 +100,9 @@ class Intervals(Constraint):
                 raise InvalidArgument(expr)
             return res
 
+        def simpl(rng: List[Number]) -> List[Number]:
+            return ([rng[0]] if rng[0] == rng[1] else rng)
+
         def to_num(xs): return [parse(x) for x in xs]
         lo = self.intervals[0][0]
         hi = self.intervals[-1][-1]
@@ -114,8 +117,10 @@ class Intervals(Constraint):
         if ran[-1][-1] != "max":
             hi = parse(ran[-1][-1])
         self.intervals = (
-            [[lo, hi]] if len(ran) == 1 else [[lo, parse(ran[0][-1])]] +
-            [to_num(r) for r in ran[1:-1]] + [[parse(ran[-1][0]), hi]])
+            [simpl([lo, hi])] if len(ran) == 1 else (
+                [simpl([lo, parse(ran[0][-1])])] +
+                [to_num(r) for r in ran[1:-1]] +
+                [simpl([parse(ran[-1][0]), hi])]))
         if error_tag:
             self.error_tag = error_tag
         if error_message:
@@ -135,7 +140,7 @@ class Pattern(Constraint):
         self.invert_match = invert_match
         try:
             self.regex = re.compile(XMLToPython(pattern))
-        except:
+        except RegularExpressionError:
             raise InvalidArgument(pattern) from None
 
 
