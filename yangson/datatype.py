@@ -50,7 +50,8 @@ import numbers
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from .constraint import Intervals, Pattern
-from .exceptions import InvalidArgument, ParserException
+from .exceptions import (
+    InvalidArgument, ParserException, ModuleNotRegistered, UnknownPrefix)
 from .schemadata import SchemaContext
 from .instance import InstanceNode, InstanceIdParser, InstanceRoute
 from .statement import Statement
@@ -579,7 +580,7 @@ class IdentityrefType(DataType):
         """Override the superclass method."""
         try:
             return self.sctx.schema_data.translate_pname(text, self.sctx.text_mid)
-        except:
+        except (ModuleNotRegistered, UnknownPrefix):
             raise InvalidArgument(text)
 
     def canonical_string(self, val: ScalarValue) -> Optional[str]:
@@ -631,7 +632,7 @@ class NumericType(DataType):
     def _type_digest(self, config: bool) -> Dict[str, Any]:
         res = super()._type_digest(config)
         if self.range:
-            res["range"] = [[self.to_raw(r[0]), self.to_raw(r[1])]
+            res["range"] = [[self.to_raw(r[0]), self.to_raw(r[-1])]
                             for r in self.range.intervals]
         return res
 
