@@ -41,6 +41,7 @@ This module implements the following classes:
 * AnyxmlNode: YANG anyxml node.
 """
 
+from datetime import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 from .constraint import Must
 from .datatype import (DataType, LeafrefType, LinkType,
@@ -654,7 +655,7 @@ class DataNode(SchemaNode):
             rval: Raw value to be used for the returned instance.
         """
         val = self.from_raw(rval)
-        return ObjectMember(self.iname(), {}, val, None, self, val.timestamp)
+        return ObjectMember(self.iname(), {}, val, None, self, datetime.now())
 
     def split_instance_route(self, route: "InstanceRoute") -> Optional[Tuple[
             "InstanceRoute", "InstanceRoute"]]:
