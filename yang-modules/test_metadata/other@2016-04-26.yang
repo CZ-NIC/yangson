@@ -1,8 +1,8 @@
-module meta {
+module other {
 
   yang-version "1.1";
 
-  namespace "http://example.com/meta";
+  namespace "http://example.com/other";
 
   prefix "m";
 
