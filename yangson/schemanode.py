@@ -39,6 +39,7 @@ This module implements the following classes:
 * AnyContentNode: Abstract superclass for anydata and anyxml nodes..
 * AnydataNode: YANG anydata node.
 * AnyxmlNode: YANG anyxml node.
+* AnnotationNode: YANG extension RFC 7952 annotation node.
 """
 
 from datetime import datetime
@@ -285,6 +286,7 @@ class SchemaNode:
         "identity": "_identity_stmt",
         "ietf-netconf-acm:default-deny-all": "_nacm_default_deny_stmt",
         "ietf-netconf-acm:default-deny-write": "_nacm_default_deny_stmt",
+        "ietf-yang-metadata:annotation": "_metadata_annotation_stmt",
         "input": "_input_stmt",
         "key": "_key_stmt",
         "leaf": "_leaf_stmt",
@@ -358,6 +360,8 @@ class InternalNode(SchemaNode):
         """Return data node directly under the receiver."""
         ns = ns if ns else self.ns
         todo = []
+        if ns is not None and ns.startswith("@"):
+            return self.schema_root().annotations
         for child in self.children:
             if child.name == name and child.ns == ns:
                 if isinstance(child, DataNode):
@@ -398,12 +402,23 @@ class InternalNode(SchemaNode):
             raise RawTypeError(jptr, "object")
         res = ObjectValue()
         for qn in rval:
-            cn = self._iname2qname(qn)
-            ch = self.get_data_child(*cn)
             npath = jptr + "/" + qn
-            if ch is None:
-                raise RawMemberError(npath)
-            res[ch.iname()] = ch.from_raw(rval[qn], npath)
+            if qn.startswith("@"):
+                if qn != "@":
+                    cn = self._iname2qname(qn[1:])
+                    ch = self.get_data_child(*cn)
+                    if ch is None:
+                        raise RawMemberError(npath)
+                res[qn] = self.schema_root().from_raw(rval[qn], npath)
+            else:
+                cn = self._iname2qname(qn)
+                ch = self.get_data_child(*cn)
+                if ch is None:
+                    raise RawMemberError(npath)
+                if "@" in jptr and not isinstance(ch, AnnotationNode):
+                    raise RawMemberError(npath)
+                iname = ch.iname()
+                res[iname] = ch.from_raw(rval[qn], npath)
         return res
 
     def _node_digest(self) -> Dict[str, Any]:
@@ -438,6 +453,8 @@ class InternalNode(SchemaNode):
         p = self.schema_pattern
         p._eval_when(inst)
         for m in inst.value:
+            if m.startswith("@"):
+                continue
             p = p.deriv(m, ctype)
             if isinstance(p, NotAllowed):
                 raise SchemaError(inst.json_pointer(), "member-not-allowed", m + (
@@ -635,9 +652,20 @@ class GroupNode(InternalNode):
 class SchemaTreeNode(GroupNode):
     """Root node of a schema tree."""
 
+    def __init__(self):
+        """Initialize the class instance."""
+        super().__init__()
+
     def data_parent(self) -> InternalNode:
         """Override the superclass method."""
         return self.parent
+
+    def _metadata_annotation_stmt(self, stmt: Statement, sctx: SchemaContext):
+        """Handle annotation statement."""
+        node = AnnotationNode()
+        node.type = DataType._resolve_type(
+            stmt.find1("type", required=True), sctx)
+        self._handle_child(node, stmt, sctx)
 
 
 class DataNode(SchemaNode):
@@ -1334,6 +1362,27 @@ class NotificationNode(SchemaTreeNode):
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "-n"
+
+
+class AnnotationNode(DataNode, TerminalNode):
+    """Annotation node."""
+
+    def __init__(self):
+        """Initialize the class instance."""
+        super().__init__()
+
+    @property
+    def mandatory(self) -> bool:
+        """Is the receiver a mandatory node?"""
+        return False
+
+    @property
+    def default(self) -> Optional[ScalarValue]:
+        """Default value of the receiver, if any."""
+        return None
+
+    def _tree_line_prefix(self) -> str:
+        return super()._tree_line_prefix() + " @"
 
 
 from .xpathast import Expr, LocationPath, Step, Root        # NOQA

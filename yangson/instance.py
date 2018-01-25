@@ -378,6 +378,8 @@ class InstanceNode:
         return self.peek(irt)
 
     def _member_schema_node(self, name: InstanceName) -> "DataNode":
+        if name.startswith("@"):
+            return self.schema_node.schema_root()
         qname = self.schema_node._iname2qname(name)
         res = self.schema_node.get_data_child(*qname)
         if res is None:

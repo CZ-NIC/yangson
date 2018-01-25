@@ -1,0 +1,24 @@
+module meta {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/meta";
+
+  prefix "m";
+
+  import ietf-yang-types {
+    prefix "yang";
+    revision-date 2013-07-15;
+  }
+
+  revision 2016-04-26;
+
+  container contA {
+    leaf leafA {
+      type int32;
+    }
+    leaf leafB {
+      type string;
+    }
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "b6d7e0614440c5ad8a7370fe46c777254d331983",
+    "module": [
+      {
+        "name": "meta",
+        "revision": "2016-04-26",
+        "schema": "https://example.com/meta.yang",
+        "namespace": "http://example.com/meta",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "other",
+        "revision": "2016-04-26",
+        "schema": "https://example.com/other.yang",
+        "namespace": "http://example.com/other",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-yang-types",
+        "revision": "2013-07-15",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types",
+        "conformance-type": "import"
+      },
+      {
+        "name": "ietf-yang-metadata",
+        "revision": "2016-08-05",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-metadata",
+        "conformance-type": "import"
+      }
+    ]
+  }
+}
