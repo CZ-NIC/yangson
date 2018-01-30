@@ -219,13 +219,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> foo6 = foo[0]
 	 >>> foo6.value['number']
 	 6
-	 >>> foo3 = foo[-1]
-	 >>> foo3.value['in-words']
-	 'three'
-	 >>> foo[2]
+	 >>> fool = foo[-1]
+	 >>> fool.value['in-words']
+	 'eight'
+	 >>> foo[4]
 	 Traceback (most recent call last):
 	 ...
-	 yangson.instance.NonexistentInstance: [/example-2:bag/foo] entry 2
+	 yangson.instance.NonexistentInstance: [/example-2:bag/foo] entry 4
 
    .. method:: __iter__()
 
@@ -246,7 +246,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
 	 >>> [e.json_pointer() for e in foo]
-	 ['/example-2:bag/foo/0', '/example-2:bag/foo/1']
+	 ['/example-2:bag/foo/0', '/example-2:bag/foo/1', '/example-2:bag/foo/2', '/example-2:bag/foo/3']
 
       An attempt to iterate over an :class:`InstanceNode` that has a
       scalar value raises :exc:`~.InstanceValueError`.
@@ -309,9 +309,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 ['bar', 'baz', 'foo']
 	 >>> xfoo = foo.delete_item(0)
 	 >>> len(xfoo.value)
-	 1
+	 3
 	 >>> len(foo.value)   # foo is unchanged
-	 2
+	 4
 
    .. method:: look_up(**keys: Dict[InstanceName, ScalarValue]) -> ArrayEntry
 
@@ -329,9 +329,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo3 = foo.look_up(number=3)
-	 >>> foo3.json_pointer()
-	 '/example-2:bag/foo/1'
+	 >>> foo8 = foo.look_up(number=8)
+	 >>> foo8.json_pointer()
+	 '/example-2:bag/foo/3'
 
    .. method:: up() -> InstanceNode
 
@@ -607,8 +607,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo3.previous().json_pointer()
-	 '/example-2:bag/foo/0'
+	 >>> foo8.previous().json_pointer()
+	 '/example-2:bag/foo/2'
 	 >>> foo6.previous()
 	 Traceback (most recent call last):
 	 ...
@@ -626,10 +626,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 	 >>> foo6.next().json_pointer()
 	 '/example-2:bag/foo/1'
-	 >>> foo3.next()
+	 >>> foo8.next()
 	 Traceback (most recent call last):
 	 ...
-	 yangson.instance.NonexistentInstance: [/example-2:bag/foo/1] next of last
+	 yangson.instance.NonexistentInstance: [/example-2:bag/foo/3] next of last
 
    .. method:: insert_before(value: Union[RawValue, Value], raw: bool \
 	       = False) -> ArrayEntry
@@ -641,9 +641,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo4 = foo3.insert_before({'number': 4, 'in-words': 'four'}, raw=True)
+	 >>> foo4 = foo8.insert_before({'number': 4, 'in-words': 'four'}, raw=True)
 	 >>> [en['number'] for en in foo4.up().value]
-	 [6, 4, 3]
+	 [6, 3, 7, 4, 8]
 
    .. method:: insert_after(value: Union[RawValue, Value], raw: bool \
 	       = False) -> ArrayEntry
@@ -657,7 +657,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 	 >>> foo5 = foo4.insert_after({'number': 5, 'in-words': 'five'}, raw=True)
 	 >>> [en['number'] for en in foo5.up().value]
-	 [6, 4, 5, 3]
+	 [6, 3, 7, 4, 5, 8]
 
 .. autoclass:: InstanceRoute
    :show-inheritance:

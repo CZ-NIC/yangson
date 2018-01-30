@@ -6,5 +6,6 @@ with open('example-data.json') as infile:
     ri = json.load(infile)
 inst = dm.from_raw(ri)
 iwd = inst.add_defaults()
-baz = iwd["example-2:bag"]["baz"]
-print(baz)
+foo8 = iwd["example-2:bag"]["foo"][-1]
+foo7 = foo8.previous()
+print(foo7)

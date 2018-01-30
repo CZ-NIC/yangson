@@ -53,14 +53,14 @@ class LinkedList:
     """Persistent linked list of instance values."""
 
     @classmethod
-    def from_list(cls, vals: List[Value] = []) -> "LinkedList":
+    def from_list(cls, vals: List[Value] = [], reverse: bool = False) -> "LinkedList":
         """Create an instance from a standard list.
 
         Args:
             vals: Python list of instance values.
         """
         res = EmptyList()
-        for v in vals[::-1]:
+        for v in (vals if reverse else vals[::-1]):
             res = cls(v, res)
         return res
 
@@ -359,7 +359,7 @@ class InstanceNode:
         val = self.value
         try:
             i = len(val) + index if index < 0 else index
-            return ArrayEntry(i, LinkedList.from_list(val[:i]),
+            return ArrayEntry(i, LinkedList.from_list(val[:i], reverse=True),
                               LinkedList.from_list(val[i + 1:]),
                               val[index], self, self.schema_node,
                               val.timestamp)
