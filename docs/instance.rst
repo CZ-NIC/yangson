@@ -376,9 +376,15 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       flag is set, the :meth:`update` method “cooks” the raw value
       first into the Python's :class:`decimal.Decimal` type.
 
-      >>> e3baz = e2bag['baz'].update_from_raw('2.7182818')
-      >>> e3baz.value
-      Decimal('2.7182818')
+      .. doctest::
+
+	 >>> e3baz = e2bag['baz'].update('2.7182818', raw=True)
+	 >>> e3baz.value
+	 Decimal('2.7182818')
+	 >>> e2bag['foo'][0]['in-words'].update(66, raw=True)
+	 Traceback (most recent call last):
+	 ...
+	 yangson.exceptions.RawTypeError: [/example-2:bag/foo/0/in-words] expected string value
 
    .. method:: goto(iroute: InstanceRoute) -> InstanceNode
 
