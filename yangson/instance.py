@@ -266,7 +266,8 @@ class InstanceNode:
         Returns:
             Copy of the receiver with the updated value.
         """
-        newval = self.schema_node.from_raw(value, self.json_pointer()) if raw else value
+        newval = self.schema_node.from_raw(
+            value, self.json_pointer()) if raw else value
         return self._copy(newval)
 
     def goto(self, iroute: "InstanceRoute") -> "InstanceNode":
