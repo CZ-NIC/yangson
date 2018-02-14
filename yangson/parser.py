@@ -39,7 +39,7 @@ class Parser:
 
     # Regular expressions
 
-    ident_re = re.compile("[a-zA-Z_][a-zA-Z0-9_.-]*")
+    ident_re = re.compile(r"(@?[a-zA-Z_][a-zA-Z0-9_.-]*|@)")
     """Regular expression for YANG identifier."""
 
     ws_re = re.compile(r"[ \n\t\r]*")
