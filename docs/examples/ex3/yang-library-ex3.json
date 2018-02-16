@@ -11,17 +11,23 @@
         "namespace": "http://example.com/example-3/a",
         "revision": "2017-08-01",
         "conformance-type": "implement",
-	"submodule": [
-	  {
-	    "name": "example-3-suba",
-	    "revision": "2017-08-01"
-	  }
-	]
+	      "submodule": [
+	        {
+	          "name": "example-3-suba",
+	          "revision": "2017-08-01"
+	        }
+	      ]
       },
       {
         "name": "example-3-b",
         "namespace": "http://example.com/example-3/b",
         "revision": "2016-08-22",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-yang-metadata",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-metadata",
+        "revision": "2016-08-05",
         "conformance-type": "implement"
       },
       {

@@ -120,6 +120,20 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       Set of submodules of the receiver module. If the receiver is a
       submodule, then this set is by definition empty.
 
+.. class:: Annotation(type: DataType, description: str)
+
+     An object of this class describes a metadata annotation [RFC7952]_.
+
+     .. rubric:: Instance Attributes
+
+     .. attribute:: type
+
+        Type of the annotation's value.
+
+     .. attribute:: description
+
+        Description string of the annotation.
+
 .. class:: SchemaData(yang_lib: Dict[str, Any], mod_path: List[str])
 
    This class serves as a global for various data structures related
@@ -186,7 +200,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
 	 >>> len(dm.schema_data.modules)
-	 5
+	 6
 	 >>> dm.schema_data.modules[('example-3-a', '2017-08-01')].main_module
 	 ('example-3-a', '2017-08-01')
 	 >>> dm.schema_data.modules[('example-3-suba', '2017-08-01')].main_module
@@ -195,6 +209,17 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 ('ietf-inet-types', '2013-07-15')
 	 >>> sorted(dm.schema_data.modules[('example-3-a', '2017-08-01')].features)
 	 ['fea1', 'fea2']
+
+   .. attribute:: annotations
+
+      Dictionary of annotations that are defined in the modules
+      comprising the data model. The keys are :term:`prefixed name`\
+      s, and the values are objects of the :class:`Annotation` class.
+
+      .. doctest::
+
+         >>> dm.schema_data.annotations
+         {}
 
    .. rubric:: Public Methods
 
@@ -339,7 +364,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-         >>> sctx2 = SchemaContext(dm.schema_data, 'example-3-b', ('example-3-b', '2016-08-22')) 
+         >>> sctx2 = SchemaContext(dm.schema_data, 'example-3-b', ('example-3-b', '2016-08-22'))
 	 >>> dm.schema_data.sni2route('/ex3a:top/ex3a:bar', sctx2)
 	 [('top', 'example-3-a'), ('bar', 'example-3-a')]
 
@@ -460,7 +485,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    The arguments of the class constructor are:
 
    * *text* – feature expression text to parse,
-   * *schema_data* - 
+   * *schema_data* -
    * *mid* – value for :attr:`mid` attribute.
 
    The constructor may raise :exc:`~.ModuleNotRedistered` if the

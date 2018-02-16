@@ -57,6 +57,11 @@ __ https://tools.ietf.org/html/rfc7950
 
 __ https://tools.ietf.org/html/rfc7951
 
+.. [RFC7952] Lhotka, L. *Defining and Using Metadata with YANG.*
+	   `RFC 7952`__, IETF, August 2016. 20 p. ISSN 2070-1721.
+
+__ https://tools.ietf.org/html/rfc7952
+
 .. [RFC8040] Bierman, A.; Bjorklund, M.; Watsen, K. *RESTCONF Protocol.*
 	   `RFC 8040`__, IETF, 2017. 137 p. ISSN 2070-1721.
 

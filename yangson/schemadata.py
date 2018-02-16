@@ -76,6 +76,15 @@ class ModuleData:
         """Set of submodules."""
 
 
+class Annotation:
+    """Data describing metadata annotations [RFC 7952]."""
+
+    def __init__(self, type: "DataType", description: str = None):
+        """Initialize the class instance."""
+        self.type = type
+        self.description = description
+
+
 class SchemaData:
     """Repository of YANG schema structures and utility methods.
 
@@ -94,6 +103,8 @@ class SchemaData:
         """List of directories where to look for YANG modules."""
         self.modules = {}  # type: Dict[ModuleId, ModuleData]
         """Dictionary of module data."""
+        self.annotations = {}  # type: Dict[QualName, Annotation]
+        """Dictionary of supported annotations."""
         self._module_sequence = []  # type: List[ModuleId]
         """List that defines the order of module processing."""
         self._from_yang_library(yang_lib)
