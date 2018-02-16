@@ -52,7 +52,7 @@ from .exceptions import (
     SchemaError, SemanticError, YangsonException)
 from .instvalue import (
     ArrayValue, EntryValue, ObjectValue, Value)
-from .schemadata import IdentityAdjacency, SchemaContext
+from .schemadata import Annotation, IdentityAdjacency, SchemaContext
 from .schpattern import (ChoicePattern, ConditionalPattern, Empty, Member,
                          NotAllowed, Pair, SchemaPattern)
 from .statement import Statement
@@ -285,6 +285,7 @@ class SchemaNode:
         "identity": "_identity_stmt",
         "ietf-netconf-acm:default-deny-all": "_nacm_default_deny_stmt",
         "ietf-netconf-acm:default-deny-write": "_nacm_default_deny_stmt",
+        "ietf-yang-metadata:annotation": "_annotation_stmt",
         "input": "_input_stmt",
         "key": "_key_stmt",
         "leaf": "_leaf_stmt",
@@ -591,6 +592,16 @@ class InternalNode(SchemaNode):
     def _anydata_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle anydata statement."""
         self._handle_child(AnydataNode(), stmt, sctx)
+
+    def _annotation_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
+        """Handle annotation statement."""
+        sd = sctx.schema_data
+        if not sd.if_features(stmt, sctx.text_mid):
+            return
+        dst = stmt.find1("description")
+        sd.annotations[sctx.default_ns + ":" + stmt.argument] = Annotation(
+            DataType._resolve_type(stmt.find1("type", required=True), sctx),
+            dst.argument if dst else None)
 
     def _ascii_tree(self, indent: str, no_types: bool) -> str:
         """Return the receiver's subtree as ASCII art."""

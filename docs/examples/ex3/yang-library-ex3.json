@@ -37,6 +37,12 @@
         "conformance-type": "import"
       },
       {
+        "name": "ietf-yang-types",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types",
+        "revision": "2013-07-15",
+        "conformance-type": "import"
+      },
+      {
         "name": "ietf-inet-types",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
         "revision": "2013-07-15",
