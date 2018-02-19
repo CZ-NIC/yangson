@@ -599,7 +599,7 @@ class InternalNode(SchemaNode):
         if not sd.if_features(stmt, sctx.text_mid):
             return
         dst = stmt.find1("description")
-        sd.annotations[sctx.default_ns + ":" + stmt.argument] = Annotation(
+        sd.annotations[(stmt.argument, sctx.default_ns)] = Annotation(
             DataType._resolve_type(stmt.find1("type", required=True), sctx),
             dst.argument if dst else None)
 

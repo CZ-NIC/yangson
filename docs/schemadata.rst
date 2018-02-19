@@ -213,14 +213,14 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    .. attribute:: annotations
 
       Dictionary of annotations that are defined in the modules
-      comprising the data model. The keys are :term:`prefixed name`\
-      s, and the values are objects of the :class:`Annotation` class.
+      comprising the data model. The keys are :term:`qualified name`\
+      s, of the annotations, and the values are objects of the :class:`Annotation` class.
 
       .. doctest::
 
          >>> list(dm.schema_data.annotations.keys())
-         ['example-3-a:last-modified']
-         >>> str(dm.schema_data.annotations['example-3-a:last-modified'].type)
+         [('last-modified', 'example-3-a')]
+         >>> str(dm.schema_data.annotations[('last-modified', 'example-3-a')].type)
          'date-and-time(string)'
 
    .. rubric:: Public Methods
