@@ -108,7 +108,7 @@ Example 4
 =========
 
 This example is used in the documentation of
-the :mod:`.schema`, :mod:`.xpathast` and :mod:`.xpathparser` modules.
+the :mod:`.schemanode`, :mod:`.xpathast` and :mod:`.xpathparser` modules.
 
 .. rubric:: YANG Library
 
