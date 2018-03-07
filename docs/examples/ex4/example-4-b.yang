@@ -19,7 +19,7 @@ module example-4-b {
   }
 
   augment "/ex4a:bag/ex4a:opts" {
-    when "/quux = 0";
+    when "/ex4b:quux = 0";
     leaf fooref {
       type leafref {
         path "../ex4a:foo";
