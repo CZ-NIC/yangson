@@ -475,10 +475,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       The method returns ``None`` if the validation succeeds,
       otherwise one of the following exceptions is raised:
 
-      * :exc:`~.SchemaError` – if the value doesn't conform to
-	the schema,
-      * :exc:`~.SemanticError` – if the value violates a
-	semantic constraint.
+      * :exc:`~.SchemaError` – if the value doesn't conform to the schema,
+      * :exc:`~.SemanticError` – if the value violates a semantic constraint.
+      * :exc:`~.YangTypeError` – if the value is a scalar of incorrect data type.
 
       .. doctest::
 
@@ -487,7 +486,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> badinst.validate()
 	 Traceback (most recent call last):
 	 ...
-	 yangson.schemanode.SchemaError: [/example-2:bag/baz] invalid type: 'ILLEGAL'
+	 yangson.schemanode.YangTypeError: [/example-2:bag/baz] invalid type: 'ILLEGAL'
 
       In the following example, member ``baz`` is not allowed because
       it is a conditional leaf and its **when** constraint evaluates

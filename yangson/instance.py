@@ -316,6 +316,7 @@ class InstanceNode:
         Raises:
             SchemaError: If the value doesn't conform to the schema.
             SemanticError: If the value violates a semantic constraint.
+            YangTypeError: If the value is a scalar of incorrect type.
         """
         self.schema_node._validate(self, scope, ctype)
 

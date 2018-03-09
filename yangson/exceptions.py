@@ -355,7 +355,7 @@ class SemanticError(ValidationError):
     pass
 
 
-class YangTypeError(YangsonException):
+class YangTypeError(ValidationError):
     """A scalar value doesn't match its expected type."""
     pass
 

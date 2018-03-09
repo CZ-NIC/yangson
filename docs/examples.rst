@@ -43,7 +43,7 @@ Example 2
 =========
 
 This example is used in the documentation of the :mod:`.instance`
-module.
+module, and also in :ref:`quick-start`.
 
 .. rubric:: YANG Library
 
@@ -56,7 +56,7 @@ File: ``examples/ex2/yang-library-ex2.json``
 
 File: ``examples/ex2/example-2.yang``
 
-.. literalinclude:: examples/ex2/example-2.yang 
+.. literalinclude:: examples/ex2/example-2.yang
    :language: none
 
 .. rubric:: Instance document
@@ -85,7 +85,7 @@ File: ``examples/ex3/yang-library-ex3.json``
 
 File: ``examples/ex3/example-3-a@2017-08-01.yang``
 
-.. literalinclude:: examples/ex3/example-3-a@2017-08-01.yang 
+.. literalinclude:: examples/ex3/example-3-a@2017-08-01.yang
    :language: none
 
 .. rubric:: YANG Submodule *example-3-suba*
@@ -128,7 +128,7 @@ File: ``examples/ex4/example-4-a.yang``
 
 File: ``examples/ex4/example-4-b.yang``
 
-.. literalinclude::  examples/ex4/example-4-b.yang 
+.. literalinclude::  examples/ex4/example-4-b.yang
    :language: none
 
 .. rubric:: Instance document
@@ -157,7 +157,7 @@ File: ``examples/ex5/yang-library-ex5.json``
 
 File: ``examples/ex5/example-5-a.yang``
 
-.. literalinclude::  examples/ex5/example-5-a.yang 
+.. literalinclude::  examples/ex5/example-5-a.yang
    :language: none
 
 .. rubric:: YANG Module *example-5-b*

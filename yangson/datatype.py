@@ -343,7 +343,7 @@ class LinearType(DataType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.length = None
+        self.length = None  # type: Optional[Intervals]
 
     def _handle_restrictions(self, stmt: Statement, sctx: SchemaContext) -> None:
         lstmt = stmt.find1("length")

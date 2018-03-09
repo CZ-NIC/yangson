@@ -17,7 +17,7 @@
 
 """This module defines classes for schema patterns."""
 
-from typing import Optional
+from typing import List, Optional
 from .enumerations import ContentType
 from .typealiases import InstanceName, _Singleton, YangIdentifier
 from .xpathast import Expr
@@ -39,8 +39,15 @@ class SchemaPattern:
         """Return ``True`` if the receiver is (conditionally) empty."""
         return False
 
+    def _active(self, ctype: ContentType) -> bool:
+        """Return ``True`` the receiver is active in the current context."""
+        return True
+
     def _eval_when(self, cnode: "InstanceNode") -> None:
         return
+
+    def _mandatory_members(self, ctype: ContentType) -> List[InstanceName]:
+        return []
 
 
 class Empty(SchemaPattern, metaclass=_Singleton):
@@ -90,11 +97,14 @@ class Conditional(SchemaPattern):
         """Override the superclass method."""
         return self.when and not self._val_when
 
+    def check_when(self) -> bool:
+        return not self.when or self._val_when
+
     def _eval_when(self, cnode: "InstanceNode") -> None:
         self._val_when = bool(self.when.evaluate(cnode))
 
-    def check_when(self) -> bool:
-        return not self.when or self._val_when
+    def _active(self, ctype: ContentType) -> bool:
+        return super()._active(ctype) and self.check_when()
 
 
 class Typeable(SchemaPattern):
@@ -106,6 +116,9 @@ class Typeable(SchemaPattern):
 
     def match_ctype(self, ctype) -> bool:
         return self.ctype.value & ctype.value != 0
+
+    def _active(self, ctype: ContentType) -> bool:
+        return super()._active(ctype) and self.match_ctype(ctype)
 
 
 class ConditionalPattern(Conditional):
@@ -136,6 +149,9 @@ class ConditionalPattern(Conditional):
     def __str__(self) -> str:
         return str(self.pattern)
 
+    def _mandatory_members(self, ctype: ContentType) -> List[InstanceName]:
+        return (self.pattern._mandatory_members(ctype) if self._active(ctype) else [])
+
 
 class Member(Typeable, Conditional):
 
@@ -152,12 +168,12 @@ class Member(Typeable, Conditional):
 
     def nullable(self, ctype: ContentType) -> bool:
         """Override the superclass method."""
-        return not (self.match_ctype(ctype) and self.check_when())
+        return not (self._active(ctype))
 
     def deriv(self, x: str, ctype: ContentType) -> SchemaPattern:
         """Return derivative of the receiver."""
         return (Empty() if
-                self.name == x and self.match_ctype(ctype) and self.check_when()
+                self.name == x and self._active(ctype)
                 else NotAllowed())
 
     def tree(self, indent: int = 0):
@@ -165,6 +181,9 @@ class Member(Typeable, Conditional):
 
     def __str__(self) -> str:
         return "member '{}'".format(self.name)
+
+    def _mandatory_members(self, ctype: ContentType) -> List[InstanceName]:
+        return ([self.name] if self._active(ctype) else [])
 
 
 class Alternative(SchemaPattern):
@@ -203,6 +222,11 @@ class Alternative(SchemaPattern):
     def __str__(self) -> str:
         return str(self.left) + " or " + str(self.right)
 
+    def _mandatory_members(self, ctype: ContentType) -> List[InstanceName]:
+        lm = self.left._mandatory_members(ctype)
+        rm = self.right._mandatory_members(ctype)
+        return [] if not lm or not rm else lm + rm
+
 
 class ChoicePattern(Alternative, Typeable):
 
@@ -223,6 +247,9 @@ class ChoicePattern(Alternative, Typeable):
         return " " * indent + "Choice {}\n{}\n{}".format(
             self.name,
             self.left.tree(indent + 2), self.right.tree(indent + 2))
+
+    def _members(self, ctype: ContentType) -> List[InstanceName]:
+        return (super()._members(ctype) if self._active(ctype) else [])
 
 
 class Pair(SchemaPattern):
@@ -265,3 +292,6 @@ class Pair(SchemaPattern):
 
     def __str__(self) -> str:
         return str(self.left)
+
+    def _mandatory_members(self, ctype: ContentType) -> List[InstanceName]:
+        return self.left._mandatory_members(ctype) + self.right._mandatory_members(ctype)

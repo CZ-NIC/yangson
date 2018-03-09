@@ -1,3 +1,5 @@
+.. _quick-start:
+
 ***********
 Quick Start
 ***********
@@ -219,7 +221,7 @@ doesn't conform to the leaf's type, as in the following example:
    >>> inw.update('INFINITY').validate()
    Traceback (most recent call last):
    ...
-   yangson.schemanode.SchemaError: [/example-2:bag/foo/1/in-words] invalid-type: must be number in words
+   yangson.schemanode.YangTypeError: [/example-2:bag/foo/1/in-words] invalid-type: must be number in words
 
 This is again correct because the new value ``INFINITY`` doesn't match
 the regular expression pattern in the definition of the *in-words*
@@ -238,4 +240,4 @@ And finally, we delete a leaf that's defined as mandatory in the data model:
    >>> broken2.validate()
    Traceback (most recent call last):
    ...
-   yangson.schemanode.SchemaError: [/example-2:bag] missing-data: member 'bar'
+   yangson.schemanode.SchemaError: [/example-2:bag] missing-data: expected 'bar'

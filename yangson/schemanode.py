@@ -49,7 +49,7 @@ from .datatype import (DataType, LeafrefType, LinkType,
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
 from .exceptions import (
     InvalidLeafrefPath, InvalidArgument, RawMemberError, RawTypeError,
-    SchemaError, SemanticError, YangsonException)
+    SchemaError, SemanticError, YangsonException, YangTypeError)
 from .instvalue import (
     ArrayValue, EntryValue, ObjectValue, Value)
 from .schemadata import Annotation, IdentityAdjacency, SchemaContext
@@ -175,8 +175,9 @@ class SchemaNode:
             ``None`` if validation succeeds.
 
         Raises:
-            SchemaError: if `inst` violates the schema.
-            SemanticError: If a "must" expression evaluates to ``False``.
+            SchemaError: if `inst` doesn't conform to the schema.
+            SemanticError: If `inst` violates a semantic rule.
+            YangTypeError: If `inst` is a scalar of incorrect type.
         """
         pass
 
@@ -439,12 +440,18 @@ class InternalNode(SchemaNode):
         p = self.schema_pattern
         p._eval_when(inst)
         for m in inst.value:
-            p = p.deriv(m, ctype)
-            if isinstance(p, NotAllowed):
-                raise SchemaError(inst.json_pointer(), "member-not-allowed", m + (
-                    "" if ctype == ContentType.all else " (" + ctype.name + ")"))
+            newp = p.deriv(m, ctype)
+            if isinstance(newp, NotAllowed):
+                raise SchemaError(
+                    inst.json_pointer(),
+                    ("" if ctype == ContentType.all else ctype.name + " ") +
+                    "member-not-allowed", m)
+            p = newp
         if not p.nullable(ctype):
-            raise SchemaError(inst.json_pointer(), "missing-data", str(p))
+            mms = p._mandatory_members(ctype)
+            msg = "one of " if len(mms) > 1 else ""
+            raise SchemaError(inst.json_pointer(), "missing-data",
+                              "expected " + msg + ", ".join([repr(m) for m in mms]))
 
     def _make_schema_patterns(self) -> None:
         """Build schema pattern for the receiver and its data descendants."""
@@ -781,8 +788,8 @@ class TerminalNode(SchemaNode):
         """Extend the superclass method."""
         if (scope.value & ValidationScope.syntax.value and
                 inst.value not in self.type):
-            raise SchemaError(inst.json_pointer(), self.type.error_tag,
-                              self.type.error_message)
+            raise YangTypeError(inst.json_pointer(), self.type.error_tag,
+                                self.type.error_message)
         if (isinstance(self.type, LinkType) and        # referential integrity
                 scope.value & ValidationScope.semantics.value and
                 self.type.require_instance):
@@ -947,7 +954,7 @@ class SequenceNode(DataNode):
         Raises:
             NonexistentSchemaNode: If a member inside `rval` is not defined
                 in the schema.
-            YangTypeError: If a scalar value inside `rval` is of incorrect type.
+            RawTypeError: If a scalar value inside `rval` is of incorrect type.
         """
         return super().from_raw(rval, jptr)
 
