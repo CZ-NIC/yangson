@@ -17,9 +17,9 @@
 
 """This module defines classes for schema patterns."""
 
+from typing import Optional
 from .enumerations import ContentType
-from .typealiases import InstanceName, YangIdentifier
-from .typealiases import _Singleton
+from .typealiases import InstanceName, _Singleton, YangIdentifier
 from .xpathast import Expr
 
 
@@ -65,7 +65,7 @@ class Empty(SchemaPattern, metaclass=_Singleton):
         return "Empty"
 
 
-class NotAllowed(SchemaPattern):
+class NotAllowed(SchemaPattern, metaclass=_Singleton):
 
     def deriv(self, x: str, ctype: ContentType) -> SchemaPattern:
         """Return derivative of the receiver."""
@@ -140,7 +140,7 @@ class ConditionalPattern(Conditional):
 class Member(Typeable, Conditional):
 
     def __init__(self, name: InstanceName, ctype: ContentType,
-                 when: Expr):
+                 when: Optional[Expr]):
         Typeable.__init__(self, ctype)
         Conditional.__init__(self, when)
         self.name = name
