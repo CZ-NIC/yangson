@@ -23,7 +23,7 @@
       {
         "name": "ietf-netconf-acm",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-netconf-acm",
-        "revision": "2012-02-22",
+        "revision": "2018-02-14",
         "conformance-type": "import"
       }
     ]

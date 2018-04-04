@@ -8,7 +8,7 @@ module example-4-a {
 
   import ietf-netconf-acm {
     prefix "nacm";
-    revision-date 2012-02-22;
+    revision-date 2018-02-14;
   }
 
   container bag {
