@@ -327,7 +327,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   </template>
 
   <template
-      match="yin:config|yin:default|yin:deviate|yin:error-app-tag
+      match="yin:config|yin:deviate|yin:error-app-tag
 	     |yin:fraction-digits|yin:key|yin:length|yin:mandatory
 	     |yin:max-elements|yin:min-elements|yin:ordered-by
 	     |yin:pattern|yin:position|yin:prefix
@@ -338,7 +338,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     </call-template>
   </template>
 
-  <template match="yin:path|yin:pattern">
+  <template match="yin:path|yin:pattern|yin:default">
     <call-template name="keyword"/>
     <apply-templates select="@value"/>
     <call-template name="semi-or-sub"/>
@@ -346,6 +346,12 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
   <template match="@target-node|yin:path/@value">
     <call-template name="chop-arg"/>
+  </template>
+
+  <template match="yin:default/@value">
+    <call-template name="chop-arg">
+      <with-param name="token-delim" select="' '"/>
+    </call-template>
   </template>
 
   <template match="yin:pattern/@value">
