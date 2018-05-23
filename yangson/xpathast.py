@@ -26,7 +26,7 @@ class is intended to be public:
 
 import decimal
 from math import ceil, copysign, floor
-from pyxb.utils.xmlre import XMLToPython
+from pyxb.utils.xmlre import XMLToPython, RegularExpressionError
 import re
 from typing import List, Optional, Tuple
 from .schemadata import SchemaContext
@@ -573,7 +573,7 @@ class FuncReMatch(BinaryExpr):
         lres, rres = self._eval_ops_string(xctx)
         try:
             return re.match(XMLToPython(rres), lres) is not None
-        except:
+        except RegularExpressionError:
             raise InvalidArgument(rres) from None
 
 

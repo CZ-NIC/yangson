@@ -443,7 +443,7 @@ def test_xpath(data_model, instance):
     xptest("string(round(0 div 0))", "NaN")
     xptest("re-match(//t:leafE, '[0-9a-fA-F]*')")
     xptest("re-match(count(//t:leafE), '[0-9]*')")
-    xptest("re-match('1.22.333', '\d{1,3}\.\d{1,3}\.\d{1,3}')")
+    xptest(r"re-match('1.22.333', '\d{1,3}\.\d{1,3}\.\d{1,3}')")
     xptest("re-match('aaax', 'a*')", False)
     xptest("re-match('a\nb', '.*')", False)
     xptest("re-match('a\nb', '[a-z\n]*')")

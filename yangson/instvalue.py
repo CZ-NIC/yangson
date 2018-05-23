@@ -74,7 +74,7 @@ class StructuredValue:
 class ArrayValue(StructuredValue, list):
     """This class represents cooked array values."""
 
-    def __init__(self, val: List[EntryValue] = [], ts: datetime=None):
+    def __init__(self, val: List[EntryValue] = [], ts: datetime = None):
         StructuredValue.__init__(self, ts)
         list.__init__(self, val)
 

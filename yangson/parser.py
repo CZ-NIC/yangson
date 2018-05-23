@@ -112,10 +112,10 @@ class Parser:
 
     def line_column(self) -> Tuple[int, int]:
         """Return line and column coordinates."""
-        l = self.input.count("\n", 0, self.offset)
-        c = (self.offset if l == 0 else
+        ln = self.input.count("\n", 0, self.offset)
+        c = (self.offset if ln == 0 else
              self.offset - self.input.rfind("\n", 0, self.offset) - 1)
-        return (l + 1, c)
+        return (ln + 1, c)
 
     def match_regex(self, regex: Pattern, required: bool = False,
                     meaning: str = "") -> str:
