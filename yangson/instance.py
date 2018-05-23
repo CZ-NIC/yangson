@@ -327,17 +327,27 @@ class InstanceNode:
             ctype: Content type of the defaults to be added. If it is
                 ``None``, the content type will be the same as receiver's.
         """
-        sn = self.schema_node
         val = self.value
-        if not (isinstance(val, ObjectValue) and isinstance(sn, InternalNode)):
+        if not (isinstance(val, StructuredValue) and self.is_internal()):
             return self
         res = self
-        if val:
-            for mn in val:
-                m = res._member(mn) if res is self else res.sibling(mn)
-                res = m.add_defaults(ctype)
-            res = res.up()
-        return sn._add_defaults(res, ctype)
+        if isinstance(val, ObjectValue):
+            if val:
+                for mn in val:
+                    m = res._member(mn) if res is self else res.sibling(mn)
+                    res = m.add_defaults(ctype)
+                res = res.up()
+            return self.schema_node._add_defaults(res, ctype)
+        if not val:
+            return res
+        en = res[0]
+        while True:
+            res = en.add_defaults(ctype)
+            try:
+                en = res.next()
+            except NonexistentInstance:
+                break
+        return res.up()
 
     def raw_value(self) -> RawValue:
         """Return receiver's value in a raw form (ready for JSON encoding)."""

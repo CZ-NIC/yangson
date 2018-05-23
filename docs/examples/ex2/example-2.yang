@@ -13,6 +13,10 @@ module example-2 {
       leaf number {
         type uint8;
       }
+      leaf prime {
+        type boolean;
+	default false;
+      }
       leaf in-words {
         type string {
           pattern "[a-z][a-z\\-]+[a-z]" {

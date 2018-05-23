@@ -7,10 +7,12 @@
       },
       {
         "number": 3,
+        "prime": true,
         "in-words": "three"
       },
       {
         "number": 7,
+        "prime": true,
         "in-words": "seven"
       },
       {

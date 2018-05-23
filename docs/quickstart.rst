@@ -50,6 +50,7 @@ Here is an ASCII art depicting the schema tree:
       +--rw foo* [number]
          +--rw in-words? <string>
          +--rw number <uint8>
+         +--rw prime? <boolean>
 
 Loading and Validating Instance Data
 ====================================

@@ -521,6 +521,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 >>> wd = inst.add_defaults()
 	 >>> wd.value['example-2:bag']['baz']
 	 Decimal('0E-7')
+	 >>> wd.value['example-2:bag']['foo'][0]['prime']
+	 False
 
    .. automethod:: raw_value() -> RawValue
 
