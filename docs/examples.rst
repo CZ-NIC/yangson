@@ -71,7 +71,7 @@ File: ``examples/ex2/example-data.json``
 Example 3
 =========
 
-This example is used in the documentation of the :mod:`.context`
+This example is used in the documentation of the :mod:`.schemadata`
 module.
 
 .. rubric:: YANG Library
