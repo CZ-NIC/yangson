@@ -21,6 +21,8 @@ from typing import List, Optional
 from .enumerations import ContentType
 from .typealiases import InstanceName, _Singleton, YangIdentifier
 from .xpathast import Expr
+if False:                       # fake import for type aliases
+    from .instance import InstanceNode
 
 
 class SchemaPattern:

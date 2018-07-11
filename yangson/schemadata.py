@@ -36,6 +36,8 @@ from .parser import Parser
 from .statement import ModuleParser, Statement
 from .typealiases import (ModuleId, PrefName, QualName, RevisionDate,
                           SchemaNodeId, SchemaPath, SchemaRoute, YangIdentifier)
+if False:                       # fake import for type aliases
+    from .datatype import DataType
 
 
 class IdentityAdjacency:
