@@ -26,7 +26,7 @@ This module implements the following classes:
 
 from datetime import datetime
 from typing import Dict, List, Union
-from .typealiases import InstanceName, ScalarValue
+from .typealiases import InstanceName, PrefName, ScalarValue
 
 # Type aliases
 Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
@@ -37,6 +37,9 @@ EntryValue = Union[ScalarValue, "ObjectValue"]
 
 InstanceKey = Union[InstanceName, int]
 """Index of an array entry or name of an object member."""
+
+MetadataObject = Dict[PrefName, ScalarValue]
+"""Metadata object [RFC 7952]_."""
 
 
 class StructuredValue:
