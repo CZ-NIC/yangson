@@ -785,7 +785,7 @@ class MemberName:
         self.name = name
         self.namespace = ns
 
-    def __eq__(self, other: "InstanceSelector") -> bool:
+    def __eq__(self, other: "MemberName") -> bool:
         return self.name == other.name and self.namespace == other.namespace
 
     def __str__(self) -> str:
@@ -845,7 +845,7 @@ class EntryIndex:
         """
         self.index = index
 
-    def __eq__(self, other: "InstanceSelector") -> bool:
+    def __eq__(self, other: "EntryIndex") -> bool:
         return self.index == other.index
 
     def __str__(self) -> str:
