@@ -31,7 +31,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 .. doctest::
 
-   >>> dm = DataModel.from_file('yang-library-ex2.json')
+   >>> dm = DataModel.from_file('yang-library-ex2.json',
+   ... [".", "../../../yang-modules/ietf"])
    >>> with open('example-data.json') as infile:
    ...   ri = json.load(infile)
    >>> inst = dm.from_raw(ri)

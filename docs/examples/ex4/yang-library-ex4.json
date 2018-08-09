@@ -15,6 +15,18 @@
         "conformance-type": "implement"
       },
       {
+        "name": "ietf-yang-metadata",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-metadata",
+        "revision": "2016-08-05",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-origin",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-origin",
+        "revision": "2018-02-14",
+        "conformance-type": "implement"
+      },
+      {
         "name": "ietf-yang-types",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types",
         "revision": "2013-07-15",

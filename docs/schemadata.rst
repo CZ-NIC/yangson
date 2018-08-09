@@ -200,7 +200,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
 	 >>> len(dm.schema_data.modules)
-	 7
+	 8
 	 >>> dm.schema_data.modules[('example-3-a', '2017-08-01')].main_module
 	 ('example-3-a', '2017-08-01')
 	 >>> dm.schema_data.modules[('example-3-suba', '2017-08-01')].main_module
@@ -219,9 +219,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
          >>> list(dm.schema_data.annotations.keys())
-         [('last-modified', 'example-3-a')]
-         >>> str(dm.schema_data.annotations[('last-modified', 'example-3-a')].type)
-         'date-and-time(string)'
+         [('origin', 'ietf-origin')]
+         >>> str(dm.schema_data.annotations[('origin', 'ietf-origin')].type)
+         'origin-ref(identityref)'
 
    .. rubric:: Public Methods
 

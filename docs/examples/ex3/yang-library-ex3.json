@@ -25,12 +25,6 @@
         "conformance-type": "implement"
       },
       {
-        "name": "ietf-yang-metadata",
-        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-metadata",
-        "revision": "2016-08-05",
-        "conformance-type": "implement"
-      },
-      {
         "name": "ietf-inet-types",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
         "revision": "2010-09-24",

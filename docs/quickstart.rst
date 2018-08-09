@@ -35,7 +35,8 @@ by reading YANG library data [RFC7895]_ from a file:
 
 .. doctest::
 
-   >>> dm = DataModel.from_file('yang-library-ex2.json')
+   >>> dm = DataModel.from_file('yang-library-ex2.json',
+   ... [".", "../../../yang-modules/ietf"])
    >>> dm.schema.description
    'Data model ID: 9a9b7d2d28d4d78fa42e12348346990e3fb1c1b9'
 

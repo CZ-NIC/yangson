@@ -6,6 +6,9 @@
         "in-words": "six"
       },
       {
+        "@": {
+          "ietf-origin:origin": "ietf-origin:system"
+        },
         "number": 3,
         "prime": true,
         "in-words": "three"
