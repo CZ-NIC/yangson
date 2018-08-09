@@ -82,7 +82,7 @@ class LinkedList:
             try:
                 n, cdr = cdr.pop()
             except IndexError:
-                raise StopIteration from None
+                return
             yield n
 
     def cons(self, val: Value) -> "LinkedList":
@@ -183,7 +183,7 @@ class InstanceNode:
                     yield en
                     en = en.next()
             except NonexistentInstance:
-                raise StopIteration from None
+                return
         if isinstance(self.value, ArrayValue):
             return it()
         if isinstance(self.value, ObjectValue):
