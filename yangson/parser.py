@@ -76,6 +76,10 @@ class Parser:
         """Return ``True`` if at end of input."""
         return self.offset >= len(self.input)
 
+    def at_last_char(self) -> bool:
+        """Return ``True`` if at last character of input."""
+        return self.offset == (len(self.input) - 1)
+
     def char(self, c: str) -> None:
         """Parse the specified character.
 
