@@ -19,6 +19,7 @@
 
 This module defines the following exceptions:
 
+* :exc:`AnnotationException`: Base class for exceptions related to metadata annotations.
 * :exc:`BadSchemaNodeType`: A schema node is of a wrong type.
 * :exc:`BadYangLibraryData`: Invalid YANG library data.
 * :exc:`CyclicImports`: Imports of YANG modules form a cycle.
@@ -34,6 +35,7 @@ This module defines the following exceptions:
 * :exc:`InvalidLeafrefPath`: A leafref path is incorrect.
 * :exc:`InvalidSchemaPath`: Invalid schema path
 * :exc:`InvalidXPath`: An XPath expression is invalid.
+* :exc:`MissingAnnotationTarget`: Instance node that is being annotated doesn't exist.
 * :exc:`MissingModule`: Abstract exception class – a module is missing.
 * :exc:`ModuleContentMismatch`: Abstract exception class – unexpected module name or revision.
 * :exc:`ModuleNameMismatch`: The module name doesn't match the expected name.
@@ -57,6 +59,7 @@ This module defines the following exceptions:
 * :exc:`SchemaNodeException`: Abstract exception class for schema node errors.
 * :exc:`SemanticError`: An instance violates a semantic rule.
 * :exc:`StatementNotFound`: Required statement does not exist.
+* :exc:`UndefinedAnnotation`: Undefined annotation is used.
 * :exc:`UnexpectedInput`: Unexpected input.
 * :exc:`UnknownPrefix`: Unknown namespace prefix.
 * :exc:`ValidationError`: Abstract exception class for instance validation errors.
@@ -65,13 +68,57 @@ This module defines the following exceptions:
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
 """
 
-from .typealiases import (JSONPointer, ModuleId, PrefName, QualName,
-                          ScalarValue, YangIdentifier)
+from .typealiases import (InstanceName, JSONPointer, ModuleId, PrefName,
+                          QualName, ScalarValue, YangIdentifier)
 
 
 class YangsonException(Exception):
     """Base class for all Yangson exceptions."""
     pass
+
+
+class AnnotationException(YangsonException):
+    """Abstract class for exceptions related to metadata annotations."""
+
+    def __init__(self, path: JSONPointer):
+        self.path = path
+
+
+class MissingAnnotationTarget(AnnotationException):
+    """Instance node that is being annotated doesn't exist."""
+
+    def __init__(self, path: JSONPointer, iname: InstanceName):
+        super().__init__(path)
+        self.iname = iname
+
+    def __str__(self):
+        return "[{}] no instance '{}'".format(
+            self.path, self.iname)
+
+
+class UndefinedAnnotation(AnnotationException):
+    """Undefined annotation is used."""
+
+    def __init__(self, path: JSONPointer, aname: InstanceName):
+        super().__init__(path)
+        self.aname = aname
+
+    def __str__(self):
+        return "[{}] Undefined annotation '{}'".format(
+            self.path, self.aname)
+
+
+class AnnotationTypeError(AnnotationException):
+    """Type of annotation is incorrect."""
+
+    def __init__(self, path: JSONPointer, aname: InstanceName, msg: str):
+        super().__init__(path)
+        self.aname = aname
+        self.msg = msg
+
+    def __str__(self):
+        return "[{}] value of '{}' {}".format(
+            self.path, self.aname, self.msg)
 
 
 class InvalidArgument(YangsonException):
