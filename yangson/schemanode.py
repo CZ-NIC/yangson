@@ -274,6 +274,15 @@ class SchemaNode:
     def _tree_line_prefix(self) -> str:
         return "+--"
 
+    def _nacm_default_deny_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
+        """Set NACM default access."""
+        if not hasattr(self, 'default_deny'):
+            return
+        if stmt.keyword == "default-deny-all":
+            self.default_deny = DefaultDeny.all
+        elif stmt.keyword == "default-deny-write":
+            self.default_deny = DefaultDeny.write
+
     _stmt_callback = {
         "action": "_rpc_action_stmt",
         "anydata": "_anydata_stmt",
@@ -743,13 +752,6 @@ class DataNode(SchemaNode):
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + (
             "ro" if self.content_type() == ContentType.nonconfig else "rw")
-
-    def _nacm_default_deny_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
-        """Set NACM default access."""
-        if stmt.keyword == "default-deny-all":
-            self.default_deny = DefaultDeny.all
-        elif stmt.keyword == "default-deny-write":
-            self.default_deny = DefaultDeny.write
 
 
 class TerminalNode(SchemaNode):
@@ -1283,6 +1285,7 @@ class RpcActionNode(SchemaTreeNode):
     def __init__(self):
         """Initialize the class instance."""
         super().__init__()
+        self.default_deny = DefaultDeny.none  # type: "DefaultDeny"
         self._ctype = ContentType.nonconfig
 
     def _handle_substatements(self, stmt: Statement, sctx: SchemaContext) -> None:
@@ -1345,6 +1348,7 @@ class NotificationNode(SchemaTreeNode):
     def __init__(self):
         """Initialize the class instance."""
         super().__init__()
+        self.default_deny = DefaultDeny.none  # type: "DefaultDeny"
         self._ctype = ContentType.nonconfig
 
     def _flatten(self) -> List[SchemaNode]:
