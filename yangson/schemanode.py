@@ -347,7 +347,9 @@ class InternalNode(SchemaNode):
             elif child.name == name and child.ns == ns:
                 return child
         for c in todo:
-            return c.get_child(name, ns)
+            grandchild = c.get_child(name, ns)
+            if grandchild is not None:
+                return grandchild
 
     def get_schema_descendant(
             self, route: SchemaRoute) -> Optional[SchemaNode]:
