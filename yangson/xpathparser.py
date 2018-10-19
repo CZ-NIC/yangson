@@ -177,7 +177,8 @@ class XPathParser(Parser):
             self.skip_ws()
             return Literal(val)
         if ("0" <= next <= "9" or
-                next == "." and "0" <= self.input[self.offset + 1] <= "9"):
+                next == "." and not self.at_last_char() and
+                "0" <= self.input[self.offset + 1] <= "9"):
             val = self.unsigned_float()
             self.skip_ws()
             return Number(val)
