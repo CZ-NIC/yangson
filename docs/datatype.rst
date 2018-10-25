@@ -94,7 +94,7 @@ all :class:`~.schemanode.TerminalNode` instances.
       .. doctest::
 
 	 >>> string_t.sctx.text_mid
-	 ('example-5-a', '')
+	 ('example-5-a', '2018-10-25')
 
    .. attribute:: default
 
@@ -318,7 +318,7 @@ all :class:`~.schemanode.TerminalNode` instances.
 	 True
 	 >>> 'xxyy' not in string_t  # pattern doesn't match
 	 True
-	 
+
    .. attribute:: invert_patterns
 
       List of regular expression patterns that have the

@@ -29,7 +29,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 .. doctest::
 
    >>> dm = DataModel.from_file("yang-library-ex5.json")
-   >>> mex5a = dm.schema_data.modules[('example-5-a', '')].statement
+   >>> mex5a = dm.schema_data.modules[('example-5-a', '2018-10-25')].statement
 
 .. class:: Statement(kw: YangIdentifier, arg: Optional[str], pref: \
 	   YangIdentifier = None)
@@ -48,8 +48,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> mex5a.keyword
-	 'module'
+         >>> mex5a.keyword
+         'module'
 
    .. attribute:: prefix
 
@@ -68,8 +68,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> mex5a.argument
-	 'example-5-a'
+         >>> mex5a.argument
+         'example-5-a'
 
    .. attribute:: superstmt
 
@@ -100,17 +100,17 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> lfs = mex5a.find1('leaf', 'string-leaf')
-	 >>> str(lfs)
-	 'leaf "string-leaf" { ... }'
-	 >>> lfs.superstmt.keyword
-	 'module'
-	 >>> mex5a.find1('rpc') is None
-	 True
-	 >>> mex5a.find1('rpc', required=True)
-	 Traceback (most recent call last):
-	 ...
-	 yangson.statement.StatementNotFound: `rpc' in `module "example-5-a" { ... }'
+         >>> lfs = mex5a.find1('leaf', 'string-leaf')
+         >>> str(lfs)
+         'leaf "string-leaf" { ... }'
+         >>> lfs.superstmt.keyword
+         'module'
+         >>> mex5a.find1('rpc') is None
+         True
+         >>> mex5a.find1('rpc', required=True)
+         Traceback (most recent call last):
+         ...
+         yangson.statement.StatementNotFound: `rpc' in `module "example-5-a" { ... }'
 
    .. method:: find_all(kw: YangIdentifier, pref: YangIdentifier = \
 	       None) -> List[Statement]
@@ -121,13 +121,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> len(mex5a.find_all('leaf'))
-	 11
-	 >>> mex5a.find_all('rpc')
-	 []
+         >>> len(mex5a.find_all('leaf'))
+         11
+         >>> mex5a.find_all('rpc')
+         []
 
    .. method:: get_definition(name: YangIdentifier, kw:
-	       YangIdentifier) -> Statement:
+	       YangIdentifier) -> Statement
 
       Search the receiver's parent statement and then all ancestor
       statements from inside out for the definition whose name is
@@ -140,29 +140,54 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> str(lfs.get_definition('my-string', 'typedef'))
-	 'typedef "my-string" { ... }'
-	 >>> lfs.get_definition('my-string', 'grouping') is None
-	 True
+         >>> str(lfs.get_definition('my-string', 'typedef'))
+         'typedef "my-string" { ... }'
+         >>> lfs.get_definition('my-string', 'grouping') is None
+         True
 
-.. class:: ModuleParser(text: str)
+.. class:: ModuleParser(text: str, name: YangIdentifier = None, rev: str = None)
 
    This class is a subclass of :class:`.Parser`, and implements a
    recursive-descent parser for YANG modules. Source text of the YANG
    module is passed to the constructor in the *text* argument (see
-   also the :attr:`.Parser.input` attribute).
+   also the :attr:`.Parser.input` attribute). The other two arguments,
+   *name* and *rev*, are optional and may be used for initializing
+   the instance attributes below.
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: name
+
+      Module or submodule name that is expected to be found in the
+      module text.
+
+   .. attribute:: rev
+
+      Module or submodule revision date that is expected to be found
+      in the module text as the most recent revision.
 
    .. rubric:: Public Methods
 
-   .. automethod:: parse
+   .. method:: parse() -> Statement
 
-      This method raises :exc:`~.WrongArgument` if a statement argument
-      is invalid. It may also raise parsing exceptions defined in the
-      :mod:`.parser` module.
+      Parse the YANG module text.
+
+      Apart from parsing exceptions raised in the methods of the
+      :mod:`.parser` module, this method may raise the following
+      exceptions:
+
+      * :exc:`~.ModuleNameMismatch` – if the module name doesn't match
+        the :attr:`name` attribute
+      * :exc:`~.ModuleRevisionMismatch` – if the most recent revision
+	date doesn't match the :attr:`rev` attribute.
 
       .. doctest::
 
-	 >>> with open('example-5-a.yang') as infile:
-	 ...     m5atxt = infile.read()
-	 >>> str(ModuleParser(m5atxt).parse())
-	 'module "example-5-a" { ... }'
+         >>> with open('example-5-a.yang') as infile:
+         ...     m5atxt = infile.read()
+         >>> str(ModuleParser(m5atxt).parse())
+         'module "example-5-a" { ... }'
+         >>> str(ModuleParser(m5atxt, rev='2018-04-01').parse())
+         Traceback (most recent call last):
+         ...
+         yangson.exceptions.ModuleRevisionMismatch: '2018-10-25', expected '2018-04-01'

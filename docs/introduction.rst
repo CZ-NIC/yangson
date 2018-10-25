@@ -51,7 +51,10 @@ modules are of the form specified in [RFC7950]_, sec. `5.2`_:
    module-or-submodule-name ['@' revision-date] '.yang'
 
 For a (sub)module without a **revision** statement, the ``'@'
-revision-date`` part must be omitted, otherwise it has to be present.
+revision-date`` part must be omitted, otherwise it may or may not be
+present. Either way, the module name and revision declared in the YANG
+library must match the corresponding statements in the (sub)module text
+itself.
 
 *Yangson* is currently able to parse only the compact syntax of YANG
 files. Modules written in the alternative XML format (YIN) can be

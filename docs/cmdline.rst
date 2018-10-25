@@ -76,9 +76,6 @@ Options
 
       module-or-submodule-name ['@' revision-date] '.yang'
 
-   The part with revision date has to be present if the revision is
-   specified for the (sub)module in YANG library.
-
 .. option:: -s <validation_scope>, --scope <validation_scope>
 
    This option specifies validation scope, and is only relevant when
@@ -108,7 +105,7 @@ Options
 .. option:: -n, --no_types
 
    This option is used to suppress data type information in ASCII tree output.
-   It is relevant only for the :option:`--tree` operation. 
+   It is relevant only for the :option:`--tree` operation.
 
 Environment Variables
 =====================

@@ -10,6 +10,8 @@ module example-5-a {
     prefix "ex5b";
   }
 
+  revision 2018-10-25;
+
   typedef my-string {
     type string {
       length "2..4";

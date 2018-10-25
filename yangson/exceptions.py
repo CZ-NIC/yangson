@@ -35,7 +35,10 @@ This module defines the following exceptions:
 * :exc:`InvalidSchemaPath`: Invalid schema path
 * :exc:`InvalidXPath`: An XPath expression is invalid.
 * :exc:`MissingModule`: Abstract exception class – a module is missing.
+* :exc:`ModuleContentMismatch`: Abstract exception class – unexpected module name or revision.
+* :exc:`ModuleNameMismatch`: The module name doesn't match the expected name.
 * :exc:`ModuleNotFound`: A module not found.
+* :exc:`ModuleRevisionMismatch`: The module revision doesn't match the expected revision.
 * :exc:`ModuleNotImplemented`: A module is not implemented in the data model.
 * :exc:`ModuleNotImported`: A module is not imported.
 * :exc:`ModuleNotRegistered`: An imported module is not registered in YANG library.
@@ -180,6 +183,27 @@ class MissingModule(YangsonException):
         if self.rev:
             return self.name + "@" + self.rev
         return self.name
+
+
+class ModuleContentMismatch(YangsonException):
+    """Abstract exception class – unexpected module name or revision."""
+
+    def __init__(self, found: YangIdentifier, expected: YangIdentifier):
+        self.found = found
+        self.expected = expected
+
+    def __str__(self) -> str:
+        return "'{}', expected '{}'".format(self.found, self.expected)
+
+
+class ModuleNameMismatch(ModuleContentMismatch):
+    """Parsed module revision doesn't match the expected revision."""
+    pass
+
+
+class ModuleRevisionMismatch(ModuleContentMismatch):
+    """Parsed module revision doesn't match the expected revision."""
+    pass
 
 
 class ModuleNotFound(MissingModule):

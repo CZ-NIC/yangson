@@ -25,7 +25,8 @@ This module implements the following classes:
 
 from typing import List, Optional, Tuple
 from .exceptions import (
-    EndOfInput, StatementNotFound, UnexpectedInput, InvalidArgument)
+    EndOfInput, StatementNotFound, UnexpectedInput, InvalidArgument,
+    ModuleNameMismatch, ModuleRevisionMismatch)
 from .parser import Parser
 from .typealiases import YangIdentifier
 
@@ -132,14 +133,27 @@ class ModuleParser(Parser):
                     "\\": "\\"}  # type: Dict[str,str]
     """Dictionary for mapping escape sequences to characters."""
 
+    def __init__(self, text: str, name: YangIdentifier = None, rev: str = None):
+        """Initialize the parser instance.
+
+        Args:
+            name: Expected module name.
+            rev: Expected revision date.
+        """
+        super().__init__(text)
+        self.name = name
+        self.rev = rev
+
     def parse(self) -> Statement:
         """Parse a complete YANG module or submodule.
 
         Args:
-            mtext: Yang module text.
+            mtext: YANG module text.
 
         Raises:
             EndOfInput: If past the end of input.
+            ModuleNameMismatch: If parsed module name doesn't match `self.name`.
+            ModuleRevisionMismatch: If parsed revision date doesn't match `self.rev`.
             UnexpectedInput: If top-level statement isn't ``(sub)module``.
         """
         self.opt_separator()
@@ -148,6 +162,12 @@ class ModuleParser(Parser):
         if res.keyword not in ["module", "submodule"]:
             self.offset = start
             raise UnexpectedInput(self, "'module' or 'submodule'")
+        if self.name is not None and res.argument != self.name:
+            raise ModuleNameMismatch(res.argument, self.name)
+        if self.rev:
+            revst = res.find1("revision")
+            if revst is None or revst.argument != self.rev:
+                raise ModuleRevisionMismatch(revst.argument, self.rev)
         try:
             self.opt_separator()
         except EndOfInput:

@@ -31,7 +31,7 @@ from .exceptions import (
     InvalidSchemaPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
     FeaturePrerequisiteError, InvalidFeatureExpression, ModuleNotFound,
     ModuleNotImplemented, ModuleNotImported, ModuleNotRegistered,
-    MultipleImplementedRevisions, UnknownPrefix)
+    ModuleContentMismatch, MultipleImplementedRevisions, UnknownPrefix)
 from .parser import Parser
 from .statement import ModuleParser, Statement
 from .typealiases import (ModuleId, PrefName, QualName, RevisionDate,
@@ -164,16 +164,19 @@ class SchemaData:
                      rev: RevisionDate) -> Statement:
         """Read and parse a YANG module or submodule."""
         for d in self.module_search_path:
-            fn = "{}/{}".format(d, name)
-            if rev:
-                fn += "@" + rev
-            fn += ".yang"
-            try:
-                with open(fn, encoding='utf-8') as infile:
-                    res = ModuleParser(infile.read()).parse()
-            except FileNotFoundError:
-                continue
-            return res
+            run = 0
+            while run < 2:
+                fn = "{}/{}".format(d, name)
+                if rev and run == 0:
+                    fn += "@" + rev
+                fn += ".yang"
+                try:
+                    with open(fn, encoding='utf-8') as infile:
+                        res = ModuleParser(infile.read(), name, rev).parse()
+                except (FileNotFoundError, PermissionError, ModuleContentMismatch):
+                    run += 1
+                    continue
+                return res
         raise ModuleNotFound(name, rev)
 
     def _process_imports(self) -> None:
