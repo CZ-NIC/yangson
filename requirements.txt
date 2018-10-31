@@ -19,7 +19,7 @@ pyparsing==2.1.10
 pytest==2.9.1
 pytz==2016.3
 PyXB==1.2.4
-requests==2.13.0
+requests==2.20.0
 requests-toolbelt==0.7.0
 six==1.10.0
 snowballstemmer==1.2.1
