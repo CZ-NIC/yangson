@@ -175,6 +175,14 @@ specification, see section `3`_ of [RFC7950]_.
       constraint specified for a **list** node, non-unique values of a
       **leaf-list** node that represents configuration.
 
+   validation scope
+
+      Set of validation constraints that can be checked during
+      validation. It can be schema constraints, semantic rules, or
+      both. Represented by the enumeration
+      :class:`~.ValidationScope`. See also
+      :meth:`yangson.instance.InstanceNode.validate`.
+
 .. _2.2: https://tools.ietf.org/html/rfc7895#section-2.2
 .. _3: https://tools.ietf.org/html/rfc7950#section-3
 .. _3.5.3: https://tools.ietf.org/html/rfc8040#section-3.5.3

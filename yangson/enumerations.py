@@ -37,7 +37,7 @@ class ValidationScope(Enum):
     """Validation of syntax - schema (including "when"), data types."""
     semantics = 2
     """Validation of semantics ("must" constraints, uniqueness, cardinality,
-    referential integrity."""
+    referential integrity)."""
     all = 3
     """Both syntax and semantics."""
 
