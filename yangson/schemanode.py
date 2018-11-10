@@ -48,18 +48,30 @@ from .datatype import (DataType, LeafrefType, LinkType,
                        RawScalar, IdentityrefType)
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
 from .exceptions import (
-    InvalidLeafrefPath, InvalidArgument, RawMemberError, RawTypeError,
-    SchemaError, SemanticError, YangsonException, YangTypeError)
+    AnnotationTypeError, InvalidLeafrefPath, InvalidArgument,
+    MissingAnnotationTarget, RawMemberError, RawTypeError,
+    SchemaError, SemanticError, UndefinedAnnotation,
+    YangsonException, YangTypeError)
 from .instvalue import (
-    ArrayValue, EntryValue, ObjectValue, Value)
-from .schemadata import Annotation, IdentityAdjacency, SchemaContext
+    ArrayValue, EntryValue, MetadataObject, ObjectValue, Value)
+from .schemadata import IdentityAdjacency, SchemaContext
 from .schpattern import (ChoicePattern, ConditionalPattern, Empty, Member,
                          NotAllowed, Pair, SchemaPattern)
 from .statement import Statement
 from .typealiases import (DataPath, InstanceName, JSONPointer, QualName,
-                          RawEntry, RawList, RawObject, RawValue, ScalarValue,
-                          SchemaRoute, YangIdentifier)
+                          RawEntry, RawList, RawObject, RawValue,
+                          RawMetadataObject, ScalarValue, SchemaRoute,
+                          YangIdentifier)
 from .xpathparser import XPathParser
+
+
+class Annotation:
+    """Class for metadata annotations [RFC 7952]."""
+
+    def __init__(self, type: "DataType", description: str = None):
+        """Initialize the class instance."""
+        self.type = type
+        self.description = description
 
 
 class SchemaNode:
@@ -97,7 +109,7 @@ class SchemaNode:
         """Is the receiver a mandatory node?"""
         return False
 
-    def schema_root(self) -> "GroupNode":
+    def schema_root(self) -> "SchemaTreeNode":
         """Return the root node of the receiver's schema."""
         sn = self
         while sn.parent:
@@ -409,12 +421,33 @@ class InternalNode(SchemaNode):
             raise RawTypeError(jptr, "object")
         res = ObjectValue()
         for qn in rval:
-            cn = self._iname2qname(qn)
-            ch = self.get_data_child(*cn)
-            npath = jptr + "/" + qn
-            if ch is None:
-                raise RawMemberError(npath)
-            res[ch.iname()] = ch.from_raw(rval[qn], npath)
+            if qn.startswith("@"):
+                if qn != "@":
+                    tgt = qn[1:]
+                    if tgt not in rval:
+                        raise MissingAnnotationTarget(jptr, tgt)
+                    jptr += '/' + tgt
+                res[qn] = self._process_metadata(rval[qn], jptr)
+            else:
+                cn = self._iname2qname(qn)
+                ch = self.get_data_child(*cn)
+                npath = jptr + "/" + qn
+                if ch is None:
+                    raise RawMemberError(npath)
+                res[ch.iname()] = ch.from_raw(rval[qn], npath)
+        return res
+
+    def _process_metadata(self, rmo: RawMetadataObject, jptr: JSONPointer) -> MetadataObject:
+        res = {}
+        ans = self.schema_root().annotations
+        for mem in rmo:
+            try:
+                an = ans[self._iname2qname(mem)]
+            except KeyError:
+                raise UndefinedAnnotation(jptr, mem)
+            res[mem] = an.type.from_raw(rmo[mem])
+            if res[mem] not in an.type:
+                raise AnnotationTypeError(jptr, mem, an.type.error_message)
         return res
 
     def _node_digest(self) -> Dict[str, Any]:
@@ -609,16 +642,6 @@ class InternalNode(SchemaNode):
         """Handle anydata statement."""
         self._handle_child(AnydataNode(), stmt, sctx)
 
-    def _annotation_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
-        """Handle annotation statement."""
-        sd = sctx.schema_data
-        if not sd.if_features(stmt, sctx.text_mid):
-            return
-        dst = stmt.find1("description")
-        sd.annotations[(stmt.argument, sctx.default_ns)] = Annotation(
-            DataType._resolve_type(stmt.find1("type", required=True), sctx),
-            dst.argument if dst else None)
-
     def _ascii_tree(self, indent: str, no_types: bool) -> str:
         """Return the receiver's subtree as ASCII art."""
         if not self.children:
@@ -662,9 +685,23 @@ class GroupNode(InternalNode):
 class SchemaTreeNode(GroupNode):
     """Root node of a schema tree."""
 
+    def __init__(self):
+        """Initialize the class instance."""
+        super().__init__()
+        self.annotations = {}  # type: Dict[QualName, Annotation]
+
     def data_parent(self) -> InternalNode:
         """Override the superclass method."""
         return self.parent
+
+    def _annotation_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
+        """Handle annotation statement."""
+        if not sctx.schema_data.if_features(stmt, sctx.text_mid):
+            return
+        dst = stmt.find1("description")
+        self.annotations[(stmt.argument, sctx.default_ns)] = Annotation(
+            DataType._resolve_type(stmt.find1("type", required=True), sctx),
+            dst.argument if dst else None)
 
 
 class DataNode(SchemaNode):

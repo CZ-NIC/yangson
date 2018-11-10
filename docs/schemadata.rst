@@ -120,20 +120,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       Set of submodules of the receiver module. If the receiver is a
       submodule, then this set is by definition empty.
 
-.. class:: Annotation(type: DataType, description: str)
-
-     An object of this class describes a metadata annotation [RFC7952]_.
-
-     .. rubric:: Instance Attributes
-
-     .. attribute:: type
-
-        Type of the annotation's value.
-
-     .. attribute:: description
-
-        Description string of the annotation.
-
 .. class:: SchemaData(yang_lib: Dict[str, Any], mod_path: List[str])
 
    This class serves as a global for various data structures related
@@ -200,7 +186,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
 	 >>> len(dm.schema_data.modules)
-	 8
+	 6
 	 >>> dm.schema_data.modules[('example-3-a', '2017-08-01')].main_module
 	 ('example-3-a', '2017-08-01')
 	 >>> dm.schema_data.modules[('example-3-suba', '2017-08-01')].main_module
@@ -209,19 +195,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 	 ('ietf-inet-types', '2013-07-15')
 	 >>> sorted(dm.schema_data.modules[('example-3-a', '2017-08-01')].features)
 	 ['fea1', 'fea2']
-
-   .. attribute:: annotations
-
-      Dictionary of annotations that are defined in the modules
-      comprising the data model. The keys are :term:`qualified name`\
-      s, of the annotations, and the values are objects of the :class:`Annotation` class.
-
-      .. doctest::
-
-         >>> list(dm.schema_data.annotations.keys())
-         [('origin', 'ietf-origin')]
-         >>> str(dm.schema_data.annotations[('origin', 'ietf-origin')].type)
-         'origin-ref(identityref)'
 
    .. rubric:: Public Methods
 

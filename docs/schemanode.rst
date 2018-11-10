@@ -20,6 +20,7 @@ Schema Nodes
 
 The *schemanode* module implements the following classes:
 
+* :class:`Annotation`: Specification of a metadata annotation.
 * :class:`SchemaNode`: Abstract class for schema nodes.
 * :class:`InternalNode`: Abstract class for schema nodes that have children.
 * :class:`GroupNode`: Anonymous group of schema nodes.
@@ -57,6 +58,20 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    >>> with open('example-data.json') as infile:
    ...     ri = json.load(infile)
    >>> inst = dm.from_raw(ri)
+
+.. class:: Annotation(type: DataType, description: str)
+
+   An object of this class describes a metadata annotation [RFC7952]_.
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: type
+
+      Type of the annotation's value.
+
+   .. attribute:: description
+
+      Description string of the annotation.
 
 .. class:: SchemaNode
 
@@ -339,16 +354,30 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 .. class:: GroupNode
 
-This class is a subclass of :class:`InternalNode`. Its instances are
-used as anonymous groups of schema nodes contained in an **augment**
-or **uses** statement if this statement is conditional, i.e. has a
-**when** substatement.
+   This class is a subclass of :class:`InternalNode`. Its instances are
+   used as anonymous groups of schema nodes contained in an **augment**
+   or **uses** statement if this statement is conditional, i.e. has a
+   **when** substatement.
 
 .. class:: SchemaTreeNode
 
-This class is a subclass of :class:`GroupNode`. Each instance
-represents the root node of a schema tree (main tree, RPC operation or
-action, input or output node, or notification).
+   This class is a subclass of :class:`GroupNode`. Each instance
+   represents the root node of a schema tree (main tree, RPC operation or
+   action, input or output node, or notification).
+
+   .. rubric:: Instance Attributes
+
+   .. attribute:: annotations
+
+      Dictionary of annotations that are defined in the modules
+      comprising the data model. The keys are :term:`qualified name`\ s of the annotations, and the values are objects of the :class:`Annotation` class.
+
+      .. doctest::
+
+   >>> list(dm.schema.annotations.keys())
+   [('origin', 'ietf-origin')]
+   >>> str(dm.schema.annotations[('origin', 'ietf-origin')].type)
+   'origin-ref(identityref)'
 
 .. class:: DataNode
 
