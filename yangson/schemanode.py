@@ -466,7 +466,7 @@ class InternalNode(SchemaNode):
         """Extend the superclass method."""
         if scope.value & ValidationScope.syntax.value:   # schema
             self._check_schema_pattern(inst, ctype)
-        for m in inst.value:              # all members
+        for m in inst:
             inst._member(m).validate(scope, ctype)
 
     def _add_child(self, node: SchemaNode) -> None:
@@ -481,7 +481,7 @@ class InternalNode(SchemaNode):
                               ctype: ContentType) -> None:
         p = self.schema_pattern
         p._eval_when(inst)
-        for m in inst.value:
+        for m in inst:
             newp = p.deriv(m, ctype)
             if isinstance(newp, NotAllowed):
                 raise SchemaError(

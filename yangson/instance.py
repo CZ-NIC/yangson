@@ -38,8 +38,8 @@ from .exceptions import (BadSchemaNodeType, EndOfInput, InstanceException,
                          InstanceValueError, InvalidKeyValue,
                          NonexistentInstance, NonDataNode,
                          NonexistentSchemaNode, UnexpectedInput)
-from .instvalue import (ArrayValue, InstanceKey,
-                        ObjectValue, Value, ScalarValue, StructuredValue)
+from .instvalue import (ArrayValue, InstanceKey, ObjectValue, Value,
+                        ScalarValue, StructuredValue)
 from .parser import Parser
 from .typealiases import (InstanceName, JSONPointer, QualName, RawValue,
                           SchemaRoute, _Singleton, YangIdentifier)
@@ -176,7 +176,7 @@ class InstanceNode:
             InstanceValueError: if the receiver is a scalar value that cannot
                 be iterated.
         """
-        def it():
+        def ita():
             try:
                 en = self[0]
                 while True:
@@ -185,9 +185,9 @@ class InstanceNode:
             except NonexistentInstance:
                 return
         if isinstance(self.value, ArrayValue):
-            return it()
+            return ita()
         if isinstance(self.value, ObjectValue):
-            return iter(self.value)
+            return iter(self._member_names())
         raise InstanceValueError(self.json_pointer(), "scalar instance")
 
     def is_internal(self) -> bool:
@@ -333,7 +333,7 @@ class InstanceNode:
         res = self
         if isinstance(val, ObjectValue):
             if val:
-                for mn in val:
+                for mn in self._member_names():
                     m = res._member(mn) if res is self else res.sibling(mn)
                     res = m.add_defaults(ctype)
                 res = res.up()
@@ -356,6 +356,10 @@ class InstanceNode:
         if isinstance(self.value, ArrayValue):
             return [en.raw_value() for en in self]
         return self.schema_node.type.to_raw(self.value)
+
+    def _member_names(self) -> List[InstanceName]:
+        if isinstance(self.value, ObjectValue):
+            return [m for m in self.value if not m.startswith("@")]
 
     def _member(self, name: InstanceName) -> "ObjectMember":
         sibs = self.value.copy()
