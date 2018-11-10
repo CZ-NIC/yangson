@@ -68,6 +68,9 @@ RawScalar = Union[bool, int, str, List[None]]
 RawObject = Dict[InstanceName, "RawValue"]
 """Raw object as returned by JSON parser."""
 
+RawMetadataObject = Dict[PrefName, RawScalar]
+"""Raw metadata object as returned by JSON parser."""
+
 RawEntry = Union[RawScalar, RawObject]
 """Raw entry of a leaf-list or list."""
 
