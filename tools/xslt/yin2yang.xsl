@@ -46,6 +46,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 <stylesheet xmlns="http://www.w3.org/1999/XSL/Transform"
 		xmlns:yin="urn:ietf:params:xml:ns:yang:yin:1"
+		xmlns:md="urn:ietf:params:xml:ns:yang:ietf-yang-metadata"
 		xmlns:html="http://www.w3.org/1999/xhtml"
 		version="1.0">
   <output method="text"/>
@@ -183,16 +184,26 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   </template>
 
   <template name="keyword">
+    <param name="kw" select="local-name()"/>
     <if test="count(ancestor::*)=1">
       <text>&#xA;</text>
     </if>
     <call-template name="indent"/>
-    <value-of select="local-name(.)"/>
+    <value-of select="$kw"/>
   </template>
 
   <template name="statement">
     <param name="arg"/>
     <call-template name="keyword"/>
+    <value-of select="concat(' ', $arg)"/>
+    <call-template name="semi-or-sub"/>
+  </template>
+
+  <template name="extension-statement">
+    <param name="arg"/>
+    <call-template name="keyword">
+      <with-param name="kw" select="name()"/>
+    </call-template>
     <value-of select="concat(' ', $arg)"/>
     <call-template name="semi-or-sub"/>
   </template>
@@ -297,13 +308,19 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   </template>
 
   <template
-      match="yin:action|yin:anydata|yin:anyxml|yin:argument|yin:base
-	     |yin:bit|yin:case|yin:choice|yin:container|yin:enum
+      match="yin:action|yin:anydata|yin:anyxml|yin:argument|yin:base|
+	     yin:bit|yin:case|yin:choice|yin:container|yin:enum
 	     |yin:extension|yin:feature|yin:grouping|yin:identity
 	     |yin:leaf|yin:leaf-list|yin:list
 	     |yin:module|yin:notification|yin:rpc|yin:submodule
 	     |yin:type|yin:typedef|yin:uses">
     <call-template name="statement">
+      <with-param name="arg" select="@name"/>
+    </call-template>
+  </template>
+
+  <template match="md:annotation">
+    <call-template name="extension-statement">
       <with-param name="arg" select="@name"/>
     </call-template>
   </template>
