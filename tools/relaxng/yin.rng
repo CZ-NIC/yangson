@@ -2,7 +2,7 @@
 
 <!-- Program name: yin.rng
 
-Copyright © 2015 by Ladislav Lhotka, CZ.NIC <lhotka@nic.cz>
+Copyright © 2018 by Ladislav Lhotka, CZ.NIC <lhotka@nic.cz>
 
 RELAX NG schema for YIN (see RFC 6020).
 
@@ -23,12 +23,13 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 <grammar xmlns="http://relaxng.org/ns/structure/1.0"
 	 ns="urn:ietf:params:xml:ns:yang:yin:1"
+	 xmlns:md="urn:ietf:params:xml:ns:yang:ietf-yang-metadata"
 	 xmlns:dc="http://purl.org/dc/terms"
          datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
 
   <dc:title>RELAX NG Schema for YIN</dc:title>
   <dc:creator>Ladislav Lhotka</dc:creator>
-  <dc:date>2013-12-04</dc:date>
+  <dc:date>2018-11-19</dc:date>
   <dc:subject>YIN, XML syntax for YANG</dc:subject>
   <dc:identifier>urn:ietf:params:xml:ns:yang:yin:1</dc:identifier>
   <dc:description>RELAX NG schema defines grammar for data models
@@ -126,6 +127,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   <define name="body-stmts">
     <zeroOrMore>
       <choice>
+	<ref name="annotation-stmt"/>
 	<ref name="extension-stmt"/>
 	<ref name="feature-stmt"/>
 	<ref name="identity-stmt"/>
@@ -345,6 +347,23 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       </attribute>
       <interleave>
 	<ref name="desc-ref"/>
+	<ref name="extensions"/>
+      </interleave>
+    </element>
+  </define>
+
+  <define name="annotation-stmt">
+    <element name="md:annotation">
+      <attribute name="name">
+	<ref name="identifier"/>
+      </attribute>
+      <interleave>
+	<ref name="status-desc-ref"/>
+	<ref name="if-feature-stmts"/>
+	<ref name="type-stmt"/>
+	<optional>
+	  <ref name="units-stmt"/>
+	</optional>
 	<ref name="extensions"/>
       </interleave>
     </element>
@@ -1561,6 +1580,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 	<anyName>
 	  <except>
 	    <nsName/>
+	    <nsName ns="urn:ietf:params:xml:ns:yang:ietf-yang-metadata"/>
 	  </except>
 	</anyName>
 	<zeroOrMore>
@@ -1578,16 +1598,18 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   <define name="any-element">
     <element>
       <anyName/>
-      <mixed>
-	<zeroOrMore>
-	  <choice>
-	    <attribute>
-	      <anyName/>
-	    </attribute>
-	    <ref name="any-element"/>
-	  </choice>
-	</zeroOrMore>
-      </mixed>
+      <zeroOrMore>
+	<choice>
+	  <attribute>
+	    <anyName>
+	      <except>
+		<name>xml:id</name>
+	      </except>
+	    </anyName>
+	  </attribute>
+	  <ref name="any-element"/>
+	</choice>
+      </zeroOrMore>
     </element>
   </define>
 

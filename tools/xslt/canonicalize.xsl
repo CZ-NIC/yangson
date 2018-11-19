@@ -21,11 +21,13 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 <stylesheet xmlns="http://www.w3.org/1999/XSL/Transform"
 		xmlns:xi="http://www.w3.org/2001/XInclude"
 		xmlns:html="http://www.w3.org/1999/xhtml"
+		xmlns:md="urn:ietf:params:xml:ns:yang:ietf-yang-metadata"
 		xmlns:yin="urn:ietf:params:xml:ns:yang:yin:1"
 		version="1.0">
   <output method="xml" encoding="utf-8"/>
   <strip-space elements="*"/>
   <param name="yin-ns">urn:ietf:params:xml:ns:yang:yin:1</param>
+  <param name="md-ns">urn:ietf:params:xml:ns:yang:ietf-yang-metadata</param>
 
   <template name="preceding-comment">
     <if
@@ -44,7 +46,8 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
   </template>
 
   <template name="copy-extensions">
-    <for-each select="*[namespace-uri() != $yin-ns]">
+    <for-each select="*[namespace-uri() != $yin-ns and
+		      namespace-uri != $md-ns]">
       <copy-of select="."/>
     </for-each>
   </template>
@@ -64,10 +67,10 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:reference"/>
       <apply-templates select="yin:revision"/>
       <apply-templates
-	  select="yin:extension|yin:feature|yin:identity|yin:typedef|
-		  yin:grouping|yin:container|yin:leaf|yin:leaf-list|
-		  yin:list|yin:choice|yin:anyxml|yin:uses|yin:augment|
-		  yin:rpc|yin:notification|yin:deviation"/>
+	  select="md:annotation|yin:extension|yin:feature|yin:identity|
+		  yin:typedef|yin:grouping|yin:container|yin:leaf|
+		  yin:leaf-list|yin:list|yin:choice|yin:anyxml|yin:uses|
+		  yin:augment|yin:rpc|yin:notification|yin:deviation"/>
       <call-template name="copy-extensions"/>
     </copy>
   </template>
@@ -85,10 +88,10 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
       <apply-templates select="yin:reference"/>
       <apply-templates select="yin:revision"/>
       <apply-templates
-	  select="yin:extension|yin:feature|yin:identity|yin:typedef|
-		  yin:grouping|yin:container|yin:leaf|yin:leaf-list|
-		  yin:list|yin:choice|yin:anyxml|yin:uses|yin:augment|
-		  yin:rpc|yin:notification|yin:deviation"/>
+	  select="md:annotation|yin:extension|yin:feature|yin:identity|
+		  yin:typedef|yin:grouping|yin:container|yin:leaf|
+		  yin:leaf-list|yin:list|yin:choice|yin:anyxml|yin:uses|
+		  yin:augment|yin:rpc|yin:notification|yin:deviation"/>
       <call-template name="copy-extensions"/>
     </copy>
   </template>
@@ -97,6 +100,19 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
     <copy>
       <apply-templates select="html:*|xi:*|@*|text()"/>
       <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:status"/>
+      <apply-templates select="yin:description"/>
+      <apply-templates select="yin:reference"/>
+      <call-template name="copy-extensions"/>
+    </copy>
+  </template>
+  <template match="md:annotation">
+    <call-template name="preceding-comment"/>
+    <copy>
+      <apply-templates select="html:*|xi:*|@*|text()"/>
+      <apply-templates select="yin:if-feature"/>
+      <apply-templates select="yin:type"/>
+      <apply-templates select="yin:units"/>
       <apply-templates select="yin:status"/>
       <apply-templates select="yin:description"/>
       <apply-templates select="yin:reference"/>
