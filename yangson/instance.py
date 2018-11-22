@@ -507,11 +507,6 @@ class ObjectMember(InstanceNode):
         """Sibling members within the parent object."""
 
     @property
-    def key(self) -> InstanceName:
-        """Receiver's key (member name)."""
-        return self.path[-1]
-
-    @property
     def name(self) -> YangIdentifier:
         return self.path[-1]
 
@@ -610,11 +605,6 @@ class ArrayEntry(InstanceNode):
         """Preceding entries of the parent array."""
         self.after = after  # type: LinkedList
         """Following entries of the parent array."""
-
-    @property
-    def key(self) -> InstanceName:
-        """Receiver's key (XPath position)."""
-        return self.path[-1] + 1
 
     @property
     def index(self) -> int:
