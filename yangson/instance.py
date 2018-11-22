@@ -962,7 +962,7 @@ class EntryKeys:
                 raise NonexistentSchemaNode(sn.qual_name, *k)
             kval = knod.type.parse_value(self.keys[k])
             if kval is None:
-                raise InvalidKeyValue(self.key[k])
+                raise InvalidKeyValue(self.keys[k])
             res[knod.iname()] = kval
         return res
 
