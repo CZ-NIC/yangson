@@ -374,10 +374,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-   >>> list(dm.schema.annotations.keys())
-   [('origin', 'ietf-origin')]
-   >>> str(dm.schema.annotations[('origin', 'ietf-origin')].type)
-   'origin-ref(identityref)'
+	 >>> list(dm.schema.annotations.keys())
+	 [('origin', 'ietf-origin')]
+	 >>> str(dm.schema.annotations[('origin', 'ietf-origin')].type)
+	 'origin-ref(identityref)'
 
 .. class:: DataNode
 
