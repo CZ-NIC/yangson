@@ -1,5 +1,6 @@
 .cache
 .eggs
+.idea
 *.pyc
 bin
 dist
