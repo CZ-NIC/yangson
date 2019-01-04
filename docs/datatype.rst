@@ -93,8 +93,8 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> string_t.sctx.text_mid
-	 ('example-5-a', '2018-10-25')
+         >>> string_t.sctx.text_mid
+         ('example-5-a', '2018-10-25')
 
    .. attribute:: default
 
@@ -103,8 +103,8 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> string_t.default
-	 'xxy'
+         >>> string_t.default
+         'xxy'
 
    .. attribute:: name
 
@@ -112,10 +112,10 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> string_t.name
-	 'my-string'
-	 >>> boolean_t.name is None
-	 True
+         >>> string_t.name
+         'my-string'
+         >>> boolean_t.name is None
+         True
 
    .. attribute:: error_tag
 
@@ -129,12 +129,12 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> 'abc' in string_t
-	 False
-	 >>> string_t.error_tag
-	 'invalid-type'
-	 >>> string_t.error_message
-	 'xes and y'
+         >>> 'abc' in string_t
+         False
+         >>> string_t.error_tag
+         'invalid-type'
+         >>> string_t.error_message
+         'xes and y'
 
    .. rubric:: Public Methods
 
@@ -148,10 +148,10 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> "Dopey" in enumeration_t
-	 True
-	 >>> "SnowWhite" not in enumeration_t
-	 True
+         >>> "Dopey" in enumeration_t
+         True
+         >>> "SnowWhite" not in enumeration_t
+         True
 
    .. automethod:: __str__
 
@@ -163,10 +163,10 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> bits_t.from_raw('dos tres')
-	 ('dos', 'tres')
-	 >>> bits_t.from_raw(0) is None
-	 True
+         >>> bits_t.from_raw('dos tres')
+         ('dos', 'tres')
+         >>> bits_t.from_raw(0) is None
+         True
 
    .. method:: to_raw(val: ScalarValue) -> Optional[RawScalar]
 
@@ -179,11 +179,11 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> from test import *
-	 >>> bits_t.to_raw(('dos', 'tres'))
-	 'dos tres'
-	 >>> bits_t.to_raw((2,3)) is None
-	 True
+         >>> from test import *
+         >>> bits_t.to_raw(('dos', 'tres'))
+         'dos tres'
+         >>> bits_t.to_raw((2,3)) is None
+         True
 
    .. method:: parse_value(text: str) -> Optional[ScalarValue]
 
@@ -192,10 +192,10 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> boolean_t.parse_value('true')
-	 True
-	 >>> boolean_t.parse_value('foo') is None
-	 True
+         >>> boolean_t.parse_value('true')
+         True
+         >>> boolean_t.parse_value('foo') is None
+         True
 
    .. method:: canonical_string(val: ScalarValue) -> Optional[str]
 
@@ -210,11 +210,11 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> e = decimal64_t.parse_value("002.718281")
-	 >>> e
-	 Decimal('2.7183')
-	 >>> decimal64_t.canonical_string(e)
-	 '2.7183'
+         >>> e = decimal64_t.parse_value("002.718281")
+         >>> e
+         Decimal('2.7183')
+         >>> decimal64_t.canonical_string(e)
+         '2.7183'
 
    .. method:: from_yang(text: str) -> ScalarValue
 
@@ -229,9 +229,9 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> sctx = SchemaContext(dm.schema_data, 'example-5-a', ('example-5-a', ''))
-	 >>> identityref_t.from_yang('ex5b:derived-identity')
-	 ('derived-identity', 'example-5-b')
+         >>> sctx = SchemaContext(dm.schema_data, 'example-5-a', ('example-5-a', ''))
+         >>> identityref_t.from_yang('ex5b:derived-identity')
+         ('derived-identity', 'example-5-b')
 
    .. method:: yang_type() -> YangIdentifier
 
@@ -239,8 +239,8 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> ii_t.yang_type()
-	 'instance-identifier'
+         >>> ii_t.yang_type()
+         'instance-identifier'
 
 .. class:: EmptyType
 
@@ -269,8 +269,8 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> bits_t.bit['un']
-	 1
+         >>> bits_t.bit['un']
+         1
 
 .. class:: BooleanType
 
@@ -298,10 +298,10 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> string_t.length.intervals
-	 [[2, 4]]
-	 >>> 'xxxxy' in string_t  # too long
-	 False
+         >>> string_t.length.intervals
+         [[2, 4]]
+         >>> 'xxxxy' in string_t  # too long
+         False
 
    .. attribute:: patterns
 
@@ -312,12 +312,12 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> string_t.patterns[0].regex
-	 re.compile('^x*y$')
-	 >>> 'xxxy' in string_t
-	 True
-	 >>> 'xxyy' not in string_t  # pattern doesn't match
-	 True
+         >>> string_t.patterns[0].regex
+         re.compile('^x*y$')
+         >>> 'xxxy' in string_t
+         True
+         >>> 'xxyy' not in string_t  # pattern doesn't match
+         True
 
    .. attribute:: invert_patterns
 
@@ -358,8 +358,8 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> enumeration_t.enum['Happy']
-	 4
+         >>> enumeration_t.enum['Happy']
+         4
 
 .. class:: LinkType
 
@@ -378,8 +378,8 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> leafref_t.require_instance
-	 True
+         >>> leafref_t.require_instance
+         True
 
 .. class:: LeafrefType
 
@@ -399,10 +399,10 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> print(leafref_t.path, end='')
-	 LocationPath
-	   Root
-	   Step (child ('string-leaf', None))
+         >>> print(leafref_t.path, end='')
+         LocationPath
+           Root
+           Step (child ('string-leaf', None))
 
    .. attribute:: ref_type
 
@@ -410,10 +410,10 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> type(leafref_t.ref_type)
-	 <class 'yangson.datatype.StringType'>
-	 >>> 'abc' in leafref_t
-	 False
+         >>> type(leafref_t.ref_type)
+         <class 'yangson.datatype.StringType'>
+         >>> 'abc' in leafref_t
+         False
 
 .. class:: InstanceIdentifierType
 
@@ -450,8 +450,8 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> identityref_t.bases
-	 [('base-identity', 'example-5-b')]
+         >>> identityref_t.bases
+         [('base-identity', 'example-5-b')]
 
 .. class:: NumericType
 
@@ -546,10 +546,10 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-	 >>> len(union_t.types)
-	 2
-	 >>> type(union_t.types[0])
-	 <class 'yangson.datatype.StringType'>
+         >>> len(union_t.types)
+         2
+         >>> type(union_t.types[0])
+         <class 'yangson.datatype.StringType'>
 
 .. _7.3: https://tools.ietf.org/html/rfc7950#section-7.3
 .. _9.1: https://tools.ietf.org/html/rfc7950#section-9.1

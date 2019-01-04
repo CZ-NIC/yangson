@@ -26,7 +26,7 @@ document from :ref:`sec-ex1`.
 __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 .. class:: DataModel(yltxt: str, mod_path: List[str], \
-	   description: str = None)
+       description: str = None)
 
    This class provides a basic user-level entry point to the *Yangson*
    library.
@@ -77,7 +77,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    .. rubric:: Public Methods
 
    .. classmethod:: from_file(name: str, mod_path: List[str] = ["."], \
-		    description: str = None) -> DataModel
+            description: str = None) -> DataModel
 
       Initialize the data model from a file containing JSON-encoded
       YANG library data and return the :class:`DataModel`
@@ -90,9 +90,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm = DataModel.from_file("yang-library-ex1.json")
-	 >>> dm.yang_library['ietf-yang-library:modules-state']['module-set-id']
-	 'ae4bf1ddf85a67ab94a9ab71593cd1c78b7f231d'
+         >>> dm = DataModel.from_file("yang-library-ex1.json")
+         >>> dm.yang_library['ietf-yang-library:modules-state']['module-set-id']
+         'ae4bf1ddf85a67ab94a9ab71593cd1c78b7f231d'
 
    .. method:: module_set_id() -> str
 
@@ -104,19 +104,19 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       The method computes the identifier as follows:
 
       - The list of module and sumodule names with revisions in the
-	format ``name@revision`` is created. For (sub)modules that
-	don't specify any revision, the empty string is used in place
-	of ``revision``.
+        format ``name@revision`` is created. For (sub)modules that
+        don't specify any revision, the empty string is used in place
+        of ``revision``.
       - The list is alphabetically sorted, its entries joined
-	back-to-back, and the result converted to a bytestring using
-	the ASCII encoding.
+        back-to-back, and the result converted to a bytestring using
+        the ASCII encoding.
       - The SHA-1 hash of the bytestring is computed, and its
-	hexadecimal digest is the result.
+        hexadecimal digest is the result.
 
       .. doctest::
 
-	 >>> dm.module_set_id()
-	 'ae4bf1ddf85a67ab94a9ab71593cd1c78b7f231d'
+         >>> dm.module_set_id()
+         'ae4bf1ddf85a67ab94a9ab71593cd1c78b7f231d'
 
    .. method:: from_raw(robj: RawObject) -> RootNode
 
@@ -135,11 +135,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> with open("example-data.json") as infile:
-	 ...   ri = json.load(infile)
-	 >>> inst = dm.from_raw(ri)
-	 >>> inst.value
-	 {'example-1:greeting': 'Hi!'}
+         >>> with open("example-data.json") as infile:
+         ...   ri = json.load(infile)
+         >>> inst = dm.from_raw(ri)
+         >>> inst.value
+         {'example-1:greeting': 'Hi!'}
 
    .. method:: get_schema_node(path: SchemaPath) -> Optional[SchemaNode]
 
@@ -149,9 +149,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> root = dm.get_schema_node("/")
-	 >>> root.parent is None
-	 True
+         >>> root = dm.get_schema_node("/")
+         >>> root.parent is None
+         True
 
    .. method:: get_data_node(path: DataPath) -> Optional[DataNode]
 
@@ -162,9 +162,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> leaf = dm.get_data_node("/example-1:greeting")
-	 >>> leaf.parent is root
-	 True
+         >>> leaf = dm.get_data_node("/example-1:greeting")
+         >>> leaf.parent is root
+         True
 
    .. method:: ascii_tree(no_types: bool = False) -> str
 
@@ -174,10 +174,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> print(dm.ascii_tree(), end='')
-	 +--rw example-1:greeting? <string>
-	 >>> print(dm.ascii_tree(True), end='')
-	 +--rw example-1:greeting?
+         >>> print(dm.ascii_tree(), end='')
+         +--rw example-1:greeting? <string>
+         >>> print(dm.ascii_tree(True), end='')
+         +--rw example-1:greeting?
 
    .. method:: parse_instance_id(text: str) -> InstanceRoute
 
@@ -209,11 +209,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       * The following members are available for all nodes:
 
-	- ``class`` – class of the node, with these possible values:
-	  ``root``, ``container``, ``leaf``, ``list``, ``leaf-list``,
-	  ``anydata`` and ``anyxml``
-	- ``description`` – description string as defined in the data
-	  model, or empty string if the node has no description.
+    - ``class`` – class of the node, with these possible values:
+      ``root``, ``container``, ``leaf``, ``list``, ``leaf-list``,
+      ``anydata`` and ``anyxml``
+    - ``description`` – description string as defined in the data
+      model, or empty string if the node has no description.
 
       * Internal nodes (the root node, containers, and lists) have the
         ``children`` member. Its value is an object with a name/value
@@ -226,12 +226,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
         child's schema digest.
 
       * The following members are added for terminal nodes (leafs and
-	leaf-lists):
+        leaf-lists):
 
-	- ``base-type`` – base type of the terminal node such as
-	  ``uint8``, ``string`` etc.
-	- ``derived`` – this member is present only if the node's type
-	  is derived, and contains the name of the derived type.
+    - ``base-type`` – base type of the terminal node such as
+      ``uint8``, ``string`` etc.
+    - ``derived`` – this member is present only if the node's type
+      is derived, and contains the name of the derived type.
 
       * Container nodes also have the ``presence`` member that is
         ``true`` for containers with presence (see sec. `7.5.1`_ of
@@ -242,8 +242,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> len(dm.schema_digest())
-	 222
+         >>> len(dm.schema_digest())
+         222
 
 .. _3.5.3: https://tools.ietf.org/html/rfc8040#section-3.5.3
 .. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1

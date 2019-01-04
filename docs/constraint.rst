@@ -54,8 +54,8 @@ The *constraint* module implements the following classes:
       by violating the constraint.
 
 .. class:: Intervals(intervals: List[Interval], \
-	   parser: Callable[[str], Optional[Number]] = None, \
-	   error_tag: str = None, error_message: str = None)
+       parser: Callable[[str], Optional[Number]] = None, \
+       error_tag: str = None, error_message: str = None)
 
    This class is a subclass of :class:`Constraint`. It represents a
    sequence of intervals that restrict a numeric leaf value or length
@@ -96,17 +96,17 @@ The *constraint* module implements the following classes:
       .. doctest::
 
          >>> 5 in iints
-	 True
+         True
 
    .. automethod:: __str__
 
       .. doctest::
 
-	 >>> str(iints)
-	 '0..10'
+         >>> str(iints)
+         '0..10'
 
    .. method:: restrict_with(expr: str, error_tag: str = None, \
-	       error_message: str = None) -> None
+           error_message: str = None) -> None
 
       Restrict the receiver with range expression *expr*. Each of the
       other two arguments, if specified and not equal to ``None``,
@@ -117,12 +117,12 @@ The *constraint* module implements the following classes:
 
       .. doctest::
 
-	 >>> iints.restrict_with('2..4|6|8..max')
-	 >>> str(iints)
-	 '2..4 | 6 | 8..10'
+         >>> iints.restrict_with('2..4|6|8..max')
+         >>> str(iints)
+         '2..4 | 6 | 8..10'
 
 .. class:: Pattern(pattern: str, invert_match: bool = False, \
-	   error_tag: str = None, error_message: str = None)
+       error_tag: str = None, error_message: str = None)
 
    This class is a subclass of :class:`Constraint`. It represents a
    constraint defined by the regular expression *pattern*, usually
@@ -152,7 +152,7 @@ The *constraint* module implements the following classes:
 
       ::
 
-	 modifier invert-match;
+        modifier invert-match;
 
    .. doctest::
 

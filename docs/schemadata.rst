@@ -57,7 +57,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       directly derived from the key identity.
 
 .. class:: SchemaContext(schema_data: SchemaData, default_ns: \
-	   YangIdentifier, text_mid: ModuleId)
+       YangIdentifier, text_mid: ModuleId)
 
    An object of this class contains the current schema context that is
    passed along during the processing of YANG modules. Its instance
@@ -144,10 +144,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> sorted(dm.schema_data.identity_adjs[('idZ', 'example-3-b')].bases)
-	 [('idX', 'example-3-a'), ('idY', 'example-3-b')]
-	 >>> dm.schema_data.identity_adjs[('idX', 'example-3-a')].derivs
-	 {('idZ', 'example-3-b')}
+         >>> sorted(dm.schema_data.identity_adjs[('idZ', 'example-3-b')].bases)
+         [('idX', 'example-3-a'), ('idY', 'example-3-b')]
+         >>> dm.schema_data.identity_adjs[('idX', 'example-3-a')].derivs
+         {('idZ', 'example-3-b')}
 
    .. attribute:: implement
 
@@ -161,8 +161,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.implement['example-3-b']
-	 '2016-08-22'
+         >>> dm.schema_data.implement['example-3-b']
+         '2016-08-22'
 
    .. attribute:: module_search_path
 
@@ -173,8 +173,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.module_search_path
-	 ['.', '../../../yang-modules/ietf']
+         >>> dm.schema_data.module_search_path
+         ['.', '../../../yang-modules/ietf']
 
    .. attribute:: modules
 
@@ -185,16 +185,16 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> len(dm.schema_data.modules)
-	 6
-	 >>> dm.schema_data.modules[('example-3-a', '2017-08-01')].main_module
-	 ('example-3-a', '2017-08-01')
-	 >>> dm.schema_data.modules[('example-3-suba', '2017-08-01')].main_module
-	 ('example-3-a', '2017-08-01')
-	 >>> dm.schema_data.modules[('example-3-suba', '2017-08-01')].prefix_map['inet']
-	 ('ietf-inet-types', '2013-07-15')
-	 >>> sorted(dm.schema_data.modules[('example-3-a', '2017-08-01')].features)
-	 ['fea1', 'fea2']
+         >>> len(dm.schema_data.modules)
+         6
+         >>> dm.schema_data.modules[('example-3-a', '2017-08-01')].main_module
+         ('example-3-a', '2017-08-01')
+         >>> dm.schema_data.modules[('example-3-suba', '2017-08-01')].main_module
+         ('example-3-a', '2017-08-01')
+         >>> dm.schema_data.modules[('example-3-suba', '2017-08-01')].prefix_map['inet']
+         ('ietf-inet-types', '2013-07-15')
+         >>> sorted(dm.schema_data.modules[('example-3-a', '2017-08-01')].features)
+         ['fea1', 'fea2']
 
    .. rubric:: Public Methods
 
@@ -212,8 +212,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.namespace(('example-3-suba', '2017-08-01'))
-	 'example-3-a'
+         >>> dm.schema_data.namespace(('example-3-suba', '2017-08-01'))
+         'example-3-a'
 
    .. method:: last_revision(name: YangIdentifier) -> ModuleId
 
@@ -225,11 +225,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.last_revision('ietf-inet-types')
-	 ('ietf-inet-types', '2013-07-15')
+         >>> dm.schema_data.last_revision('ietf-inet-types')
+         ('ietf-inet-types', '2013-07-15')
 
    .. method:: prefix2ns(prefix: YangIdentifier, mid: ModuleId) \
-		    -> YangIdentifier
+            -> YangIdentifier
 
       Return namespace identifier corresponding to *prefix*. The
       module or submodule context, in which the prefix is resolved, is
@@ -242,11 +242,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.prefix2ns('oin', ('example-3-b', '2016-08-22'))
-	 'ietf-inet-types'
+         >>> dm.schema_data.prefix2ns('oin', ('example-3-b', '2016-08-22'))
+         'ietf-inet-types'
 
    .. method:: resolve_pname(pname: PrefName, mid: ModuleId) \
-		    -> Tuple[YangIdentifier, ModuleId]
+            -> Tuple[YangIdentifier, ModuleId]
 
       Resolve :term:`prefixed name` *pname* and return a tuple
       consisting of an unprefixed name and a :term:`module identifier`
@@ -262,12 +262,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.resolve_pname('oin:port-number', ('example-3-b', '2016-08-22'))
-	 ('port-number', ('ietf-inet-types', '2010-09-24'))
+         >>> dm.schema_data.resolve_pname('oin:port-number', ('example-3-b', '2016-08-22'))
+         ('port-number', ('ietf-inet-types', '2010-09-24'))
 
 
    .. method:: translate_pname(pname: PrefName, mid: ModuleId) \
-	       -> QualName
+           -> QualName
 
       Translate :term:`prefixed name` *pname* to a :term:`qualified
       name`. The argument *mid* specifies the (sub)module in which
@@ -282,11 +282,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.translate_pname('oin:port-number', ('example-3-b', '2016-08-22'))
-	 ('port-number', 'ietf-inet-types')
+         >>> dm.schema_data.translate_pname('oin:port-number', ('example-3-b', '2016-08-22'))
+         ('port-number', 'ietf-inet-types')
 
    .. method:: translate_node_id(ni: PrefName, sctx:SchemaContext) \
-	       -> QualName
+           -> QualName
 
       Translate :term:`node identifier` *ni* to a :term:`qualified
       name`. The argument *sctx* contains a :class:`SchemaContext` in
@@ -302,10 +302,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
          >>> sctx1 = SchemaContext(dm.schema_data, 'example-3-b', ('example-3-a', '2017-08-01'))
          >>> dm.schema_data.translate_node_id('bar', sctx1)
-	 ('bar', 'example-3-b')
+         ('bar', 'example-3-b')
 
    .. method:: prefix(imod: YangIdentifier, mid: ModuleId) -> \
-		    YangIdentifier
+            YangIdentifier
 
       Return namespace prefix declared for :term:`implemented module`
       *imod* in the module or submodule whose :term:`module
@@ -314,19 +314,19 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       This method may raise the following exceptions:
 
       * :exc:`~.ModuleNotImplemented` – if module *imod* is not
-	implemented.
+        implemented.
       * :exc:`~.ModuleNotRegistered` – if (sub)module identified by
-	*mid* is not registered in YANG library.
+        *mid* is not registered in YANG library.
       * :exc:`~.ModuleNotImported` – if *imod* is not imported in the
-	(sub)module identified by *mid*.
+        (sub)module identified by *mid*.
 
       .. doctest::
 
-	 >>> dm.schema_data.prefix("example-3-a", ("example-3-b", "2016-08-22"))
-	 'ex3a'
+         >>> dm.schema_data.prefix("example-3-a", ("example-3-b", "2016-08-22"))
+         'ex3a'
 
    .. method:: sni2route(sni: SchemaNodeId, sctx: SchemaContext) \
-		    -> SchemaRoute
+            -> SchemaRoute
 
       Translate :term:`schema node identifier` *sni* to a
       :term:`schema route`.  The argument *sctx* specifies the
@@ -340,8 +340,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
          >>> sctx2 = SchemaContext(dm.schema_data, 'example-3-b', ('example-3-b', '2016-08-22'))
-	 >>> dm.schema_data.sni2route('/ex3a:top/ex3a:bar', sctx2)
-	 [('top', 'example-3-a'), ('bar', 'example-3-a')]
+         >>> dm.schema_data.sni2route('/ex3a:top/ex3a:bar', sctx2)
+         [('top', 'example-3-a'), ('bar', 'example-3-a')]
 
    .. staticmethod:: path2route(path: SchemaPath) -> SchemaRoute
 
@@ -354,11 +354,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.path2route('/example-3-a:top/bar')
-	 [('top', 'example-3-a'), ('bar', 'example-3-a')]
+         >>> dm.schema_data.path2route('/example-3-a:top/bar')
+         [('top', 'example-3-a'), ('bar', 'example-3-a')]
 
    .. method:: get_definition(stmt: Statement, sctx: SchemaContext) \
-		    -> Tuple[Statement, SchemaContext]
+            -> Tuple[Statement, SchemaContext]
 
       Find the **grouping** or **typedef** statement to which the
       statement in the *stmt* argument refers. The argument *sctx*
@@ -370,29 +370,29 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       This method may raise the following exceptions:
 
       * :exc:`~.ValueError` – if the *stmt* statement is neither
-	**uses** nor **type** statement.
+        **uses** nor **type** statement.
       * :exc:`~.ModuleNotRegistered` – if the (sub)module identified by
-	*mid* is not part of the data model.
+        *mid* is not part of the data model.
       * :exc:`~.UnknownPrefix` – if the prefix specified in the argument
-	of the *stmt* statement is not declared in the *mid*
-	(sub)module.
+        of the *stmt* statement is not declared in the *mid*
+        (sub)module.
       * :exc:`~.DefinitionNotFound` – if the corresponding definition
-	statement is not found.
+        statement is not found.
 
       .. doctest::
 
-	 >>> bmod = dm.schema_data.modules[('example-3-b', '2016-08-22')].statement
-	 >>> baztype = bmod.find1("augment").find1("leaf").find1("type")
-	 >>> pn = dm.schema_data.get_definition(baztype, sctx2)
-	 >>> pn[0].keyword
-	 'typedef'
-	 >>> pn[0].argument
-	 'port-number'
-	 >>> pn[1].text_mid
-	 ('ietf-inet-types', '2010-09-24')
+         >>> bmod = dm.schema_data.modules[('example-3-b', '2016-08-22')].statement
+         >>> baztype = bmod.find1("augment").find1("leaf").find1("type")
+         >>> pn = dm.schema_data.get_definition(baztype, sctx2)
+         >>> pn[0].keyword
+         'typedef'
+         >>> pn[0].argument
+         'port-number'
+         >>> pn[1].text_mid
+         ('ietf-inet-types', '2010-09-24')
 
    .. method:: is_derived_from(identity: QualName, base: \
-		    QualName) -> bool
+            QualName) -> bool
 
       Return ``True`` if the identity specified in the *identity*
       argument is derived (directly or transitively) from the identity
@@ -400,8 +400,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.is_derived_from(('idZ', 'example-3-b'), ('idX', 'example-3-a'))
-	 True
+         >>> dm.schema_data.is_derived_from(('idZ', 'example-3-b'), ('idX', 'example-3-a'))
+         True
 
    .. method:: derived_from(identity: QualName) -> MutableSet[QualName]
 
@@ -410,8 +410,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.derived_from(('idX', 'example-3-a'))
-	 {('idZ', 'example-3-b')}
+         >>> dm.schema_data.derived_from(('idX', 'example-3-a'))
+         {('idZ', 'example-3-b')}
 
    .. method:: derived_from_all(identities: List[QualName]) -> MutableSet[QualName]
 
@@ -421,10 +421,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.schema_data.derived_from_all([('idX', 'example-3-a'), ('idY', 'example-3-b')])
-	 {('idZ', 'example-3-b')}
-	 >>> dm.schema_data.derived_from_all([('idX', 'example-3-a'), ('idZ', 'example-3-b')])
-	 set()
+         >>> dm.schema_data.derived_from_all([('idX', 'example-3-a'), ('idY', 'example-3-b')])
+         {('idZ', 'example-3-b')}
+         >>> dm.schema_data.derived_from_all([('idX', 'example-3-a'), ('idZ', 'example-3-b')])
+         set()
 
    .. method:: if_features(stmt: Statement, mid: ModuleId) -> bool
 
@@ -438,18 +438,18 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       This method may raise the following exceptions:
 
       * :exc:`~.InvalidFeatureExpression` – if the argument of an
-	**if-feature** statement is not syntactically correct.
+        **if-feature** statement is not syntactically correct.
       * :exc:`~.ModuleNotRegistered` – if the (sub)module identified by
-	*mid* is not part of the data model.
+        *mid* is not part of the data model.
       * :exc:`~.UnknownPrefix` – if a prefix of a feature name is not
-	declared in the *mid* (sub)module.
+        declared in the *mid* (sub)module.
 
       .. doctest::
 
-	 >>> amod = dm.schema_data.modules[('example-3-a', '2017-08-01')].statement
-	 >>> foo = amod.find1("container").find1("leaf")
-	 >>> dm.schema_data.if_features(foo, ('example-3-a', '2017-08-01'))
-	 True
+         >>> amod = dm.schema_data.modules[('example-3-a', '2017-08-01')].statement
+         >>> foo = amod.find1("container").find1("leaf")
+         >>> dm.schema_data.if_features(foo, ('example-3-a', '2017-08-01'))
+         True
 
 .. class:: FeatureExprParser(text: str, schema_data: SchemaData, mid: ModuleId)
 
@@ -492,16 +492,16 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       This method may raise the following exceptions:
 
       * :exc:`~.InvalidFeatureExpression` – if the input is not a
-	syntactically correct feature expression.
+        syntactically correct feature expression.
       * :exc:`~.UnknownPrefix` – if a prefix of a feature name is not
-	declared.
+        declared.
 
       .. doctest::
 
-	 >>> from yangson.schemadata import FeatureExprParser
-	 >>> FeatureExprParser('ex3a:fea1 and not (ex3a:fea1 or ex3a:fea2)',
-	 ... dm.schema_data, ('example-3-a', '2017-08-01')).parse()
-	 False
+         >>> from yangson.schemadata import FeatureExprParser
+         >>> FeatureExprParser('ex3a:fea1 and not (ex3a:fea1 or ex3a:fea2)',
+         ... dm.schema_data, ('example-3-a', '2017-08-01')).parse()
+         False
 
 .. _5.6.5: https://tools.ietf.org/html/rfc7950#section-5.6.5
 .. _5.1: https://tools.ietf.org/html/rfc7950#section-5.1

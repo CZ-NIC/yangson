@@ -86,8 +86,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> fsn.name
-	 'foo'
+         >>> fsn.name
+         'foo'
 
    .. attribute:: ns
 
@@ -96,8 +96,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> fsn.ns
-	 'example-4-a'
+         >>> fsn.ns
+         'example-4-a'
 
    .. attribute:: parent
 
@@ -105,12 +105,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> type(rsn.parent)
-	 <class 'yangson.schemanode.CaseNode'>
-	 >>> rsn.parent.name
-	 'fooref'
-	 >>> rsn.parent.ns
-	 'example-4-b'
+         >>> type(rsn.parent)
+         <class 'yangson.schemanode.CaseNode'>
+         >>> rsn.parent.name
+         'fooref'
+         >>> rsn.parent.ns
+         'example-4-b'
 
    .. attribute:: description
 
@@ -119,10 +119,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> dm.get_data_node('/example-4-a:bag').description
-	 'Top-level container.'
-	 >>> rsn.description is None
-	 True
+         >>> dm.get_data_node('/example-4-a:bag').description
+         'Top-level container.'
+         >>> rsn.description is None
+         True
 
    .. attribute:: must
 
@@ -148,8 +148,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> fsn.qual_name
-	 ('foo', 'example-4-a')
+         >>> fsn.qual_name
+         ('foo', 'example-4-a')
 
    .. attribute:: config
 
@@ -158,8 +158,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> fsn.config
-	 True
+         >>> fsn.config
+         True
 
    .. attribute:: mandatory
 
@@ -168,8 +168,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> rsn.mandatory
-	 False
+         >>> rsn.mandatory
+         False
 
    .. rubric:: Public Methods
 
@@ -177,15 +177,15 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> rsn.schema_root().parent is None
-	 True
+         >>> rsn.schema_root().parent is None
+         True
 
    .. automethod:: content_type() -> ContentType
 
       .. doctest::
 
-	 >>> rsn.content_type().name
-	 'config'
+         >>> rsn.content_type().name
+         'config'
 
    .. method:: data_parent() -> Optional[InternalNode]
 
@@ -194,9 +194,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> bsn = rsn.data_parent()
-	 >>> bsn.qual_name
-	 ('bag', 'example-4-a')
+         >>> bsn = rsn.data_parent()
+         >>> bsn.qual_name
+         ('bag', 'example-4-a')
 
    .. method:: iname() -> InstanceName
 
@@ -204,10 +204,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> bsn.iname()
-	 'example-4-a:bag'
-	 >>> fsn.iname()
-	 'foo'
+         >>> bsn.iname()
+         'example-4-a:bag'
+         >>> fsn.iname()
+         'foo'
 
    .. method:: data_path() -> DataPath
 
@@ -215,10 +215,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> fsn.data_path()
-	 '/example-4-a:bag/foo'
-	 >>> rsn.data_path()
-	 '/example-4-a:bag/example-4-b:fooref'
+         >>> fsn.data_path()
+         '/example-4-a:bag/foo'
+         >>> rsn.data_path()
+         '/example-4-a:bag/example-4-b:fooref'
 
    .. method:: state_roots() -> List[DataPath]
 
@@ -230,8 +230,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> bsn.state_roots()
-	 ['/example-4-a:bag/bar']
+         >>> bsn.state_roots()
+         ['/example-4-a:bag/bar']
 
    .. method:: from_raw(rval: RawValue, jptr: JSONPointer = "") -> Value
 
@@ -248,14 +248,14 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> raw = {'baz': [None]}
-	 >>> type(raw)
-	 <class 'dict'>
-	 >>> cooked = bsn.from_raw(raw, '/example-4-a:bag')
-	 >>> cooked
-	 {'baz': (None,)}
-	 >>> type(cooked)
-	 <class 'yangson.instvalue.ObjectValue'>
+         >>> raw = {'baz': [None]}
+         >>> type(raw)
+         <class 'dict'>
+         >>> cooked = bsn.from_raw(raw, '/example-4-a:bag')
+         >>> cooked
+         {'baz': (None,)}
+         >>> type(cooked)
+         <class 'yangson.instvalue.ObjectValue'>
 
 .. class:: InternalNode
 
@@ -270,13 +270,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> [c.name for c in bsn.children]
-	 ['foo', 'bar', 'opts']
+         >>> [c.name for c in bsn.children]
+         ['foo', 'bar', 'opts']
 
    .. rubric:: Public Methods
 
    .. method:: get_child(name: YangIdentifier, ns: YangIdentifier = \
-	       None) -> Optional[SchemaNode]
+           None) -> Optional[SchemaNode]
 
       Return receiver's child schema node whose name is *name* and
       namespace *ns*. If the *ns* argument is ``None`` (default), then
@@ -285,9 +285,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> barsn = bsn.get_child('bar', 'example-4-a')
-	 >>> barsn.qual_name
-	 ('bar', 'example-4-a')
+         >>> barsn = bsn.get_child('bar', 'example-4-a')
+         >>> barsn.qual_name
+         ('bar', 'example-4-a')
 
    .. method:: get_schema_descendant(route: SchemaRoute) -> Optional[SchemaNode]
 
@@ -297,14 +297,14 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> bazsn = bsn.get_schema_descendant(
-	 ... [('opts','example-4-a'), ('a','example-4-a'), ('baz','example-4-a')])
-	 >>> bazsn.qual_name
-	 ('baz', 'example-4-a')
+         >>> bazsn = bsn.get_schema_descendant(
+         ... [('opts','example-4-a'), ('a','example-4-a'), ('baz','example-4-a')])
+         >>> bazsn.qual_name
+         ('baz', 'example-4-a')
 
 
    .. method:: get_data_child(name: YangIdentifier, ns: YangIdentifier \
-	       = None) -> Optional[DataNode]
+           = None) -> Optional[DataNode]
 
       Return receiver's data child whose name is *name* and namespace
       *ns*. If the *ns* argument is ``None`` (default), then the receiver's
@@ -318,8 +318,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> bsn.get_data_child('baz', 'example-4-a').qual_name
-	 ('baz', 'example-4-a')
+         >>> bsn.get_data_child('baz', 'example-4-a').qual_name
+         ('baz', 'example-4-a')
 
    .. method:: filter_children(ctype: ContentType = None) -> List[SchemaNode]
 
@@ -332,10 +332,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> [c.name for c in bsn.filter_children(ContentType.config)]
-	 ['foo', 'opts']
-	 >>> [c.name for c in bsn.filter_children(ContentType.nonconfig)]
-	 ['bar', 'opts']
+         >>> [c.name for c in bsn.filter_children(ContentType.config)]
+         ['foo', 'opts']
+         >>> [c.name for c in bsn.filter_children(ContentType.nonconfig)]
+         ['bar', 'opts']
 
    .. method:: data_children() -> List[DataNode]
 
@@ -349,8 +349,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> [c.name for c in bsn.data_children()]
-	 ['foo', 'bar', 'baz', 'fooref']
+         >>> [c.name for c in bsn.data_children()]
+         ['foo', 'bar', 'baz', 'fooref']
 
 .. class:: GroupNode
 
@@ -374,10 +374,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> list(dm.schema.annotations.keys())
-	 [('origin', 'ietf-origin')]
-	 >>> str(dm.schema.annotations[('origin', 'ietf-origin')].type)
-	 'origin-ref(identityref)'
+         >>> list(dm.schema.annotations.keys())
+         [('origin', 'ietf-origin')]
+         >>> str(dm.schema.annotations[('origin', 'ietf-origin')].type)
+         'origin-ref(identityref)'
 
 .. class:: DataNode
 
@@ -397,8 +397,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> fsn.default_deny
-	 <DefaultDeny.write: 2>
+         >>> fsn.default_deny
+         <DefaultDeny.write: 2>
 
    .. rubric:: Public Methods
 
@@ -411,18 +411,18 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> obag = bsn.orphan_instance({'foo': 54, 'bar': True})
-	 >>> obag.name
-	 'example-4-a:bag'
-	 >>> obag['foo'].value
-	 54
-	 >>> obag.parinst is None
-	 True
-	 >>> obag.siblings
-	 {}
+         >>> obag = bsn.orphan_instance({'foo': 54, 'bar': True})
+         >>> obag.name
+         'example-4-a:bag'
+         >>> obag['foo'].value
+         54
+         >>> obag.parinst is None
+         True
+         >>> obag.siblings
+         {}
 
    .. method:: split_instance_route(route: InstanceRoute) -> \
-	       Optional[Tuple[InstanceRoute, InstanceRoute]]
+           Optional[Tuple[InstanceRoute, InstanceRoute]]
 
       Split *route* into two :class:`~.instance.InstanceRoute`\ s. The
       first item of the returned tuple is the part up to the receiver,
@@ -430,12 +430,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> irt = dm.parse_resource_id('/example-4-a:bag/foo')
-	 >>> pre, post = bsn.split_instance_route(irt)
-	 >>> str(pre)
-	 '/example-4-a:bag'
-	 >>> str(post)
-	 '/foo'
+         >>> irt = dm.parse_resource_id('/example-4-a:bag/foo')
+         >>> pre, post = bsn.split_instance_route(irt)
+         >>> str(pre)
+         '/example-4-a:bag'
+         >>> str(post)
+         '/foo'
 
 .. class:: TerminalNode
 
@@ -452,8 +452,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> type(rsn.type)
-	 <class 'yangson.datatype.LeafrefType'>
+         >>> type(rsn.type)
+         <class 'yangson.datatype.LeafrefType'>
 
    .. rubric:: Properties
 
@@ -465,8 +465,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> barsn.default
-	 True
+         >>> barsn.default
+         True
 
 .. class:: ContainerNode
 
@@ -488,8 +488,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> bsn.presence
-	 True
+         >>> bsn.presence
+         True
 
 .. class:: SequenceNode
 
@@ -507,9 +507,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> qsn = dm.get_data_node('/example-4-b:quux')
-	 >>> qsn.min_elements
-	 0
+         >>> qsn = dm.get_data_node('/example-4-b:quux')
+         >>> qsn.min_elements
+         0
 
    .. attribute:: max_elements
 
@@ -520,8 +520,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> qsn.max_elements
-	 2
+         >>> qsn.max_elements
+         2
 
    .. attribute:: user_ordered
 
@@ -533,8 +533,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> qsn.user_ordered
-	 True
+         >>> qsn.user_ordered
+         True
 
    .. rubric:: Public Methods
 
@@ -553,8 +553,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> qsn.entry_from_raw('2.7182')
-	 Decimal('2.7182')
+         >>> qsn.entry_from_raw('2.7182')
+         Decimal('2.7182')
 
 .. class:: ListNode
 
@@ -605,9 +605,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> osn = bsn.get_child('opts', 'example-4-a')
-	 >>> osn.default_case
-	 ('a', 'example-4-a')
+         >>> osn = bsn.get_child('opts', 'example-4-a')
+         >>> osn.default_case
+         ('a', 'example-4-a')
 
 .. class:: CaseNode
 

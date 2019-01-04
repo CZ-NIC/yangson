@@ -32,7 +32,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    >>> mex5a = dm.schema_data.modules[('example-5-a', '2018-10-25')].statement
 
 .. class:: Statement(kw: YangIdentifier, arg: Optional[str], pref: \
-	   YangIdentifier = None)
+       YangIdentifier = None)
 
    An instance of this class represents a parsed YANG statement. The
    constructor arguments *kw*, *arg* and *pref* initialize instance
@@ -79,14 +79,16 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       List of substatements.
 
-      >>> len(mex5a.substatements)
-      16
+      .. doctest::
+
+         >>> len(mex5a.substatements)
+         17
 
    .. rubric:: Public Methods
 
    .. method:: find1(kw: YangIdentifier, arg: str = None, pref: \
-	       YangIdentifier = None, required: bool = False) ->
-	       Optional[Statement]
+           YangIdentifier = None, required: bool = False) ->
+           Optional[Statement]
 
       Return the first substatement of the receiver with a matching
       keyword and, optionally, argument. In order to match, the local
@@ -113,7 +115,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          yangson.statement.StatementNotFound: `rpc' in `module "example-5-a" { ... }'
 
    .. method:: find_all(kw: YangIdentifier, pref: YangIdentifier = \
-	       None) -> List[Statement]
+           None) -> List[Statement]
 
       Return the list of all substatements with a matching
       keyword. The conditions on keyword matching are the same as for
@@ -127,7 +129,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          []
 
    .. method:: get_definition(name: YangIdentifier, kw:
-	       YangIdentifier) -> Statement
+           YangIdentifier) -> Statement
 
       Search the receiver's parent statement and then all ancestor
       statements from inside out for the definition whose name is
@@ -178,8 +180,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       * :exc:`~.ModuleNameMismatch` – if the module name doesn't match
         the :attr:`name` attribute
-      * :exc:`~.ModuleRevisionMismatch` – if the most recent revision
-	date doesn't match the :attr:`rev` attribute.
+      * :exc:`~.ModuleRevisionMismatch` – if the most recent revision date
+        doesn't match the :attr:`rev` attribute.
 
       .. doctest::
 

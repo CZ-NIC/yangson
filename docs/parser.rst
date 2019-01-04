@@ -58,8 +58,8 @@ The *parser* module implements the following class:
 
       .. doctest:
 
-	 >>> str(p)
-	 '§x \t #quu0a,foo:bar< qwerty'
+         >>> str(p)
+         '§x \t #quu0a,foo:bar< qwerty'
 
    .. method:: adv_skip_ws() -> bool
 
@@ -69,17 +69,17 @@ The *parser* module implements the following class:
 
       .. doctest::
 
-	 >>> p.adv_skip_ws()
-	 True
-	 >>> str(p)
-	 'x \t §#quu0a,foo:bar< qwerty'
+         >>> p.adv_skip_ws()
+         True
+         >>> str(p)
+         'x \t §#quu0a,foo:bar< qwerty'
 
    .. automethod:: at_end
 
       .. doctest::
 
-	 >>> p.at_end()
-	 False
+         >>> p.at_end()
+         False
 
    .. method:: char(c: str) -> None
 
@@ -89,13 +89,13 @@ The *parser* module implements the following class:
 
       * :exc:`~.EndOfInput` – if the parser is past the end of input.
       * :exc:`~.UnexpectedInput` – if the next character is different
-	from *c*.
+        from *c*.
 
       .. doctest::
 
-	 >>> p.char("#")
-	 >>> str(p)
-	 'x \t #§quu0a,foo:bar< qwerty'
+         >>> p.char("#")
+         >>> str(p)
+         'x \t #§quu0a,foo:bar< qwerty'
 
    .. method:: dfa(ttab: TransitionTable, init: int = 0) -> int
 
@@ -111,10 +111,10 @@ The *parser* module implements the following class:
       entry is a dictionary in which:
 
       * Keys are single-character strings or the empty string. The
-	latter specifies the default transition that takes place
-	whenever none of the other keys matches.
+        latter specifies the default transition that takes place
+        whenever none of the other keys matches.
       * Values are *functions* with no argument that have to return a
-	new state (integer), and may also have side effects.
+        new state (integer), and may also have side effects.
 
       The method starts in the initial state *init*, reads the next
       input character and performs a lookup in the transition
@@ -128,10 +128,10 @@ The *parser* module implements the following class:
 
       .. doctest::
 
-	 >>> p.dfa([{"": lambda: 0, "0": lambda: -1}])
-	 -1
-	 >>> str(p)
-	 'x \t #quu§0a,foo:bar< qwerty'
+         >>> p.dfa([{"": lambda: 0, "0": lambda: -1}])
+         -1
+         >>> str(p)
+         'x \t #quu§0a,foo:bar< qwerty'
 
    .. method:: line_column() -> Tuple[int, int]
 
@@ -140,11 +140,11 @@ The *parser* module implements the following class:
 
       .. doctest::
 
-	 >>> p.line_column()
-	 (1, 8)
+         >>> p.line_column()
+         (1, 8)
 
    .. method:: match_regex(regex: Pattern, required: bool = False, \
-	       meaning: str = "") -> str
+           meaning: str = "") -> str
 
       Parse input text starting from the current :attr:`offset` by matching
       it against a regular expression. The argument *regex* is a
@@ -162,8 +162,8 @@ The *parser* module implements the following class:
 
       .. doctest::
 
-	 >>> p.match_regex(re.compile("[0-9a-f]+"), meaning="hexa")
-	 '0a'
+         >>> p.match_regex(re.compile("[0-9a-f]+"), meaning="hexa")
+         '0a'
 
    .. method:: one_of(chset: str) -> str
 
@@ -174,8 +174,8 @@ The *parser* module implements the following class:
 
       .. doctest::
 
-	 >>> p.one_of(".?!,")
-	 ','
+         >>> p.one_of(".?!,")
+         ','
 
    .. method:: peek() -> str
 
@@ -185,13 +185,13 @@ The *parser* module implements the following class:
 
       .. doctest::
 
-	 >>> p.peek()
-	 'f'
-	 >>> str(p)
-	 'x \t #quu0a,§foo:bar< qwerty'
+         >>> p.peek()
+         'f'
+         >>> str(p)
+         'x \t #quu0a,§foo:bar< qwerty'
 
    .. method:: prefixed_name() -> Tuple[YangIdentifier, \
-	       Optional[YangIdentifier]]
+           Optional[YangIdentifier]]
 
       Parse a :term:`prefixed name` and return a tuple containing the
       (local) name as the first component, and the prefix or ``None``
@@ -199,17 +199,17 @@ The *parser* module implements the following class:
 
       .. doctest::
 
-	 >>> p.prefixed_name()
-	 ('bar', 'foo')
+         >>> p.prefixed_name()
+         ('bar', 'foo')
 
    .. automethod:: remaining
 
       .. doctest::
 
-	 >>> p.remaining()
-	 '< qwerty'
-	 >>> p.at_end()
-	 True
+         >>> p.remaining()
+         '< qwerty'
+         >>> p.at_end()
+         True
 
    .. method:: skip_ws() -> bool
 
@@ -217,9 +217,9 @@ The *parser* module implements the following class:
 
       .. doctest::
 
-	 >>> q = Parser("\npi=3.14.159xyz!foo-bar")
-	 >>> q.skip_ws()
-	 True
+         >>> q = Parser("\npi=3.14.159xyz!foo-bar")
+         >>> q.skip_ws()
+         True
 
    .. method:: test_string(string: str) -> bool
 
@@ -232,10 +232,10 @@ The *parser* module implements the following class:
 
       .. doctest::
 
-	 >>> q.test_string("pi=")
-	 True
-	 >>> str(q)
-	 '\npi=§3.14.159xyz!foo-bar'
+         >>> q.test_string("pi=")
+         True
+         >>> str(q)
+         '\npi=§3.14.159xyz!foo-bar'
 
    .. method:: unsigned_float() -> float
 
@@ -244,16 +244,16 @@ The *parser* module implements the following class:
 
       .. doctest::
 
-	 >>> q.unsigned_float()
-	 3.14
+         >>> q.unsigned_float()
+         3.14
 
    .. automethod:: unsigned_integer
 
       .. doctest::
 
-	 >>> q.offset += 1    # skipping the dot
-	 >>> q.unsigned_integer()
-	 159
+         >>> q.offset += 1    # skipping the dot
+         >>> q.unsigned_integer()
+         159
 
    .. method:: up_to(term: str) -> str
 
@@ -263,12 +263,12 @@ The *parser* module implements the following class:
 
       .. doctest::
 
-	 >>> q.up_to("!")
-	 'xyz'
+         >>> q.up_to("!")
+         'xyz'
 
    .. automethod:: yang_identifier
 
       .. doctest::
 
-	 >>> q.yang_identifier()
-	 'foo-bar'
+         >>> q.yang_identifier()
+         'foo-bar'

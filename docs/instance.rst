@@ -38,8 +38,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    >>> inst = dm.from_raw(ri)
 
 .. class:: InstanceNode(key: InstanceKey, value: Value, \
-	   parinst: Optional[InstanceNode], \
-	   schema_node: DataNode, timestamp: datetime.datetime)
+       parinst: Optional[InstanceNode], \
+       schema_node: DataNode, timestamp: datetime.datetime)
 
    The *key* argument is the key of the instance in the parent
    structure, i.e. either :term:`instance name` for an
@@ -193,7 +193,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       types. The argument *key* is
 
       * an integer index, if the receiver's value is an array
-	(negative indices are also supported), or
+        (negative indices are also supported), or
 
       * an :term:`instance name`, if the receiver's value is an object.
 
@@ -207,26 +207,26 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> bag = inst['example-2:bag']
-	 >>> foo = bag['foo']
-	 >>> foo.path
-	 ('example-2:bag', 'foo')
-	 >>> foo.json_pointer()
-	 '/example-2:bag/foo'
-	 >>> bag['baz']
-	 Traceback (most recent call last):
-	 ...
-	 yangson.instance.NonexistentInstance: [/example-2:bag] member baz
-	 >>> foo6 = foo[0]
-	 >>> foo6.value['number']
-	 6
-	 >>> fool = foo[-1]
-	 >>> fool.value['in-words']
-	 'eight'
-	 >>> foo[4]
-	 Traceback (most recent call last):
-	 ...
-	 yangson.instance.NonexistentInstance: [/example-2:bag/foo] entry 4
+         >>> bag = inst['example-2:bag']
+         >>> foo = bag['foo']
+         >>> foo.path
+         ('example-2:bag', 'foo')
+         >>> foo.json_pointer()
+         '/example-2:bag/foo'
+         >>> bag['baz']
+         Traceback (most recent call last):
+         ...
+         yangson.instance.NonexistentInstance: [/example-2:bag] member baz
+         >>> foo6 = foo[0]
+         >>> foo6.value['number']
+         6
+         >>> fool = foo[-1]
+         >>> fool.value['in-words']
+         'eight'
+         >>> foo[4]
+         Traceback (most recent call last):
+         ...
+         yangson.instance.NonexistentInstance: [/example-2:bag/foo] entry 4
 
    .. method:: __iter__()
 
@@ -238,16 +238,16 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> sorted([m for m in bag])
-	 ['bar', 'foo']
+         >>> sorted([m for m in bag])
+         ['bar', 'foo']
 
       However, if the receiver's value is an array, the returned
       iterator yields successive :class:`ArrayEntry` instances:
 
       .. doctest::
 
-	 >>> [e.json_pointer() for e in foo]
-	 ['/example-2:bag/foo/0', '/example-2:bag/foo/1', '/example-2:bag/foo/2', '/example-2:bag/foo/3']
+         >>> [e.json_pointer() for e in foo]
+         ['/example-2:bag/foo/0', '/example-2:bag/foo/1', '/example-2:bag/foo/2', '/example-2:bag/foo/3']
 
       An attempt to iterate over an :class:`InstanceNode` that has a
       scalar value raises :exc:`~.InstanceValueError`.
@@ -260,11 +260,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> inst.is_internal()
-	 True
+         >>> inst.is_internal()
+         True
 
    .. method:: put_member(name: InstanceName, value: Union[RawValue, \
-	       Value], raw: bool = False) -> InstanceNode
+           Value], raw: bool = False) -> InstanceNode
 
       Return receiver's member *name* with a new value specified by the
       *value* argument. The *raw* flag has to be set to ``True`` if
@@ -279,18 +279,18 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> nbar = bag.put_member('bar', False)
-	 >>> nbar.value
-	 False
-	 >>> bag.value['bar']  # bag is unchanged
-	 True
-	 >>> e2bag = bag.put_member('baz', 3.1415926).up()  # baz is created
-	 >>> sorted(e2bag.value.keys())
-	 ['bar', 'baz', 'foo']
-	 >>> bag.put_member('quux', 0)
-	 Traceback (most recent call last):
-	 ...
-	 yangson.schemanode.NonexistentSchemaNode: quux in module example-2
+         >>> nbar = bag.put_member('bar', False)
+         >>> nbar.value
+         False
+         >>> bag.value['bar']  # bag is unchanged
+         True
+         >>> e2bag = bag.put_member('baz', 3.1415926).up()  # baz is created
+         >>> sorted(e2bag.value.keys())
+         ['bar', 'baz', 'foo']
+         >>> bag.put_member('quux', 0)
+         Traceback (most recent call last):
+         ...
+         yangson.schemanode.NonexistentSchemaNode: quux in module example-2
 
    .. method:: delete_item(key: InstanceKey) -> InstanceNode
 
@@ -303,16 +303,16 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> xbag = e2bag.delete_item('baz')
-	 >>> sorted(xbag.value.keys())
-	 ['bar', 'foo']
-	 >>> sorted(e2bag.value.keys())  # e2bag is unvchanged
-	 ['bar', 'baz', 'foo']
-	 >>> xfoo = foo.delete_item(0)
-	 >>> len(xfoo.value)
-	 3
-	 >>> len(foo.value)   # foo is unchanged
-	 4
+         >>> xbag = e2bag.delete_item('baz')
+         >>> sorted(xbag.value.keys())
+         ['bar', 'foo']
+         >>> sorted(e2bag.value.keys())  # e2bag is unvchanged
+         ['bar', 'baz', 'foo']
+         >>> xfoo = foo.delete_item(0)
+         >>> len(xfoo.value)
+         3
+         >>> len(foo.value)   # foo is unchanged
+         4
 
    .. method:: look_up(**keys: Dict[InstanceName, ScalarValue]) -> ArrayEntry
 
@@ -330,9 +330,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo8 = foo.look_up(number=8)
-	 >>> foo8.json_pointer()
-	 '/example-2:bag/foo/3'
+         >>> foo8 = foo.look_up(number=8)
+         >>> foo8.json_pointer()
+         '/example-2:bag/foo/3'
 
    .. method:: up() -> InstanceNode
 
@@ -343,23 +343,23 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo.up().name
-	 'example-2:bag'
-	 >>> inst.up()
-	 Traceback (most recent call last):
-	 ...
-	 yangson.instance.NonexistentInstance: [/] up of top
+         >>> foo.up().name
+         'example-2:bag'
+         >>> inst.up()
+         Traceback (most recent call last):
+         ...
+         yangson.instance.NonexistentInstance: [/] up of top
 
    .. automethod:: top() -> InstanceNode
 
       .. doctest::
 
-	 >>> e2inst = e2bag.top()
-	 >>> e2inst.value['example-2:bag']['baz']
-	 3.1415926
+         >>> e2inst = e2bag.top()
+         >>> e2inst.value['example-2:bag']['baz']
+         3.1415926
 
    .. method:: update(value: Union[RawValue, Value], raw: bool = \
-	       False) -> InstanceNode
+           False) -> InstanceNode
 
       Return a new instance node that is a copy of the receiver with a
       value specified by the *value* argument. The *raw* flag has to
@@ -367,9 +367,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> ebar = bag['bar'].update(False)
-	 >>> ebar.value
-	 False
+         >>> ebar = bag['bar'].update(False)
+         >>> ebar.value
+         False
 
       In the following example, the string ``'2.7182818'`` is an
       acceptable :term:`raw value` for the *baz* leaf whose type is
@@ -379,13 +379,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> e3baz = e2bag['baz'].update('2.7182818', raw=True)
-	 >>> e3baz.value
-	 Decimal('2.7182818')
-	 >>> e2bag['foo'][0]['in-words'].update(66, raw=True)
-	 Traceback (most recent call last):
-	 ...
-	 yangson.exceptions.RawTypeError: [/example-2:bag/foo/0/in-words] expected string value
+         >>> e3baz = e2bag['baz'].update('2.7182818', raw=True)
+         >>> e3baz.value
+         Decimal('2.7182818')
+         >>> e2bag['foo'][0]['in-words'].update(66, raw=True)
+         Traceback (most recent call last):
+         ...
+         yangson.exceptions.RawTypeError: [/example-2:bag/foo/0/in-words] expected string value
 
    .. method:: goto(iroute: InstanceRoute) -> InstanceNode
 
@@ -402,27 +402,27 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> irt = dm.parse_resource_id('/example-2:bag/foo=3/in-words')
-	 >>> irt2 = dm.parse_instance_id('/example-2:bag/baz')
+         >>> irt = dm.parse_resource_id('/example-2:bag/foo=3/in-words')
+         >>> irt2 = dm.parse_instance_id('/example-2:bag/baz')
 
       This method may raise the following exceptions:
 
       * :exc:`~.InstanceValueError` if *iroute* isn't compatible with
-	the schema
+        the schema
       * :exc:`~.NonexistentInstance` if the target instance doesn't
-	exist in the receiver's value
+        exist in the receiver's value
       * :exc:`~.NonDataNode` if the target instance represents an RPC
-	operation, action or notification (*iroute* can come from a
-	RESTCONF :term:`resource identifier`).
+        operation, action or notification (*iroute* can come from a
+        RESTCONF :term:`resource identifier`).
 
       .. doctest::
 
-	 >>> inst.goto(irt).value
-	 'three'
-	 >>> inst.goto(irt2)
-	 Traceback (most recent call last):
-	 ...
-	 yangson.instance.NonexistentInstance: [/example-2:bag] member baz
+         >>> inst.goto(irt).value
+         'three'
+         >>> inst.goto(irt2)
+         Traceback (most recent call last):
+         ...
+         yangson.instance.NonexistentInstance: [/example-2:bag] member baz
 
    .. method:: peek(iroute: InstanceRoute) -> Optional[Value]
 
@@ -434,8 +434,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> inst.peek(irt)
-	 'three'
+         >>> inst.peek(irt)
+         'three'
 
       .. CAUTION:: This method doesn't create a new instance, so the
          access to the returned value should in general be read-only.
@@ -445,27 +445,27 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> irt3 = dm.parse_resource_id('/example-2:bag/foo=3')
-	 >>> e2inst.peek(irt3)['in-words'] = 'tres'
-	 >>> e2inst.value['example-2:bag']['foo'][1]['in-words'] # changed!
-	 'tres'
+         >>> irt3 = dm.parse_resource_id('/example-2:bag/foo=3')
+         >>> e2inst.peek(irt3)['in-words'] = 'tres'
+         >>> e2inst.value['example-2:bag']['foo'][1]['in-words'] # changed!
+         'tres'
 
    .. method:: validate(scope: ValidationScope = ValidationScope.all, \
-	       ctype: ContentType = ContentType.config) -> None
+           ctype: ContentType = ContentType.config) -> None
 
       Perform validation on the receiver's value. The *scope* argument
       determines the validation scope. The options are as follows:
 
       * ``ValidationScope.syntax`` – verifies schema constraints
-	(taking into account **if-feature** and **when** statements,
-	if present) and data types.
+        (taking into account **if-feature** and **when** statements,
+        if present) and data types.
 
       * ``ValidationScope.semantics`` – verifies **must** constraints,
-	uniqueness of list keys, **unique** constraints in list nodes,
-	and integrity of **leafref** references.
+        uniqueness of list keys, **unique** constraints in list nodes,
+        and integrity of **leafref** references.
 
       * ``ValidationScope.all`` – performs all checks from both items
-	above.
+        above.
 
       The value of the *ctype* argument belongs to the
       :class:`~.enumerations.ContentType` enumeration and specifies
@@ -482,12 +482,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> inst.validate() # no output means OK
-	 >>> badinst = bag.put_member('baz', 'ILLEGAL').top()
-	 >>> badinst.validate()
-	 Traceback (most recent call last):
-	 ...
-	 yangson.schemanode.YangTypeError: [/example-2:bag/baz] invalid type: 'ILLEGAL'
+         >>> inst.validate() # no output means OK
+         >>> badinst = bag.put_member('baz', 'ILLEGAL').top()
+         >>> badinst.validate()
+         Traceback (most recent call last):
+         ...
+         yangson.schemanode.YangTypeError: [/example-2:bag/baz] invalid type: 'ILLEGAL'
 
       In the following example, member ``baz`` is not allowed because
       it is a conditional leaf and its **when** constraint evaluates
@@ -495,13 +495,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> e2foo6 = e2bag['foo'][0]
-	 >>> bad2 = e2foo6.update(
-	 ... {'number': 42, 'in-words': 'forty-two'}, raw=True).top()
-	 >>> bad2.validate()
-	 Traceback (most recent call last):
-	 ...
-	 yangson.schemanode.SchemaError: [/example-2:bag] not allowed: member 'baz'
+         >>> e2foo6 = e2bag['foo'][0]
+         >>> bad2 = e2foo6.update(
+         ... {'number': 42, 'in-words': 'forty-two'}, raw=True).top()
+         >>> bad2.validate()
+         Traceback (most recent call last):
+         ...
+         yangson.schemanode.SchemaError: [/example-2:bag] not allowed: member 'baz'
 
    .. method:: add_defaults(ctype: ContentType = None) -> InstanceNode
 
@@ -519,26 +519,26 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> wd = inst.add_defaults()
-	 >>> wd.value['example-2:bag']['baz']
-	 Decimal('0E-7')
-	 >>> wd.value['example-2:bag']['foo'][0]['prime']
-	 False
+         >>> wd = inst.add_defaults()
+         >>> wd.value['example-2:bag']['baz']
+         Decimal('0E-7')
+         >>> wd.value['example-2:bag']['foo'][0]['prime']
+         False
 
    .. automethod:: raw_value() -> RawValue
 
       .. doctest::
 
-	 >>> wd['example-2:bag']['baz'].raw_value()
-	 '0.0'
+         >>> wd['example-2:bag']['baz'].raw_value()
+         '0.0'
 
 .. autoclass:: RootNode(value: Value, schema_node: SchemaNode, timestamp: datetime.datetime)
    :show-inheritance:
 
 .. class:: ObjectMember(key: InstanceName, siblings: \
-	   Dict[InstanceName, Value], value: Value, parinst: \
-	   InstanceNode, schema_node: DataNode, timestamp: \
-	   datetime.datetime)
+       Dict[InstanceName, Value], value: Value, parinst: \
+       InstanceNode, schema_node: DataNode, timestamp: \
+       datetime.datetime)
 
    This class represents an instance node that is a member of an
    object. It is a subclass of :class:`InstanceNode`. The additional
@@ -566,12 +566,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo.sibling('bar').json_pointer()
-	 '/example-2:bag/bar'
+         >>> foo.sibling('bar').json_pointer()
+         '/example-2:bag/bar'
 
 .. class:: ArrayEntry(key: int, before: List[Value], after: List[Value], value: \
-	   Value, parinst: InstanceNode, schema_node: \
-	   DataNode, timestamp: datetime.datetime)
+       Value, parinst: InstanceNode, schema_node: \
+       DataNode, timestamp: datetime.datetime)
 
    This class is a subclass of :class:`InstanceNode`, and represents
    an instance node that is an entry of an array, i.e. list or
@@ -598,10 +598,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo6.index
-	 0
-	 >>> foo6.name  # inherited from parent
-	 'foo'
+         >>> foo6.index
+         0
+         >>> foo6.name  # inherited from parent
+         'foo'
 
    .. rubric:: Public Methods
 
@@ -615,12 +615,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo8.previous().json_pointer()
-	 '/example-2:bag/foo/2'
-	 >>> foo6.previous()
-	 Traceback (most recent call last):
-	 ...
-	 yangson.instance.NonexistentInstance: [/example-2:bag/foo/0] previous of first
+         >>> foo8.previous().json_pointer()
+         '/example-2:bag/foo/2'
+         >>> foo6.previous()
+         Traceback (most recent call last):
+         ...
+         yangson.instance.NonexistentInstance: [/example-2:bag/foo/0] previous of first
 
    .. method:: next() -> ArrayEntry
 
@@ -632,15 +632,15 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo6.next().json_pointer()
-	 '/example-2:bag/foo/1'
-	 >>> foo8.next()
-	 Traceback (most recent call last):
-	 ...
-	 yangson.instance.NonexistentInstance: [/example-2:bag/foo/3] next of last
+         >>> foo6.next().json_pointer()
+         '/example-2:bag/foo/1'
+         >>> foo8.next()
+         Traceback (most recent call last):
+         ...
+         yangson.instance.NonexistentInstance: [/example-2:bag/foo/3] next of last
 
    .. method:: insert_before(value: Union[RawValue, Value], raw: bool \
-	       = False) -> ArrayEntry
+           = False) -> ArrayEntry
 
       Insert a new entry before the receiver and return an instance
       node corresponding to the new entry. The *value* argument
@@ -649,12 +649,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo4 = foo8.insert_before({'number': 4, 'in-words': 'four'}, raw=True)
-	 >>> [en['number'] for en in foo4.up().value]
-	 [6, 3, 7, 4, 8]
+         >>> foo4 = foo8.insert_before({'number': 4, 'in-words': 'four'}, raw=True)
+         >>> [en['number'] for en in foo4.up().value]
+         [6, 3, 7, 4, 8]
 
    .. method:: insert_after(value: Union[RawValue, Value], raw: bool \
-	       = False) -> ArrayEntry
+           = False) -> ArrayEntry
 
       Insert a new entry after the receiver and return an instance
       node corresponding to the new entry. The *value* argument
@@ -663,9 +663,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> foo5 = foo4.insert_after({'number': 5, 'in-words': 'five'}, raw=True)
-	 >>> [en['number'] for en in foo5.up().value]
-	 [6, 3, 7, 4, 5, 8]
+         >>> foo5 = foo4.insert_after({'number': 5, 'in-words': 'five'}, raw=True)
+         >>> [en['number'] for en in foo5.up().value]
+         [6, 3, 7, 4, 5, 8]
 
 .. autoclass:: InstanceRoute
    :show-inheritance:
@@ -681,10 +681,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-	 >>> str(irt)
-	 '/example-2:bag/foo[number="3"]/in-words'
-	 >>> str(irt2)
-	 '/example-2:bag/baz'
+         >>> str(irt)
+         '/example-2:bag/foo[number="3"]/in-words'
+         >>> str(irt2)
+         '/example-2:bag/baz'
 
 .. _4: https://tools.ietf.org/html/rfc7951#section-4
 .. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1

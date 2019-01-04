@@ -107,12 +107,12 @@ The module defines the following classes:
       This method may raise the following exceptions:
 
       * :exc:`~.InvalidXPath` – if the input XPath expression is
-	invalid.
+        invalid.
       * :exc:`~.NotSupported` – if the input XPath expression contains a
-	feature that isn't supported by the implementation, such as
-	the ``preceding::`` axis.
+        feature that isn't supported by the implementation, such as
+        the ``preceding::`` axis.
       * other exceptions that are defined in the :mod:`.parser`
-	module.
+        module.
 
 .. doctest::
 
