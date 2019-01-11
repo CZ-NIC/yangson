@@ -1017,11 +1017,9 @@ class ResourceIdParser(Parser):
             name, ns = self.prefixed_name()
             cn = sn.get_data_child(name, ns)
             if cn is None:
-                if ns is None:
-                    ns = sn.ns
                 for cn in sn.children:
-                    if (cn.name == name and cn.ns == ns and
-                            isinstance(cn, RpcActionNode)):
+                    if (isinstance(cn, RpcActionNode) and cn.name == name and
+                            (ns is None or cn.ns == ns)):
                         res.append(ActionName(name, ns))
                         return res
                 raise NonexistentSchemaNode(sn.qual_name, name, ns)
