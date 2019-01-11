@@ -1017,6 +1017,8 @@ class ResourceIdParser(Parser):
             name, ns = self.prefixed_name()
             cn = sn.get_data_child(name, ns)
             if cn is None:
+                if ns is None:
+                    ns = sn.ns
                 for cn in sn.children:
                     if (cn.name == name and cn.ns == ns and
                             isinstance(cn, RpcActionNode)):
