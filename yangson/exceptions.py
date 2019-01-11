@@ -357,7 +357,7 @@ class NonexistentSchemaNode(SchemaNodeException):
         self.ns = ns
 
     def __str__(self) -> str:
-        prefix = "" if self.ns == self.qn[1] else self.ns + ":"
+        prefix = "" if self.ns is None or self.ns == self.qn[1] else self.ns + ":"
         return "{}{} under {}".format(prefix, self.name, super().__str__())
 
 
