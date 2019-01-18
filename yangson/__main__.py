@@ -139,4 +139,5 @@ def main(ylib: str = None, path: List[str] = ["."],
     return 0
 
 
-sys.exit(main())
+if __name__ == "__main__":
+    sys.exit(main())
