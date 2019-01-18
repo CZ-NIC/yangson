@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -24,7 +24,7 @@ This module implements the following class:
 
 import hashlib
 import json
-from typing import List, Optional
+from typing import Optional, Tuple
 from .enumerations import ContentType
 from .exceptions import BadYangLibraryData
 from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
@@ -38,13 +38,13 @@ class DataModel:
     """Basic user-level entry point to Yangson library."""
 
     @classmethod
-    def from_file(cls, name: str, mod_path: List[str] = ["."],
+    def from_file(cls, name: str, mod_path: Tuple[str] = (".",),
                   description: str = None) -> "DataModel":
         """Initialize the data model from a file with YANG library data.
 
         Args:
             name: Name of a file with YANG library data.
-            mod_path: List of directories where to look for YANG modules.
+            mod_path: Tuple of directories where to look for YANG modules.
             description:  Optional description of the data model.
 
         Returns:
@@ -57,13 +57,13 @@ class DataModel:
             yltxt = infile.read()
         return cls(yltxt, mod_path, description)
 
-    def __init__(self, yltxt: str, mod_path: List[str] = ["."],
+    def __init__(self, yltxt: str, mod_path: Tuple[str] = (".",),
                  description: str = None):
         """Initialize the class instance.
 
         Args:
             yltxt: JSON text with YANG library data.
-            mod_path: List of directories where to look for YANG modules.
+            mod_path: Tuple of directories where to look for YANG modules.
             description: Optional description of the data model.
 
         Raises:

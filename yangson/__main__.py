@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -108,7 +108,7 @@ def main(ylib: str = None, path: str = None,
         return 1
     sp = path if path else os.environ.get("YANG_MODPATH", ".")
     try:
-        dm = DataModel(yl, sp.split(":"))
+        dm = DataModel(yl, tuple(sp.split(":")))
     except BadYangLibraryData as e:
         print("Invalid YANG library:", str(e), file=sys.stderr)
         return 2
