@@ -31,11 +31,27 @@ from yangson.exceptions import (
     SchemaError, SemanticError)
 
 
-def main(ylib: str = None, path: List[str] = ["."],
+def main(ylib: str = None, path: str = None,
          scope: ValidationScope = ValidationScope.all,
          ctype: ContentType = ContentType.config, set_id: bool = False,
-         tree: bool = False, digest: bool = False, validate: str = None):
-    """Entry-point for a validation script."""
+         tree: bool = False, no_types: bool = False,
+         digest: bool = False, validate: str = None) -> int:
+    """Entry-point for a validation script.
+
+    Args:
+        ylib: Name of the file with YANG library
+        path: Colon-separated list of directories to search  for YANG modules.
+        scope: Validation scope (syntax, semantics or all).
+        ctype: Content type of the data instance (config, nonconfig or all)
+        set_id: If `True`, print module set id.
+        tree: If `True`, print schema tree.
+        no_types: If `True`, don't print types in schema tree.
+        digest: If `True`, print schema digest.
+        validate: Name of file to validate against the schema.
+
+    Returns:
+        Numeric return code (0=no error, 2=YANG error, 1=other)
+    """
     if ylib is None:
         parser = argparse.ArgumentParser(
             prog="yangson",
@@ -49,7 +65,6 @@ def main(ylib: str = None, path: List[str] = ["."],
                   " in JSON-encoded YANG library format [RFC 7895]"))
         parser.add_argument(
             "-p", "--path",
-            default=os.environ.get("YANG_MODPATH", "."),
             help=("colon-separated list of directories to search"
                   " for YANG modules"))
         grp = parser.add_mutually_exclusive_group()
@@ -75,18 +90,25 @@ def main(ylib: str = None, path: List[str] = ["."],
             "-n", "--no-types", action="store_true",
             help="suppress type info in tree output")
         args = parser.parse_args()
-        path = args.path.split(":")
+        ylib: str = args.ylib
+        path: Optional[str] = args.path
         scope = ValidationScope[args.scope]
         ctype = ContentType[args.ctype]
+        set_id: bool = args.id
+        tree: bool = args.tree
+        no_types = args.no_types
+        digest: bool = args.digest
+        validate: str = args.validate
     try:
-        with open(args.ylib, encoding="utf-8") as infile:
+        with open(ylib, encoding="utf-8") as infile:
             yl = infile.read()
     except (FileNotFoundError, PermissionError,
             json.decoder.JSONDecodeError) as e:
         print("YANG library:", str(e), file=sys.stderr)
         return 1
+    sp = path if path else os.environ.get("YANG_MODPATH", ".")
     try:
-        dm = DataModel(yl, path)
+        dm = DataModel(yl, sp.split(":"))
     except BadYangLibraryData as e:
         print("Invalid YANG library:", str(e), file=sys.stderr)
         return 2
@@ -102,19 +124,19 @@ def main(ylib: str = None, path: List[str] = ["."],
     except ModuleNotRegistered as e:
         print("Module not registered:", str(e), file=sys.stderr)
         return 2
-    if args.id:
+    if set_id:
         print(dm.module_set_id())
         return 0
-    if args.tree:
-        print(dm.ascii_tree(args.no_types))
+    if tree:
+        print(dm.ascii_tree(no_types))
         return 0
-    if args.digest:
+    if digest:
         print(dm.schema_digest())
         return 0
-    if not args.validate:
+    if not validate:
         return 0
     try:
-        with open(args.validate, encoding="utf-8") as infile:
+        with open(validate, encoding="utf-8") as infile:
             itxt = json.load(infile)
     except (FileNotFoundError, PermissionError,
             json.decoder.JSONDecodeError) as e:
