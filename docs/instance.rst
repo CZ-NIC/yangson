@@ -75,11 +75,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. rubric:: Instance Attributes
 
-   .. attribute:: path
-
-      Path of the instance in the data tree: a tuple containing keys
-      of the ancestor nodes and the instance itself.
-
    .. attribute:: parinst
 
       Parent instance node, or ``None`` for the root node.
@@ -101,15 +96,20 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. rubric:: Properties
 
-   .. attribute:: namespace
-
-      The :term:`namespace identifier` of the instance node.
-
    .. attribute:: name
 
       The :term:`instance name` of the receiver. For an
       :class:`ArrayEntry` instance it is by definition the same as the
       qualified name of the parent :class:`ObjectMember`.
+
+   .. attribute:: namespace
+
+      The :term:`namespace identifier` of the instance node.
+
+   .. attribute:: path
+
+      Path of the instance in the data tree: a tuple containing keys
+      of the ancestor nodes and the instance itself.
 
    .. attribute:: qual_name
 

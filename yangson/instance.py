@@ -121,13 +121,13 @@ class EmptyList(LinkedList, metaclass=_Singleton):
 
 class InstanceNode:
     """YANG data node instance implemented as a zipper structure."""
+    _key: InstanceKey
 
     def __init__(self, key: InstanceKey, value: Value,
                  parinst: Optional["InstanceNode"],
                  schema_node: "DataNode", timestamp: datetime):
         """Initialize the class instance."""
-        self.path = (parinst.path if parinst else ()) + (key,)   # type: Tuple[InstanceKey]
-        """Path in the data tree."""
+        self._key = key
         self.parinst = parinst         # type: Optional["InstanceNode"]
         """Parent instance node, or ``None`` for the root node."""
         self.schema_node = schema_node  # type: DataNode
@@ -138,9 +138,24 @@ class InstanceNode:
         """Value of the receiver."""
 
     @property
+    def name(self) -> InstanceName:
+        """Name of the receiver."""
+        return self._key
+
+    @property
     def namespace(self) -> Optional[YangIdentifier]:
         """The receiver's namespace."""
         return self.schema_node.ns
+
+    @property
+    def path(self) -> Tuple[InstanceKey]:
+        """Return the list of keys on the path from root to the receiver."""
+        res = []
+        inst: InstanceNode = self
+        while inst.parinst:
+            res.insert(0, inst._key)
+            inst = inst.parinst
+        return tuple(res)
 
     def __str__(self) -> str:
         """Return string representation of the receiver's value."""
@@ -150,7 +165,7 @@ class InstanceNode:
 
     def json_pointer(self) -> JSONPointer:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
-        return "/" + "/".join([str(c) for c in self.path])
+        return "/" + "/".join(str(c) for c in self.path)
 
     def __getitem__(self, key: InstanceKey) -> "InstanceNode":
         """Return member or entry with the given key.
@@ -470,12 +485,7 @@ class RootNode(InstanceNode):
 
     def __init__(self, value: Value, schema_node: "DataNode",
                  timestamp: datetime):
-        self.path = ()
-        self.parinst = None
-        self.value = value
-        self.schema_node = schema_node
-        self.timestamp = timestamp
-        self.name = self.key = "/"
+        super().__init__("/", value, None, schema_node, timestamp)
 
     def up(self) -> None:
         """Override the superclass method.
@@ -511,13 +521,9 @@ class ObjectMember(InstanceNode):
         """Sibling members within the parent object."""
 
     @property
-    def name(self) -> YangIdentifier:
-        return self.path[-1]
-
-    @property
     def qual_name(self) -> QualName:
         """Return the receiver's qualified name."""
-        p, s, loc = self.name.partition(":")
+        p, s, loc = self._key.partition(":")
         return (loc, p) if s else (p, self.namespace)
 
     def sibling(self, name: InstanceName) -> "ObjectMember":
@@ -613,7 +619,7 @@ class ArrayEntry(InstanceNode):
     @property
     def index(self) -> int:
         """Index of the receiver in the parent array."""
-        return self.path[-1]
+        return self._key
 
     @property
     def name(self) -> InstanceName:
