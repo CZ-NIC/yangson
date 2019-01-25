@@ -57,8 +57,8 @@ def main(ylib: str = None, path: str = None,
             prog="yangson",
             description="Validate JSON data against a YANG data model.")
         parser.add_argument(
-            "-V", "--version", action="version", version="%(prog)s {}".format(
-                pkg_resources.get_distribution("yangson").version))
+            "-V", "--version", action="version",
+            version=f"%(prog)s {pkg_resources.get_distribution('yangson').version}")
         parser.add_argument(
             "ylib", metavar="YLIB",
             help=("name of the file with description of the data model"

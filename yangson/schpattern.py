@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -152,7 +152,7 @@ class ConditionalPattern(Conditional):
         return str(self.pattern)
 
     def _mandatory_members(self, ctype: ContentType) -> List[InstanceName]:
-        return (self.pattern._mandatory_members(ctype) if self._active(ctype) else [])
+        return self.pattern._mandatory_members(ctype) if self._active(ctype) else []
 
 
 class Member(Typeable, Conditional):
@@ -182,10 +182,10 @@ class Member(Typeable, Conditional):
         return " " * indent + "Member " + self.name
 
     def __str__(self) -> str:
-        return "member '{}'".format(self.name)
+        return f"member '{self.name}'"
 
     def _mandatory_members(self, ctype: ContentType) -> List[InstanceName]:
-        return ([self.name] if self._active(ctype) else [])
+        return [self.name] if self._active(ctype) else []
 
 
 class Alternative(SchemaPattern):
@@ -222,7 +222,7 @@ class Alternative(SchemaPattern):
                 self.right.tree(indent + 2))
 
     def __str__(self) -> str:
-        return str(self.left) + " or " + str(self.right)
+        return f"{self.left!s} or {self.right!s}"
 
     def _mandatory_members(self, ctype: ContentType) -> List[InstanceName]:
         lm = self.left._mandatory_members(ctype)
@@ -246,12 +246,12 @@ class ChoicePattern(Alternative, Typeable):
                 NotAllowed())
 
     def tree(self, indent: int = 0):
-        return " " * indent + "Choice {}\n{}\n{}".format(
-            self.name,
-            self.left.tree(indent + 2), self.right.tree(indent + 2))
+        return (" " * indent +
+                f"Choice {self.name}\n{self.left.tree(indent + 2)}\n"
+                f"{self.right.tree(indent + 2)}")
 
     def _members(self, ctype: ContentType) -> List[InstanceName]:
-        return (super()._members(ctype) if self._active(ctype) else [])
+        return super()._members(ctype) if self._active(ctype) else []
 
 
 class Pair(SchemaPattern):

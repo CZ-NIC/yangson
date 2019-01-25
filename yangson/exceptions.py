@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -92,8 +92,7 @@ class MissingAnnotationTarget(AnnotationException):
         self.iname = iname
 
     def __str__(self):
-        return "[{}] no instance '{}'".format(
-            self.path, self.iname)
+        return f"[{self.path}] no instance '{self.iname}'"
 
 
 class UndefinedAnnotation(AnnotationException):
@@ -104,8 +103,7 @@ class UndefinedAnnotation(AnnotationException):
         self.aname = aname
 
     def __str__(self):
-        return "[{}] Undefined annotation '{}'".format(
-            self.path, self.aname)
+        return f"[{self.path}] Undefined annotation '{self.aname}'"
 
 
 class AnnotationTypeError(AnnotationException):
@@ -117,8 +115,7 @@ class AnnotationTypeError(AnnotationException):
         self.msg = msg
 
     def __str__(self):
-        return "[{}] value of '{}' {}".format(
-            self.path, self.aname, self.msg)
+        return f"[{self.path}] value of '{self.aname}' {self.msg}"
 
 
 class InvalidArgument(YangsonException):
@@ -149,7 +146,7 @@ class InstanceException(YangsonException):
         self.message = message
 
     def __str__(self):
-        return "[{}] {}".format(self.path, self.message)
+        return f"[{self.path}] {self.message}"
 
 
 class InstanceValueError(InstanceException):
@@ -176,7 +173,8 @@ class ParserException(YangsonException):
     def __str__(self) -> str:
         """Print parser state."""
         if "\n" in self.parser.input:
-            return "line {0}, column {1}".format(*self.parser.line_column())
+            (line, col) = self.parser.line_column()
+            return f"line {line}, column {col}"
         return str(self.parser)
 
 
@@ -240,7 +238,7 @@ class ModuleContentMismatch(YangsonException):
         self.expected = expected
 
     def __str__(self) -> str:
-        return "'{}', expected '{}'".format(self.found, self.expected)
+        return f"'{self.found}', expected '{self.expected}'"
 
 
 class ModuleNameMismatch(ModuleContentMismatch):
@@ -296,7 +294,7 @@ class UnknownPrefix(YangsonException):
         self.mid = mid
 
     def __str__(self) -> str:
-        return "prefix {} is not defined in {}".format(self.prefix, self.mid)
+        return f"prefix {self.prefix} is not defined in {self.mid}"
 
 
 class ModuleNotImported(YangsonException):
@@ -307,7 +305,7 @@ class ModuleNotImported(YangsonException):
         self.mid = mid
 
     def __str__(self) -> str:
-        return "{} not imported in {}".format(self.mod, self.mid)
+        return f"{self.mod} not imported in {self.mid}"
 
 
 class FeaturePrerequisiteError(YangsonException):
@@ -318,7 +316,7 @@ class FeaturePrerequisiteError(YangsonException):
         self.ns = ns
 
     def __str__(self) -> str:
-        return "{}:{}".format(self.ns, self.name)
+        return f"{self.ns}:{self.name}"
 
 
 class MultipleImplementedRevisions(YangsonException):
@@ -343,8 +341,7 @@ class SchemaNodeException(YangsonException):
         self.qn = qn
 
     def __str__(self) -> str:
-        return ("/" if self.qn[0] is None else
-                "{}:{}".format(self.qn[1], self.qn[0]))
+        return "/" if self.qn[0] is None else f"{self.qn[1]}:{self.qn[0]}"
 
 
 class NonexistentSchemaNode(SchemaNodeException):
@@ -358,7 +355,7 @@ class NonexistentSchemaNode(SchemaNodeException):
 
     def __str__(self) -> str:
         prefix = "" if self.ns is None or self.ns == self.qn[1] else self.ns + ":"
-        return "{}{} under {}".format(prefix, self.name, super().__str__())
+        return f"{prefix}{self.name} under {super().__str__()}"
 
 
 class BadSchemaNodeType(SchemaNodeException):
@@ -400,7 +397,7 @@ class RawTypeError(RawDataError):
         self.message = "expected " + expected
 
     def __str__(self):
-        return "[{}] {}".format(self.path, self.message)
+        return f"[{self.path}] {self.message}"
 
 
 class ValidationError(YangsonException):
@@ -413,7 +410,7 @@ class ValidationError(YangsonException):
 
     def __str__(self) -> str:
         msg = ": " + self.message if self.message else ""
-        return "[{}] {}{}".format(self.path, self.tag, msg)
+        return f"[{self.path}] {self.tag}{msg}"
 
 
 class SchemaError(ValidationError):
@@ -440,7 +437,7 @@ class StatementNotFound(YangsonException):
 
     def __str__(self) -> str:
         """Print the statement's keyword."""
-        return "`{}' in `{}'".format(self.keyword, self.parent)
+        return f"`{self.keyword}' in `{self.parent}'"
 
 
 class DefinitionNotFound(YangsonException):
@@ -451,7 +448,7 @@ class DefinitionNotFound(YangsonException):
         self.name = name
 
     def __str__(self) -> str:
-        return "{} {}".format(self.keyword, self.name)
+        return f"{self.keyword} {self.name}"
 
 
 class XPathTypeError(YangsonException):

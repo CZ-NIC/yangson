@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2017 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -49,7 +49,7 @@ class Parser:
     uint_re = re.compile(_uint)
     """Regular expression for unsigned integer."""
 
-    ufloat_re = re.compile(r"{}(\.{})?|\.{}".format(_uint, _uint, _uint))
+    ufloat_re = re.compile(fr"{_uint}(\.{_uint})?|\.{_uint}")
     """Regular expression for unsigned float."""
 
     def __init__(self, text: str):

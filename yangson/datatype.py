@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -83,7 +83,7 @@ class DataType:
     def __str__(self):
         """Return YANG name of the receiver type."""
         base = self.yang_type()
-        return "{}({})".format(self.name, base) if self.name else base
+        return f"{self.name}({base})" if self.name else base
 
     def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
         """Return a cooked value of the receiver type.
@@ -569,7 +569,7 @@ class IdentityrefType(DataType):
     def __contains__(self, val: QualName) -> bool:
         for b in self.bases:
             if not self.sctx.schema_data.is_derived_from(val, b):
-                self._set_error_info(error_message="not derived from {1}:{0}".format(*b))
+                self._set_error_info(error_message=f"not derived from {b[1]}:{b[0]}")
                 return False
         return True
 
@@ -585,7 +585,7 @@ class IdentityrefType(DataType):
 
     def canonical_string(self, val: ScalarValue) -> Optional[str]:
         """Return canonical form of a value."""
-        return "{}:{}".format(val[1], val[0])
+        return f"{val[1]}:{val[0]}"
 
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.bases = []

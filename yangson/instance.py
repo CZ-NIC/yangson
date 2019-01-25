@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -250,8 +250,8 @@ class InstanceNode:
         try:
             del newval[key]
         except (KeyError, IndexError, TypeError):
-            raise NonexistentInstance(
-                self.json_pointer(), "item '{}'".format(key)) from None
+            raise NonexistentInstance(self.json_pointer(),
+                                      f"item '{key}'") from None
         return self._copy(newval)
 
     def up(self) -> "InstanceNode":
@@ -383,8 +383,8 @@ class InstanceNode:
                 name, sibs, sibs.pop(name), self,
                 self._member_schema_node(name), self.value.timestamp)
         except KeyError:
-            raise NonexistentInstance(
-                self.json_pointer(), "member '{}'".format(name)) from None
+            raise NonexistentInstance(self.json_pointer(),
+                                      f"member '{name}'") from None
 
     def _entry(self, index: int) -> "ArrayEntry":
         val = self.value
@@ -545,8 +545,8 @@ class ObjectMember(InstanceNode):
             return ObjectMember(name, sibs, newval, self.parinst,
                                 ssn, self.timestamp)
         except KeyError:
-            raise NonexistentInstance(
-                self.json_pointer(), "member '{}'".format(name)) from None
+            raise NonexistentInstance(self.json_pointer(),
+                                      f"member '{name}'") from None
 
     def look_up(self, **keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
         """Return the entry with matching keys.
@@ -794,8 +794,7 @@ class MemberName:
 
     def iname(self) -> str:
         """Return instance name corresponding to the receiver."""
-        return ("{}:{}".format(self.namespace, self.name) if self.namespace
-                else self.name)
+        return f"{self.namespace}:{self.name}" if self.namespace else self.name
 
     def peek_step(self, val: ObjectValue,
                   sn: "DataNode") -> Tuple[Value, "DataNode"]:
@@ -850,10 +849,10 @@ class EntryIndex:
 
     def __str__(self) -> str:
         """Return a string representation of the receiver."""
-        return "[{0:d}]".format(self.index + 1)
+        return f"[{self.index + 1}]"
 
     def peek_step(self, val: ArrayValue,
-                  sn: "DataNode") -> Tuple[Value, "DataNode"]:
+                  sn: "DataNode") -> Tuple[Optional[Value], "DataNode"]:
         """Return entry value addressed by the receiver + its schema node.
 
         Args:
@@ -861,9 +860,9 @@ class EntryIndex:
             sn:  Current schema node.
         """
         try:
-            return (val[self.index], sn)
+            return val[self.index], sn
         except (IndexError, KeyError, TypeError):
-            return (None, sn)
+            return None, sn
 
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return entry instance addressed by the receiver.
@@ -887,7 +886,7 @@ class EntryValue:
 
     def __str__(self) -> str:
         """Return a string representation of the receiver."""
-        return "[.=" + json.dumps(self.value) + "]"
+        return f"[.={json.dumps(self.value)}]"
 
     def __eq__(self, other: "EntryValue") -> bool:
         return self.value == other.value
@@ -910,7 +909,7 @@ class EntryValue:
         try:
             return (val[val.index(self.parse_value(sn))], sn)
         except ValueError:
-            return (None, sn)
+            return None, sn
 
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Return member instance of `inst` addressed by the receiver.
@@ -922,8 +921,8 @@ class EntryValue:
             return inst._entry(
                 inst.value.index(self.parse_value(inst.schema_node)))
         except ValueError:
-            raise NonexistentInstance(
-                inst.json_pointer(), "entry '{}'".format(str(self.value))) from None
+            raise NonexistentInstance(inst.json_pointer(),
+                                      f"entry '{self.value!s}'") from None
 
 
 class EntryKeys:
@@ -942,8 +941,8 @@ class EntryKeys:
         """Return a string representation of the receiver."""
         res = []
         for k in self.keys:
-            kn = "{1}:{0}".format(*k) if k[1] else k[0]
-            res.append("[{}={}]".format(kn, json.dumps(self.keys[k])))
+            kn = f"{k[1]}:{k[0]}" if k[1] else k[0]
+            res.append(f"[{kn}={json.dumps(self.keys[k])}]")
         return "".join(res)
 
     def __eq__(self, other: "EntryKeys") -> bool:
@@ -1053,8 +1052,7 @@ class ResourceIdParser(Parser):
         ks = keys.split(",")
         try:
             if len(ks) != len(sn.keys):
-                raise UnexpectedInput(
-                    self, "exactly {} keys".format(len(sn.keys)))
+                raise UnexpectedInput(self, f"exactly {len(sn.keys)} keys")
         except AttributeError:
             raise BadSchemaNodeType(sn.qual_name, "list")
         sel = {}

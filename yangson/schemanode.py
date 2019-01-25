@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -980,7 +980,7 @@ class SequenceNode(DataNode):
         i = 0
         for en in rval:
             i += 1
-            res.append(self.entry_from_raw(en, "{}/{}".format(jptr, i)))
+            res.append(self.entry_from_raw(en, f"{jptr}/{i}"))
         return res
 
     def entry_from_raw(self, rval: RawEntry, jptr: JSONPointer = "") -> EntryValue:
@@ -1170,9 +1170,8 @@ class ChoiceNode(InternalNode):
 
     def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
-        return "{} ({}){}".format(
-            self._tree_line_prefix(), self.iname(),
-            "" if self._mandatory else "?")
+        return f"{self._tree_line_prefix()} ({self.iname()})" \
+               f"{'' if self._mandatory else '?'}"
 
 
 class CaseNode(InternalNode):
@@ -1183,8 +1182,7 @@ class CaseNode(InternalNode):
 
     def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
-        return "{}:({})".format(
-            self._tree_line_prefix(), self.iname())
+        return f"{self._tree_line_prefix()}:({self.iname()})"
 
 
 class LeafNode(DataNode, TerminalNode):
@@ -1218,7 +1216,7 @@ class LeafNode(DataNode, TerminalNode):
 
     def _tree_line(self, no_type: bool = False) -> str:
         res = super()._tree_line() + ("" if self._mandatory else "?")
-        return res if no_type else "{} <{}>".format(res, self.type)
+        return res if no_type else f"{res} <{self.type}>"
 
     def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self._default = stmt.argument
@@ -1259,7 +1257,7 @@ class LeafListNode(SequenceNode, TerminalNode):
 
     def _tree_line(self, no_type: bool = False) -> str:
         res = super()._tree_line()
-        return res if no_type else "{} <{}>".format(res, self.type)
+        return res if no_type else f"{res} <{self.type}>"
 
 
 class AnyContentNode(DataNode):

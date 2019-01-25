@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -210,8 +210,7 @@ class XPathParser(Parser):
                 prim = getattr(self, mname)()
             except AttributeError:
                 if fname in ("id", "lang", "namespace-uri"):
-                    raise NotSupported(self,
-                                       "function '{}()'".format(fname)) from None
+                    raise NotSupported(self, f"function '{fname}()'") from None
                 raise InvalidXPath(self) from None
         self.char(")")
         self.skip_ws()
@@ -267,7 +266,7 @@ class XPathParser(Parser):
         try:
             next = self.peek()
         except EndOfInput:
-            return (Axis.child, (yid, None))
+            return Axis.child, (yid, None)
         if next == "(":
             return (Axis.child, self._node_type(yid))
         if next == ":":
@@ -280,17 +279,16 @@ class XPathParser(Parser):
                 except KeyError:
                     if yid in ("attribute", "following",
                                "namespace", "preceding"):
-                        raise NotSupported(
-                            self, "axis '{}::'".format(yid)) from None
+                        raise NotSupported(self, f"axis '{yid}::'") from None
                     raise InvalidXPath(self) from None
-                return (axis, self._qname())
+                return axis, self._qname()
             if ws:
                 raise InvalidXPath(self)
             nsp = self.sctx.schema_data.prefix2ns(yid, self.sctx.text_mid)
             loc = self.yang_identifier()
             self.skip_ws()
-            return (Axis.child, (loc, nsp))
-        return (Axis.child, (yid, None))
+            return Axis.child, (loc, nsp)
+        return Axis.child, (yid, None)
 
     def _node_type(self, typ):
         if typ == "node":
@@ -299,7 +297,7 @@ class XPathParser(Parser):
             self.skip_ws()
             return None
         elif typ in ("comment", "processing-instruction", "text"):
-            raise NotSupported(self, "node type '{}()'".format(typ))
+            raise NotSupported(self, f"node type '{typ}()'")
         raise InvalidXPath(self)
 
     def _qname(self) -> Optional[QualName]:
@@ -312,7 +310,7 @@ class XPathParser(Parser):
         try:
             next = self.peek()
         except EndOfInput:
-            return (ident, None)
+            return ident, None
         if next == "(":
             return self._node_type(ident)
         if not ws and self.test_string(":"):
@@ -327,11 +325,11 @@ class XPathParser(Parser):
     def _opt_arg(self) -> Optional[Expr]:
         return None if self.peek() == ")" else self.parse()
 
-    def _two_args(self) -> Tuple[Expr]:
+    def _two_args(self) -> Tuple[Expr, Expr]:
         fst = self.parse()
         self.char(",")
         self.skip_ws()
-        return (fst, self.parse())
+        return fst, self.parse()
 
     def _func_bit_is_set(self) -> FuncBitIsSet:
         return FuncBitIsSet(*self._two_args())

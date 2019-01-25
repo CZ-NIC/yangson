@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -78,9 +78,8 @@ class Intervals(Constraint):
 
     def __str__(self) -> str:
         """Return string representation of the receiver."""
-        return " | ".join([
-            "{}..{}".format(str(r[0]), str(r[-1])) if len(r) > 1 else str(r[0])
-            for r in self.intervals])
+        return " | ".join([f"{r[0]!s}..{r[-1]!s}" if len(r) > 1 else str(r[0])
+                           for r in self.intervals])
 
     def restrict_with(self, expr: str, error_tag: str = None,
                       error_message: str = None) -> None:
@@ -134,8 +133,8 @@ class Pattern(Constraint):
                  error_tag: str = None,
                  error_message: str = None):
         """Initialize the class instance."""
-        super().__init__(error_tag, error_message if error_message else
-                         "pattern '{}'".format(pattern))
+        super().__init__(error_tag,
+                         error_message if error_message else f"pattern '{pattern}'")
         self.pattern = pattern
         self.invert_match = invert_match
         try:

@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -155,7 +155,7 @@ class SchemaData:
         for d in self.module_search_path:
             run = 0
             while run < 2:
-                fn = "{}/{}".format(d, name)
+                fn = f"{d}/{name}"
                 if rev and run == 0:
                     fn += "@" + rev
                 fn += ".yang"

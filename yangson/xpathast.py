@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -351,7 +351,7 @@ class Step(Expr):
         self.predicates = predicates
 
     def _properties_str(self) -> str:
-        return "{} {}".format(self.axis.name, self.qname)
+        return f"{self.axis.name} {self.qname}"
 
     def _children_str(self, indent) -> str:
         return self._predicates_str(indent)
