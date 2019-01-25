@@ -82,10 +82,11 @@ def main(ylib: str = None, path: str = None,
             help="name of the file with JSON-encoded instance data")
         parser.add_argument(
             "-s", "--scope", choices=["syntax", "semantics", "all"],
-            default="all", help="validation scope")
+            default="all", help="validation scope (default: %(default)s)")
         parser.add_argument(
             "-c", "--ctype", type=str, choices=["config", "nonconfig", "all"],
-            default="config", help="content type of the data instance")
+            default="config",
+            help="content type of the data instance (default: %(default)s)")
         parser.add_argument(
             "-n", "--no-types", action="store_true",
             help="suppress type info in tree output")
