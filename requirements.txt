@@ -5,7 +5,7 @@ astroid==1.4.5
 Babel==2.3.3
 clint==0.5.1
 colorama==0.3.7
-docutils==0.12
+docutils==0.14
 imagesize==0.7.0
 Jinja2==2.8
 lazy-object-proxy==1.2.2
@@ -23,7 +23,7 @@ requests==2.20.0
 requests-toolbelt==0.7.0
 six==1.10.0
 snowballstemmer==1.2.1
-Sphinx==1.5.3
+Sphinx==1.8.4
 sphinx-rtd-theme==0.1.9
 twine==1.8.1
 wrapt==1.10.8

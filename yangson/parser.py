@@ -93,7 +93,7 @@ class Parser:
         if self.peek() == c:
             self.offset += 1
         else:
-            raise UnexpectedInput(self, "char " + c)
+            raise UnexpectedInput(self, f"char '{c}'")
 
     def dfa(self, ttab: TransitionTable, init: int = 0) -> int:
         """Run a DFA and return the final (negative) state.

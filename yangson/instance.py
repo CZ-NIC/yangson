@@ -1029,14 +1029,15 @@ class ResourceIdParser(Parser):
                         return res
                 raise NonexistentSchemaNode(sn.qual_name, name, ns)
             res.append(MemberName(name, ns))
-            try:
-                next = self.one_of("/=")
-            except EndOfInput:
+            if self.at_end():
                 return res
-            if next == "=":
+            if isinstance(cn, SequenceNode):
+                self.char("=")
                 res.append(self._key_values(cn))
                 if self.at_end():
                     return res
+            else:
+                self.char("/")
             sn = cn
 
     def _key_values(self, sn: "SequenceNode") -> Union[EntryKeys, EntryValue]:
