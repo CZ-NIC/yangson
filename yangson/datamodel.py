@@ -144,16 +144,21 @@ class DataModel:
                 return None
         return node
 
-    def ascii_tree(self, no_types: bool = False) -> str:
+    def ascii_tree(self, no_types: bool = False, val_count: bool = False) -> str:
         """Generate ASCII art representation of the schema tree.
 
         Args:
             no_types: Suppress output of data type info.
+            val_count: Show accumulated validation counts.
 
         Returns:
             String with the ASCII tree.
         """
-        return self.schema._ascii_tree("", no_types)
+        return self.schema._ascii_tree("", no_types, val_count)
+
+    def clear_val_counters(self):
+        """Clear validation counters in the entire schema tree."""
+        self.schema.clear_val_counters()
 
     def parse_instance_id(self, text: str) -> InstanceRoute:
         return InstanceIdParser(text).parse()

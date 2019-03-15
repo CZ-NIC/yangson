@@ -91,6 +91,7 @@ class SchemaNode:
         """List of "must" expressions attached to the receiver."""
         self.when = None  # type: Optional["Expr"]
         """Optional "when" expression that makes the receiver conditional."""
+        self.val_count = 0
         self._ctype = None
         """Content type of the receiver."""
 
@@ -157,6 +158,10 @@ class SchemaNode:
         """
         raise NotImplementedError
 
+    def clear_val_counters(self) -> None:
+        """Clear receiver's validation counter."""
+        self.val_count = 0
+
     def _get_description(self, stmt: Statement):
         dst = stmt.find1("description")
         if dst is not None:
@@ -191,7 +196,7 @@ class SchemaNode:
             SemanticError: If `inst` violates a semantic rule.
             YangTypeError: If `inst` is a scalar of incorrect type.
         """
-        pass
+        self.val_count += 1
 
     def _iname2qname(self, iname: InstanceName) -> QualName:
         """Translate instance name to qualified name in the receiver's context.
@@ -470,6 +475,7 @@ class InternalNode(SchemaNode):
             self._check_schema_pattern(inst, ctype)
         for m in inst:
             inst._member(m).validate(scope, ctype)
+        super()._validate(inst, scope, ctype)
 
     def _add_child(self, node: SchemaNode) -> None:
         node.parent = self
@@ -644,8 +650,10 @@ class InternalNode(SchemaNode):
         """Handle anydata statement."""
         self._handle_child(AnydataNode(), stmt, sctx)
 
-    def _ascii_tree(self, indent: str, no_types: bool) -> str:
+    def _ascii_tree(self, indent: str, no_types: bool, val_count: bool) -> str:
         """Return the receiver's subtree as ASCII art."""
+        def suffix(sn):
+            return f" {{{sn.val_count}}}\n" if val_count else "\n"
         if not self.children:
             return ""
         cs = []
@@ -654,10 +662,16 @@ class InternalNode(SchemaNode):
         cs.sort(key=lambda x: x.qual_name)
         res = ""
         for c in cs[:-1]:
-            res += (indent + c._tree_line(no_types) + "\n" +
-                    c._ascii_tree(indent + "|  ", no_types))
-        return (res + indent + cs[-1]._tree_line(no_types) + "\n" +
-                cs[-1]._ascii_tree(indent + "   ", no_types))
+            res += (indent + c._tree_line(no_types) + suffix(c) +
+                    c._ascii_tree(indent + "|  ", no_types, val_count))
+        return (res + indent + cs[-1]._tree_line(no_types) + suffix(cs[-1]) +
+                cs[-1]._ascii_tree(indent + "   ", no_types, val_count))
+
+    def clear_val_counters(self) -> None:
+        """Clear validation counters in the receiver and its subtree."""
+        super().clear_val_counters()
+        for c in self.children:
+            c.clear_val_counters()
 
 
 class GroupNode(InternalNode):
@@ -840,6 +854,7 @@ class TerminalNode(SchemaNode):
                 tgt = []
             if not tgt:
                 raise SemanticError(inst.json_pointer(), "instance-required")
+        super()._validate(inst, scope, ctype)
 
     def _default_value(self, inst: "InstanceNode", ctype: ContentType,
                        lazy: bool) -> "InstanceNode":
@@ -861,7 +876,7 @@ class TerminalNode(SchemaNode):
         di = self._default_instance(inst, ContentType.all)
         return [] if di is None else [self]
 
-    def _ascii_tree(self, indent: str, no_types: bool) -> str:
+    def _ascii_tree(self, indent: str, no_types: bool, val_count: bool) -> str:
         return ""
 
     def _state_roots(self) -> List[SchemaNode]:
@@ -1298,7 +1313,7 @@ class AnyContentNode(DataNode):
     def _tree_line(self, no_type: bool = False) -> str:
         return super()._tree_line() + ("" if self._mandatory else "?")
 
-    def _ascii_tree(self, indent: str, no_types: bool) -> str:
+    def _ascii_tree(self, indent: str, no_types: bool, val_count: bool) -> str:
         return ""
 
     def _post_process(self) -> None:
