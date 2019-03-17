@@ -166,11 +166,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> leaf.parent is root
          True
 
-   .. method:: ascii_tree(no_types: bool = False) -> str
+   .. method:: ascii_tree(no_types: bool = False, val_count: bool = False) -> str
 
       Generate ASCII art representation of the actual schema tree. If
       *no_types* is set to ``True``, the output of type information
-      with *leaf* and *leaf-list* nodes is suppressed.
+      with *leaf* and *leaf-list* nodes is suppressed. If *val_count*
+      is ``True``, each schema node is printed with the number of times
+      it has been used for validating instances.
 
       .. doctest::
 
@@ -178,6 +180,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          +--rw example-1:greeting? <string>
          >>> print(dm.ascii_tree(True), end='')
          +--rw example-1:greeting?
+
+   .. method:: clear_val_counters() -> None
+
+      Reset validation counters to zero throughout the schema tree.
 
    .. method:: parse_instance_id(text: str) -> InstanceRoute
 

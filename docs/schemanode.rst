@@ -140,6 +140,17 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       expression is defined for the schema node. See sec. `7.21.5`_ in
       [RFC7950]_.
 
+   .. attribute:: val_count
+
+      An integer attribute that counts how many times the schema node been used
+      for validating instances. This can be useful especially for coverage
+      checks. The counter is initialized with a value of zero.
+
+      If a sequence of instances is validated, the attribute accumulates the
+      counts for all of them. Validation counters for the entire schema can
+      be reset to zero by using the method :meth:`~.DataModel.clear_val_counters`
+      in the :class:`~.datamodel.DataModel` class.
+
    .. rubric:: Properties
 
    .. attribute:: qual_name
@@ -170,6 +181,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
          >>> rsn.mandatory
          False
+
 
    .. rubric:: Public Methods
 

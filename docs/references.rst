@@ -18,12 +18,6 @@ __ https://www.st.cs.uni-saarland.de/edu/seminare/2005/advanced-fp/docs/huet-zip
 
 __ https://www.python.org/dev/peps/pep-0484
 
-.. [RFC3986] Berners-Lee, T.; Fielding, R.; Masinter, L. *Uniform
-         Resource Identifier (URI): Generic Syntax*. `RFC 3986`__,
-         IETF, 2005. 61 p.
-
-__ https://tools.ietf.org/html/rfc3986
-
 .. [RFC6241] Enns R. (ed.) et al. *Network Configuration Protocol
          (NETCONF).* `RFC 6241`__, IETF, 2011, 113 p. ISSN
          2070-1721.
