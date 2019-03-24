@@ -28,7 +28,7 @@ from yangson.enumerations import ContentType, ValidationScope
 from yangson.exceptions import (
     BadYangLibraryData, FeaturePrerequisiteError, MultipleImplementedRevisions,
     ModuleNotFound, ModuleNotRegistered, RawMemberError, RawTypeError,
-    SchemaError, SemanticError)
+    SchemaError, SemanticError, YangTypeError)
 
 
 def main(ylib: str = None, path: str = None,
@@ -158,6 +158,9 @@ def main(ylib: str = None, path: str = None,
         return 3
     except SemanticError as e:
         print("Semantic error:", str(e), file=sys.stderr)
+        return 3
+    except YangTypeError as e:
+        print("Invalid type:", str(e), file=sys.stderr)
         return 3
     return 0
 
