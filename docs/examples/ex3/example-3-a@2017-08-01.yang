@@ -11,7 +11,7 @@ module example-3-a {
   }
 
   include example-3-suba {
-    revision-date 2016-07-21;
+    revision-date 2017-08-01;
   }
 
   revision 2017-08-01;
