@@ -1,0 +1,49 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "",
+    "module": [
+      {
+        "name": "ietf-yang-library",
+        "revision": "2016-06-21",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-library",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-inet-types",
+        "revision": "2010-09-24",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
+        "conformance-type": "import"
+      },
+      {
+        "name": "ietf-inet-types",
+        "revision": "2013-07-15",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
+        "conformance-type": "import"
+      },
+      {
+        "name": "ietf-origin",
+        "revision": "2018-02-14",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-origin",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-netconf-acm",
+        "revision": "2018-02-14",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-netconf-acm",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-yang-types",
+        "revision": "2013-07-15",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types",
+        "conformance-type": "import"
+      },
+      {
+        "name": "ietf-yang-metadata",
+        "revision": "2016-08-05",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-metadata",
+        "conformance-type": "import"
+      }
+    ]
+  }
+}

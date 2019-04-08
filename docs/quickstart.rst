@@ -40,6 +40,10 @@ by reading YANG library data [RFC7895]_ from a file:
    >>> dm.schema.description
    'Data model ID: 9a9b7d2d28d4d78fa42e12348346990e3fb1c1b9'
 
+.. note::
+   Distribution directory *tools/python* contains the script *mkylib.py* that
+   can help with preparing YANG library data.
+
 Here is an ASCII art depicting the schema tree:
 
 .. doctest::
