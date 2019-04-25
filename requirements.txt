@@ -7,7 +7,7 @@ clint==0.5.1
 colorama==0.3.7
 docutils==0.14
 imagesize==0.7.0
-Jinja2==2.10
+Jinja2==2.10.1
 lazy-object-proxy==1.2.2
 MarkupSafe==0.23
 packaging==16.8
