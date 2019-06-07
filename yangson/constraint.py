@@ -40,6 +40,13 @@ Number = Union[int, decimal.Decimal]
 Interval = List[Number]
 """Numeric interval consisting either of one number or a pair of bounds."""
 
+# Yang patterns could contain ^ and $ so we need to strip those if they exist
+def stripStartEndRegexPattern(p):
+    if p.startswith('^'):
+        p = p[1:]
+    if p.endswith('$'):
+        p = p[:-1]
+    return p
 
 class Constraint:
     """Abstract class representing annotated YANG constraints."""
@@ -138,7 +145,7 @@ class Pattern(Constraint):
         self.pattern = pattern
         self.invert_match = invert_match
         try:
-            self.regex = re.compile(XMLToPython(pattern))
+            self.regex = re.compile(XMLToPython(stripStartEndRegexPattern(pattern)))
         except RegularExpressionError:
             raise InvalidArgument(pattern) from None
 
