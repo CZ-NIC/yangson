@@ -514,7 +514,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       whose default values will be added. For example, setting it to
       ``ContentType.config`` means that only default values of
       configuration nodes will be added. If *ctype* is ``None``
-      (default), a the content type of added defaults will be the same
+      (default), the content type of added defaults will be the same
       as the content type of the receiver.
 
       .. doctest::
