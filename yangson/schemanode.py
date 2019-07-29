@@ -235,7 +235,7 @@ class SchemaNode:
             return lft._follow_leafref(xpath.right, init)
         elif isinstance(xpath, Step):
             if xpath.axis == Axis.parent:
-                return self.data_parent()
+                return self.data_parent() or self.schema_root()
             elif xpath.axis == Axis.child:
                 if isinstance(self, InternalNode) and xpath.qname:
                     qname = (xpath.qname if xpath.qname[1]
