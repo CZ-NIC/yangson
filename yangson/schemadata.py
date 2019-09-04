@@ -213,7 +213,7 @@ class SchemaData:
                 if fn not in self.modules[fid].features:
                     continue
                 if not self.if_features(fst, mid):
-                    raise FeaturePrerequisiteError(*fn)
+                    raise FeaturePrerequisiteError(fn, fid[0])
 
     def namespace(self, mid: ModuleId) -> YangIdentifier:
         """Return the namespace corresponding to a module or submodule.
