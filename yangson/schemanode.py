@@ -380,7 +380,10 @@ class InternalNode(SchemaNode):
         """
         node = self
         for p in route:
-            node = node.get_child(*p)
+            try:
+                node = node.get_child(*p)
+            except AttributeError:
+                return None
             if node is None:
                 return None
         return node
