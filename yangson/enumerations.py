@@ -77,13 +77,21 @@ class Axis(Enum):
     self = 10
     """Just the context node."""
 
+    def __str__(self) -> str:
+        """Return string representation of the axis."""
+        return self.name.replace("_", "-")
+
 
 class MultiplicativeOp(Enum):
     """Enumeration of XPath multiplicative operators."""
 
-    multiply = 1
+    multiply = "*"
     """Multiplication operator (``*``)."""
-    divide = 2
+    divide = "div"
     """Division operator (``div``)."""
-    modulo = 3
+    modulo = "mod"
     """Modulo operator (``mod``)."""
+
+    def __str__(self) -> str:
+        """Return string representation of the operation."""
+        return self.value
