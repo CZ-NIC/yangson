@@ -399,7 +399,7 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-         >>> print(leafref_t.path, end='')
+         >>> print(leafref_t.path.syntax_tree(), end='')
          LocationPath
            Root
            Step (child ('string-leaf', None))

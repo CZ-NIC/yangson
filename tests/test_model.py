@@ -332,143 +332,201 @@ def test_instance(data_model, instance):
 
 
 def test_xpath(data_model, instance):
-    def xptest(expr, res=True, node=instance, module="test"):
+    def xptest(expr, back, res=True, node=instance, module="test"):
         mid = data_model.schema_data.last_revision(module)
-        xpp = XPathParser(expr, SchemaContext(data_model.schema_data, module, mid))
-        assert xpp.parse().evaluate(node) == res
+        xpp = XPathParser(expr, SchemaContext(data_model.schema_data,
+                                              module, mid))
+        pex = xpp.parse()
+        assert str(pex) == back
+        assert pex.evaluate(node) == res
     conta = instance["test:contA"]
     lr = conta["testb:leafR"]
     with pytest.raises(InvalidXPath):
-        xptest("foo()")
+        xptest("foo()", "foo()")
     with pytest.raises(NotSupported):
-        xptest("id()")
-    xptest("true()")
-    xptest("false()", False)
-    xptest("1 div 0", float('inf'))
-    xptest("-1 div 0", float('-inf'))
-    xptest("string(0 div 0)", "NaN")
-    xptest("5 mod 2", 1)
-    xptest("5 mod -2", 1)
-    xptest("- 5 mod 2", -1)
-    xptest("- 5 mod - 2", -1)
-    xptest("count(t:llistB)", 2)
-    xptest("count(*)", 10, conta)
-    xptest("count(*[. > 10])", 2, conta)
-    xptest("-leafA", -11, conta)
-    xptest(" - - leafA", 11, conta)
-    xptest("llistB = '::1'")
-    xptest("llistB != '::1'")
-    xptest("not(llistB = '::1')", False)
-    xptest("llistB[position() = 2]", "127.0.0.1")
-    xptest("count(child::llistB/following-sibling::*)", 1)
-    xptest("leafA > leafB", node=conta)
-    xptest("leafA mod leafB", 2, node=conta)
-    xptest("listA/contD/contE/leafJ = ''", node=conta)
+        xptest("id()", "id()")
+    xptest("true()", "true()")
+    xptest("false()", "false()", False)
+    xptest("1 div 0", "1.0 div 0.0", float('inf'))
+    xptest("-1 div 0", "-1.0 div 0.0", float('-inf'))
+    xptest("string(0 div 0)", "string(0.0 div 0.0)", "NaN")
+    xptest("5 mod 2", "5.0 mod 2.0", 1)
+    xptest("5 mod -2", "5.0 mod -2.0", 1)
+    xptest("- 5 mod 2", "-5.0 mod 2.0", -1)
+    xptest("- 5 mod - 2", "-5.0 mod -2.0", -1)
+    xptest("count(t:llistB)", "count(test:llistB)", 2)
+    xptest("count(*)", "count(*)", 10, conta)
+    xptest("count(*[. > 10])", "count(*[. > 10.0])", 2, conta)
+    xptest("-leafA", "-leafA", -11, conta)
+    xptest(" - - leafA", "leafA", 11, conta)
+    xptest("llistB = '::1'", 'llistB = "::1"')
+    xptest("llistB != '::1'", 'llistB != "::1"')
+    xptest("not(llistB = '::1')", 'not(llistB = "::1")', False)
+    xptest("llistB[position() = 2]", "llistB[position() = 2.0]", "127.0.0.1")
+    xptest("count(child::llistB/following-sibling::*)",
+           "count(llistB/following-sibling::*)", 1)
+    xptest("leafA > leafB", "leafA > leafB", node=conta)
+    xptest("leafA mod leafB", "leafA mod leafB", 2, node=conta)
+    xptest("listA/contD/contE/leafJ = ''", 'listA/contD/contE/leafJ = ""',
+           node=conta)
     xptest("""listA[leafE='C0FFEE' ][ leafF = 'true']
-           /contD/contE/leafP = 10""", node=conta)
-    xptest("listA/contD/contE/leafP < leafA | leafB", node=conta)
-    xptest("listA/contD/contE/leafP > leafA | leafB", node=conta)
-    xptest("listA/contD/contE/leafP = leafA | /contA/leafB", False, conta)
-    xptest("/t:contA/t:listA[t:leafE = current()]/t:contD/t:leafG = 'foo1-bar'",
+           /contD/contE/leafP = 10""",
+           'listA[leafE = "C0FFEE"][leafF = "true"]/contD/contE/leafP = 10.0',
+           node=conta)
+    xptest("listA/contD/contE/leafP < leafA | leafB",
+           "listA/contD/contE/leafP < leafA | leafB", node=conta)
+    xptest("listA/contD/contE/leafP > leafA | leafB",
+           "listA/contD/contE/leafP > leafA | leafB", node=conta)
+    xptest("listA/contD/contE/leafP = leafA | /contA/leafB",
+           "listA/contD/contE/leafP = leafA | /contA/leafB", False, conta)
+    xptest("/t:contA/t:listA[t:leafE=current()]/t:contD/t:leafG = 'foo1-bar'",
+           "/test:contA/test:listA[test:leafE = current()]/"
+           'test:contD/test:leafG = "foo1-bar"',
            node=lr, module="testb")
-    xptest("../leafN = 'hi!'", node=lr, module="testb")
-    xptest("local-name()", "")
-    xptest("name()", "")
-    xptest("local-name(t:contA)", "contA")
-    xptest("name(t:contA)", "test:contA")
-    xptest("local-name()", "leafR", lr)
-    xptest("name()", "testb:leafR", lr)
-    xptest("name(../t:listA)", "listA", lr, "testb")
-    xptest("count(descendant-or-self::*)", 32)
-    xptest("count(descendant::t:leafE)", 2)
-    xptest("count(preceding-sibling::*)", 0, lr, "testb")
-    xptest("count(following-sibling::*)", 0, lr, "testb")
-    xptest("count(descendant-or-self::contA/descendant-or-self::contA)", 1, conta)
-    xptest("count(descendant-or-self::contA/descendant::contA)", 0, conta)
-    xptest("listA[last()-1]/following-sibling::*/leafE = 'ABBA'", node=conta)
-    xptest("count(//contD/parent::*/following-sibling::*/*)", 4)
-    xptest("//leafP = 10")
+    xptest("../leafN = 'hi!'", '../leafN = "hi!"', node=lr, module="testb")
+    xptest("local-name()", "local-name()", "")
+    xptest("name()", "name()", "")
+    xptest("local-name(t:contA)", "local-name(test:contA)", "contA")
+    xptest("name(t:contA)", "name(test:contA)", "test:contA")
+    xptest("local-name()", "local-name()", "leafR", lr)
+    xptest("name()", "name()", "testb:leafR", lr)
+    xptest("name(../t:listA)", "name(../test:listA)", "listA", lr, "testb")
+    xptest("count(descendant-or-self::*)", "count(descendant-or-self::*)", 32)
+    xptest("count(descendant::t:leafE)", "count(descendant::test:leafE)", 2)
+    xptest("count(preceding-sibling::*)", "count(preceding-sibling::*)",
+           0, lr, "testb")
+    xptest("count(following-sibling::*)", "count(following-sibling::*)",
+           0, lr, "testb")
+    xptest("count(descendant-or-self::contA/descendant-or-self::contA)",
+           "count(descendant-or-self::contA/descendant-or-self::contA)",
+           1, conta)
+    xptest("count(descendant-or-self::contA/descendant::contA)",
+           "count(descendant-or-self::contA/descendant::contA)", 0, conta)
+    xptest("listA[last()-1]/following-sibling::*/leafE = 'ABBA'",
+           'listA[last() - 1.0]/following-sibling::*/leafE = "ABBA"',
+           node=conta)
+    xptest("count(//contD/parent::*/following-sibling::*/*)",
+           "count(//contD/parent::*/following-sibling::*/*)", 4)
+    xptest("//leafP = 10", "//leafP = 10.0")
     xptest("""count(listA[leafE = 'C0FFEE' and leafF = true()]//
-           leafP/ancestor::node())""", 5, conta)
-    xptest("../* > 9", node=lr, module="testb")
-    xptest("local-name(ancestor-or-self::contA)", "contA", conta)
-    xptest("string(1.0)", "1")
-    xptest("string(true())", "true")
-    xptest("string(1 = 2)", "false")
-    xptest("string(t:contT/t:decimal64)", "4.5")
-    xptest("string()", "C0FFEE", lr)
-    xptest("concat(../t:leafA, 'foo', ., true())", "11fooC0FFEEtrue", lr, "testb")
+           leafP/ancestor::node())""",
+           'count(listA[leafE = "C0FFEE" and leafF = true()]//'
+           "leafP/ancestor::node())", 5, conta)
+    xptest("../* > 9", "../* > 9.0", node=lr, module="testb")
+    xptest("local-name(ancestor-or-self::contA)",
+           "local-name(ancestor-or-self::contA)",
+           "contA", conta)
+    xptest("string(1.0)", "string(1.0)", "1")
+    xptest("string(true())", "string(true())", "true")
+    xptest("string(1 = 2)", "string(1.0 = 2.0)", "false")
+    xptest("string(t:contT/t:decimal64)", "string(test:contT/test:decimal64)",
+           "4.5")
+    xptest("string()", "string()", "C0FFEE", lr)
+    xptest("concat(../t:leafA, 'foo', ., true())",
+           'concat(../test:leafA, "foo", ., true())',
+           "11fooC0FFEEtrue", lr, "testb")
     with pytest.raises(InvalidXPath):
-        xptest("concat()")
-    xptest("starts-with(., 'C0F')", True, lr, "testb")
-    xptest("starts-with(//listA//leafP, 1)")
-    xptest("contains(., '0FF')", True, lr, "testb")
-    xptest("not(contains(../leafN, '!!'))", True, lr, "testb")
-    xptest("substring-before(//decimal64, '.')", "4")
-    xptest("substring-after(//decimal64, '.')", "5")
-    xptest("substring('12345', 1.5, 2.6)", "234")
-    xptest("substring('12345', 0, 3)", "12")
-    xptest("substring('12345', 0 div 0, 3)", "")
-    xptest("substring('12345', 1, 0 div 0)", "")
-    xptest("substring('12345', -42, 1 div 0)", "12345")
-    xptest("substring('12345', -1 div 0, 1 div 0)", "")
-    xptest("substring('12345', -1 div 0)", "12345")
-    xptest("substring(//listA[last()]/leafE, 3)", "BA")
-    xptest("string-length(llistB)", 3)
-    xptest("string-length() = 6", node=lr)
+        xptest("concat()", "concat()")
+    xptest("starts-with(., 'C0F')", 'starts-with(., "C0F")', True, lr, "testb")
+    xptest("starts-with(//listA//leafP, 1)",
+           "starts-with(//listA//leafP, 1.0)")
+    xptest("contains(., '0FF')", 'contains(., "0FF")', True, lr, "testb")
+    xptest("not(contains(../leafN, '!!'))", 'not(contains(../leafN, "!!"))',
+           True, lr, "testb")
+    xptest("substring-before(//decimal64, '.')",
+           'substring-before(//decimal64, ".")', "4")
+    xptest("substring-after(//decimal64, '.')",
+           'substring-after(//decimal64, ".")', "5")
+    xptest("substring('12345', 1.5, 2.6)",
+           'substring("12345", 1.5, 2.6)', "234")
+    xptest("substring('12345', 0, 3)", 'substring("12345", 0.0, 3.0)', "12")
+    xptest("substring('12345', 0 div 0, 3)",
+           'substring("12345", 0.0 div 0.0, 3.0)', "")
+    xptest("substring('12345', 1.0, 0.0 div 0.0)",
+           'substring("12345", 1.0, 0.0 div 0.0)', "")
+    xptest("substring('12345', -42, 1 div 0)",
+           'substring("12345", -42.0, 1.0 div 0.0)', "12345")
+    xptest("substring('12345', -1 div 0, 1 div 0)",
+           'substring("12345", -1.0 div 0.0, 1.0 div 0.0)', "")
+    xptest("substring('12345', -1 div 0)", 'substring("12345", -1.0 div 0.0)',
+           "12345")
+    xptest("substring(//listA[last()]/leafE, 3)",
+           "substring(//listA[last()]/leafE, 3.0)", "BA")
+    xptest("string-length(llistB)", "string-length(llistB)", 3)
+    xptest("string-length() = 6", "string-length() = 6.0", node=lr)
     xptest("""normalize-space('  \tfoo   bar
-           baz    ')""", "foo bar baz")
-    xptest("translate(., 'ABCDEF', 'abcdef')", "c0ffee", lr)
-    xptest("translate('--abcd--', 'abc-', 'ABC')", "ABCd")
-    xptest("boolean(foo)", False)
-    xptest("boolean(descendant::t:leafE)")
-    xptest("boolean(10 mod 2)", False)
-    xptest("boolean(string(llistB))")
-    xptest("number(leafA)", 11, conta)
-    xptest("string(number())", "NaN", lr, "testb")
-    xptest("string(number('foo'))", "NaN")
-    xptest("number(true()) = 1")
-    xptest("number(false()) = 0")
-    xptest("sum(leafA | leafB)", 20, conta)
-    xptest("string(sum(//leafE))", "NaN")
-    xptest("sum(//leafF)", 1)
+           baz    ')""",
+           'normalize-space("  &#9;foo   bar&#10;           baz    ")',
+           "foo bar baz")
+    xptest("translate(., 'ABCDEF', 'abcdef')",
+           'translate(., "ABCDEF", "abcdef")', "c0ffee", lr)
+    xptest("translate('--abcd--', 'abc-', 'ABC')",
+           'translate("--abcd--", "abc-", "ABC")', "ABCd")
+    xptest("boolean(foo)", "boolean(foo)", False)
+    xptest("boolean(descendant::t:leafE)", "boolean(descendant::test:leafE)")
+    xptest("boolean(10 mod 2)", "boolean(10.0 mod 2.0)", False)
+    xptest("boolean(string(llistB))", "boolean(string(llistB))")
+    xptest("number(leafA)", "number(leafA)", 11, conta)
+    xptest("string(number())", "string(number())", "NaN", lr, "testb")
+    xptest("string(number('foo'))", 'string(number("foo"))', "NaN")
+    xptest("number(true()) = 1", "number(true()) = 1.0")
+    xptest("number(false()) = 0", "number(false()) = 0.0")
+    xptest("sum(leafA | leafB)", "sum(leafA | leafB)", 20, conta)
+    xptest("string(sum(//leafE))", "string(sum(//leafE))", "NaN")
+    xptest("sum(//leafF)", "sum(//leafF)", 1)
     with pytest.raises(XPathTypeError):
-        xptest("sum(42)")
-    xptest("floor(t:contT/t:decimal64)", 4)
-    xptest("ceiling(t:contT/t:decimal64)", 5)
-    xptest("round(t:contT/t:decimal64)", 5)
-    xptest("round(- 6.5)", -6)
-    xptest("round(1 div 0)", float("inf"))
-    xptest("round(-1 div 0)", float("-inf"))
-    xptest("string(round(0 div 0))", "NaN")
-    xptest("re-match(//t:leafE, '[0-9a-fA-F]*')")
-    xptest("re-match(count(//t:leafE), '[0-9]*')")
-    xptest(r"re-match('1.22.333', '\d{1,3}\.\d{1,3}\.\d{1,3}')")
-    xptest("re-match('aaax', 'a*')", False)
-    xptest("re-match('a\nb', '.*')", False)
-    xptest("re-match('a\nb', '[a-z\n]*')")
-    xptest("deref(.)/../t:leafF", True, lr, "testb")
-    xptest("deref(../leafS)", 10, lr, "testb")
-    xptest("count(deref(../leafS) | ../leafN)", 2, lr, "testb")
-    xptest("derived-from-or-self(../leafT, 't:CC-BY')", True, lr, "testb")
-    xptest("derived-from(../leafT, 't:CC-BY')", False, lr, "testb")
-    xptest("derived-from(../leafT, 't:derivatives')", True, lr, "testb")
-    xptest("derived-from(../leafT, 't:share-alike')", False, lr, "testb")
-    xptest("derived-from(../leafT, 't:licence-property')", True, lr, "testb")
-    xptest("derived-from(., 't:CC-BY')", False, lr, "testb")
-    xptest("derived-from(., 'CC-BY')", False, conta)
-    xptest("enum-value(//enumeration)", 101)
-    xptest("string(enum-value(foo))", "NaN")
-    xptest("string(enum-value(.))", "NaN", conta)
-    xptest("string(enum-value(.))", "NaN", lr, "testb")
-    xptest("bit-is-set(//bits, 'dos') and bit-is-set(//bits, 'cuatro')")
-    xptest("not(bit-is-set(foo, bar))")
-    xptest("bit-is-set(., 'dos')", False, conta)
+        xptest("sum(42)", "sum(42.0)")
+    xptest("floor(t:contT/t:decimal64)", "floor(test:contT/test:decimal64)", 4)
+    xptest("ceiling(t:contT/t:decimal64)",
+           "ceiling(test:contT/test:decimal64)", 5)
+    xptest("round(t:contT/t:decimal64)", "round(test:contT/test:decimal64)", 5)
+    xptest("round(- 6.5)", "round(-6.5)", -6)
+    xptest("round(1 div 0)", "round(1.0 div 0.0)", float("inf"))
+    xptest("round(-1 div 0)", "round(-1.0 div 0.0)", float("-inf"))
+    xptest("string(round(0 div 0))", "string(round(0.0 div 0.0))", "NaN")
+    xptest("re-match(//t:leafE, '[0-9a-fA-F]*')",
+           're-match(//test:leafE, "[0-9a-fA-F]*")')
+    xptest("re-match(count(//t:leafE), '[0-9]*')",
+           're-match(count(//test:leafE), "[0-9]*")')
+    xptest(r"re-match('1.22.333', '\d{1,3}\.\d{1,3}\.\d{1,3}')",
+           r're-match("1.22.333", "\d{1,3}\.\d{1,3}\.\d{1,3}")')
+    xptest("re-match('aaax', 'a*')", 're-match("aaax", "a*")', False)
+    xptest("re-match('a\nb', '.*')", 're-match("a&#10;b", ".*")', False)
+    xptest("re-match('a\nb', '[a-z\n]*')",
+           're-match("a&#10;b", "[a-z&#10;]*")')
+    xptest("deref(.)/../t:leafF", "deref(.)/../test:leafF", True, lr, "testb")
+    xptest("deref(../leafS)", "deref(../leafS)", 10, lr, "testb")
+    xptest("count(deref(../leafS) | ../leafN)",
+           "count(deref(../leafS) | ../leafN)", 2, lr, "testb")
+    xptest("derived-from-or-self(../leafT, 't:CC-BY')",
+           'derived-from-or-self(../leafT, "t:CC-BY")', True, lr, "testb")
+    xptest("derived-from(../leafT, 't:CC-BY')",
+           'derived-from(../leafT, "t:CC-BY")', False, lr, "testb")
+    xptest("derived-from(../leafT, 't:derivatives')",
+           'derived-from(../leafT, "t:derivatives")', True, lr, "testb")
+    xptest("derived-from(../leafT, 't:share-alike')",
+           'derived-from(../leafT, "t:share-alike")', False, lr, "testb")
+    xptest("derived-from(../leafT, 't:licence-property')",
+           'derived-from(../leafT, "t:licence-property")', True, lr, "testb")
+    xptest("derived-from(., 't:CC-BY')", 'derived-from(., "t:CC-BY")',
+           False, lr, "testb")
+    xptest("derived-from(., 'CC-BY')", 'derived-from(., "CC-BY")',
+           False, conta)
+    xptest("enum-value(//enumeration)", "enum-value(//enumeration)", 101)
+    xptest("string(enum-value(foo))", "string(enum-value(foo))", "NaN")
+    xptest("string(enum-value(.))", "string(enum-value(.))", "NaN", conta)
+    xptest("string(enum-value(.))", "string(enum-value(.))",
+           "NaN", lr, "testb")
+    xptest("bit-is-set(//bits, 'dos') and bit-is-set(//bits, 'cuatro')",
+           'bit-is-set(//bits, "dos") and bit-is-set(//bits, "cuatro")')
+    xptest("not(bit-is-set(foo, bar))", "not(bit-is-set(foo, bar))")
+    xptest("bit-is-set(., 'dos')", 'bit-is-set(., "dos")', False, conta)
 
 
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
-    rid2 = data_model.parse_resource_id("/test:contA/listA=C0FFEE,true/contD/contE")
+    rid2 = data_model.parse_resource_id(
+        "/test:contA/listA=C0FFEE,true/contD/contE")
     iid1 = data_model.parse_instance_id("/test:contA/testb:leafN")
     iid2 = data_model.parse_instance_id(
         "/test:contA/listA[leafE='C0FFEE'][leafF = 'true']/contD/contE")

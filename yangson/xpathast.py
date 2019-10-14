@@ -12,8 +12,8 @@
 # A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Yangson.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """Abstract syntax tree for XPath 1.0 expressions with YANG extensions.
 
@@ -27,6 +27,7 @@ class is intended to be public:
 import decimal
 from math import ceil, copysign, floor
 from pyxb.utils.xmlre import XMLToPython, RegularExpressionError
+from xml.sax.saxutils import quoteattr
 import re
 from typing import List, Optional, Tuple
 from .schemadata import SchemaContext
@@ -54,10 +55,11 @@ class Expr:
     """Abstract class for nodes of XPath AST."""
 
     indent = 2
+    _precedence = 8
 
     def __str__(self) -> str:
-        """Return a string representation of the receiver's AST."""
-        return self._tree()
+        """Return a string representation of the receiver."""
+        raise NotImplementedError
 
     def evaluate(self, node: InstanceNode) -> XPathValue:
         """Evaluate the receiver and return the result.
@@ -92,17 +94,28 @@ class Expr:
             return str(val).lower()
         return str(val)
 
-    def _tree(self, indent: int = 0) -> str:
+    def _xfunc_name(self) -> str:
+        """Return XPath function name based on the class.
+
+        To be used only for functions.
+        """
+        fn = self.__class__.__name__[4:]
+        return fn[0].lower() + "".join(
+            [(c if c.islower() else f"-{c.lower()}") for
+             c in fn[1:]])
+
+    def syntax_tree(self, indent: int = 0) -> str:
+        """Print abstract syntax tree of the receiver."""
         node_name = self.__class__.__name__
         attr = self._properties_str()
         attr_str = " (" + attr + ")\n" if attr else "\n"
         return (" " * indent + node_name + attr_str +
-                self._children_str(indent + self.indent))
+                self._children_ast(indent + self.indent))
 
     def _properties_str(self) -> str:
         return ""
 
-    def _children_str(self, indent) -> str:
+    def _children_ast(self, indent) -> str:
         return ""
 
     def _predicates_str(self, indent) -> str:
@@ -111,7 +124,7 @@ class Expr:
         res = " " * indent + "-- Predicates:\n"
         newi = indent + 3
         for p in self.predicates:
-            res += p._tree(newi)
+            res += p.syntax_tree(newi)
         return res
 
     def _apply_predicates(self, ns: XPathValue,
@@ -139,8 +152,15 @@ class UnaryExpr(Expr):
     def __init__(self, expr: Optional[Expr]):
         self.expr = expr
 
-    def _children_str(self, indent: int) -> str:
-        return self.expr._tree(indent) if self.expr else ""
+    def __str__(self) -> str:
+        """Return string representation of a unary function.
+
+        Non-function subclasses should override this method.
+        """
+        return f"{self._xfunc_name()}({self.expr if self.expr else ''})"
+
+    def _children_ast(self, indent: int) -> str:
+        return self.expr.syntax_tree(indent) if self.expr else ""
 
 
 class BinaryExpr(Expr):
@@ -150,8 +170,15 @@ class BinaryExpr(Expr):
         self.left = left
         self.right = right
 
-    def _children_str(self, indent: int) -> str:
-        return self.left._tree(indent) + self.right._tree(indent)
+    def __str__(self) -> str:
+        """Return string representation of a binary function.
+
+        Non-function subclasses should override this method.
+        """
+        return f"{self._xfunc_name()}({self.left}, {self.right})"
+
+    def _children_ast(self, indent: int) -> str:
+        return self.left.syntax_tree(indent) + self.right.syntax_tree(indent)
 
     def _eval_ops(self, xctx: XPathContext) -> Tuple[XPathValue, XPathValue]:
         return (self.left._eval(xctx), self.right._eval(xctx))
@@ -162,8 +189,23 @@ class BinaryExpr(Expr):
     def _eval_ops_string(self, xctx: XPathContext) -> Tuple[str, str]:
         return (self.left._eval_string(xctx), self.right._eval_string(xctx))
 
+    def _as_str(self, op: str, spaces=True) -> str:
+        lft = str(self.left)
+        if self.left._precedence < self._precedence:
+            lft = "(" + lft + ")"
+        rt = str(self.right)
+        if self.right._precedence < self._precedence:
+            rt = "(" + rt + ")"
+        sop = f" {op} " if spaces else op
+        return f"{lft}{sop}{rt}"
+
 
 class OrExpr(BinaryExpr):
+
+    _precedence = 0
+
+    def __str__(self) -> str:
+        return self._as_str("or")
 
     def _eval(self, xctx: XPathContext) -> bool:
         lres, rres = self._eval_ops(xctx)
@@ -172,6 +214,11 @@ class OrExpr(BinaryExpr):
 
 class AndExpr(BinaryExpr):
 
+    _precedence = 1
+
+    def __str__(self) -> str:
+        return self._as_str("and")
+
     def _eval(self, xctx: XPathContext) -> bool:
         lres, rres = self._eval_ops(xctx)
         return lres and rres
@@ -179,9 +226,14 @@ class AndExpr(BinaryExpr):
 
 class EqualityExpr(BinaryExpr):
 
+    _precedence = 2
+
     def __init__(self, left: Expr, right: Expr, negate: bool):
         super().__init__(left, right)
         self.negate = negate
+
+    def __str__(self) -> str:
+        return self._as_str("!=" if self.negate else "=")
 
     def _properties_str(self) -> str:
         return "!=" if self.negate else "="
@@ -193,11 +245,17 @@ class EqualityExpr(BinaryExpr):
 
 class RelationalExpr(BinaryExpr):
 
+    _precedence = 3
+
     def __init__(self, left: Expr, right: Expr, less: bool,
                  equal: bool):
         super().__init__(left, right)
         self.less = less
         self.equal = equal
+
+    def __str__(self) -> str:
+        lg = "<" if self.less else ">"
+        return self._as_str(lg + "=" if self.equal else lg)
 
     def _properties_str(self) -> str:
         res = "<" if self.less else ">"
@@ -214,9 +272,14 @@ class RelationalExpr(BinaryExpr):
 
 class AdditiveExpr(BinaryExpr):
 
+    _precedence = 4
+
     def __init__(self, left: Expr, right: Expr, plus: bool):
         super().__init__(left, right)
         self.plus = plus
+
+    def __str__(self) -> str:
+        return self._as_str("+" if self.plus else "-")
 
     def _properties_str(self) -> str:
         return "+" if self.plus else "-"
@@ -228,10 +291,15 @@ class AdditiveExpr(BinaryExpr):
 
 class MultiplicativeExpr(BinaryExpr):
 
+    _precedence = 5
+
     def __init__(self, left: Expr, right: Expr,
                  operator: MultiplicativeOp):
         super().__init__(left, right)
         self.operator = operator
+
+    def __str__(self) -> str:
+        return self._as_str(str(self.operator))
 
     def _properties_str(self) -> str:
         if self.operator == MultiplicativeOp.multiply:
@@ -259,9 +327,14 @@ class MultiplicativeExpr(BinaryExpr):
 
 class UnaryMinusExpr(UnaryExpr):
 
+    _precedence = 6
+
     def __init__(self, expr: Expr, negate: bool):
         super().__init__(expr)
         self.negate = negate
+
+    def __str__(self) -> str:
+        return f"{'-' if self.negate else ''}{self.expr}"
 
     def _properties_str(self) -> str:
         return "-" if self.negate else "+"
@@ -273,6 +346,11 @@ class UnaryMinusExpr(UnaryExpr):
 
 class UnionExpr(BinaryExpr):
 
+    _precedence = 7
+
+    def __str__(self) -> str:
+        return self._as_str("|")
+
     def _eval(self, xctx: XPathContext) -> NodeSet:
         lres, rres = self._eval_ops(xctx)
         return lres.union(rres)
@@ -282,6 +360,9 @@ class Literal(Expr):
 
     def __init__(self, value: str):
         self.value = value
+
+    def __str__(self) -> str:
+        return quoteattr(self.value)
 
     def _properties_str(self) -> str:
         return self.value
@@ -295,6 +376,9 @@ class Number(Expr):
     def __init__(self, value: float):
         self.value = value
 
+    def __str__(self) -> str:
+        return str(self.value)
+
     def _properties_str(self) -> str:
         return str(self.value)
 
@@ -303,6 +387,9 @@ class Number(Expr):
 
 
 class PathExpr(BinaryExpr):
+
+    def __str__(self) -> str:
+        return self._as_str("/", spaces=False)
 
     def _eval(self, xctx: XPathContext) -> XPathValue:
         ns = self.left._eval(xctx)
@@ -320,8 +407,12 @@ class FilterExpr(Expr):
         self.primary = primary
         self.predicates = predicates
 
-    def _children_str(self, indent) -> str:
-        return self.primary._tree(indent) + self._predicates_str(indent)
+    def __str__(self) -> str:
+        return (str(self.primary) +
+                "".join([f"[{p}]" for p in self.predicates]))
+
+    def _children_ast(self, indent) -> str:
+        return self.primary.syntax_tree(indent) + self._predicates_str(indent)
 
     def _eval(self, xctx: XPathContext) -> XPathValue:
         res = self.primary._eval(xctx)
@@ -335,11 +426,20 @@ class LocationPath(BinaryExpr):
         ns = lres.bind(self.right._node_trans(xctx))
         return self.right._apply_predicates(ns, xctx)
 
+    def __str__(self) -> str:
+        sep = "" if isinstance(self.left, Root) else "/"
+        return f"{self.left}{sep}{self.right}"
+
 
 class Root(Expr):
 
+    _precedence = 8
+
     def _eval(self, xctx: XPathContext) -> NodeSet:
         return NodeSet([xctx.cnode.top()])
+
+    def __str__(self) -> str:
+        return "/"
 
 
 class Step(Expr):
@@ -350,10 +450,28 @@ class Step(Expr):
         self.qname = qname
         self.predicates = predicates
 
+    def __str__(self) -> str:
+        if self.axis == Axis.descendant_or_self and self.qname is None:
+            return ""
+        if self.axis == Axis.self and self.qname is None:
+            return "."
+        if self.axis == Axis.parent and self.qname is None:
+            return ".."
+        if self.qname:
+            qn = (f"{self.qname[1]}:{self.qname[0]}" if self.qname[1]
+                  else self.qname[0])
+        elif self.qname is None:
+            qn = "node()"
+        else:
+            qn = "*"
+        ax = f"{self.axis}::" if self.axis != Axis.child else ""
+        prs = "".join([f"[{p}]" for p in self.predicates])
+        return ax + qn + prs
+
     def _properties_str(self) -> str:
         return f"{self.axis.name} {self.qname}"
 
-    def _children_str(self, indent) -> str:
+    def _children_ast(self, indent) -> str:
         return self._predicates_str(indent)
 
     def _node_trans(self, xctx) -> NodeExpr:
@@ -413,8 +531,11 @@ class FuncConcat(Expr):
     def __init__(self, parts: List[Expr]):
         self.parts = parts
 
-    def _children_str(self, indent: int) -> str:
-        return "".join([ex._tree(indent) for ex in self.parts])
+    def __str__(self) -> str:
+        return f"concat({', '.join([str(p) for p in self.parts])})"
+
+    def _children_ast(self, indent: int) -> str:
+        return "".join([ex.syntax_tree(indent) for ex in self.parts])
 
     def _eval(self, xctx: XPathContext) -> str:
         return "".join([ex._eval_string(xctx) for ex in self.parts])
@@ -439,6 +560,9 @@ class FuncCurrent(Expr):
     def _eval(self, xctx: XPathContext) -> NodeSet:
         return NodeSet([xctx.origin])
 
+    def __str__(self) -> str:
+        return "current()"
+
 
 class FuncDeref(UnaryExpr):
 
@@ -457,6 +581,9 @@ class FuncDerivedFrom(BinaryExpr):
         super().__init__(left, right)
         self.or_self = or_self
         self.sctx = sctx
+
+    def _xfunc_name(self) -> str:
+        return ("derived-from-or-self" if self.or_self else "derived-from")
 
     def _properties_str(self) -> str:
         return ("OR-SELF, " if self.or_self
@@ -493,6 +620,9 @@ class FuncEnumValue(UnaryExpr):
 
 class FuncFalse(Expr):
 
+    def __str__(self) -> str:
+        return "false()"
+
     def _eval(self, xctx: XPathContext) -> bool:
         return False
 
@@ -505,6 +635,9 @@ class FuncFloor(UnaryExpr):
 
 class FuncLast(Expr):
 
+    def __str__(self) -> str:
+        return "last()"
+
     def _eval(self, xctx: XPathContext) -> int:
         return float(xctx.size)
 
@@ -514,6 +647,10 @@ class FuncName(UnaryExpr):
     def __init__(self, expr: Optional[Expr], local: bool):
         super().__init__(expr)
         self.local = local
+
+    def __str__(self) -> str:
+        fn = "local-name" if self.local else "name"
+        return f"{fn}({self.expr if self.expr else ''})"
 
     def _properties_str(self) -> str:
         return "LOCAL" if self.local else ""
@@ -562,6 +699,9 @@ class FuncNumber(UnaryExpr):
 
 
 class FuncPosition(Expr):
+
+    def __str__(self) -> str:
+        return "position()"
 
     def _eval(self, xctx: XPathContext) -> int:
         return xctx.position
@@ -617,8 +757,14 @@ class FuncSubstring(BinaryExpr):
         super().__init__(string, start)
         self.length = length
 
-    def _children_str(self, indent: int) -> str:
-        return super()._children_str(indent) + self.length._tree(indent)
+    def __str__(self) -> str:
+        res = f"{self._xfunc_name()}({self.left}, {self.right}"
+        if self.length:
+            res += f", {self.length}"
+        return res + ")"
+
+    def _children_ast(self, indent: int) -> str:
+        return super()._children_ast(indent) + self.length.syntax_tree(indent)
 
     def _eval(self, xctx: XPathContext) -> str:
         string = self.left._eval_string(xctx)
@@ -671,8 +817,11 @@ class FuncTranslate(BinaryExpr):
         super().__init__(s1, s2)
         self.nchars = s3
 
-    def _children_str(self, indent: int) -> str:
-        return super()._children_str(indent) + self.nchars._tree(indent)
+    def __str__(self) -> str:
+        return f"{self._xfunc_name()}({self.left}, {self.right}, {self.nchars})"
+
+    def _children_ast(self, indent: int) -> str:
+        return super()._children_ast(indent) + self.nchars.syntax_tree(indent)
 
     def _eval(self, xctx: XPathContext) -> str:
         string, old = self._eval_ops_string(xctx)
@@ -682,6 +831,9 @@ class FuncTranslate(BinaryExpr):
 
 
 class FuncTrue(Expr):
+
+    def __str__(self) -> str:
+        return "true()"
 
     def _eval(self, xctx: XPathContext) -> bool:
         return True

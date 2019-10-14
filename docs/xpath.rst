@@ -33,41 +33,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    ...     ri = json.load(infile)
    >>> inst = dm.from_raw(ri)
 
-XPath Abstract Syntax Tree
-==========================
-
-.. module:: yangson.xpathast
-   :synopsis: Abstract syntax tree for XPath expressions
-
-The :mod:`.xpathast` module defines classes that allow for building
-`abstract syntax trees`__ (AST) for XPath 1.0 expressions with
-extensions introduced by YANG 1.1. Only the following class is
-intended to be public:
-
-__ https://en.wikipedia.org/wiki/Abstract_syntax_tree
-
-* :class:`Expr`: XPath 1.0 expression with YANG 1.0 extensions.
-
-.. class:: Expr
-
-   An abstract superclass for nodes of the XPath abstract syntax
-   tree. The methods of this class described below comprise the public
-   API for compiled XPath expressions.
-
-   .. rubric:: Public Methods
-
-   .. automethod:: __str__
-
-   .. method:: evaluate(node: InstanceNode) -> XPathValue
-
-      Evaluate the receiver and return the result, which can be a
-      node-set, string, number or boolean. The *node* argument is an
-      :class:`~.instance.InstanceNode` that is used as the context
-      node for XPath evaluation.
-
-      This method raises :exc:`~.XPathTypeError` if a subexpression
-      evaluates to a value whose type is not allowed at a given
-      place.
 
 Parser of XPath Expressions
 ===========================
@@ -114,27 +79,87 @@ The module defines the following classes:
       * other exceptions that are defined in the :mod:`.parser`
         module.
 
-.. doctest::
+   .. doctest::
 
-   >>> fref = inst["example-4-a:bag"]["example-4-b:fooref"]
-   >>> xp = 'deref(.)/../../quux[2]/preceding-sibling::quux = 3.1415'
-   >>> sctx = SchemaContext(dm.schema_data, 'example-4-b', ('example-4-b', ''))
-   >>> cxp = XPathParser(xp, sctx).parse()
-   >>> print(cxp, end='')
-   EqualityExpr (=)
-     PathExpr
-       FilterExpr
-         FuncDeref
-           Step (self None)
-       LocationPath
-         LocationPath
-           LocationPath
-             Step (parent None)
-             Step (parent None)
-           Step (child ('quux', None))
-             -- Predicates:
-                Number (2.0)
-         Step (preceding_sibling ('quux', None))
-     Number (3.1415)
-   >>> cxp.evaluate(fref)
-   True
+      >>> fref = inst["example-4-a:bag"]["example-4-b:fooref"]
+      >>> xp = 'deref(.)/../../quux[2]/preceding-sibling::quux = 3.1415'
+      >>> sctx = SchemaContext(dm.schema_data, 'example-4-b', ('example-4-b', ''))
+      >>> xparser = XPathParser(xp, sctx)
+      >>> cxp = xparser.parse()
+      >>> cxp.__class__.__name__
+      'EqualityExpr'
+
+XPath Abstract Syntax Tree
+==========================
+
+.. module:: yangson.xpathast
+   :synopsis: Abstract syntax tree for XPath expressions
+
+The :mod:`.xpathast` module defines classes that allow for building
+`abstract syntax trees`__ (AST) for XPath 1.0 expressions with
+extensions introduced by YANG 1.1. Only the following class is
+intended to be public:
+
+__ https://en.wikipedia.org/wiki/Abstract_syntax_tree
+
+* :class:`Expr`: XPath 1.0 expression with YANG 1.0 extensions.
+
+.. class:: Expr
+
+   An abstract superclass for nodes of the XPath abstract syntax
+   tree. The methods of this class described below comprise the public
+   API for compiled XPath expressions.
+
+   .. rubric:: Public Methods
+
+   .. method:: __str__() -> str
+
+      Print a serialized string representation of the receiver. YANG
+      module names are used as XML namespace prefixes. Note also that
+      all numbers (including integers) are printed as floats, because
+      the latter is the only numeric type defined in XPath 1.0.
+
+      .. doctest::
+
+	 >>> str(cxp)
+	 'deref(.)/../../quux[2.0]/preceding-sibling::quux = 3.1415'
+
+   .. method:: syntax_tree() -> str
+
+      Print the abstract syntax tree of the receiver. This is mainly
+      useful for debugging XPath expressions.
+
+      .. doctest::
+
+         >>> print(cxp.syntax_tree(), end='')
+         EqualityExpr (=)
+           PathExpr
+             FilterExpr
+               FuncDeref
+                 Step (self None)
+             LocationPath
+               LocationPath
+                 LocationPath
+                   Step (parent None)
+                   Step (parent None)
+                 Step (child ('quux', None))
+                   -- Predicates:
+                      Number (2.0)
+               Step (preceding_sibling ('quux', None))
+           Number (3.1415)
+
+   .. method:: evaluate(node: InstanceNode) -> XPathValue
+
+      Evaluate the receiver and return the result, which can be a
+      node-set, string, number or boolean. The *node* argument is an
+      :class:`~.instance.InstanceNode` that is used as the context
+      node for XPath evaluation.
+
+      This method raises :exc:`~.XPathTypeError` if a subexpression
+      evaluates to a value whose type is not allowed at a given
+      place.
+
+      .. doctest::
+
+         >>> cxp.evaluate(fref)
+         True
