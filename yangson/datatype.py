@@ -47,16 +47,19 @@ This module implements the following classes:
 import base64
 import decimal
 import numbers
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 from .constraint import Intervals, Pattern
 from .exceptions import (
-    InvalidArgument, ParserException, ModuleNotRegistered, UnknownPrefix)
+    InvalidArgument, ParserException, ModuleNotRegistered, UnknownPrefix,
+    InvalidLeafrefPath)
 from .schemadata import SchemaContext
 from .instance import InstanceNode, InstanceIdParser, InstanceRoute
 from .statement import Statement
 from .typealiases import QualName, RawScalar, ScalarValue, YangIdentifier
 from .xpathparser import XPathParser
+if TYPE_CHECKING:
+    from .schemanode import TerminalNode
 
 
 class DataType:
@@ -135,6 +138,13 @@ class DataType:
         self.error_tag = error_tag if error_tag else "invalid-type"
         self.error_message = (error_message if error_message else
                               "expected " + str(self))
+
+    def _post_process(self, tnode: "TerminalNode") -> None:
+        """Post-process the receiver type on behalf of a terminal node.
+
+        By default do nothing.
+        """
+        pass
 
     @classmethod
     def _resolve_type(cls, stmt: Statement, sctx: SchemaContext) -> "DataType":
@@ -521,6 +531,12 @@ class LeafrefType(LinkType):
         ns = self.path.evaluate(node)
         return [n for n in ns if str(n) == str(node)]
 
+    def _post_process(self, tnode: "TerminalNode") -> None:
+        ref = tnode._follow_leafref(self.path, tnode)
+        if ref is None:
+            raise InvalidLeafrefPath(tnode.qual_name)
+        self.ref_type = ref.type
+
     def _type_digest(self, config: bool) -> Dict[str, Any]:
         res = super()._type_digest(config)
         res["ref_type"] = self.ref_type._type_digest(config)
@@ -819,6 +835,10 @@ class UnionType(DataType):
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.types = [self._resolve_type(ts, sctx)
                       for ts in stmt.find_all("type")]
+
+    def _post_process(self, tnode: "TerminalNode") -> None:
+        for t in self.types:
+            t._post_process(tnode)
 
 
 DataType.dtypes = {"binary": BinaryType,

@@ -44,11 +44,11 @@ This module implements the following classes:
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Set, Tuple
 from .constraint import Must
-from .datatype import (DataType, LeafrefType, LinkType,
+from .datatype import (DataType, LinkType,
                        RawScalar, IdentityrefType)
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
 from .exceptions import (
-    AnnotationTypeError, InvalidLeafrefPath, InvalidArgument,
+    AnnotationTypeError, InvalidArgument,
     MissingAnnotationTarget, MissingAugmentTarget, RawMemberError,
     RawTypeError, SchemaError, SemanticError, UndefinedAnnotation,
     YangsonException, YangTypeError)
@@ -870,11 +870,7 @@ class TerminalNode(SchemaNode):
 
     def _post_process(self) -> None:
         super()._post_process()
-        if isinstance(self.type, LeafrefType):
-            ref = self._follow_leafref(self.type.path, self)
-            if ref is None:
-                raise InvalidLeafrefPath(self.qual_name)
-            self.type.ref_type = ref.type
+        self.type._post_process(self)
 
     def _is_identityref(self) -> bool:
         return isinstance(self.type, IdentityrefType)
