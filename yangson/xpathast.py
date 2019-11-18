@@ -666,7 +666,7 @@ class FuncName(UnaryExpr):
                 raise XPathTypeError(str(ns))
             except IndexError:
                 return ""
-        if node.path is ():
+        if node.path == ():
             return ""
         if self.local:
             p, s, loc = node.name.partition(":")
