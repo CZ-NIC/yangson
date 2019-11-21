@@ -122,7 +122,7 @@ __ https://en.wikipedia.org/wiki/Abstract_syntax_tree
       .. doctest::
 
 	 >>> str(cxp)
-	 'deref(.)/../../quux[2.0]/preceding-sibling::quux = 3.1415'
+	 'deref(.)/../../example-4-b:quux[2.0]/preceding-sibling::example-4-b:quux = 3.1415'
 
    .. method:: syntax_tree() -> str
 
@@ -142,10 +142,10 @@ __ https://en.wikipedia.org/wiki/Abstract_syntax_tree
                  LocationPath
                    Step (parent None)
                    Step (parent None)
-                 Step (child ('quux', None))
+                 Step (child ('quux', 'example-4-b'))
                    -- Predicates:
                       Number (2.0)
-               Step (preceding_sibling ('quux', None))
+               Step (preceding_sibling ('quux', 'example-4-b'))
            Number (3.1415)
 
    .. method:: evaluate(node: InstanceNode) -> XPathValue

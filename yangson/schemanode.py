@@ -590,8 +590,14 @@ class InternalNode(SchemaNode):
         if not sctx.schema_data.if_features(stmt, sctx.text_mid):
             return
         grp, gid = sctx.schema_data.get_definition(stmt, sctx)
-        if stmt.find1("when"):
+        wst = stmt.find1("when")
+        if wst:
             sn = GroupNode()
+            xpp = XPathParser(wst.argument, sctx)
+            wex = xpp.parse()
+            if not xpp.at_end():
+                raise InvalidArgument(wst.argument)
+            sn.when = wex
             self._add_child(sn)
         else:
             sn = self

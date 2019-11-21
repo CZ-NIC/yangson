@@ -266,7 +266,7 @@ class XPathParser(Parser):
         try:
             next = self.peek()
         except EndOfInput:
-            return Axis.child, (yid, None)
+            return Axis.child, (yid, self.sctx.default_ns)
         if next == "(":
             return (Axis.child, self._node_type(yid))
         if next == ":":
@@ -288,7 +288,7 @@ class XPathParser(Parser):
             loc = self.yang_identifier()
             self.skip_ws()
             return Axis.child, (loc, nsp)
-        return Axis.child, (yid, None)
+        return Axis.child, (yid, self.sctx.default_ns)
 
     def _node_type(self, typ):
         if typ == "node":
@@ -310,7 +310,7 @@ class XPathParser(Parser):
         try:
             next = self.peek()
         except EndOfInput:
-            return ident, None
+            return ident, self.sctx.default_ns
         if next == "(":
             return self._node_type(ident)
         if not ws and self.test_string(":"):
@@ -318,7 +318,7 @@ class XPathParser(Parser):
                 self.yang_identifier(),
                 self.sctx.schema_data.prefix2ns(ident, self.sctx.text_mid))
         else:
-            res = (ident, None)
+            res = (ident, self.sctx.default_ns)
         self.skip_ws()
         return res
 
