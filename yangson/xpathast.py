@@ -458,8 +458,7 @@ class Step(Expr):
         if self.axis == Axis.parent and self.qname is None:
             return ".."
         if self.qname:
-            qn = (f"{self.qname[1]}:{self.qname[0]}" if self.qname[1]
-                  else self.qname[0])
+            qn = f"{self.qname[1]}:{self.qname[0]}"
         elif self.qname is None:
             qn = "node()"
         else:
@@ -475,25 +474,24 @@ class Step(Expr):
         return self._predicates_str(indent)
 
     def _node_trans(self, xctx) -> NodeExpr:
-        qname = ((self.qname[0], xctx.origin.namespace) if
-                 self.qname and self.qname[1] is None else self.qname)
         return {
-            Axis.ancestor: lambda n, qn=qname: n._ancestors(qn),
+            Axis.ancestor: lambda n, qn=self.qname: n._ancestors(qn),
             Axis.ancestor_or_self:
-                lambda n, qn=qname: n._ancestors_or_self(qn),
-            Axis.child: lambda n, qn=qname: n._children(qn),
-            Axis.descendant: lambda n, qn=qname: n._descendants(qn),
+                lambda n, qn=self.qname: n._ancestors_or_self(qn),
+            Axis.child: lambda n, qn=self.qname: n._children(qn),
+            Axis.descendant: lambda n, qn=self.qname: n._descendants(qn),
             Axis.descendant_or_self:
-                lambda n, qn=qname: n._descendants(qn, True),
+                lambda n, qn=self.qname: n._descendants(qn, True),
             Axis.following_sibling:
-                lambda n, qn=qname: n._following_siblings(qn),
+                lambda n, qn=self.qname: n._following_siblings(qn),
             Axis.parent: (
-                lambda n, qn=qname: [] if qn and qn != n.parent.qual_name
+                lambda n, qn=self.qname: [] if qn and qn != n.parent.qual_name
                 else n._parent()),
             Axis.preceding_sibling:
-                lambda n, qn=qname: n._preceding_siblings(qn),
+                lambda n, qn=self.qname: n._preceding_siblings(qn),
             Axis.self:
-                lambda n, qn=qname: [] if qn and qn != n.qual_name else [n],
+                lambda n, qn=self.qname: [] if qn and qn != n.qual_name
+                else [n],
         }[self.axis]
 
     def _eval(self, xctx: XPathContext) -> XPathValue:
