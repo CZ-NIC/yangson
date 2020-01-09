@@ -137,6 +137,9 @@ class InstanceNode:
         self.value = value             # type: Value
         """Value of the receiver."""
 
+        """" Mapping from key tuple to children """
+        self._childmap = None           # type: dict
+
     @property
     def name(self) -> InstanceName:
         """Name of the receiver."""
@@ -178,6 +181,8 @@ class InstanceNode:
                 `name`.
             InstanceValueError: If the receiver's value is not an object.
         """
+        if isinstance(self.value, ArrayValue) and isinstance(key, tuple):
+            return self._mapentry(key)
         if isinstance(self.value, ObjectValue):
             return self._member(key)
         if isinstance(self.value, ArrayValue):
@@ -396,6 +401,28 @@ class InstanceNode:
                               val.timestamp)
         except (IndexError, TypeError):
             raise NonexistentInstance(self.json_pointer(), "entry " + str(index)) from None
+
+    def _mapentry(self, key: tuple) -> "ArrayEntry":
+        if self._childmap is None:
+            self._childmap = {}
+            keys = self.schema_node._key_members
+
+            # iterate over all childs
+            for child in self:
+                keylist = []
+
+                # collect key values into tuple
+                for keyit in keys:
+                    keylist.append(child[keyit].value)
+
+                # cache mapping
+                self._childmap[tuple(keylist)] = child
+
+        try:
+            return self._childmap[key]
+        except (KeyError):
+            raise NonexistentInstance(self.json_pointer(),
+                                      f"key '{key}'") from None
 
     def _peek_schema_route(self, sroute: SchemaRoute) -> Value:
         irt = InstanceRoute()
