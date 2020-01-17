@@ -706,7 +706,7 @@ class IntegralType(NumericType):
     """Abstract class for integral data types."""
 
     def __contains__(self, val: int) -> bool:
-        if not isinstance(val, int):
+        if not isinstance(val, int) or isinstance(val, bool):
             self._set_error_info()
             return False
         return super().__contains__(val)
@@ -719,6 +719,8 @@ class IntegralType(NumericType):
             return None
 
     def from_raw(self, raw: RawScalar) -> Optional[int]:
+        if isinstance(raw, bool):
+            return None
         try:
             return int(raw)
         except (ValueError, TypeError):
