@@ -179,7 +179,6 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       .. doctest::
 
-         >>> from test import *
          >>> bits_t.to_raw(('dos', 'tres'))
          'dos tres'
          >>> bits_t.to_raw((2,3)) is None
