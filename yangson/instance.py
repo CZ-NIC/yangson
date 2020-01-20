@@ -137,8 +137,10 @@ class InstanceNode:
         self.value = value             # type: Value
         """Value of the receiver."""
 
-        """" Mapping from key tuple to children """
-        self._childmap = None           # type: dict
+        """Mapping from key tuple to children"""
+        self._childmap = {}             # type: dict
+        """Remember at which index we want to start parsing the childs"""
+        self._parse_next = 0            # type: int
 
     @property
     def name(self) -> InstanceName:
@@ -183,11 +185,18 @@ class InstanceNode:
         """
         if isinstance(self.value, ArrayValue) and isinstance(key, tuple):
             return self._mapentry(key)
+        if isinstance(self.value, ArrayValue) and isinstance(key, dict):
+            return self._mapentry(self._map2tuple(key))
         if isinstance(self.value, ObjectValue):
             return self._member(key)
         if isinstance(self.value, ArrayValue):
             return self._entry(key)
         raise InstanceValueError(self.json_pointer(), "scalar instance")
+
+    def __contains__(self, key: InstanceKey) -> bool:
+        """Checks if key does exist
+        """
+        return self.get(key) is not None
 
     def __iter__(self):
         """Return receiver's iterator.
@@ -209,6 +218,14 @@ class InstanceNode:
         if isinstance(self.value, ObjectValue):
             return iter(self._member_names())
         raise InstanceValueError(self.json_pointer(), "scalar instance")
+
+    def get(self, key: InstanceKey, d=None):
+        """Return member or entry with given key, returns default if it does not exist
+        """
+        try:
+            return self[key]
+        except (InstanceValueError, NonexistentInstance):
+            return d
 
     def is_internal(self) -> bool:
         """Return ``True`` if the receiver is an instance of an internal node.
@@ -402,27 +419,42 @@ class InstanceNode:
         except (IndexError, TypeError):
             raise NonexistentInstance(self.json_pointer(), "entry " + str(index)) from None
 
+    def _map2tuple(self, key: dict) -> tuple:
+        """generate tuple for key"""
+        keylist = []
+        for keyit in self.schema_node._key_members:
+            keylist.append(key[keyit])
+
+        return tuple(keylist)
+
     def _mapentry(self, key: tuple) -> "ArrayEntry":
-        if self._childmap is None:
-            self._childmap = {}
-            keys = self.schema_node._key_members
+        child = self._childmap.get(key)
+        if child is not None:
+            return child
 
-            # iterate over all childs
-            for child in self:
-                keylist = []
+        """lazy initialization of mapping from keys to childnodes"""
+        keys = self.schema_node._key_members
 
-                # collect key values into tuple
-                for keyit in keys:
-                    keylist.append(child[keyit].value)
+        """iterate over all childs starting with last unparsed index"""
+        while self._parse_next < len(self.value):
+            child = self[self._parse_next]
 
-                # cache mapping
-                self._childmap[tuple(keylist)] = child
+            """generate tuple for key"""
+            keylist = []
+            for keyit in keys:
+                keylist.append(child[keyit].value)
+            keytuple = tuple(keylist)
 
-        try:
-            return self._childmap[key]
-        except (KeyError):
-            raise NonexistentInstance(self.json_pointer(),
-                                      f"key '{key}'") from None
+            """cache mapping for later use"""
+            self._childmap[keytuple] = child
+
+            """mark this child as done"""
+            self._parse_next = self._parse_next + 1;
+
+            if keytuple == key:
+                return child
+
+        raise NonexistentInstance(self.json_pointer(), f"key '{key}'") from None
 
     def _peek_schema_route(self, sroute: SchemaRoute) -> Value:
         irt = InstanceRoute()
