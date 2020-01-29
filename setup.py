@@ -12,6 +12,9 @@ setup(
     entry_points = {
         "console_scripts": ["yangson=yangson.__main__:main"]
         },
+    package_data = {
+        "yangson": ["py.typed"]
+        },
     install_requires = ["PyXB"],
     tests_require = ["pytest"],
     keywords = ["yang", "data model", "configuration", "json"],
