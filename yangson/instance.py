@@ -137,11 +137,6 @@ class InstanceNode:
         self.value = value             # type: Value
         """Value of the receiver."""
 
-        """Mapping from key tuple to children"""
-        self._childmap = {}             # type: dict
-        """Remember at which index we want to start parsing the childs"""
-        self._parse_next = 0            # type: int
-
     @property
     def name(self) -> InstanceName:
         """Name of the receiver."""
@@ -428,30 +423,11 @@ class InstanceNode:
         return tuple(keylist)
 
     def _mapentry(self, key: tuple) -> "ArrayEntry":
-        child = self._childmap.get(key)
-        if child is not None:
-            return child
-
-        """lazy initialization of mapping from keys to childnodes"""
-        keys = self.schema_node._key_members
-
-        """iterate over all childs starting with last unparsed index"""
-        while self._parse_next < len(self.value):
-            child = self[self._parse_next]
-
+        """iterate over all childs"""
+        for child in self:
             """generate tuple for key"""
-            keylist = []
-            for keyit in keys:
-                keylist.append(child[keyit].value)
-            keytuple = tuple(keylist)
-
-            """cache mapping for later use"""
-            self._childmap[keytuple] = child
-
-            """mark this child as done"""
-            self._parse_next = self._parse_next + 1;
-
-            if keytuple == key:
+            childkey = tuple(child[singlekey].value for singlekey in self.schema_node._key_members)
+            if key == childkey:
                 return child
 
         raise NonexistentInstance(self.json_pointer(), f"key '{key}'") from None
