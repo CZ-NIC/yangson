@@ -741,7 +741,7 @@ class IntegralType(NumericType):
             return None
 
     def from_raw(self, raw: RawScalar) -> Optional[int]:
-        if isinstance(raw, bool):
+        if not isinstance(raw, int) or isinstance(raw, bool):
             return None
         try:
             return int(raw)
@@ -783,6 +783,18 @@ class Int64Type(IntegralType):
 
     _range = [-9223372036854775808, 9223372036854775807]
 
+    def from_raw(self, raw: RawScalar) -> Optional[int]:
+        """Override superclass method.
+
+        A raw instance may be either string or integer.
+        """
+        if not isinstance(raw, (str, int)) or isinstance(raw, bool):
+            return None
+        try:
+            return int(raw)
+        except (ValueError, TypeError):
+            return None
+
     def to_raw(self, val: int) -> str:
         return self.canonical_string(val)
 
@@ -809,6 +821,18 @@ class Uint64Type(IntegralType):
     """Class representing YANG "uint64" type."""
 
     _range = [0, 18446744073709551615]
+
+    def from_raw(self, raw: RawScalar) -> Optional[int]:
+        """Override superclass method.
+
+        A raw instance may be either string or integer.
+        """
+        if not isinstance(raw, (str, int)) or isinstance(raw, bool):
+            return None
+        try:
+            return int(raw)
+        except (ValueError, TypeError):
+            return None
 
     def to_raw(self, val: int) -> str:
         return self.canonical_string(val)

@@ -3,7 +3,7 @@ appdirs==1.4.0
 args==0.1.0
 astroid==1.4.5
 Babel==2.3.3
-bleach==3.1.0
+bleach~=3.1.4
 certifi==2019.9.11
 chardet==3.0.4
 clint==0.5.1
