@@ -145,11 +145,15 @@ class SchemaData:
                 if "submodule" in item:
                     for s in item["submodule"]:
                         sname = s["name"]
-                        smid = (sname, s["revision"])
-                        sdata = ModuleData(mid)
+                        srev = s["revision"]
+                        smid = (sname, srev)
+                        sdata = ModuleData(smid)
+                        sdata.xml_namespace = s.get('namespace')
                         self.modules[smid] = sdata
+                        self.modules_by_name[sname] = sdata
+                        self.modules_by_ns[sdata.xml_namespace] = sdata
                         mdata.submodules.add(smid)
-                        submod = self._load_module(*smid)
+                        submod = self._load_module(sname, srev, sdata)
                         sdata.statement = submod
                         bt = submod.find1("belongs-to", name, required=True)
                         locpref = bt.find1("prefix", required=True).argument
