@@ -97,9 +97,24 @@ class DataType:
         if isinstance(raw, str):
             return raw
 
+    def from_xml(self, xml: str) -> Optional[ScalarValue]:
+        """Return a cooked value of the received XML type.
+
+        Args:
+            xml: Text of the XML node
+        """
+        return self.from_raw(xml)
+
     def to_raw(self, val: ScalarValue) -> Optional[RawScalar]:
         """Return a raw value ready to be serialized in JSON."""
         return val
+
+    def to_xml(self, val: ScalarValue) -> Optional[str]:
+        """Return XML text value ready to be serialized in XML."""
+        value = self.to_raw(val)
+        if value is not None:
+            return str(value)
+        return None
 
     def parse_value(self, text: str) -> Optional[ScalarValue]:
         """Parse value of the receiver's type.
@@ -228,6 +243,13 @@ class EmptyType(DataType):
     def from_raw(self, raw: RawScalar) -> Optional[Tuple[None]]:
         if raw == [None]:
             return (None,)
+
+    def from_xml(self, xml: str) -> Optional[Tuple[None]]:
+        if xml == '':
+            return (None,)
+
+    def to_xml(self, val: Tuple[None]) -> None:
+        return None
 
 
 class BitsType(DataType):

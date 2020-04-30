@@ -43,6 +43,7 @@ This module implements the following classes:
 
 from datetime import datetime
 from typing import Any, Dict, List, MutableSet, Optional, Set, Tuple
+import xml.etree.ElementTree as ET
 from .constraint import Must
 from .datatype import (DataType, LinkType,
                        RawScalar, IdentityrefType)
@@ -149,6 +150,20 @@ class SchemaNode:
 
         Args:
             rval: Raw value.
+            jptr: JSON pointer of the current instance node.
+
+        Raises:
+            RawMemberError: If a member inside `rval` is not defined in the
+                schema.
+            RawTypeError: If a scalar value inside `rval` is of incorrect type.
+        """
+        raise NotImplementedError
+
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
+        """Return instance value transformed from a raw value using receiver.
+
+        Args:
+            rval: XML node.
             jptr: JSON pointer of the current instance node.
 
         Raises:
@@ -451,6 +466,38 @@ class InternalNode(SchemaNode):
                 res[ch.iname()] = ch.from_raw(rval[qn], npath)
         return res
 
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
+        res = ObjectValue()
+        if jptr == "":
+            self._process_xml_child(res, None, rval, jptr)
+        else:
+            for xmlchild in rval:
+                self._process_xml_child(res, rval, xmlchild, jptr)
+        return res
+
+    def _process_xml_child(self, res: ObjectValue,
+                           rval: ET.Element, xmlchild: ET.Element, jptr: JSONPointer = ""):
+        if xmlchild.tag[0] == '{':
+            xmlns, name = xmlchild.tag[1:].split('}')
+            ns = self.schema_root().schema_data.modules_by_ns.get(xmlns).main_module[0]
+            qn = ns + ':' + name
+        else:
+            name = qn = xmlchild.tag
+            ns = self.ns
+
+        ch = self.get_data_child(name, ns)
+        npath = jptr + "/" + qn
+        if ch is None:
+            raise RawMemberError(npath)
+
+        if isinstance(ch, SequenceNode):
+            if ch.iname() in res:
+                # already done when we discovered an earlier element of the array
+                return
+            res[ch.iname()] = ch.from_xml(rval, qn, npath)
+        else:
+            res[ch.iname()] = ch.from_xml(xmlchild, npath)
+
     def _process_metadata(self, rmo: RawMetadataObject,
                           jptr: JSONPointer) -> MetadataObject:
         res = {}
@@ -721,10 +768,11 @@ class GroupNode(InternalNode):
 class SchemaTreeNode(GroupNode):
     """Root node of a schema tree."""
 
-    def __init__(self):
+    def __init__(self, schemadata: "SchemaData" = None):
         """Initialize the class instance."""
         super().__init__()
         self.annotations: Dict[QualName, Annotation] = {}
+        self.schema_data = schemadata
 
     def data_parent(self) -> InternalNode:
         """Override the superclass method."""
@@ -846,6 +894,12 @@ class TerminalNode(SchemaNode):
     def from_raw(self, rval: RawScalar, jptr: JSONPointer = "") -> ScalarValue:
         """Override the superclass method."""
         res = self.type.from_raw(rval)
+        if res is None:
+            raise RawTypeError(jptr, self.type.yang_type() + " value")
+        return res
+
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
+        res = self.type.from_xml(rval.text)
         if res is None:
             raise RawTypeError(jptr, self.type.yang_type() + " value")
         return res
@@ -1016,6 +1070,25 @@ class SequenceNode(DataNode):
             res.append(self.entry_from_raw(en, f"{jptr}/{i}"))
         return res
 
+    def from_xml(self, rval: ET.Element, tagname: str, jptr: JSONPointer = "") -> Value:
+        res = ArrayValue()
+        i = 0
+        for xmlchild in rval:
+            if xmlchild.tag[0] == '{':
+                xmlns, name = xmlchild.tag[1:].split('}')
+                ns = self.schema_root().schema_data.modules_by_ns.get(xmlns).main_module[0]
+                qn = ns + ':' + name
+            else:
+                name = qn = xmlchild.tag
+                ns = self.ns
+            if qn != tagname:
+                # just collect the array
+                continue
+
+            npath = jptr + "/" + str(i)
+            res.append(self.entry_from_xml(xmlchild, npath))
+        return res
+
     def entry_from_raw(self, rval: RawEntry,
                        jptr: JSONPointer = "") -> EntryValue:
         """Transform a raw (leaf-)list entry into the cooked form.
@@ -1030,6 +1103,20 @@ class SequenceNode(DataNode):
             RawTypeError: If a scalar value inside `rval` is of incorrect type.
         """
         return super().from_raw(rval, jptr)
+
+    def entry_from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> EntryValue:
+        """Transform a XML (leaf-)list entry into the cooked form.
+
+        Args:
+            rval: xml node
+            jptr: JSON pointer of the entry
+
+        Raises:
+            NonexistentSchemaNode: If a member inside `rval` is not defined
+                in the schema.
+            RawTypeError: If a scalar value inside `rval` is of incorrect type.
+        """
+        return super().from_xml(rval, jptr)
 
 
 class ListNode(SequenceNode, InternalNode):
@@ -1324,6 +1411,9 @@ class AnyContentNode(DataNode):
                 res = val
             return res
         return convert(rval)
+
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
+        super().from_xml(rval, jptr)
 
     def _default_instance(self, pnode: "InstanceNode", ctype: ContentType,
                           lazy: bool = False) -> "InstanceNode":

@@ -33,6 +33,7 @@ from datetime import datetime
 import json
 from typing import Dict, List, Optional, Tuple, Union
 from urllib.parse import unquote
+import xml.etree.ElementTree as ET
 from .enumerations import ContentType, ValidationScope
 from .exceptions import (BadSchemaNodeType, EndOfInput, InstanceException,
                          InstanceValueError, InvalidKeyValue,
@@ -156,6 +157,13 @@ class InstanceNode:
             res.insert(0, inst._key)
             inst = inst.parinst
         return tuple(res)
+
+    @property
+    def schema_data(self):
+        inst: InstanceNode = self
+        while inst.parinst:
+            inst = inst.parinst
+        return inst._schema_data
 
     def __str__(self) -> str:
         """Return string representation of the receiver's value."""
@@ -389,6 +397,40 @@ class InstanceNode:
             return [en.raw_value() for en in self]
         return self.schema_node.type.to_raw(self.value)
 
+    def to_xml(self, element: ET.Element = None, schema_data: "SchemaData" = None):
+        """put receiver's value into a XML element"""
+        if schema_data is None:
+            schema_data = self.schema_data
+        if isinstance(self.value, ObjectValue):
+            if element is None:
+                element = ET.Element(self.schema_node.name)
+                element.attrib['xmlns'] = self.schema_node.ns
+            for cname in self:
+                if cname[:1] == '@':
+                    # ignore annotations for now until they are stored independent of JSON encoding
+                    continue
+                m = self[cname]
+                sn = m.schema_node
+                dp = sn.data_parent()
+
+                if isinstance(m.schema_node, (ListNode, LeafListNode)):
+                    for en in m:
+                        child = ET.SubElement(element, sn.name)
+                        if not dp or dp.ns != sn.ns:
+                            child.attrib['xmlns'] = schema_data.modules_by_name[sn.ns].xml_namespace
+                        en.to_xml(child, schema_data)
+                else:
+                    child = ET.SubElement(element, sn.name)
+                    if not dp or dp.ns != sn.ns:
+                        child.attrib['xmlns'] = schema_data.modules_by_name[sn.ns].xml_namespace
+                    m.to_xml(child, schema_data)
+        elif isinstance(self.value, ArrayValue):
+            # Array outside an Object doesn't make sense
+            super().to_xml(element)
+        else:
+            element.text = self.schema_node.type.to_xml(self.value)
+        return element
+
     def _member_names(self) -> List[InstanceName]:
         if isinstance(self.value, ObjectValue):
             return [m for m in self.value if not m.startswith("@")]
@@ -519,8 +561,9 @@ class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
     def __init__(self, value: Value, schema_node: "DataNode",
-                 timestamp: datetime):
+                 schema_data: "SchemaData", timestamp: datetime):
         super().__init__("/", value, None, schema_node, timestamp)
+        self._schema_data = schema_data
 
     def up(self) -> None:
         """Override the superclass method.
@@ -532,7 +575,7 @@ class RootNode(InstanceNode):
 
     def _copy(self, newval: Value, newts: datetime = None) -> InstanceNode:
         return RootNode(
-            newval, self.schema_node, newts if newts else newval.timestamp)
+            newval, self.schema_node, self._schema_data, newts if newts else newval.timestamp)
 
     def _ancestors_or_self(
             self, qname: Union[QualName, bool] = None) -> List["RootNode"]:
@@ -543,7 +586,6 @@ class RootNode(InstanceNode):
             self, qname: Union[QualName, bool] = None) -> List["RootNode"]:
         """XPath - return the list of receiver's ancestors."""
         return []
-
 
 class ObjectMember(InstanceNode):
     """This class represents an object member."""
