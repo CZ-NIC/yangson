@@ -25,6 +25,7 @@ This module implements the following class:
 import hashlib
 import json
 from typing import Optional, Tuple
+import xml.etree.ElementTree as ET
 from .enumerations import ContentType
 from .exceptions import BadYangLibraryData
 from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
@@ -75,13 +76,13 @@ class DataModel:
             ModuleNotFound: If a YANG module wasn't found in any of the
                 directories specified in `mod_path`.
         """
-        self.schema = SchemaTreeNode()
-        self.schema._ctype = ContentType.all
         try:
             self.yang_library = json.loads(yltxt)
         except json.JSONDecodeError as e:
             raise BadYangLibraryData(str(e)) from None
         self.schema_data = SchemaData(self.yang_library, mod_path)
+        self.schema = SchemaTreeNode(self.schema_data)
+        self.schema._ctype = ContentType.all
         self._build_schema()
         self.schema.description = description if description else (
             "Data model ID: " +
@@ -107,7 +108,19 @@ class DataModel:
             Root instance node.
         """
         cooked = self.schema.from_raw(robj)
-        return RootNode(cooked, self.schema, cooked.timestamp)
+        return RootNode(cooked, self.schema, self.schema_data, cooked.timestamp)
+
+    def from_xml(self, root: ET.Element) -> RootNode:
+        """Create an instance node from a raw data tree.
+
+        Args:
+            robj: Dictionary representing a raw data tree.
+
+        Returns:
+            Root instance node.
+        """
+        cooked = self.schema.from_xml(root)
+        return RootNode(cooked, self.schema, self.schema_data, cooked.timestamp)
 
     def get_schema_node(self, path: SchemaPath) -> Optional[SchemaNode]:
         """Return the schema node addressed by a schema path.

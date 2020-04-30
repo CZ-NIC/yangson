@@ -70,10 +70,14 @@ class ModuleData:
         """Set of supported features."""
         self.main_module = main_module  # type: ModuleId
         """Main module of the receiver."""
+        self.xml_namespace = None  # type: str
+        """Content of the namespace definition of the module"""
         self.prefix_map = {}  # type: Dict[YangIdentifier, ModuleId]
         """Map of prefixes to module identifiers."""
         self.statement = None  # type: Statement
         """Corresponding (sub)module statements."""
+        self.path = None  # type: str
+        """Path to the yang file this module was initialized from"""
         self.submodules = set()  # type: MutableSet[ModuleId]
         """Set of submodules."""
 
@@ -96,6 +100,9 @@ class SchemaData:
         """List of directories where to look for YANG modules."""
         self.modules = {}  # type: Dict[ModuleId, ModuleData]
         """Dictionary of module data."""
+        self.modules_by_name = {}  # type: Dict[str, ModuleData]
+        """Dictionary of module data by module name."""
+        self.modules_by_ns = {}
         self._module_sequence = []  # type: List[ModuleId]
         """List that defines the order of module processing."""
         self._from_yang_library(yang_lib)
@@ -121,12 +128,15 @@ class SchemaData:
                 rev = item["revision"]
                 mid = (name, rev)
                 mdata = ModuleData(mid)
+                mdata.xml_namespace = item.get('namespace')
                 self.modules[mid] = mdata
+                self.modules_by_name[name] = mdata
+                self.modules_by_ns[mdata.xml_namespace] = mdata
                 if item["conformance-type"] == "implement":
                     if name in self.implement:
                         raise MultipleImplementedRevisions(name)
                     self.implement[name] = rev
-                mod = self._load_module(name, rev)
+                mod = self._load_module(name, rev, mdata)
                 mdata.statement = mod
                 if "feature" in item:
                     mdata.features.update(item["feature"])
@@ -150,7 +160,7 @@ class SchemaData:
         self._check_feature_dependences()
 
     def _load_module(self, name: YangIdentifier,
-                     rev: RevisionDate) -> Statement:
+                     rev: RevisionDate, mdata: ModuleData) -> Statement:
         """Read and parse a YANG module or submodule."""
         for d in self.module_search_path:
             run = 0
@@ -162,6 +172,7 @@ class SchemaData:
                 try:
                     with open(fn, encoding='utf-8') as infile:
                         res = ModuleParser(infile.read(), name, rev).parse()
+                        mdata.path = fn
                 except (FileNotFoundError, PermissionError, ModuleContentMismatch):
                     run += 1
                     continue
