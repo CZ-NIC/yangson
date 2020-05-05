@@ -587,6 +587,7 @@ class RootNode(InstanceNode):
         """XPath - return the list of receiver's ancestors."""
         return []
 
+
 class ObjectMember(InstanceNode):
     """This class represents an object member."""
 

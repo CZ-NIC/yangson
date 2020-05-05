@@ -231,6 +231,16 @@ class MissingModule(YangsonException):
         return self.name
 
 
+class MissingModuleNamespace(YangsonException):
+    """Abstract exception class – a module is missing."""
+
+    def __init__(self, ns: str):
+        self.ns = ns
+
+    def __str__(self) -> str:
+        return self.ns
+
+
 class ModuleContentMismatch(YangsonException):
     """Abstract exception class – unexpected module name or revision."""
 

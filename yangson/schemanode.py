@@ -50,7 +50,8 @@ from .datatype import (DataType, LinkType,
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
 from .exceptions import (
     AnnotationTypeError, InvalidArgument,
-    MissingAnnotationTarget, MissingAugmentTarget, RawMemberError,
+    MissingAnnotationTarget, MissingAugmentTarget, MissingModuleNamespace,
+    RawMemberError,
     RawTypeError, SchemaError, SemanticError, UndefinedAnnotation,
     YangsonException, YangTypeError)
 from .instvalue import (
@@ -159,7 +160,7 @@ class SchemaNode:
         """
         raise NotImplementedError
 
-    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "", isroot: bool = False) -> Value:
         """Return instance value transformed from a raw value using receiver.
 
         Args:
@@ -466,17 +467,18 @@ class InternalNode(SchemaNode):
                 res[ch.iname()] = ch.from_raw(rval[qn], npath)
         return res
 
-    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "", isroot: bool = False) -> ObjectValue:
         res = ObjectValue()
-        if jptr == "":
-            self._process_xml_child(res, None, rval, jptr)
+        if isroot:
+            self._process_xmlobj_child(res, None, rval, jptr)
         else:
             for xmlchild in rval:
-                self._process_xml_child(res, rval, xmlchild, jptr)
+                self._process_xmlobj_child(res, rval, xmlchild, jptr)
         return res
 
-    def _process_xml_child(self, res: ObjectValue,
-                           rval: ET.Element, xmlchild: ET.Element, jptr: JSONPointer = ""):
+    def _process_xmlobj_child(
+            self, res: ObjectValue, rval: ET.Element,
+            xmlchild: ET.Element, jptr: JSONPointer = ""):
         if xmlchild.tag[0] == '{':
             xmlns, name = xmlchild.tag[1:].split('}')
             ns = self.schema_root().schema_data.modules_by_ns.get(xmlns).main_module[0]
@@ -494,7 +496,7 @@ class InternalNode(SchemaNode):
             if ch.iname() in res:
                 # already done when we discovered an earlier element of the array
                 return
-            res[ch.iname()] = ch.from_xml(rval, qn, npath)
+            res[ch.iname()] = ch.from_xml(rval, npath, qn)
         else:
             res[ch.iname()] = ch.from_xml(xmlchild, npath)
 
@@ -899,7 +901,7 @@ class TerminalNode(SchemaNode):
         return res
 
     def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
-        res = self.type.from_xml(rval.text)
+        res = self.type.from_xml(rval)
         if res is None:
             raise RawTypeError(jptr, self.type.yang_type() + " value")
         return res
@@ -1070,24 +1072,38 @@ class SequenceNode(DataNode):
             res.append(self.entry_from_raw(en, f"{jptr}/{i}"))
         return res
 
-    def from_xml(self, rval: ET.Element, tagname: str, jptr: JSONPointer = "") -> Value:
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "",
+                 tagname: str = None, isroot: bool = False) -> ArrayValue:
         res = ArrayValue()
         i = 0
-        for xmlchild in rval:
-            if xmlchild.tag[0] == '{':
-                xmlns, name = xmlchild.tag[1:].split('}')
-                ns = self.schema_root().schema_data.modules_by_ns.get(xmlns).main_module[0]
-                qn = ns + ':' + name
-            else:
-                name = qn = xmlchild.tag
-                ns = self.ns
-            if qn != tagname:
-                # just collect the array
-                continue
-
-            npath = jptr + "/" + str(i)
-            res.append(self.entry_from_xml(xmlchild, npath))
+        if isroot:
+            return self._process_xmlarray_child(res, rval, jptr)
+        else:
+            for xmlchild in rval:
+                self._process_xmlarray_child(
+                    res, xmlchild, jptr + "/" + str(i))
         return res
+
+    def _process_xmlarray_child(
+            self, res: ArrayValue, xmlchild: ET.Element,
+            jptr: JSONPointer = "", tagname: str = None):
+        if xmlchild.tag[0] == '{':
+            xmlns, name = xmlchild.tag[1:].split('}')
+            module = self.schema_root().schema_data.modules_by_ns.get(xmlns)
+            if not module:
+                raise MissingModuleNamespace(xmlns)
+            ns = module.main_module[0]
+            qn = ns + ':' + name
+        else:
+            name = qn = xmlchild.tag
+            ns = self.ns
+        if tagname and qn != tagname:
+            # just collect the array
+            return
+
+        child = self.entry_from_xml(xmlchild, jptr)
+        res.append(child)
+        return child
 
     def entry_from_raw(self, rval: RawEntry,
                        jptr: JSONPointer = "") -> EntryValue:

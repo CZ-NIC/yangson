@@ -47,12 +47,13 @@ This module implements the following classes:
 import base64
 import decimal
 import numbers
+import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 from .constraint import Intervals, Pattern
 from .exceptions import (
     InvalidArgument, ParserException, ModuleNotRegistered, UnknownPrefix,
-    InvalidLeafrefPath)
+    InvalidLeafrefPath, MissingModuleNamespace)
 from .schemadata import SchemaContext
 from .instance import InstanceNode, InstanceIdParser, InstanceRoute
 from .statement import Statement
@@ -97,13 +98,13 @@ class DataType:
         if isinstance(raw, str):
             return raw
 
-    def from_xml(self, xml: str) -> Optional[ScalarValue]:
+    def from_xml(self, xml: ET.Element) -> Optional[ScalarValue]:
         """Return a cooked value of the received XML type.
 
         Args:
             xml: Text of the XML node
         """
-        return self.from_raw(xml)
+        return self.from_raw(xml.text)
 
     def to_raw(self, val: ScalarValue) -> Optional[RawScalar]:
         """Return a raw value ready to be serialized in JSON."""
@@ -604,6 +605,22 @@ class IdentityrefType(DataType):
             return None
         return (i2, i1) if s else (i1, self.sctx.default_ns)
 
+    def from_xml(self, xml: ET.Element) -> Optional[QualName]:
+        try:
+            i1, s, i2 = xml.text.partition(":")
+        except AttributeError:
+            return None
+        if not i1:
+            return (i2, self.sctx.default_ns)
+
+        ns_url = xml.attrib.get('xmlns:'+i1)
+        if not ns_url:
+            raise MissingModuleNamespace(ns_url)
+        module = self.sctx.schema_data.modules_by_ns.get(ns_url)
+        if not module:
+            raise MissingModuleNamespace(ns_url)
+        return (i2, module.main_module[0])
+
     def __contains__(self, val: QualName) -> bool:
         for b in self.bases:
             if not self.sctx.schema_data.is_derived_from(val, b):
@@ -741,7 +758,7 @@ class IntegralType(NumericType):
             return None
 
     def from_raw(self, raw: RawScalar) -> Optional[int]:
-        if not isinstance(raw, int) or isinstance(raw, bool):
+        if not isinstance(raw, (int, bool, str)):
             return None
         try:
             return int(raw)
