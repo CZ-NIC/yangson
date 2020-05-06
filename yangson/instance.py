@@ -31,12 +31,13 @@ This module implements the following classes:
 
 from datetime import datetime
 import json
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import unquote
 import xml.etree.ElementTree as ET
 from .enumerations import ContentType, ValidationScope
 from .exceptions import (BadSchemaNodeType, EndOfInput, InstanceException,
                          InstanceValueError, InvalidKeyValue,
+                         MissingModuleNamespace,
                          NonexistentInstance, NonDataNode,
                          NonexistentSchemaNode, UnexpectedInput)
 from .instvalue import (ArrayValue, InstanceKey, ObjectValue, Value,
@@ -48,6 +49,14 @@ from .typealiases import (InstanceName, JSONPointer, QualName, RawValue,
 __all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
            "InstanceIdParser", "ResourceIdParser", "InstanceRoute",
            "InstanceException", "InstanceValueError", "NonexistentInstance"]
+
+
+class OutputFilter:
+    def begin_child(self, parent: "InstanceNode", node: "InstanceNode")->bool:
+        return True
+
+    def end_child(self, parent: "InstanceNode", node: "InstanceNode")->bool:
+        return True
 
 
 class LinkedList:
@@ -133,6 +142,8 @@ class InstanceNode:
         """Parent instance node, or ``None`` for the root node."""
         self.schema_node = schema_node  # type: DataNode
         """Data node corresponding to the instance node."""
+        self.schema_data = parinst.schema_data if parinst else None
+        """Link to schema data"""
         self.timestamp = timestamp     # type: datetime
         """Time of the receiver's last modification."""
         self.value = value             # type: Value
@@ -157,13 +168,6 @@ class InstanceNode:
             res.insert(0, inst._key)
             inst = inst.parinst
         return tuple(res)
-
-    @property
-    def schema_data(self):
-        inst: InstanceNode = self
-        while inst.parinst:
-            inst = inst.parinst
-        return inst._schema_data
 
     def __str__(self) -> str:
         """Return string representation of the receiver's value."""
@@ -389,44 +393,85 @@ class InstanceNode:
                 break
         return res.up()
 
-    def raw_value(self) -> RawValue:
+    def raw_value(self, filter: OutputFilter = OutputFilter()) -> RawValue:
         """Return receiver's value in a raw form (ready for JSON encoding)."""
         if isinstance(self.value, ObjectValue):
-            return {m: self._member(m).raw_value() for m in self.value}
+            value = {}
+            for m in self.value:
+                member = self[m]
+                add1 = filter.begin_child(self, member)
+                if add1:
+                    member_value = member.raw_value(filter)
+                add2 = filter.end_child(self, member)
+                if add1 and add2:
+                    value[m] = member_value
+            return value
         if isinstance(self.value, ArrayValue):
-            return [en.raw_value() for en in self]
+            value = list()
+            for en in self:
+                member_value = en.raw_value(filter)
+                if member_value:
+                    value.append(member_value)
+            return value
         return self.schema_node.type.to_raw(self.value)
 
-    def to_xml(self, element: ET.Element = None, schema_data: "SchemaData" = None):
+    def to_xml(self, filter: OutputFilter = OutputFilter(), elem: ET.Element = None):
         """put receiver's value into a XML element"""
-        if schema_data is None:
-            schema_data = self.schema_data
+        if elem is None:
+            element = ET.Element(self.schema_node.name)
+
+            module = self.schema_data.modules_by_name.get(self.schema_node.ns)
+            if not module:
+                raise MissingModuleNamespace(self.schema_node.ns)
+            element.attrib['xmlns'] = module.xml_namespace
+        else:
+            element = elem
+
         if isinstance(self.value, ObjectValue):
-            if element is None:
-                element = ET.Element(self.schema_node.name)
-                element.attrib['xmlns'] = self.schema_node.ns
             for cname in self:
+                childs = list()
                 if cname[:1] == '@':
                     # ignore annotations for now until they are stored independent of JSON encoding
                     continue
-                m = self[cname]
-                sn = m.schema_node
-                dp = sn.data_parent()
 
-                if isinstance(m.schema_node, (ListNode, LeafListNode)):
-                    for en in m:
+                m = self[cname]
+                if filter.begin_child(self, m):
+                    sn = m.schema_node
+                    dp = sn.data_parent()
+
+                    if isinstance(m.schema_node, (ListNode, LeafListNode)):
+                        for en in m:
+                            add1 = filter.begin_child(self, en)
+                            if add1:
+                                child = ET.SubElement(element, sn.name)
+                                childs.append(child)
+                                if not dp or dp.ns != sn.ns:
+                                    module = self.schema_data.modules_by_name.get(sn.ns)
+                                    if not module:
+                                        raise MissingModuleNamespace(sn.ns)
+                                    child.attrib['xmlns'] = module.xml_namespace
+                                en.to_xml(filter, child)
+                            add2 = filter.end_child(self, en)
+                            if add1 and not add2:
+                                element.remove(child)
+                                childs.remove(child)
+                    else:
                         child = ET.SubElement(element, sn.name)
+                        childs.append(child)
                         if not dp or dp.ns != sn.ns:
-                            child.attrib['xmlns'] = schema_data.modules_by_name[sn.ns].xml_namespace
-                        en.to_xml(child, schema_data)
-                else:
-                    child = ET.SubElement(element, sn.name)
-                    if not dp or dp.ns != sn.ns:
-                        child.attrib['xmlns'] = schema_data.modules_by_name[sn.ns].xml_namespace
-                    m.to_xml(child, schema_data)
+                            module = self.schema_data.modules_by_name.get(sn.ns)
+                            if not module:
+                                raise MissingModuleNamespace(sn.ns)
+                            child.attrib['xmlns'] = module.xml_namespace
+                        m.to_xml(filter, child)
+                if not filter.end_child(self, m):
+                    for c in childs:
+                        element.remove(c)
+            if elem is None and len(element) == 0:
+                return None
         elif isinstance(self.value, ArrayValue):
             # Array outside an Object doesn't make sense
-            super().to_xml(element)
+            super().to_xml(filter, element)
         else:
             element.text = self.schema_node.type.to_xml(self.value)
         return element
@@ -563,7 +608,7 @@ class RootNode(InstanceNode):
     def __init__(self, value: Value, schema_node: "DataNode",
                  schema_data: "SchemaData", timestamp: datetime):
         super().__init__("/", value, None, schema_node, timestamp)
-        self._schema_data = schema_data
+        self.schema_data = schema_data
 
     def up(self) -> None:
         """Override the superclass method.
@@ -575,7 +620,7 @@ class RootNode(InstanceNode):
 
     def _copy(self, newval: Value, newts: datetime = None) -> InstanceNode:
         return RootNode(
-            newval, self.schema_node, self._schema_data, newts if newts else newval.timestamp)
+            newval, self.schema_node, self.schema_data, newts if newts else newval.timestamp)
 
     def _ancestors_or_self(
             self, qname: Union[QualName, bool] = None) -> List["RootNode"]:
