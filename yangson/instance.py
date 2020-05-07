@@ -52,10 +52,16 @@ __all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
 
 
 class OutputFilter:
-    def begin_child(self, parent: "InstanceNode", node: "InstanceNode")->bool:
+    def begin_member(self, parent: "InstanceNode", node: "InstanceNode")->bool:
         return True
 
-    def end_child(self, parent: "InstanceNode", node: "InstanceNode")->bool:
+    def end_member(self, parent: "InstanceNode", node: "InstanceNode")->bool:
+        return True
+
+    def begin_element(self, parent: "InstanceNode", node: "InstanceNode")->bool:
+        return True
+
+    def end_element(self, parent: "InstanceNode", node: "InstanceNode")->bool:
         return True
 
 
@@ -399,18 +405,21 @@ class InstanceNode:
             value = {}
             for m in self.value:
                 member = self[m]
-                add1 = filter.begin_child(self, member)
+                add1 = filter.begin_member(self, member)
                 if add1:
                     member_value = member.raw_value(filter)
-                add2 = filter.end_child(self, member)
+                add2 = filter.end_member(self, member)
                 if add1 and add2:
                     value[m] = member_value
             return value
         if isinstance(self.value, ArrayValue):
             value = list()
             for en in self:
-                member_value = en.raw_value(filter)
-                if member_value:
+                add1 = filter.begin_element(self, en)
+                if add1:
+                    member_value = en.raw_value(filter)
+                add2 = filter.end_element(self, en)
+                if add1 and add2 and member_value:
                     value.append(member_value)
             return value
         return self.schema_node.type.to_raw(self.value)
@@ -435,28 +444,26 @@ class InstanceNode:
                     continue
 
                 m = self[cname]
-                if filter.begin_child(self, m):
+                if filter.begin_member(self, m):
                     sn = m.schema_node
                     dp = sn.data_parent()
 
                     if isinstance(m.schema_node, (ListNode, LeafListNode)):
                         for en in m:
-                            add1 = filter.begin_child(self, en)
+                            add1 = filter.begin_element(m, en)
                             if add1:
-                                child = ET.SubElement(element, sn.name)
-                                childs.append(child)
+                                child = ET.Element(sn.name)
                                 if not dp or dp.ns != sn.ns:
                                     module = self.schema_data.modules_by_name.get(sn.ns)
                                     if not module:
                                         raise MissingModuleNamespace(sn.ns)
                                     child.attrib['xmlns'] = module.xml_namespace
                                 en.to_xml(filter, child)
-                            add2 = filter.end_child(self, en)
-                            if add1 and not add2:
-                                element.remove(child)
-                                childs.remove(child)
+                            add2 = filter.end_element(m, en)
+                            if add1 and add2:
+                                childs.append(child)
                     else:
-                        child = ET.SubElement(element, sn.name)
+                        child = ET.Element(sn.name)
                         childs.append(child)
                         if not dp or dp.ns != sn.ns:
                             module = self.schema_data.modules_by_name.get(sn.ns)
@@ -464,9 +471,9 @@ class InstanceNode:
                                 raise MissingModuleNamespace(sn.ns)
                             child.attrib['xmlns'] = module.xml_namespace
                         m.to_xml(filter, child)
-                if not filter.end_child(self, m):
+                if filter.end_member(self, m):
                     for c in childs:
-                        element.remove(c)
+                        element.append(c)
             if elem is None and len(element) == 0:
                 return None
         elif isinstance(self.value, ArrayValue):
