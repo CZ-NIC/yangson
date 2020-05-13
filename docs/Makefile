@@ -47,9 +47,6 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 	@echo "  coverage   to run coverage check of the documentation (if enabled)"
 
-.PHONY: upload
-upload:
-	rsync -vr --delete --exclude '.ssh' _build/html/ yangson-upload@static.labs.nic.cz:
 
 .PHONY: clean
 clean:
