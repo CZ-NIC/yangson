@@ -36,3 +36,4 @@ pages:
       - public
   only:
     - tags
+    - master
