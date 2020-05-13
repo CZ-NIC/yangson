@@ -481,11 +481,16 @@ class InternalNode(SchemaNode):
             xmlchild: ET.Element, jptr: JSONPointer = ""):
         if xmlchild.tag[0] == '{':
             xmlns, name = xmlchild.tag[1:].split('}')
-            ns = self.schema_root().schema_data.modules_by_ns.get(xmlns).main_module[0]
-            qn = ns + ':' + name
+            nsmap = self.schema_root().schema_data.modules_by_ns
+            if xmlns not in nsmap:
+                raise MissingModuleNamespace(xmlns)
+            ns = nsmap[xmlns].main_module[0]
+            fqn = ns + ':' + name
         else:
-            name = qn = xmlchild.tag
+            name = xmlchild.tag
             ns = self.ns
+            fqn = ns + ':' + name
+        qn = fqn if ns != self.ns else name
 
         ch = self.get_data_child(name, ns)
         npath = jptr + "/" + qn
@@ -493,11 +498,11 @@ class InternalNode(SchemaNode):
             raise RawMemberError(npath)
 
         if isinstance(ch, SequenceNode):
-            if ch.iname() in res:
-                # already done when we discovered an earlier element of the array
-                return
-            res[ch.iname()] = ch.from_xml(rval, npath, qn)
+            if ch.iname() not in res:
+                res[ch.iname()] = ch.from_xml(rval, npath, fqn)
         else:
+            if isinstance(ch, LeafNode):
+                print('child schema type:', type(ch.type))
             res[ch.iname()] = ch.from_xml(xmlchild, npath)
 
     def _process_metadata(self, rmo: RawMetadataObject,
@@ -1081,12 +1086,13 @@ class SequenceNode(DataNode):
         else:
             for xmlchild in rval:
                 self._process_xmlarray_child(
-                    res, xmlchild, jptr + "/" + str(i))
+                    res, xmlchild, tagname, jptr + "/" + str(i))
+                i = i + 1
         return res
 
     def _process_xmlarray_child(
             self, res: ArrayValue, xmlchild: ET.Element,
-            jptr: JSONPointer = "", tagname: str = None):
+            tagname: str, jptr: JSONPointer = ""):
         if xmlchild.tag[0] == '{':
             xmlns, name = xmlchild.tag[1:].split('}')
             module = self.schema_root().schema_data.modules_by_ns.get(xmlns)
@@ -1097,12 +1103,11 @@ class SequenceNode(DataNode):
         else:
             name = qn = xmlchild.tag
             ns = self.ns
-        if tagname and qn != tagname:
-            # just collect the array
-            return
-
-        child = self.entry_from_xml(xmlchild, jptr)
-        res.append(child)
+        if tagname is None or qn == tagname:
+            child = self.entry_from_xml(xmlchild, jptr + "/" + str(len(res)))
+            res.append(child)
+        else:
+            child = None
         return child
 
     def entry_from_raw(self, rval: RawEntry,

@@ -104,7 +104,8 @@ class DataType:
         Args:
             xml: Text of the XML node
         """
-        return self.from_raw(xml.text)
+        if isinstance(xml.text, str):
+            return xml.text
 
     def to_raw(self, val: ScalarValue) -> Optional[RawScalar]:
         """Return a raw value ready to be serialized in JSON."""
@@ -112,10 +113,7 @@ class DataType:
 
     def to_xml(self, val: ScalarValue) -> Optional[str]:
         """Return XML text value ready to be serialized in XML."""
-        value = self.to_raw(val)
-        if value is not None:
-            return str(value)
-        return None
+        return value
 
     def parse_value(self, text: str) -> Optional[ScalarValue]:
         """Parse value of the receiver's type.
@@ -352,6 +350,14 @@ class BooleanType(DataType):
         if isinstance(raw, bool):
             return raw
 
+    def from_xml(self, xml: ET.Element) -> Optional[ScalarValue]:
+        """Return a cooked value of the received XML type.
+
+        Args:
+            xml: Text of the XML node
+        """
+        return self.parse_value(xml.text)
+
     def parse_value(self, text: str) -> Optional[bool]:
         """Parse boolean value.
 
@@ -447,6 +453,13 @@ class BinaryType(LinearType):
         except TypeError:
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[bytes]:
+        """Override superclass method."""
+        try:
+            return base64.b64decode(xml.text, validate=True)
+        except TypeError:
+            return None
+
     def __contains__(self, val: bytes) -> bool:
         if not isinstance(val, bytes):
             self._set_error_info()
@@ -454,6 +467,9 @@ class BinaryType(LinearType):
         return super().__contains__(val)
 
     def to_raw(self, val: bytes) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: bytes) -> str:
         return self.canonical_string(val)
 
     def canonical_string(self, val: bytes) -> Optional[str]:
@@ -547,8 +563,14 @@ class LeafrefType(LinkType):
     def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
         return self.ref_type.from_raw(raw)
 
+    def from_xml(self, xml: ET.Element) -> Optional[bytes]:
+        return self.ref_type.from_raw(xml.text)
+
     def to_raw(self, val: ScalarValue) -> RawScalar:
         return self.ref_type.to_raw(val)
+
+    def to_xml(self, val: ScalarValue) -> RawScalar:
+        return self.ref_type.to_xml(val)
 
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         ns = self.path.evaluate(node)
@@ -582,7 +604,14 @@ class InstanceIdentifierType(LinkType):
         except ParserException:
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[InstanceRoute]:
+        return self.from_raw(xml.text)
+
     def to_raw(self, val: InstanceRoute) -> str:
+        """Override the superclass method."""
+        return str(val)
+
+    def to_xml(self, val: InstanceRoute) -> str:
         """Override the superclass method."""
         return str(val)
 
@@ -629,6 +658,9 @@ class IdentityrefType(DataType):
         return True
 
     def to_raw(self, val: QualName) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: QualName) -> str:
         return self.canonical_string(val)
 
     def from_yang(self, text: str) -> Optional[QualName]:
@@ -762,6 +794,12 @@ class IntegralType(NumericType):
             return None
         try:
             return int(raw)
+        except (ValueError, TypeError):
+            return None
+
+    def from_xml(self, xml: ET.Element) -> Optional[int]:
+        try:
+            return int(xml.text)
         except (ValueError, TypeError):
             return None
 
