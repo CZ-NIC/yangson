@@ -412,9 +412,10 @@ class InstanceNode:
         if elem is None:
             element = ET.Element(self.schema_node.name)
 
-            module = self.schema_data.modules_by_name.get(self.schema_node.ns)
+            ns = self.schema_node.ns
+            module = self.schema_data.modules_by_name.get(ns)
             if not module:
-                raise MissingModuleNamespace(self.schema_node.ns)
+                raise MissingModuleNamespace(ns if ns else 'None')
             element.attrib['xmlns'] = module.xml_namespace
         else:
             element = elem
@@ -581,6 +582,7 @@ class RootNode(InstanceNode):
                  schema_data: "SchemaData", timestamp: datetime):
         super().__init__("/", value, None, schema_node, timestamp)
         self.schema_data = schema_data
+        """Dictionary of subschema root qnames to subschema paths"""
 
     def up(self) -> None:
         """Override the superclass method.
@@ -899,6 +901,20 @@ class MemberName:
             val: Current value (object).
             sn:  Current schema node.
         """
+        qn = (self.name, self.namespace)
+        if isinstance(sn, "SchemaTreeNode") and qn in sn.subschema:
+            path = sn.subschema.get((self.name, self.namespace))
+            c_schema = sn
+            c_value = val
+            try:
+                for dp in path.split('/'):
+                    name, sep, ns = dp.partition(':')
+                    c_schema = c_schema.get_data_child(name, ns if ns else None)
+                    c_value = c_value[c_schema.iname()]
+                return c_value, c_schema
+            except (IndexError, KeyError, TypeError):
+                return (None, c_schema)
+
         cn = sn.get_data_child(self.name, self.namespace)
         try:
             return (val[cn.iname()], cn)
@@ -911,6 +927,15 @@ class MemberName:
         Args:
             inst: Current instance.
         """
+        sn = inst.schema_node
+        qn = (self.name, self.namespace)
+
+        if isinstance(sn, SchemaTreeNode)and qn in sn.subschema:
+            path = sn.subschema.get((self.name, self.namespace))
+            child = inst
+            for dp in path[1:].split('/'):
+                child = child[dp]
+            return child
         return inst[self.iname()]
 
 
@@ -1215,4 +1240,5 @@ class InstanceIdParser(Parser):
 
 from .schemanode import (AnydataNode, CaseNode, ChoiceNode, DataNode,       # NOQA
                          InternalNode, LeafNode, LeafListNode, ListNode,
-                         RpcActionNode, SequenceNode, TerminalNode)
+                         RpcActionNode, SchemaTreeNode, SequenceNode,
+                         TerminalNode)

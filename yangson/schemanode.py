@@ -501,8 +501,6 @@ class InternalNode(SchemaNode):
             if ch.iname() not in res:
                 res[ch.iname()] = ch.from_xml(rval, npath, fqn)
         else:
-            if isinstance(ch, LeafNode):
-                print('child schema type:', type(ch.type))
             res[ch.iname()] = ch.from_xml(xmlchild, npath)
 
     def _process_metadata(self, rmo: RawMetadataObject,
@@ -780,10 +778,14 @@ class SchemaTreeNode(GroupNode):
         super().__init__()
         self.annotations: Dict[QualName, Annotation] = {}
         self.schema_data = schemadata
+        self.subschema: Dict[QualName, "InstanceRoute"] = {}
 
     def data_parent(self) -> InternalNode:
         """Override the superclass method."""
         return self.parent
+
+    def add_subschema(self, container: SchemaNode):
+        self.subschema[container.qual_name] = container.data_path()
 
     def _annotation_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle annotation statement."""
@@ -1086,7 +1088,7 @@ class SequenceNode(DataNode):
         else:
             for xmlchild in rval:
                 self._process_xmlarray_child(
-                    res, xmlchild, tagname, jptr + "/" + str(i))
+                    res, xmlchild, jptr + "/" + str(i))
                 i = i + 1
         return res
 
@@ -1108,6 +1110,7 @@ class SequenceNode(DataNode):
             res.append(child)
         else:
             child = None
+
         return child
 
     def entry_from_raw(self, rval: RawEntry,

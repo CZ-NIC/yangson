@@ -102,10 +102,21 @@ class SchemaData:
         """Dictionary of module data."""
         self.modules_by_name = {}  # type: Dict[str, ModuleData]
         """Dictionary of module data by module name."""
-        self.modules_by_ns = {}
+        self.modules_by_ns = {} # type: Dict[str, ModuleData]
+        """Dictionary of module data by xml namespace."""
         self._module_sequence = []  # type: List[ModuleId]
         """List that defines the order of module processing."""
         self._from_yang_library(yang_lib)
+
+    def add(self, child: "SchemaData"):
+        """Add the schemadata of a subschema to this one"""
+        self.identity_adjs = {**self.identity_adjs, **child.identity_adjs}
+        self.implement = {**self.implement, **child.implement}
+        self.module_search_path.extend(child.module_search_path)
+        self.modules = {**self.modules, **child.modules}
+        self.modules_by_name = {**self.modules_by_name, **child.modules_by_name}
+        self.modules_by_ns = {**self.modules_by_ns, **child.modules_by_ns}
+        self._module_sequence.extend(child._module_sequence)
 
     def _from_yang_library(self, yang_lib: Dict[str, Any]) -> None:
         """Set the schema structures from YANG library data.
