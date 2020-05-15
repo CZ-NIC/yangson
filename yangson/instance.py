@@ -234,7 +234,8 @@ class InstanceNode:
             return ita()
         if isinstance(self.value, ObjectValue):
             return iter(self._member_names())
-        raise InstanceValueError(self.json_pointer(), "scalar instance")
+        raise InstanceValueError(self.json_pointer(),
+            "{} is a scalar instance".format(str(type(self.value))))
 
     def is_internal(self) -> bool:
         """Return ``True`` if the receiver is an instance of an internal node.

@@ -113,7 +113,7 @@ class DataType:
 
     def to_xml(self, val: ScalarValue) -> Optional[str]:
         """Return XML text value ready to be serialized in XML."""
-        return val
+        return str(val)
 
     def parse_value(self, text: str) -> Optional[ScalarValue]:
         """Parse value of the receiver's type.
