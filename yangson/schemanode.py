@@ -1089,7 +1089,7 @@ class SequenceNode(DataNode):
         res = ArrayValue()
         idx = 0
         if isroot:
-            return self._process_xmlarray_child(res, rval, jptr)
+            return self._process_xmlarray_child(res, rval, None, jptr)
         else:
             for xmlchild in rval:
                 if isinstance(self, ListNode):
@@ -1104,7 +1104,7 @@ class SequenceNode(DataNode):
 
     def _process_xmlarray_child(
             self, res: ArrayValue, xmlchild: ET.Element,
-            tagname: str, jptr: JSONPointer = ""):
+            tagname: str, jptr: JSONPointer):
         if xmlchild.tag[0] == '{':
             xmlns, name = xmlchild.tag[1:].split('}')
             module = self.schema_root().schema_data.modules_by_ns.get(xmlns)
