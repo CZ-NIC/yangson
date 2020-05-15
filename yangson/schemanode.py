@@ -926,7 +926,7 @@ class TerminalNode(SchemaNode):
         """Extend the superclass method."""
         if (scope.value & ValidationScope.syntax.value and
                 inst.value not in self.type):
-            raise YangTypeError(inst.json_pointer(), self.type.error_tag,
+            raise YangTypeError(inst.json_pointer(expand_keys=True), self.type.error_tag,
                                 self.type.error_message)
         if (isinstance(self.type, LinkType) and        # referential integrity
                 scope.value & ValidationScope.semantics.value and
@@ -936,7 +936,7 @@ class TerminalNode(SchemaNode):
             except YangsonException:
                 tgt = []
             if not tgt:
-                raise SemanticError(inst.json_pointer(), "instance-required")
+                raise SemanticError(inst.json_pointer(expand_keys=True), "instance-required")
         super()._validate(inst, scope, ctype)
 
     def _default_value(self, inst: "InstanceNode", ctype: ContentType,
@@ -1073,23 +1073,33 @@ class SequenceNode(DataNode):
         if not isinstance(rval, list):
             raise RawTypeError(jptr, "array")
         res = ArrayValue()
-        i = 0
+        idx = 0
         for en in rval:
-            i += 1
-            res.append(self.entry_from_raw(en, f"{jptr}/{i}"))
+            if isinstance(self, ListNode):
+                keys = [str(en.get(k[0], '<missing>')) for k in self.keys]
+                element = "=" + ",".join(keys)
+            else:
+                element = "/" + str(idx)
+            res.append(self.entry_from_raw(en, jptr + element))
+            idx = idx + 1
         return res
 
     def from_xml(self, rval: ET.Element, jptr: JSONPointer = "",
                  tagname: str = None, isroot: bool = False) -> ArrayValue:
         res = ArrayValue()
-        i = 0
+        idx = 0
         if isroot:
             return self._process_xmlarray_child(res, rval, jptr)
         else:
             for xmlchild in rval:
+                if isinstance(self, ListNode):
+                    keys = [str(xmlchild.findtext(k[0], default='<missing>')) for k in self.keys]
+                    element = "=" + ",".join(keys)
+                else:
+                    element = "/" + str(idx)
                 self._process_xmlarray_child(
-                    res, xmlchild, jptr + "/" + str(i))
-                i = i + 1
+                    res, xmlchild, tagname, jptr + element)
+                idx = idx + 1
         return res
 
     def _process_xmlarray_child(

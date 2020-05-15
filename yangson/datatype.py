@@ -113,7 +113,7 @@ class DataType:
 
     def to_xml(self, val: ScalarValue) -> Optional[str]:
         """Return XML text value ready to be serialized in XML."""
-        return value
+        return str(val)
 
     def parse_value(self, text: str) -> Optional[ScalarValue]:
         """Parse value of the receiver's type.
@@ -428,7 +428,7 @@ class StringType(LinearType):
             return False
         for p in self.patterns:
             if (p.regex.match(val) is not None) == p.invert_match:
-                self._set_error_info(p.error_tag, p.error_message)
+                self._set_error_info(p.error_tag, p.error_message + ': ' + val)
                 return False
         return True
 
