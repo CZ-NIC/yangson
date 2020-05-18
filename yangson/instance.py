@@ -401,13 +401,16 @@ class InstanceNode:
         if isinstance(self.value, ObjectValue):
             value = {}
             for m in self.value:
-                member = self[m]
-                add1 = filter.begin_member(self, member)
-                if add1:
-                    member_value = member.raw_value(filter)
-                add2 = filter.end_member(self, member)
-                if add1 and add2:
-                    value[m] = member_value
+                if m[0] != '@':
+                    member = self[m]
+                    add1 = filter.begin_member(self, member)
+                    if add1:
+                        member_value = member.raw_value(filter)
+                    add2 = filter.end_member(self, member)
+                    if add1 and add2:
+                        value[m] = member_value
+                else:
+                    value[m] = self.value[m]
             return value
         if isinstance(self.value, ArrayValue):
             value = list()
