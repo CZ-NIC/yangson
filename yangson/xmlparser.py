@@ -36,8 +36,7 @@ class XMLParser(ET.XMLPullParser):
         super().__init__(events=['start', 'start-ns', 'end-ns', 'end'])
 
         self._root = None
-        self._nslist = list()
-        self._namespaces = {}
+        self._namespaces = list()
 
         if source:
             self.feed(source)
@@ -57,15 +56,14 @@ class XMLParser(ET.XMLPullParser):
         for ev_type, ev_data in super().read_events():
             if ev_type == 'start-ns':
                 ns_name, ns_url = ev_data
-                self._namespaces[ns_name] = ns_url
-                self._nslist.append(ns_name)
+                self._namespaces.append((ns_name, ns_url))
             elif ev_type == 'end-ns':
-                ns_name = self._nslist.pop()
-                del self._namespaces[ns_name]
+                ns_name = self._namespaces.pop()
+
             elif ev_type == 'start' and self._root is None:
                 self._root = ev_data
             elif ev_type == 'end':
-                for ns_name, ns_url in self._namespaces.items():
+                for ns_name, ns_url in self._namespaces:
                     attr = 'xmlns' if ns_name == '' else 'xmlns:'+ns_name
                     ev_data.attrib[attr] = ns_url
 
