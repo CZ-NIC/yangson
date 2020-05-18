@@ -64,12 +64,15 @@ class SchemaContext:
 class ModuleData:
     """Data related to a YANG module or submodule."""
 
-    def __init__(self, main_module: YangIdentifier):
+    def __init__(self, main_module: YangIdentifier, yang_id: YangIdentifier):
         """Initialize the class instance."""
         self.features = set()  # type: MutableSet[YangIdentifier]
         """Set of supported features."""
         self.main_module = main_module  # type: ModuleId
         """Main module of the receiver."""
+        self.yang_id = yang_id # type ModuleId
+        """Identifier of the Module, different from main_module
+        for submodules"""
         self.xml_namespace = None  # type: str
         """Content of the namespace definition of the module"""
         self.prefix_map = {}  # type: Dict[YangIdentifier, ModuleId]
@@ -127,7 +130,7 @@ class SchemaData:
                 name = item["name"]
                 rev = item["revision"]
                 mid = (name, rev)
-                mdata = ModuleData(mid)
+                mdata = ModuleData(mid, mid)
                 mdata.xml_namespace = item.get('namespace')
                 self.modules[mid] = mdata
                 self.modules_by_name[name] = mdata
@@ -147,9 +150,9 @@ class SchemaData:
                         sname = s["name"]
                         srev = s["revision"]
                         smid = (sname, srev)
-                        sdata = ModuleData(smid)
+                        sdata = ModuleData(smid, mid)
                         sdata.xml_namespace = s.get('namespace')
-                        self.modules[smid] = sdata
+                        self.modules[smid] = mid
                         self.modules_by_name[sname] = sdata
                         self.modules_by_ns[sdata.xml_namespace] = sdata
                         mdata.submodules.add(smid)

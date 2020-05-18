@@ -484,7 +484,7 @@ class InternalNode(SchemaNode):
             nsmap = self.schema_root().schema_data.modules_by_ns
             if xmlns not in nsmap:
                 raise MissingModuleNamespace(xmlns)
-            ns = nsmap[xmlns].main_module[0]
+            ns = nsmap[xmlns].yang_id[0]
             fqn = ns + ':' + name
         else:
             name = xmlchild.tag
@@ -1108,7 +1108,7 @@ class SequenceNode(DataNode):
             module = self.schema_root().schema_data.modules_by_ns.get(xmlns)
             if not module:
                 raise MissingModuleNamespace(xmlns)
-            ns = module.main_module[0]
+            ns = module.yang_id[0]
             qn = ns + ':' + name
         else:
             name = qn = xmlchild.tag

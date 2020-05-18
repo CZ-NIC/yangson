@@ -13,7 +13,7 @@ install-deps:
 	pip install -r requirements.txt
 
 test:
-	@py.test tests
+	@py.test-3 tests
 
 release:
 	git tag -a -s -m "Yangson release $(VERSION)" $(VERSION)
