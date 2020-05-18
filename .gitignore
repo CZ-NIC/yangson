@@ -18,4 +18,5 @@ yangson.egg-info
 .kdev4
 *.kdev4
 .pybuild
+share
 
