@@ -234,7 +234,8 @@ class InstanceNode:
             return ita()
         if isinstance(self.value, ObjectValue):
             return iter(self._member_names())
-        raise InstanceValueError(self.json_pointer(),
+        raise InstanceValueError(
+            self.json_pointer(),
             "{} is a scalar instance".format(str(type(self.value))))
 
     def is_internal(self) -> bool:
@@ -916,7 +917,7 @@ class MemberName:
             sn:  Current schema node.
         """
         qn = (self.name, self.namespace)
-        if isinstance(sn, "SchemaTreeNode") and qn in sn.subschema:
+        if isinstance(sn, SchemaTreeNode) and qn in sn.subschema:
             path = sn.subschema.get((self.name, self.namespace))
             c_schema = sn
             c_value = val
