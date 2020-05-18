@@ -150,9 +150,9 @@ class SchemaData:
                         sname = s["name"]
                         srev = s["revision"]
                         smid = (sname, srev)
-                        sdata = ModuleData(smid, mid)
+                        sdata = ModuleData(mid, smid)
                         sdata.xml_namespace = s.get('namespace')
-                        self.modules[smid] = mid
+                        self.modules[smid] = sdata
                         self.modules_by_name[sname] = sdata
                         self.modules_by_ns[sdata.xml_namespace] = sdata
                         mdata.submodules.add(smid)
