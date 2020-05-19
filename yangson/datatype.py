@@ -269,6 +269,12 @@ class BitsType(DataType):
         except AttributeError:
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[Tuple[str]]:
+        try:
+            return tuple(xml.text.split())
+        except AttributeError:
+            return None
+
     def __contains__(self, val: Tuple[str]) -> bool:
         for b in val:
             if b not in self.bit:
@@ -277,6 +283,9 @@ class BitsType(DataType):
         return True
 
     def to_raw(self, val: Tuple[str]) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: Tuple[str]) -> str:
         return self.canonical_string(val)
 
     def as_int(self, val: Tuple[str]) -> int:
@@ -564,7 +573,7 @@ class LeafrefType(LinkType):
         return self.ref_type.from_raw(raw)
 
     def from_xml(self, xml: ET.Element) -> Optional[bytes]:
-        return self.ref_type.from_raw(xml.text)
+        return self.ref_type.from_xml(xml)
 
     def to_raw(self, val: ScalarValue) -> RawScalar:
         return self.ref_type.to_raw(val)
@@ -752,7 +761,16 @@ class Decimal64Type(NumericType):
         except decimal.InvalidOperation:
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[decimal.Decimal]:
+        try:
+            return decimal.Decimal(xml.text).quantize(self._epsilon)
+        except decimal.InvalidOperation:
+            return None
+
     def to_raw(self, val: decimal.Decimal) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: decimal.Decimal) -> str:
         return self.canonical_string(val)
 
     def canonical_string(self, val: decimal.Decimal) -> Optional[str]:
@@ -850,7 +868,20 @@ class Int64Type(IntegralType):
         except (ValueError, TypeError):
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[int]:
+        """Override superclass method.
+
+        XML is always delivered as a text element
+        """
+        try:
+            return int(xml.text)
+        except (ValueError, TypeError):
+            return None
+
     def to_raw(self, val: int) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: int) -> str:
         return self.canonical_string(val)
 
 
@@ -889,7 +920,20 @@ class Uint64Type(IntegralType):
         except (ValueError, TypeError):
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[int]:
+        """Override superclass method.
+
+        XML is always delivered as a text element
+        """
+        try:
+            return int(xml.text)
+        except (ValueError, TypeError):
+            return None
+
     def to_raw(self, val: int) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: int) -> str:
         return self.canonical_string(val)
 
 
@@ -905,6 +949,11 @@ class UnionType(DataType):
         for t in self.types:
             if val in t:
                 return t.to_raw(val)
+
+    def to_xml(self, val: ScalarValue) -> RawScalar:
+        for t in self.types:
+            if val in t:
+                return t.to_xml(val)
 
     def canonical_string(self, val: ScalarValue) -> Optional[str]:
         for t in self.types:
@@ -922,6 +971,13 @@ class UnionType(DataType):
     def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
         for t in self.types:
             val = t.from_raw(raw)
+            if val is not None and val in t:
+                return val
+        return None
+
+    def from_xml(self, xml: ET.Element) -> Optional[ScalarValue]:
+        for t in self.types:
+            val = t.from_xml(xml)
             if val is not None and val in t:
                 return val
         return None
