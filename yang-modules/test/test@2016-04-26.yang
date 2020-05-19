@@ -78,7 +78,6 @@ module test {
     }
     leaf leafB {
       type d:typA;
-      config "false";
       mandatory "true";
     }
     list listA {
@@ -103,7 +102,6 @@ module test {
         must ".";
       }
       leaf leafW {
-        config false;
 	type d:typE;
       }
       container contD {
