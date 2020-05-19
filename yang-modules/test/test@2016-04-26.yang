@@ -103,6 +103,7 @@ module test {
         must ".";
       }
       leaf leafW {
+        config false;
 	type d:typE;
       }
       container contD {

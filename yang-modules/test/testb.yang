@@ -56,7 +56,6 @@ module testb {
       }
     }
     leaf leafV {
-      mandatory true;
       type t:typE;
     }
   }

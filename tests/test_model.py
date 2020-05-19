@@ -37,7 +37,7 @@ tree = """+--rw (test:choiA)?
 |  +--rw testb:leafR? <leafref>
 |  +--rw testb:leafS? <instance-identifier>
 |  +--rw testb:leafT? <identityref>
-|  +--rw testb:leafV <typE(int16)>
+|  +--rw testb:leafV? <typE(int16)>
 |  +--rw listA* [leafE leafF]
 |     +--rw contD
 |     |  +---x acA
@@ -51,7 +51,7 @@ tree = """+--rw (test:choiA)?
 |     |  +--rw leafG? <yang-identifier(string)>
 |     +--rw leafE <hex-number(string)>
 |     +--rw leafF <boolean>
-|     +--rw leafW? <typE(leafref)>
+|     +--ro leafW? <typE(leafref)>
 +--rw test:contT
 |  +--rw binary? <binary>
 |  +--rw bits? <typD(bits)>
