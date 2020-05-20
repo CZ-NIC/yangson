@@ -607,6 +607,15 @@ class RootNode(InstanceNode):
         """
         raise NonexistentInstance(self.json_pointer(), "up of top")
 
+    def to_xml(self, filter: OutputFilter = OutputFilter(),
+               tag: str = "content-data",
+               urn: str = "urn:ietf:params:xml:ns:yang:ietf-yang-instance-data"):
+        """put receiver's value into a XML element"""
+        element = ET.Element(tag)
+        element.attrib['xmlns'] = urn
+
+        return super().to_xml(filter, element)
+
     def _copy(self, newval: Value, newts: datetime = None) -> InstanceNode:
         return RootNode(
             newval, self.schema_node, self.schema_data, newts if newts else newval.timestamp)
