@@ -339,8 +339,8 @@ class InstanceNode:
             inst = sel.goto_step(inst)
         return inst
 
-    def peek(self, iroute: "InstanceRoute") -> Optional[Value]:
-        """Return a value within the receiver's subtree.
+    def full_peek(self, iroute: "InstanceRoute") -> Optional[Tuple]:
+        """Return a value and schema within the receiver's subtree.
 
         Args:
             iroute: Instance route (relative to the receiver).
@@ -348,10 +348,18 @@ class InstanceNode:
         val = self.value
         sn = self.schema_node
         for sel in iroute:
-            val, sn = sel.peek_step(val, sn)
             if val is None:
-                return None
-        return val
+                return (None, None)
+            val, sn = sel.peek_step(val, sn)
+        return (val, sn)
+
+    def peek(self, iroute: "InstanceRoute") -> Optional[Value]:
+        """Return a value within the receiver's subtree.
+
+        Args:
+            iroute: Instance route (relative to the receiver).
+        """
+        return self.full_peek(iroute)[0]
 
     def validate(self, scope: ValidationScope = ValidationScope.all,
                  ctype: ContentType = ContentType.config) -> None:
