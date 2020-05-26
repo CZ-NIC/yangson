@@ -43,17 +43,9 @@ class XMLParser(ET.XMLPullParser):
             self.close()
             self.parse()
 
-    def feed(self, xml: str):
-        '''Feed additional data to the XML parser'''
-        super().feed(xml)
-
-    def close(self):
-        '''End XML data stream'''
-        super().close()
-
     def parse(self):
         '''Parse all events in current available data'''
-        for ev_type, ev_data in super().read_events():
+        for ev_type, ev_data in self.read_events():
             if ev_type == 'start-ns':
                 ns_name, ns_url = ev_data
                 self._namespaces.append((ns_name, ns_url))
