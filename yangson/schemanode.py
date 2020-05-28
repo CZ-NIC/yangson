@@ -445,7 +445,7 @@ class InternalNode(SchemaNode):
                 res.extend(child.data_children())
         return res
 
-    def from_raw(self, rval: RawObject, jptr: JSONPointer = "", allow_nodata: bool = False) -> ObjectValue:
+    def from_raw(self, rval: RawObject, jptr: JSONPointer = "", isroot: bool = False) -> ObjectValue:
         """Override the superclass method."""
         if not isinstance(rval, dict):
             raise RawTypeError(jptr, "object")
@@ -460,18 +460,11 @@ class InternalNode(SchemaNode):
                 res[qn] = self._process_metadata(rval[qn], jptr)
             else:
                 cn = self._iname2qname(qn)
-                if allow_nodata:
-                    ch = self.get_child(*cn)
-                else:
-                    ch = self.get_data_child(*cn)
+                ch = self.get_data_child(*cn)
                 npath = jptr + "/" + qn
                 if ch is None:
                     raise RawMemberError(npath)
-
-                if not allow_nodata and self.ns == ch.ns:
-                    iname = ch.name
-                else:
-                    iname = '{1}:{0}'.format(*ch.qual_name)
+                iname = (ch.ns+':'+ch.name) if isroot else ch.iname()
                 res[iname] = ch.from_raw(rval[qn], npath)
         return res
 
@@ -1519,7 +1512,7 @@ class RpcActionNode(SchemaTreeNode):
         self.get_child("output")._handle_substatements(stmt, sctx)
 
 
-class InputNode(SchemaTreeNode):
+class InputNode(SchemaTreeNode, DataNode):
     """RPC or action input node."""
 
     def __init__(self, ns):
@@ -1532,11 +1525,8 @@ class InputNode(SchemaTreeNode):
     def _flatten(self) -> List[SchemaNode]:
         return [self]
 
-    def _tree_line_prefix(self) -> str:
-        return super()._tree_line_prefix() + "ro"
 
-
-class OutputNode(SchemaTreeNode):
+class OutputNode(SchemaTreeNode, DataNode):
     """RPC or action output node."""
 
     def __init__(self, ns):
@@ -1548,9 +1538,6 @@ class OutputNode(SchemaTreeNode):
 
     def _flatten(self) -> List[SchemaNode]:
         return [self]
-
-    def _tree_line_prefix(self) -> str:
-        return super()._tree_line_prefix() + "ro"
 
 
 class NotificationNode(SchemaTreeNode):
