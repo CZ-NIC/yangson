@@ -429,7 +429,7 @@ class InternalNode(SchemaNode):
                 res.extend(child.data_children())
         return res
 
-    def from_raw(self, rval: RawObject, jptr: JSONPointer = "") -> ObjectValue:
+    def from_raw(self, rval: RawObject, jptr: JSONPointer = "", isroot: bool = False) -> ObjectValue:
         """Override the superclass method."""
         if not isinstance(rval, dict):
             raise RawTypeError(jptr, "object")
@@ -448,7 +448,8 @@ class InternalNode(SchemaNode):
                 npath = jptr + "/" + qn
                 if ch is None:
                     raise RawMemberError(npath)
-                res[ch.iname()] = ch.from_raw(rval[qn], npath)
+                iname = (ch.ns+':'+ch.name) if isroot else ch.iname()
+                res[iname] = ch.from_raw(rval[qn], npath)
         return res
 
     def _process_metadata(self, rmo: RawMetadataObject,
@@ -1380,7 +1381,7 @@ class RpcActionNode(SchemaTreeNode):
         self.get_child("output")._handle_substatements(stmt, sctx)
 
 
-class InputNode(SchemaTreeNode):
+class InputNode(SchemaTreeNode, DataNode):
     """RPC or action input node."""
 
     def __init__(self, ns):
@@ -1393,11 +1394,8 @@ class InputNode(SchemaTreeNode):
     def _flatten(self) -> List[SchemaNode]:
         return [self]
 
-    def _tree_line_prefix(self) -> str:
-        return super()._tree_line_prefix() + "ro"
 
-
-class OutputNode(SchemaTreeNode):
+class OutputNode(SchemaTreeNode, DataNode):
     """RPC or action output node."""
 
     def __init__(self, ns):
@@ -1409,9 +1407,6 @@ class OutputNode(SchemaTreeNode):
 
     def _flatten(self) -> List[SchemaNode]:
         return [self]
-
-    def _tree_line_prefix(self) -> str:
-        return super()._tree_line_prefix() + "ro"
 
 
 class NotificationNode(SchemaTreeNode):
