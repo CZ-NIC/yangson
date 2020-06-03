@@ -52,16 +52,16 @@ __all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
 
 
 class OutputFilter:
-    def begin_member(self, parent: "InstanceNode", node: "InstanceNode")->bool:
+    def begin_member(self, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
         return True
 
-    def end_member(self, parent: "InstanceNode", node: "InstanceNode")->bool:
+    def end_member(self, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
         return True
 
-    def begin_element(self, parent: "InstanceNode", node: "InstanceNode")->bool:
+    def begin_element(self, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
         return True
 
-    def end_element(self, parent: "InstanceNode", node: "InstanceNode")->bool:
+    def end_element(self, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
         return True
 
 
@@ -376,12 +376,13 @@ class InstanceNode:
         """
         self.schema_node._validate(self, scope, ctype)
 
-    def add_defaults(self, ctype: ContentType = None) -> "InstanceNode":
+    def add_defaults(self, ctype: ContentType = None, tag: bool = False) -> "InstanceNode":
         """Return the receiver with defaults added recursively to its value.
 
         Args:
             ctype: Content type of the defaults to be added. If it is
                 ``None``, the content type will be the same as receiver's.
+            tag: True if added values should be marked with a metadata tag.
         """
         val = self.value
         if not (isinstance(val, StructuredValue) and self.is_internal()):
@@ -391,44 +392,95 @@ class InstanceNode:
             if val:
                 for mn in self._member_names():
                     m = res._member(mn) if res is self else res.sibling(mn)
-                    res = m.add_defaults(ctype)
+                    res = m.add_defaults(ctype, tag=tag)
                 res = res.up()
-            return self.schema_node._add_defaults(res, ctype)
+            res = self.schema_node._add_defaults(res, ctype)
+            if tag and res != self:
+                self._mark_defaults(res.value)
+            return res
         if not val:
             return res
         en = res[0]
         while True:
-            res = en.add_defaults(ctype)
+            res = en.add_defaults(ctype, tag=tag)
             try:
                 en = res.next()
             except NonexistentInstance:
                 break
         return res.up()
 
+    def _mark_defaults(self, objvalue):
+        """Mark all values set in parameter but not in our own value as
+        default with the relevant metadata attribute
+
+        Args:
+            objvalue: new object value after adding defaults
+        """
+        if not isinstance(objvalue, ObjectValue):
+            return
+        for key, value in list(objvalue.items()):
+            if key not in self.value:
+                if isinstance(value, ObjectValue):
+                    metadata = objvalue[key].get('@', {})
+                    metadata['ietf-netconf-with-defaults:default'] = True
+                    objvalue[key]['@'] = metadata
+                else:
+                    metadata = objvalue.get('@'+key, {})
+                    metadata['ietf-netconf-with-defaults:default'] = True
+                    objvalue['@'+key] = metadata
+
+    def _get_attributes(self) -> dict:
+        # collect attributes
+        attr = {}
+        for m in self.value:
+            if m == '@':
+                # handled when processing the level higher or no metadata
+                continue
+
+            if m[0] != '@' and isinstance(self.value[m], ObjectValue) and '@' in self.value[m]:
+                attr[m] = self.value[m]['@']
+            elif m[0] == '@':
+                attr[m[1:]] = self.value[m]
+        return attr
+
     def raw_value(self, filter: OutputFilter = OutputFilter()) -> RawValue:
         """Return receiver's value in a raw form (ready for JSON encoding)."""
+
         if isinstance(self.value, ObjectValue):
             value = {}
+            attr = self._get_attributes()
             for m in self.value:
                 if m[0] != '@':
+                    m_attr = attr.get(m, {})
                     member = self[m]
-                    add1 = filter.begin_member(self, member)
+                    add1 = filter.begin_member(self, member, m_attr)
                     if add1:
                         member_value = member.raw_value(filter)
-                    add2 = filter.end_member(self, member)
+                    add2 = filter.end_member(self, member, m_attr)
                     if add1 and add2:
                         value[m] = member_value
-                else:
-                    value[m] = self.value[m]
+
+                        if m_attr:
+                            if isinstance(value[m], dict):
+                                value[m]['@'] = attr[m]
+                            else:
+                                value['@'+m] = attr[m]
+
             return value
         if isinstance(self.value, ArrayValue):
             value = list()
             for en in self:
-                add1 = filter.begin_element(self, en)
+                if isinstance(en, dict) and '@' in en.value:
+                    e_attr = en['@']
+                else:
+                    e_attr = {}
+                add1 = filter.begin_element(self, en, e_attr)
                 if add1:
                     member_value = en.raw_value(filter)
-                add2 = filter.end_element(self, en)
+                add2 = filter.end_element(self, en, e_attr)
                 if add1 and add2 and member_value:
+                    if e_attr:
+                        member_value['@'] = e_attr
                     value.append(member_value)
             return value
         return self.schema_node.type.to_raw(self.value)
@@ -447,20 +499,25 @@ class InstanceNode:
             element = elem
 
         if isinstance(self.value, ObjectValue):
+            attr = self._get_attributes()
             for cname in self:
                 childs = list()
-                if cname[:1] == '@':
-                    # ignore annotations for now until they are stored independent of JSON encoding
+                if cname[0] == '@':
                     continue
 
                 m = self[cname]
-                if filter.begin_member(self, m):
+                m_attr = attr.get(cname, {})
+                if filter.begin_member(self, m, m_attr):
                     sn = m.schema_node
                     dp = sn.data_parent()
 
                     if isinstance(m.schema_node, (ListNode, LeafListNode)):
                         for en in m:
-                            add1 = filter.begin_element(m, en)
+                            if isinstance(en, dict) and '@' in en.value:
+                                e_attr = en['@']
+                            else:
+                                e_attr = {}
+                            add1 = filter.begin_element(m, en, e_attr)
                             if add1:
                                 child = ET.Element(sn.name)
                                 if not dp or dp.ns != sn.ns:
@@ -469,20 +526,25 @@ class InstanceNode:
                                         raise MissingModuleNamespace(sn.ns)
                                     child.attrib['xmlns'] = module.xml_namespace
                                 en.to_xml(filter, child)
-                            add2 = filter.end_element(m, en)
+                            add2 = filter.end_element(m, en, e_attr)
                             if add1 and add2:
+                                for a in e_attr:
+                                    child.attrib[a] = str(e_attr[a])
                                 childs.append(child)
                     else:
                         child = ET.Element(sn.name)
-                        childs.append(child)
                         if not dp or dp.ns != sn.ns:
                             module = self.schema_data.modules_by_name.get(sn.ns)
                             if not module:
                                 raise MissingModuleNamespace(sn.ns)
                             child.attrib['xmlns'] = module.xml_namespace
                         m.to_xml(filter, child)
-                if filter.end_member(self, m):
+                        childs.append(child)
+                if filter.end_member(self, m, m_attr):
                     for c in childs:
+                        for a in m_attr:
+                            # should only happen if the child were no list
+                            c.attrib[a] = str(m_attr[a])
                         element.append(c)
             if elem is None and len(element) == 0:
                 return None
