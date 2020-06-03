@@ -487,6 +487,8 @@ class InstanceNode:
 
     def to_xml(self, filter: OutputFilter = OutputFilter(), elem: ET.Element = None):
         """put receiver's value into a XML element"""
+        has_default_ns = False
+
         if elem is None:
             element = ET.Element(self.schema_node.name)
 
@@ -495,6 +497,7 @@ class InstanceNode:
             if not module:
                 raise MissingModuleNamespace(ns if ns else 'None')
             element.attrib['xmlns'] = module.xml_namespace
+            element.attrib['xmlns:wd'] = 'urn:ietf:params:xml:ns:netconf:default:1.0'
         else:
             element = elem
 
@@ -525,7 +528,8 @@ class InstanceNode:
                                     if not module:
                                         raise MissingModuleNamespace(sn.ns)
                                     child.attrib['xmlns'] = module.xml_namespace
-                                en.to_xml(filter, child)
+                                _, has_dns = en.to_xml(filter, child)
+                                has_default_ns |= has_dns
                             add2 = filter.end_element(m, en, e_attr)
                             if add1 and add2:
                                 for a in e_attr:
@@ -538,22 +542,33 @@ class InstanceNode:
                             if not module:
                                 raise MissingModuleNamespace(sn.ns)
                             child.attrib['xmlns'] = module.xml_namespace
-                        m.to_xml(filter, child)
+                        _, has_dns = m.to_xml(filter, child)
+                        has_default_ns |= has_dns
                         childs.append(child)
                 if filter.end_member(self, m, m_attr):
                     for c in childs:
                         for a in m_attr:
                             # should only happen if the child were no list
-                            c.attrib[a] = str(m_attr[a])
+                            if a == 'ietf-netconf-with-defaults:default':
+                                c.attrib['wd:default'] = str(m_attr[a])
+                                has_default_ns = True
+                            else:
+                                c.attrib[a] = str(m_attr[a])
                         element.append(c)
             if elem is None and len(element) == 0:
                 return None
         elif isinstance(self.value, ArrayValue):
             # Array outside an Object doesn't make sense
-            super().to_xml(filter, element)
+            raise NotImplementedError
         else:
             element.text = self.schema_node.type.to_xml(self.value)
-        return element
+
+        if elem is not None:
+            return (element, has_default_ns)
+        else:
+            if has_default_ns:
+                element.attrib['xmlns:wd'] = 'urn:ietf:params:xml:ns:netconf:default:1.0'
+            return element
 
     def _member_names(self) -> List[InstanceName]:
         if isinstance(self.value, ObjectValue):
@@ -687,7 +702,7 @@ class RootNode(InstanceNode):
         element = ET.Element(tag)
         element.attrib['xmlns'] = urn
 
-        return super().to_xml(filter, element)
+        return super().to_xml(filter, element)[0]
 
     def _copy(self, newval: Value, newts: datetime = None) -> InstanceNode:
         return RootNode(
