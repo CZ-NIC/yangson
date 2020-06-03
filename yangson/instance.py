@@ -530,7 +530,6 @@ class InstanceNode:
                                 en.to_xml(filter, child)
                             add2 = filter.end_element(m, en, e_attr)
                             if add1 and add2:
-                                has_default_ns |= 'ietf-netconf-with-defaults:default' in e_attr
                                 for a in e_attr:
                                     child.attrib[a] = str(e_attr[a])
                                 childs.append(child)
