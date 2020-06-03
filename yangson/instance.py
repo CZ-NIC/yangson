@@ -487,7 +487,6 @@ class InstanceNode:
             if not module:
                 raise MissingModuleNamespace(self.schema_node.ns)
             element.attrib['xmlns'] = module.xml_namespace
-            element.attrib['xmlns:wd'] = 'urn:ietf:params:xml:ns:netconf:default:1.0'
         else:
             element = elem
 
@@ -499,7 +498,7 @@ class InstanceNode:
                     continue
 
                 m = self[cname]
-                m_attr = attr.get(cname, {})
+                m_attr = attr.get(cname, {}).copy()
                 if filter.begin_member(self, m, m_attr):
                     sn = m.schema_node
                     dp = sn.data_parent()
@@ -507,7 +506,7 @@ class InstanceNode:
                     if isinstance(m.schema_node, (ListNode, LeafListNode)):
                         for en in m:
                             if isinstance(en, dict) and '@' in en.value:
-                                e_attr = en['@']
+                                e_attr = en['@'].copy()
                             else:
                                 e_attr = {}
                             add1 = filter.begin_element(m, en, e_attr)
@@ -518,10 +517,10 @@ class InstanceNode:
                                     if not module:
                                         raise MissingModuleNamespace(sn.ns)
                                     child.attrib['xmlns'] = module.xml_namespace
-                                _, has_dns = en.to_xml(filter, child)
-                                has_default_ns |= has_dns
+                                en.to_xml(filter, child)
                             add2 = filter.end_element(m, en, e_attr)
                             if add1 and add2:
+                                has_default_ns |= 'ietf-netconf-with-defaults:default' in e_attr
                                 for a in e_attr:
                                     child.attrib[a] = str(e_attr[a])
                                 childs.append(child)
@@ -532,13 +531,12 @@ class InstanceNode:
                             if not module:
                                 raise MissingModuleNamespace(sn.ns)
                             child.attrib['xmlns'] = module.xml_namespace
-                        _, has_dns = m.to_xml(filter, child)
-                        has_default_ns |= has_dns
+                        m.to_xml(filter, child)
                         childs.append(child)
                 if filter.end_member(self, m, m_attr):
                     for c in childs:
                         for a in m_attr:
-                            # should only happen if the child were no list
+                            # should only happen if the child was no list
                             if a == 'ietf-netconf-with-defaults:default':
                                 c.attrib['wd:default'] = str(m_attr[a])
                                 has_default_ns = True
@@ -554,7 +552,7 @@ class InstanceNode:
             element.text = self.schema_node.type.to_xml(self.value)
 
         if elem is not None:
-            return (element, has_default_ns)
+            return element
         else:
             if has_default_ns:
                 element.attrib['xmlns:wd'] = 'urn:ietf:params:xml:ns:netconf:default:1.0'
