@@ -48,7 +48,8 @@ from .typealiases import (InstanceName, JSONPointer, QualName, RawValue,
 
 __all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
            "InstanceIdParser", "ResourceIdParser", "InstanceRoute",
-           "InstanceException", "InstanceValueError", "NonexistentInstance"]
+           "InstanceException", "InstanceValueError", "NonexistentInstance",
+           "OutputFilter"]
 
 
 class OutputFilter:

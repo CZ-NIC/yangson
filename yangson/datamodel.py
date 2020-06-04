@@ -80,7 +80,7 @@ class DataModel:
             self.yang_library = json.loads(yltxt)
         except json.JSONDecodeError as e:
             raise BadYangLibraryData(str(e)) from None
-        self.schema_data = SchemaData(self.yang_library, mod_path)
+        self.schema_data = SchemaData(self.yang_library, list(mod_path))
         self.schema = SchemaTreeNode(self.schema_data)
         self.schema._ctype = ContentType.all
         self._build_schema()
