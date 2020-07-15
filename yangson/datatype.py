@@ -563,6 +563,10 @@ class InstanceIdentifierType(LinkType):
         """Override the superclass method."""
         return str(val)
 
+    def from_yang(self, text: str) -> InstanceRoute:
+        """Override the superclass method."""
+        return XPathParser(text, self.sctx).parse().as_instance_route()
+
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         return [node.top().goto(node.value)]
 
@@ -592,10 +596,11 @@ class IdentityrefType(DataType):
     def to_raw(self, val: QualName) -> str:
         return self.canonical_string(val)
 
-    def from_yang(self, text: str) -> Optional[QualName]:
+    def from_yang(self, text: str) -> QualName:
         """Override the superclass method."""
         try:
-            return self.sctx.schema_data.translate_pname(text, self.sctx.text_mid)
+            return self.sctx.schema_data.translate_pname(
+                text, self.sctx.text_mid)
         except (ModuleNotRegistered, UnknownPrefix):
             raise InvalidArgument(text)
 
@@ -726,7 +731,7 @@ class IntegralType(NumericType):
         except (ValueError, TypeError):
             return None
 
-    def from_yang(self, text: str) -> Optional[int]:
+    def from_yang(self, text: str) -> int:
         """Override the superclass method."""
         if text.startswith("0"):
             base = 16 if text.startswith("0x") else 8

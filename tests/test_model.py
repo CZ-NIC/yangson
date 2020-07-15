@@ -108,8 +108,6 @@ def instance(data_model):
                 "leafW": 9,
                 "leafF": false
             }],
-            "testb:leafS":
-                "/test:contA/listA[leafE='C0FFEE'][leafF='true']/contD/contE/leafP",
             "testb:leafR": "C0FFEE",
             "testb:leafT": "test:CC-BY",
             "testb:leafV": 99,
@@ -130,7 +128,7 @@ def instance(data_model):
 
 def test_schema_data(data_model):
     assert len(data_model.schema_data.implement) == 2
-    assert data_model.module_set_id() == "b6d7e0614440c5ad8a7370fe46c777254d331983"
+    assert data_model.module_set_id() == "dec8dc2d848e7994c38c5e4ae65bc31383922ce8"
     tid = data_model.schema_data.last_revision("test")
     stid = data_model.schema_data.last_revision("subtest")
     tbid = data_model.schema_data.last_revision("testb")
@@ -504,7 +502,7 @@ def test_xpath(data_model, instance):
     xptest("re-match('a\nb', '[a-z\n]*')",
            're-match("a&#10;b", "[a-z&#10;]*")')
     xptest("deref(.)/../t:leafF", "deref(.)/../test:leafF", True, lr, "testb")
-    xptest("deref(../leafS)", "deref(../testb:leafS)", 10, lr, "testb")
+    xptest("deref(../leafS)", "deref(../testb:leafS)", 9, lr, "testb")
     xptest("count(deref(../leafS) | ../leafN)",
            "count(deref(../testb:leafS) | ../testb:leafN)", 2, lr, "testb")
     xptest("derived-from-or-self(../leafT, 't:CC-BY')",
