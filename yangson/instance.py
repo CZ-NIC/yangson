@@ -377,6 +377,9 @@ class InstanceNode:
             return [m for m in self.value if not m.startswith("@")]
 
     def _member(self, name: InstanceName) -> "ObjectMember":
+        pts = name.partition(":")
+        if pts[1] and pts[0] == self.namespace:
+            name = pts[2]
         sibs = self.value.copy()
         try:
             return ObjectMember(
