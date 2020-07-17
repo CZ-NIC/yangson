@@ -572,7 +572,12 @@ def test_edits(data_model, instance):
 
 
 def test_validation(instance):
-    assert instance.validate(ctype=ContentType.all) is None
     inst2 = instance.put_member("testb:leafQ", "ABBA").top()
     with pytest.raises(SchemaError):
         inst2.validate(ctype=ContentType.all)
+    inst3 = instance["test:contA"].put_member(
+        "testb:leafS",
+        "/test:contA/listA[leafE='C0FFEE'][leafF='true']/contD/contE/leafP",
+        raw = True).top()
+    assert inst3.validate(ctype=ContentType.all) is None
+    assert instance.validate(ctype=ContentType.all) is None
