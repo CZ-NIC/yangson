@@ -91,8 +91,14 @@ class DataType:
     def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
         """Return a cooked value of the receiver type.
 
+        The input argument should follow the rules for JSON
+        representation of scalar values as specified in
+        [RFC7951]_. Conformance to the receiving type isn't
+        guaranteed.
+
         Args:
             raw: Raw value obtained from JSON parser.
+
         """
         if isinstance(raw, str):
             return raw
@@ -104,11 +110,17 @@ class DataType:
     def parse_value(self, text: str) -> Optional[ScalarValue]:
         """Parse value of the receiver's type.
 
+        The input text should follow the rules for lexical
+        representation of scalar values as specified in
+        [RFC7950]_. Conformance to the receiving type isn't
+        guaranteed.
+
         Args:
             text: String representation of the value.
 
         Returns:
             A value of the receiver's type or ``None`` if parsing fails.
+
         """
         return self.from_raw(text)
 
@@ -117,7 +129,9 @@ class DataType:
         return str(val)
 
     def from_yang(self, text: str) -> ScalarValue:
-        """Parse value specified in a YANG module.
+        """Parse value specified as default in a YANG module.
+
+        Conformance to the receiving type isn't guaranteed.
 
         Args:
             text: String representation of the value.
