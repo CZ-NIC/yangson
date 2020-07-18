@@ -47,6 +47,7 @@ This module implements the following classes:
 import base64
 import decimal
 import numbers
+import re
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 from .constraint import Intervals, Pattern
@@ -724,6 +725,9 @@ class Decimal64Type(NumericType):
 class IntegralType(NumericType):
     """Abstract class for integral data types."""
 
+    octhex = re.compile("[-+]?0([x0-9])")
+    """Regular expression for octal or hexadecimal default."""
+
     def __contains__(self, val: int) -> bool:
         if not isinstance(val, int) or isinstance(val, bool):
             self._set_error_info()
@@ -747,8 +751,9 @@ class IntegralType(NumericType):
 
     def from_yang(self, text: str) -> int:
         """Override the superclass method."""
-        if text.startswith("0"):
-            base = 16 if text.startswith("0x") else 8
+        mo = self.octhex.match(text)
+        if mo:
+            base = 16 if mo.group(1) == "x" else 8
         else:
             base = 10
         try:
