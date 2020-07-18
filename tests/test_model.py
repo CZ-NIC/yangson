@@ -166,6 +166,11 @@ def test_schema(data_model):
     lc = cb.get_data_child("leafC", "testb")
     llb = data_model.get_schema_node("/test:choiA/llistB/llistB")
     lj = data_model.get_data_node("/test:contA/listA/contD/contE/leafJ")
+    # type conversions
+    def tctest(tnode, raw, text, yang, value):
+        typ = tnode.type
+        assert (typ.from_raw(raw) == typ.parse_value(text) ==
+                typ.from_yang(yang) == value)
     assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
     llc = data_model.get_schema_node("/testb:rpcA/output/llistC")
     ll = lsta.get_schema_descendant(data_model.schema_data.path2route(
