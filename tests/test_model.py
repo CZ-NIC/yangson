@@ -3,9 +3,9 @@ import pytest
 from decimal import Decimal
 from yangson import DataModel
 from yangson.exceptions import (
-    InvalidFeatureExpression, UnknownPrefix, NonexistentInstance,
-    NonexistentSchemaNode, RawTypeError, SchemaError,
-    XPathTypeError, InvalidXPath, NotSupported)
+    InvalidArgument, InvalidFeatureExpression, UnknownPrefix,
+    NonexistentInstance, NonexistentSchemaNode, RawTypeError,
+    SchemaError, XPathTypeError, InvalidXPath, NotSupported)
 from yangson.instvalue import ArrayValue
 from yangson.schemadata import SchemaContext, FeatureExprParser
 from yangson.enumerations import ContentType
@@ -118,7 +118,7 @@ def instance(data_model):
         },
         "test:contT": {
             "bits": "dos cuatro",
-            "decimal64": 4.50,
+            "decimal64": "4.50",
             "enumeration": "Hearts"
         }
     }
@@ -166,11 +166,6 @@ def test_schema(data_model):
     lc = cb.get_data_child("leafC", "testb")
     llb = data_model.get_schema_node("/test:choiA/llistB/llistB")
     lj = data_model.get_data_node("/test:contA/listA/contD/contE/leafJ")
-    # type conversions
-    def tctest(tnode, raw, text, yang, value):
-        typ = tnode.type
-        assert (typ.from_raw(raw) == typ.parse_value(text) ==
-                typ.from_yang(yang) == value)
     assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
     llc = data_model.get_schema_node("/testb:rpcA/output/llistC")
     ll = lsta.get_schema_descendant(data_model.schema_data.path2route(
@@ -207,6 +202,9 @@ def test_tree(data_model):
 
 
 def test_types(data_model):
+    # type conversions
+    def tctest(typ, raw, text, value):
+        assert (typ.from_raw(raw) == typ.parse_value(text) == value)
     llb = data_model.get_data_node("/test:llistB").type
     assert "192.168.1.254" in llb
     assert "300.1.1.1" not in llb
@@ -217,6 +215,12 @@ def test_types(data_model):
     assert "2001::db8:0:2::1" not in llb
     ct = data_model.get_data_node("/test:contT")
     i8 = ct.get_child("int8", "test").type
+    tctest(i8, 703697, "703697", 703697)
+    tctest(i8, -6378, "-6378", -6378)
+    tctest(i8, True, "3.14", None)
+    assert i8.from_yang("-0x18EA") == -i8.from_yang("014352") == -6378
+    with pytest.raises(InvalidArgument):
+        i8.from_yang("0X1")
     assert 100 in i8
     assert -101 not in i8
     i16 = ct.get_child("int16", "test").type
@@ -241,10 +245,13 @@ def test_types(data_model):
     ui64 = ct.get_child("uint64", "test").type
     assert 18446744073709551615 in ui64
     assert -1 not in ui64
-    assert ui64.from_raw("6378") == 6378
+    tctest(ui64, "6378", "6378", 6378)
+    tctest(ui64, 6378, "3.14", None)
     assert ui64.from_raw("-6378") == -6378
     d64 = ct.get_child("decimal64", "test").type
     pi = Decimal("3.141592653589793238")
+    tctest(d64, "3.141592653589793238", "3.141592653589793238", pi)
+    assert d64.from_raw(3.141592653589793238) is None
     assert pi in d64
     assert 10 not in d64
     assert d64.from_raw("3.14159265358979323846264338327950288") == pi
@@ -257,17 +264,17 @@ def test_types(data_model):
     assert "9 \tx" in st
     assert "xx xabcdefg" not in st
     boo = ct.get_child("boolean", "test").type
-    assert boo.parse_value("true")
+    tctest(boo, True, "true", True)
+    tctest(boo, "true", "1", None)
     assert False in boo
     assert boo.canonical_string(True) == "true"
-    assert boo.parse_value("boo") is None
     en = ct.get_child("enumeration", "test").type
     assert "Mars" not in en
     assert "Deimos" not in en
     assert en.enum["Hearts"] == 101
     bits = ct.get_child("bits", "test").type
     assert bits.as_int(bits.from_raw("dos cuatro")) == 10
-    assert bits.parse_value("un dos") == ("un", "dos")
+    tctest(bits, "un dos", "un dos", ("un", "dos"))
     assert bits.canonical_string(("cuatro", "dos")) == "dos cuatro"
     assert bits.canonical_string("un dos") is None
     assert "un" not in bits
@@ -282,6 +289,9 @@ def test_types(data_model):
     assert bin.canonical_string(kun.encode("utf-8")) == (
         "UMWZw61sacWhIMW+bHXFpW91xI1rw70ga8" +
         "WvxYggw7pwxJtsIMSPw6FiZWxza8OpIMOzZHku")
+    lw = data_model.get_data_node("/test:contA/listA/leafW").type
+    tctest(lw, 10, "10", 10)
+    assert lw.from_yang("0xA") == 10
 
 
 def test_instance(data_model, instance):
