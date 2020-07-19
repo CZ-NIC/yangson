@@ -542,6 +542,12 @@ class LeafrefType(LinkType):
     def to_raw(self, val: ScalarValue) -> RawScalar:
         return self.ref_type.to_raw(val)
 
+    def parse_value(self, text: str) -> Optional[ScalarValue]:
+        return self.ref_type.parse_value(text)
+
+    def from_yang(self, text: str) -> ScalarValue:
+        return self.ref_type.from_yang(text)
+
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         ns = self.path.evaluate(node)
         return [n for n in ns if str(n) == str(node)]
