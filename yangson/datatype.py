@@ -694,7 +694,7 @@ class Decimal64Type(NumericType):
         super()._handle_properties(stmt, sctx)
 
     def from_raw(self, raw: RawScalar) -> Optional[decimal.Decimal]:
-        if not isinstance(raw, (str, numbers.Real)):
+        if not isinstance(raw, str):
             return None
         try:
             return decimal.Decimal(raw).quantize(self._epsilon)
@@ -790,7 +790,7 @@ class Int64Type(IntegralType):
 
         A raw instance may be either string or integer.
         """
-        if not isinstance(raw, (str, int)) or isinstance(raw, bool):
+        if not isinstance(raw, str) or isinstance(raw, bool):
             return None
         try:
             return int(raw)
@@ -824,12 +824,12 @@ class Uint64Type(IntegralType):
 
     _range = [0, 18446744073709551615]
 
-    def from_raw(self, raw: RawScalar) -> Optional[int]:
+    def from_raw(self, raw: str) -> Optional[int]:
         """Override superclass method.
 
         A raw instance may be either string or integer.
         """
-        if not isinstance(raw, (str, int)) or isinstance(raw, bool):
+        if not isinstance(raw, str) or isinstance(raw, bool):
             return None
         try:
             return int(raw)
