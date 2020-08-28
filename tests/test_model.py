@@ -192,7 +192,6 @@ def test_schema(data_model):
     assert lla.max_elements is None
     assert llb.user_ordered and (not lla.user_ordered)
     assert lsta.get_schema_descendant(lsta.keys[1:]).name == "leafF"
-    assert lsta.get_schema_descendant(lsta.unique[0][0]).name == "leafG"
     assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
     assert data_model.get_data_node("/testb:noA/leafO") is None
 
@@ -309,7 +308,9 @@ def test_instance(data_model, instance):
     rid2 = data_model.parse_resource_id("/test:llistB")
     assert len(instance.peek(rid2)) == 2
     conta = instance["test:contA"]
-    la1 = conta["listA"][-1]
+    la = conta["listA"]
+    assert la.schema_node.unique[0][0].evaluate(la[0])[0].value == "foo1-bar"
+    la1 = la[-1]
     lt = conta["testb:leafT"]
     assert la1.index == 1
     tbln = conta["testb:leafN"]

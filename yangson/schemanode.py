@@ -42,6 +42,7 @@ This module implements the following classes:
 """
 
 from datetime import datetime
+from itertools import product
 from typing import Any, Dict, List, MutableSet, Optional, Set, Tuple
 from .constraint import Must
 from .datatype import (DataType, LinkType,
@@ -62,6 +63,7 @@ from .typealiases import (DataPath, InstanceName, JSONPointer, QualName,
                           RawEntry, RawList, RawObject, RawValue,
                           RawMetadataObject, ScalarValue, SchemaRoute,
                           YangIdentifier)
+from .xpathast import LocationPath
 from .xpathparser import XPathParser
 
 
@@ -1040,7 +1042,7 @@ class ListNode(SequenceNode, InternalNode):
         super().__init__()
         self.keys: List[QualName] = []
         self._key_members = []
-        self.unique: List[List[SchemaRoute]] = []
+        self.unique: List[List[LocationPath]] = []
 
     def _node_digest(self) -> Dict[str, Any]:
         res = super()._node_digest()
@@ -1069,17 +1071,20 @@ class ListNode(SequenceNode, InternalNode):
                     repr(kval[0] if len(kval) < 2 else kval))
             ukeys.add(kval)
 
-    def _check_unique(self, unique: List[SchemaRoute],
+    def _check_unique(self, unique: List[LocationPath],
                       inst: "InstanceNode") -> None:
-        uvals = set()
+        allvals = set()
         for en in inst:
             den = en.add_defaults()
-            uval = tuple([den._peek_schema_route(sr) for sr in unique])
-            if None not in uval:
-                if uval in uvals:
-                    raise SemanticError(inst.json_pointer(), "data-not-unique")
-                else:
-                    uvals.add(uval)
+            uvals = []
+            for uex in unique:
+                uval = [n.value for n in uex.evaluate(den)]
+                uvals.append(uval)
+            tups = set(product(*uvals))
+            if tups & allvals:
+                raise SemanticError(inst.json_pointer(), "data-not-unique")
+            else:
+                allvals |= tups
 
     def _default_instance(self, pnode: "InstanceNode", ctype: ContentType,
                           lazy: bool = False) -> "InstanceNode":
@@ -1102,7 +1107,11 @@ class ListNode(SequenceNode, InternalNode):
     def _unique_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         uspec = []
         for sid in stmt.argument.split():
-            uspec.append(sctx.schema_data.sni2route(sid, sctx))
+            xpp = XPathParser(sid, sctx)
+            uex = xpp.parse()
+            if not xpp.at_end():
+                raise InvalidArgument(stmt.argument)
+            uspec.append(uex)
         self.unique.append(uspec)
 
     def _tree_line(self, no_type: bool = False) -> str:
