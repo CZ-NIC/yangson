@@ -196,7 +196,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    .. method:: parse_resource_id(text: str) -> InstanceRoute
 
       Parse :term:`resource identifier` into an
-      :class:`~.instance.InstanceRoute` object. Yanson extends the
+      :class:`~.instance.InstanceRoute` object. *Yangson* extends the
       syntax of resource identifiers defined in sec. `3.5.3`_ of
       [RFC8040]_ so as to support entire lists and leaf-lists as
       resources: the last component of a resource identifier can be
