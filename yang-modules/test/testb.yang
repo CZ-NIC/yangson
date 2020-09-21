@@ -14,7 +14,7 @@ module testb {
     prefix "t";
   }
 
-  revision 2016-04-26;
+  revision 2020-07-15;
 
   identity CC-BY-SA {
     base t:share-alike;
@@ -48,6 +48,7 @@ module testb {
       type instance-identifier {
 	require-instance true;
       }
+      default "/t:contA/t:leafB";
     }
     leaf leafT {
       type identityref {
@@ -56,7 +57,6 @@ module testb {
       }
     }
     leaf leafV {
-      mandatory true;
       type t:typE;
     }
   }

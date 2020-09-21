@@ -78,7 +78,6 @@ module test {
     }
     leaf leafB {
       type d:typA;
-      config "false";
       mandatory "true";
     }
     list listA {

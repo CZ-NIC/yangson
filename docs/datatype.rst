@@ -159,7 +159,11 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       Return :term:`cooked value` converted from a :term:`raw value`
       *raw* according to the rules of the receiver data type, or
-      ``None`` if the value in *raw* cannot be converted.
+      ``None`` if the value in *raw* cannot be converted. The argument
+      *raw* should follow the rules for JSON representation of scalar
+      values as defined in [RFC7951]_. Conformance to the receiving
+      type isn't guaranteed, as long as *raw* can be correctly
+      converted.
 
       .. doctest::
 
@@ -186,8 +190,11 @@ all :class:`~.schemanode.TerminalNode` instances.
 
    .. method:: parse_value(text: str) -> Optional[ScalarValue]
 
-      Return a value of receiver's type parsed from the argument
-      *text*, or ``None`` if parsing fails.
+      Return a value of receiver's type parsed from *text*, or
+      ``None`` if parsing fails. The argument *text* should follow the
+      rules for lexical representation of scalar values as defined in
+      [RFC7950]_. Conformance of the result to the receiving type
+      isn't guaranteed, as long as *text* can be correctly parsed.
 
       .. doctest::
 
@@ -217,14 +224,13 @@ all :class:`~.schemanode.TerminalNode` instances.
 
    .. method:: from_yang(text: str) -> ScalarValue
 
-      Return a value of receiver's type parsed from *text* appearing
-      in a YANG module.
+      Return a value of receiver's type parsed from *text* that is
+      expected to follow the rules for encoding the argument of the
+      **default** statement in YANG. Conformance to the receiving type
+      isn't guaranteed, as long as *text* can be correctly converted.
 
       This method raises :exc:`~.InvalidArgument` if the receiver type
       cannot properly parse *text*.
-
-      This method is mainly useful for parsing arguments of the
-      **default** statement.
 
       .. doctest::
 

@@ -1,0 +1,38 @@
+image: python:3.6-alpine
+
+stages:
+  - test
+  - build-docs
+  - publish-docs
+
+test:
+  stage: test
+  before_script:
+    - apk add git make
+    - pip install -r requirements.txt
+  script:
+    - make test
+
+build-docs:
+  stage: build-docs
+  before_script:
+    - apk add git make
+    - pip install -r requirements.txt
+  script:
+    - cd docs
+    - make html
+  artifacts:
+    paths:
+      - docs/_build/html
+
+pages:
+  stage: publish-docs
+  dependencies:
+    - build-docs
+  script:
+    - mv docs/_build/html public
+  artifacts:
+    paths:
+      - public
+  only:
+    - tags
