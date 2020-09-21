@@ -4,7 +4,7 @@
     "module": [
       {
         "name": "testb",
-        "revision": "2016-04-26",
+        "revision": "2020-07-15",
         "schema": "https://example.com/testb.yang",
         "namespace": "http://example.com/testb",
         "conformance-type": "implement"
