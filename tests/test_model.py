@@ -3,9 +3,9 @@ import pytest
 from decimal import Decimal
 from yangson import DataModel
 from yangson.exceptions import (
-    InvalidFeatureExpression, UnknownPrefix, NonexistentInstance,
-    NonexistentSchemaNode, RawTypeError, SchemaError,
-    XPathTypeError, InvalidXPath, NotSupported)
+    InvalidArgument, InvalidFeatureExpression, UnknownPrefix,
+    NonexistentInstance, NonexistentSchemaNode, RawTypeError,
+    SchemaError, XPathTypeError, InvalidXPath, NotSupported)
 from yangson.instvalue import ArrayValue
 from yangson.schemadata import SchemaContext, FeatureExprParser
 from yangson.enumerations import ContentType
@@ -33,11 +33,11 @@ tree = """+--rw (test:choiA)?
 |  |  +--:(testb:leafN)
 |  |     +--rw testb:leafN? <string>
 |  +--rw leafA? <typA(int16)>
-|  +--ro leafB <typA(int16)>
+|  +--rw leafB <typA(int16)>
 |  +--rw testb:leafR? <leafref>
 |  +--rw testb:leafS? <instance-identifier>
 |  +--rw testb:leafT? <identityref>
-|  +--rw testb:leafV <typE(int16)>
+|  +--rw testb:leafV? <typE(int16)>
 |  +--rw listA* [leafE leafF]
 |     +--rw contD
 |     |  +---x acA
@@ -108,8 +108,6 @@ def instance(data_model):
                 "leafW": 9,
                 "leafF": false
             }],
-            "testb:leafS":
-                "/test:contA/listA[leafE='C0FFEE'][leafF='true']/contD/contE/leafP",
             "testb:leafR": "C0FFEE",
             "testb:leafT": "test:CC-BY",
             "testb:leafV": 99,
@@ -120,7 +118,7 @@ def instance(data_model):
         },
         "test:contT": {
             "bits": "dos cuatro",
-            "decimal64": 4.50,
+            "decimal64": "4.50",
             "enumeration": "Hearts"
         }
     }
@@ -130,7 +128,7 @@ def instance(data_model):
 
 def test_schema_data(data_model):
     assert len(data_model.schema_data.implement) == 2
-    assert data_model.module_set_id() == "b6d7e0614440c5ad8a7370fe46c777254d331983"
+    assert data_model.module_set_id() == "dec8dc2d848e7994c38c5e4ae65bc31383922ce8"
     tid = data_model.schema_data.last_revision("test")
     stid = data_model.schema_data.last_revision("subtest")
     tbid = data_model.schema_data.last_revision("testb")
@@ -194,7 +192,6 @@ def test_schema(data_model):
     assert lla.max_elements is None
     assert llb.user_ordered and (not lla.user_ordered)
     assert lsta.get_schema_descendant(lsta.keys[1:]).name == "leafF"
-    assert lsta.get_schema_descendant(lsta.unique[0][0]).name == "leafG"
     assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
     assert data_model.get_data_node("/testb:noA/leafO") is None
 
@@ -204,6 +201,9 @@ def test_tree(data_model):
 
 
 def test_types(data_model):
+    # type conversions
+    def tctest(typ, raw, text, value):
+        assert (typ.from_raw(raw) == typ.parse_value(text) == value)
     llb = data_model.get_data_node("/test:llistB").type
     assert "192.168.1.254" in llb
     assert "300.1.1.1" not in llb
@@ -214,6 +214,12 @@ def test_types(data_model):
     assert "2001::db8:0:2::1" not in llb
     ct = data_model.get_data_node("/test:contT")
     i8 = ct.get_child("int8", "test").type
+    tctest(i8, 703697, "703697", 703697)
+    tctest(i8, -6378, "-6378", -6378)
+    tctest(i8, True, "3.14", None)
+    assert i8.from_yang("-0x18EA") == -i8.from_yang("014352") == -6378
+    with pytest.raises(InvalidArgument):
+        i8.from_yang("0X1")
     assert 100 in i8
     assert -101 not in i8
     i16 = ct.get_child("int16", "test").type
@@ -238,10 +244,13 @@ def test_types(data_model):
     ui64 = ct.get_child("uint64", "test").type
     assert 18446744073709551615 in ui64
     assert -1 not in ui64
-    assert ui64.from_raw("6378") == 6378
+    tctest(ui64, "6378", "6378", 6378)
+    tctest(ui64, 6378, "3.14", None)
     assert ui64.from_raw("-6378") == -6378
     d64 = ct.get_child("decimal64", "test").type
     pi = Decimal("3.141592653589793238")
+    tctest(d64, "3.141592653589793238", "3.141592653589793238", pi)
+    assert d64.from_raw(3.141592653589793238) is None
     assert pi in d64
     assert 10 not in d64
     assert d64.from_raw("3.14159265358979323846264338327950288") == pi
@@ -254,17 +263,17 @@ def test_types(data_model):
     assert "9 \tx" in st
     assert "xx xabcdefg" not in st
     boo = ct.get_child("boolean", "test").type
-    assert boo.parse_value("true")
+    tctest(boo, True, "true", True)
+    tctest(boo, "true", "1", None)
     assert False in boo
     assert boo.canonical_string(True) == "true"
-    assert boo.parse_value("boo") is None
     en = ct.get_child("enumeration", "test").type
     assert "Mars" not in en
     assert "Deimos" not in en
     assert en.enum["Hearts"] == 101
     bits = ct.get_child("bits", "test").type
     assert bits.as_int(bits.from_raw("dos cuatro")) == 10
-    assert bits.parse_value("un dos") == ("un", "dos")
+    tctest(bits, "un dos", "un dos", ("un", "dos"))
     assert bits.canonical_string(("cuatro", "dos")) == "dos cuatro"
     assert bits.canonical_string("un dos") is None
     assert "un" not in bits
@@ -279,6 +288,9 @@ def test_types(data_model):
     assert bin.canonical_string(kun.encode("utf-8")) == (
         "UMWZw61sacWhIMW+bHXFpW91xI1rw70ga8" +
         "WvxYggw7pwxJtsIMSPw6FiZWxza8OpIMOzZHku")
+    lw = data_model.get_data_node("/test:contA/listA/leafW").type
+    tctest(lw, 10, "10", 10)
+    assert lw.from_yang("0xA") == 10
 
 
 def test_instance(data_model, instance):
@@ -296,7 +308,9 @@ def test_instance(data_model, instance):
     rid2 = data_model.parse_resource_id("/test:llistB")
     assert len(instance.peek(rid2)) == 2
     conta = instance["test:contA"]
-    la1 = conta["listA"][-1]
+    la = conta["listA"]
+    assert la.schema_node.unique[0][0].evaluate(la[0])[0].value == "foo1-bar"
+    la1 = la[-1]
     lt = conta["testb:leafT"]
     assert la1.index == 1
     tbln = conta["testb:leafN"]
@@ -504,7 +518,7 @@ def test_xpath(data_model, instance):
     xptest("re-match('a\nb', '[a-z\n]*')",
            're-match("a&#10;b", "[a-z&#10;]*")')
     xptest("deref(.)/../t:leafF", "deref(.)/../test:leafF", True, lr, "testb")
-    xptest("deref(../leafS)", "deref(../testb:leafS)", 10, lr, "testb")
+    xptest("deref(../leafS)", "deref(../testb:leafS)", 9, lr, "testb")
     xptest("count(deref(../leafS) | ../leafN)",
            "count(deref(../testb:leafS) | ../testb:leafN)", 2, lr, "testb")
     xptest("derived-from-or-self(../leafT, 't:CC-BY')",
@@ -574,7 +588,12 @@ def test_edits(data_model, instance):
 
 
 def test_validation(instance):
-    assert instance.validate(ctype=ContentType.all) is None
     inst2 = instance.put_member("testb:leafQ", "ABBA").top()
     with pytest.raises(SchemaError):
         inst2.validate(ctype=ContentType.all)
+    inst3 = instance["test:contA"].put_member(
+        "testb:leafS",
+        "/test:contA/listA[leafE='C0FFEE'][leafF='true']/contD/contE/leafP",
+        raw = True).top()
+    assert inst3.validate(ctype=ContentType.all) is None
+    assert instance.validate(ctype=ContentType.all) is None

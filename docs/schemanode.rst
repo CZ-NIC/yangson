@@ -588,10 +588,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. attribute:: unique
 
-      List of lists of schema routes. Each internal list represents a
-      group of descendant leafs whose values are required to be unique
-      across all list entries. See **unique** statement in [RFC7950]_,
-      sec. `7.8.3`_.
+      List of lists of XPath expressions parsed from one or more
+      **unique** statements ([RFC7950]_, sec. `7.8.3`_). The
+      expressions are used to select leaves in all entries of a list
+      instance, and their combinations are then checked for
+      uniqueness.
 
    .. rubric:: Public Methods
 

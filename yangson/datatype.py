@@ -47,6 +47,7 @@ This module implements the following classes:
 import base64
 import decimal
 import numbers
+import re
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 from .constraint import Intervals, Pattern
@@ -91,8 +92,14 @@ class DataType:
     def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
         """Return a cooked value of the receiver type.
 
+        The input argument should follow the rules for JSON
+        representation of scalar values as specified in
+        [RFC7951]_. Conformance to the receiving type isn't
+        guaranteed.
+
         Args:
             raw: Raw value obtained from JSON parser.
+
         """
         if isinstance(raw, str):
             return raw
@@ -104,11 +111,17 @@ class DataType:
     def parse_value(self, text: str) -> Optional[ScalarValue]:
         """Parse value of the receiver's type.
 
+        The input text should follow the rules for lexical
+        representation of scalar values as specified in
+        [RFC7950]_. Conformance to the receiving type isn't
+        guaranteed.
+
         Args:
             text: String representation of the value.
 
         Returns:
             A value of the receiver's type or ``None`` if parsing fails.
+
         """
         return self.from_raw(text)
 
@@ -117,7 +130,9 @@ class DataType:
         return str(val)
 
     def from_yang(self, text: str) -> ScalarValue:
-        """Parse value specified in a YANG module.
+        """Parse value specified as default in a YANG module.
+
+        Conformance to the receiving type isn't guaranteed.
 
         Args:
             text: String representation of the value.
@@ -527,6 +542,12 @@ class LeafrefType(LinkType):
     def to_raw(self, val: ScalarValue) -> RawScalar:
         return self.ref_type.to_raw(val)
 
+    def parse_value(self, text: str) -> Optional[ScalarValue]:
+        return self.ref_type.parse_value(text)
+
+    def from_yang(self, text: str) -> ScalarValue:
+        return self.ref_type.from_yang(text)
+
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         ns = self.path.evaluate(node)
         return [n for n in ns if str(n) == str(node)]
@@ -563,6 +584,10 @@ class InstanceIdentifierType(LinkType):
         """Override the superclass method."""
         return str(val)
 
+    def from_yang(self, text: str) -> InstanceRoute:
+        """Override the superclass method."""
+        return XPathParser(text, self.sctx).parse().as_instance_route()
+
     def _deref(self, node: InstanceNode) -> List[InstanceNode]:
         return [node.top().goto(node.value)]
 
@@ -592,10 +617,11 @@ class IdentityrefType(DataType):
     def to_raw(self, val: QualName) -> str:
         return self.canonical_string(val)
 
-    def from_yang(self, text: str) -> Optional[QualName]:
+    def from_yang(self, text: str) -> QualName:
         """Override the superclass method."""
         try:
-            return self.sctx.schema_data.translate_pname(text, self.sctx.text_mid)
+            return self.sctx.schema_data.translate_pname(
+                text, self.sctx.text_mid)
         except (ModuleNotRegistered, UnknownPrefix):
             raise InvalidArgument(text)
 
@@ -674,7 +700,7 @@ class Decimal64Type(NumericType):
         super()._handle_properties(stmt, sctx)
 
     def from_raw(self, raw: RawScalar) -> Optional[decimal.Decimal]:
-        if not isinstance(raw, (str, numbers.Real)):
+        if not isinstance(raw, str):
             return None
         try:
             return decimal.Decimal(raw).quantize(self._epsilon)
@@ -705,6 +731,9 @@ class Decimal64Type(NumericType):
 class IntegralType(NumericType):
     """Abstract class for integral data types."""
 
+    octhex = re.compile("[-+]?0([x0-9])")
+    """Regular expression for octal or hexadecimal default."""
+
     def __contains__(self, val: int) -> bool:
         if not isinstance(val, int) or isinstance(val, bool):
             self._set_error_info()
@@ -726,10 +755,11 @@ class IntegralType(NumericType):
         except (ValueError, TypeError):
             return None
 
-    def from_yang(self, text: str) -> Optional[int]:
+    def from_yang(self, text: str) -> int:
         """Override the superclass method."""
-        if text.startswith("0"):
-            base = 16 if text.startswith("0x") else 8
+        mo = self.octhex.match(text)
+        if mo:
+            base = 16 if mo.group(1) == "x" else 8
         else:
             base = 10
         try:
@@ -766,7 +796,7 @@ class Int64Type(IntegralType):
 
         A raw instance may be either string or integer.
         """
-        if not isinstance(raw, (str, int)) or isinstance(raw, bool):
+        if not isinstance(raw, str) or isinstance(raw, bool):
             return None
         try:
             return int(raw)
@@ -800,12 +830,12 @@ class Uint64Type(IntegralType):
 
     _range = [0, 18446744073709551615]
 
-    def from_raw(self, raw: RawScalar) -> Optional[int]:
+    def from_raw(self, raw: str) -> Optional[int]:
         """Override superclass method.
 
         A raw instance may be either string or integer.
         """
-        if not isinstance(raw, (str, int)) or isinstance(raw, bool):
+        if not isinstance(raw, str) or isinstance(raw, bool):
             return None
         try:
             return int(raw)

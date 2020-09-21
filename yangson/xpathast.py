@@ -33,7 +33,8 @@ from typing import List, Optional, Tuple
 from .schemadata import SchemaContext
 from .enumerations import Axis, MultiplicativeOp
 from .exceptions import InvalidArgument, XPathTypeError
-from .instance import InstanceNode
+from .instance import (EntryIndex, EntryKeys, EntryValue, InstanceNode,
+                       InstanceRoute, MemberName)
 from .nodeset import NodeExpr, NodeSet, XPathValue
 from .typealiases import QualName
 
@@ -111,6 +112,10 @@ class Expr:
         attr_str = " (" + attr + ")\n" if attr else "\n"
         return (" " * indent + node_name + attr_str +
                 self._children_ast(indent + self.indent))
+
+    def as_instance_route(self) -> InstanceRoute:
+        """Convert receiver to an InstanceRoute."""
+        raise NotImplementedError
 
     def _properties_str(self) -> str:
         return ""
@@ -235,6 +240,9 @@ class EqualityExpr(BinaryExpr):
     def __str__(self) -> str:
         return self._as_str("!=" if self.negate else "=")
 
+    def as_instance_route(self) -> InstanceRoute:
+        step = self.left
+ 
     def _properties_str(self) -> str:
         return "!=" if self.negate else "="
 
@@ -430,6 +438,10 @@ class LocationPath(BinaryExpr):
         sep = "" if isinstance(self.left, Root) else "/"
         return f"{self.left}{sep}{self.right}"
 
+    def as_instance_route(self) -> InstanceRoute:
+        return InstanceRoute(self.left.as_instance_route() +
+                             self.right.as_instance_route())
+   
 
 class Root(Expr):
 
@@ -440,6 +452,9 @@ class Root(Expr):
 
     def __str__(self) -> str:
         return "/"
+
+    def as_instance_route(self) -> InstanceRoute:
+        return InstanceRoute([])
 
 
 class Step(Expr):
@@ -467,6 +482,19 @@ class Step(Expr):
         prs = "".join([f"[{p}]" for p in self.predicates])
         return ax + qn + prs
 
+    def as_instance_route(self) -> InstanceRoute:
+        m = MemberName(*self.qname)
+        if not(self.predicates): return InstanceRoute([m])
+        p0 = self.predicates[0]
+        if isinstance(p0, Number):  # entry index
+            espec = EntryIndex(int(p0.value))
+        elif p0.left.axis == Axis.self:  # leaf-list value
+            espec = EntryValue(p0.right.value)
+        else:                   # list keys
+            ks = { p.left.qname: p.right.value for p in self.predicates }
+            espec = EntryKeys(ks)
+        return InstanceRoute([m, espec]) 
+    
     def _properties_str(self) -> str:
         return f"{self.axis.name} {self.qname}"
 
