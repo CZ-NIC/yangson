@@ -361,3 +361,11 @@ epub_exclude_files = ['search.html']
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 doctest_test_doctest_blocks = ""
+
+html_context = {
+    "DONATIONS": {  # Variables used to construct URL for the "Donate" button:
+        "url": "https://donations.nic.cz",
+        "slug": "yangson",
+        "return_url": "https://yangson.labs.nic.cz/"
+    }
+}
