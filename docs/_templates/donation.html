@@ -1,0 +1,42 @@
+<style>
+  .wy-menu .donation {
+    text-align: center;
+    margin-top: 2em;
+  }
+
+  .wy-menu .donation .donation-button {
+    line-height: unset;
+    padding: unset;
+    position: unset;
+    font-size: inherit;
+    text-decoration: none;
+    display: inline-block;
+    max-width: 180px;
+  }
+
+  .wy-menu .donation .donation-button svg {
+    width: 100%;
+  }
+
+  .wy-menu .donation a.donation-button:hover,
+  .wy-menu .donation a.donation-button:focus {
+    background-color: transparent;
+  }
+
+  .wy-menu .donation a.donation-button svg rect {
+    transition: fill 0.157s ease-in-out;
+  }
+
+  .wy-menu .donation a.donation-button:hover svg rect,
+  .wy-menu .donation a.donation-button:focus svg rect {
+    fill: #50d84c;
+  }
+</style>
+<div class="donation">
+  <a
+    class="donation-button"
+    href="{{ DONATIONS.url }}/donate/?project={{ DONATIONS.slug }}&return_url={{ DONATIONS.return_url }}"
+  >
+    {% include "donation.svg" %}
+  </a>
+</div>
