@@ -780,6 +780,10 @@ class Decimal64Type(NumericType):
         super()._handle_properties(stmt, sctx)
 
     def from_raw(self, raw: RawScalar) -> Optional[decimal.Decimal]:
+        """Override superclass method.
+
+        According to [RFC7951]_, a raw instance must be string.
+        """
         if not isinstance(raw, str):
             return None
         try:
@@ -889,7 +893,7 @@ class Int64Type(IntegralType):
     def from_raw(self, raw: RawScalar) -> Optional[int]:
         """Override superclass method.
 
-        A raw instance may be either string or integer.
+        According to [RFC7951]_, a raw instance must be string.
         """
         if not isinstance(raw, str) or isinstance(raw, bool):
             return None
@@ -941,7 +945,7 @@ class Uint64Type(IntegralType):
     def from_raw(self, raw: str) -> Optional[int]:
         """Override superclass method.
 
-        A raw instance may be either string or integer.
+        According to [RFC7951]_, a raw instance must be string.
         """
         if not isinstance(raw, str) or isinstance(raw, bool):
             return None
