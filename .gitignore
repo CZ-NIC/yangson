@@ -15,3 +15,8 @@ pip-selfcheck.json
 pyvenv.cfg
 TAGS
 yangson.egg-info
+.kdev4
+*.kdev4
+.pybuild
+share
+

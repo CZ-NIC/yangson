@@ -64,16 +64,23 @@ class SchemaContext:
 class ModuleData:
     """Data related to a YANG module or submodule."""
 
-    def __init__(self, main_module: YangIdentifier):
+    def __init__(self, main_module: YangIdentifier, yang_id: YangIdentifier):
         """Initialize the class instance."""
         self.features = set()  # type: MutableSet[YangIdentifier]
         """Set of supported features."""
         self.main_module = main_module  # type: ModuleId
         """Main module of the receiver."""
+        self.yang_id = yang_id # type ModuleId
+        """Identifier of the Module, different from main_module
+        for submodules"""
+        self.xml_namespace = None  # type: str
+        """Content of the namespace definition of the module"""
         self.prefix_map = {}  # type: Dict[YangIdentifier, ModuleId]
         """Map of prefixes to module identifiers."""
         self.statement = None  # type: Statement
         """Corresponding (sub)module statements."""
+        self.path = None  # type: str
+        """Path to the yang file this module was initialized from"""
         self.submodules = set()  # type: MutableSet[ModuleId]
         """Set of submodules."""
 
@@ -96,6 +103,9 @@ class SchemaData:
         """List of directories where to look for YANG modules."""
         self.modules = {}  # type: Dict[ModuleId, ModuleData]
         """Dictionary of module data."""
+        self.modules_by_name = {}  # type: Dict[str, ModuleData]
+        """Dictionary of module data by module name."""
+        self.modules_by_ns = {}
         self._module_sequence = []  # type: List[ModuleId]
         """List that defines the order of module processing."""
         self._from_yang_library(yang_lib)
@@ -120,13 +130,16 @@ class SchemaData:
                 name = item["name"]
                 rev = item["revision"]
                 mid = (name, rev)
-                mdata = ModuleData(mid)
+                mdata = ModuleData(mid, mid)
+                mdata.xml_namespace = item.get('namespace')
                 self.modules[mid] = mdata
+                self.modules_by_name[name] = mdata
+                self.modules_by_ns[mdata.xml_namespace] = mdata
                 if item["conformance-type"] == "implement":
                     if name in self.implement:
                         raise MultipleImplementedRevisions(name)
                     self.implement[name] = rev
-                mod = self._load_module(name, rev)
+                mod = self._load_module(name, rev, mdata)
                 mdata.statement = mod
                 if "feature" in item:
                     mdata.features.update(item["feature"])
@@ -135,11 +148,15 @@ class SchemaData:
                 if "submodule" in item:
                     for s in item["submodule"]:
                         sname = s["name"]
-                        smid = (sname, s["revision"])
-                        sdata = ModuleData(mid)
+                        srev = s["revision"]
+                        smid = (sname, srev)
+                        sdata = ModuleData(mid, smid)
+                        sdata.xml_namespace = s.get('namespace')
                         self.modules[smid] = sdata
+                        self.modules_by_name[sname] = sdata
+                        self.modules_by_ns[sdata.xml_namespace] = sdata
                         mdata.submodules.add(smid)
-                        submod = self._load_module(*smid)
+                        submod = self._load_module(sname, srev, sdata)
                         sdata.statement = submod
                         bt = submod.find1("belongs-to", name, required=True)
                         locpref = bt.find1("prefix", required=True).argument
@@ -150,7 +167,7 @@ class SchemaData:
         self._check_feature_dependences()
 
     def _load_module(self, name: YangIdentifier,
-                     rev: RevisionDate) -> Statement:
+                     rev: RevisionDate, mdata: ModuleData) -> Statement:
         """Read and parse a YANG module or submodule."""
         for d in self.module_search_path:
             run = 0
@@ -162,6 +179,7 @@ class SchemaData:
                 try:
                     with open(fn, encoding='utf-8') as infile:
                         res = ModuleParser(infile.read(), name, rev).parse()
+                        mdata.path = fn
                 except (FileNotFoundError, PermissionError, ModuleContentMismatch):
                     run += 1
                     continue

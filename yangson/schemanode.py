@@ -44,13 +44,15 @@ This module implements the following classes:
 from datetime import datetime
 from itertools import product
 from typing import Any, Dict, List, MutableSet, Optional, Set, Tuple
+import xml.etree.ElementTree as ET
 from .constraint import Must
 from .datatype import (DataType, LinkType,
                        RawScalar, IdentityrefType)
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
 from .exceptions import (
     AnnotationTypeError, InvalidArgument,
-    MissingAnnotationTarget, MissingAugmentTarget, RawMemberError,
+    MissingAnnotationTarget, MissingAugmentTarget, MissingModuleNamespace,
+    RawMemberError,
     RawTypeError, SchemaError, SemanticError, UndefinedAnnotation,
     YangsonException, YangTypeError)
 from .instvalue import (
@@ -151,6 +153,20 @@ class SchemaNode:
 
         Args:
             rval: Raw value.
+            jptr: JSON pointer of the current instance node.
+
+        Raises:
+            RawMemberError: If a member inside `rval` is not defined in the
+                schema.
+            RawTypeError: If a scalar value inside `rval` is of incorrect type.
+        """
+        raise NotImplementedError
+
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "", isroot: bool = False) -> Value:
+        """Return instance value transformed from a raw value using receiver.
+
+        Args:
+            rval: XML node.
             jptr: JSON pointer of the current instance node.
 
         Raises:
@@ -431,7 +447,7 @@ class InternalNode(SchemaNode):
                 res.extend(child.data_children())
         return res
 
-    def from_raw(self, rval: RawObject, jptr: JSONPointer = "") -> ObjectValue:
+    def from_raw(self, rval: RawObject, jptr: JSONPointer = "", allow_nodata: bool = False) -> ObjectValue:
         """Override the superclass method."""
         if not isinstance(rval, dict):
             raise RawTypeError(jptr, "object")
@@ -446,12 +462,63 @@ class InternalNode(SchemaNode):
                 res[qn] = self._process_metadata(rval[qn], jptr)
             else:
                 cn = self._iname2qname(qn)
-                ch = self.get_data_child(*cn)
+                if allow_nodata:
+                    ch = self.get_child(*cn)
+                else:
+                    ch = self.get_data_child(*cn)
                 npath = jptr + "/" + qn
                 if ch is None:
                     raise RawMemberError(npath)
-                res[ch.iname()] = ch.from_raw(rval[qn], npath)
+
+                if not allow_nodata and self.ns == ch.ns:
+                    iname = ch.name
+                else:
+                    iname = '{1}:{0}'.format(*ch.qual_name)
+                res[iname] = ch.from_raw(rval[qn], npath)
         return res
+
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "", isroot: bool = False, allow_nodata: bool = False) -> ObjectValue:
+        res = ObjectValue()
+        if isroot:
+            self._process_xmlobj_child(res, None, rval, jptr, allow_nodata)
+        else:
+            for xmlchild in rval:
+                self._process_xmlobj_child(res, rval, xmlchild, jptr, allow_nodata)
+        return res
+
+    def _process_xmlobj_child(
+            self, res: ObjectValue, rval: ET.Element,
+            xmlchild: ET.Element, jptr: JSONPointer, allow_nodata):
+        if xmlchild.tag[0] == '{':
+            xmlns, name = xmlchild.tag[1:].split('}')
+            nsmap = self.schema_root().schema_data.modules_by_ns
+            if xmlns not in nsmap:
+                raise MissingModuleNamespace(xmlns)
+            ns = nsmap[xmlns].yang_id[0]
+            fqn = ns + ':' + name
+        else:
+            name = xmlchild.tag
+            ns = self.ns
+            fqn = ns + ':' + name
+        qn = fqn if ns != self.ns else name
+
+        if allow_nodata:
+            ch = self.get_child(name, ns)
+        else:
+            ch = self.get_data_child(name, ns)
+        npath = jptr + "/" + qn
+        if ch is None:
+            raise RawMemberError(npath)
+
+        if rval and self.ns == ch.ns:
+            iname = ch.name
+        else:
+            iname = '{1}:{0}'.format(*ch.qual_name)
+        if isinstance(ch, SequenceNode):
+            if iname not in res:
+                res[iname] = ch.from_xml(rval, npath, fqn)
+        else:
+            res[iname] = ch.from_xml(xmlchild, npath)
 
     def _process_metadata(self, rmo: RawMetadataObject,
                           jptr: JSONPointer) -> MetadataObject:
@@ -723,10 +790,11 @@ class GroupNode(InternalNode):
 class SchemaTreeNode(GroupNode):
     """Root node of a schema tree."""
 
-    def __init__(self):
+    def __init__(self, schemadata: "SchemaData" = None):
         """Initialize the class instance."""
         super().__init__()
         self.annotations: Dict[QualName, Annotation] = {}
+        self.schema_data = schemadata
 
     def data_parent(self) -> InternalNode:
         """Override the superclass method."""
@@ -852,6 +920,12 @@ class TerminalNode(SchemaNode):
             raise RawTypeError(jptr, self.type.yang_type() + " value")
         return res
 
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
+        res = self.type.from_xml(rval)
+        if res is None:
+            raise RawTypeError(jptr, self.type.yang_type() + " value")
+        return res
+
     def _node_digest(self) -> Dict[str, Any]:
         res = super()._node_digest()
         res["type"] = self.type._type_digest(self.config)
@@ -865,7 +939,7 @@ class TerminalNode(SchemaNode):
         """Extend the superclass method."""
         if (scope.value & ValidationScope.syntax.value and
                 inst.value not in self.type):
-            raise YangTypeError(inst.json_pointer(), self.type.error_tag,
+            raise YangTypeError(inst.json_pointer(expand_keys=True), self.type.error_tag,
                                 self.type.error_message)
         if (isinstance(self.type, LinkType) and        # referential integrity
                 scope.value & ValidationScope.semantics.value and
@@ -875,7 +949,7 @@ class TerminalNode(SchemaNode):
             except YangsonException:
                 tgt = []
             if not tgt:
-                raise SemanticError(inst.json_pointer(), "instance-required")
+                raise SemanticError(inst.json_pointer(expand_keys=True), "instance-required")
         super()._validate(inst, scope, ctype)
 
     def _default_value(self, inst: "InstanceNode", ctype: ContentType,
@@ -1012,11 +1086,54 @@ class SequenceNode(DataNode):
         if not isinstance(rval, list):
             raise RawTypeError(jptr, "array")
         res = ArrayValue()
-        i = 0
+        idx = 0
         for en in rval:
-            i += 1
-            res.append(self.entry_from_raw(en, f"{jptr}/{i}"))
+            if isinstance(self, ListNode):
+                keys = [str(en.get(k[0], '<missing>')) for k in self.keys]
+                element = "=" + ",".join(keys)
+            else:
+                element = "/" + str(idx)
+            res.append(self.entry_from_raw(en, jptr + element))
+            idx = idx + 1
         return res
+
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "",
+                 tagname: str = None, isroot: bool = False) -> ArrayValue:
+        res = ArrayValue()
+        idx = 0
+        if isroot:
+            return self._process_xmlarray_child(res, rval, None, jptr)
+        else:
+            for xmlchild in rval:
+                if isinstance(self, ListNode):
+                    keys = [str(xmlchild.findtext(k[0], default='<missing>')) for k in self.keys]
+                    element = "=" + ",".join(keys)
+                else:
+                    element = "/" + str(idx)
+                self._process_xmlarray_child(
+                    res, xmlchild, tagname, jptr + element)
+                idx = idx + 1
+        return res
+
+    def _process_xmlarray_child(
+            self, res: ArrayValue, xmlchild: ET.Element,
+            tagname: str, jptr: JSONPointer):
+        if xmlchild.tag[0] == '{':
+            xmlns, name = xmlchild.tag[1:].split('}')
+            module = self.schema_root().schema_data.modules_by_ns.get(xmlns)
+            if not module:
+                raise MissingModuleNamespace(xmlns)
+            ns = module.yang_id[0]
+            qn = ns + ':' + name
+        else:
+            name = qn = xmlchild.tag
+            ns = self.ns
+        if tagname is None or qn == tagname:
+            child = self.entry_from_xml(xmlchild, jptr + "/" + str(len(res)))
+            res.append(child)
+        else:
+            child = None
+        return child
 
     def entry_from_raw(self, rval: RawEntry,
                        jptr: JSONPointer = "") -> EntryValue:
@@ -1032,6 +1149,20 @@ class SequenceNode(DataNode):
             RawTypeError: If a scalar value inside `rval` is of incorrect type.
         """
         return super().from_raw(rval, jptr)
+
+    def entry_from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> EntryValue:
+        """Transform a XML (leaf-)list entry into the cooked form.
+
+        Args:
+            rval: xml node
+            jptr: JSON pointer of the entry
+
+        Raises:
+            NonexistentSchemaNode: If a member inside `rval` is not defined
+                in the schema.
+            RawTypeError: If a scalar value inside `rval` is of incorrect type.
+        """
+        return super().from_xml(rval, jptr)
 
 
 class ListNode(SequenceNode, InternalNode):
@@ -1333,6 +1464,9 @@ class AnyContentNode(DataNode):
                 res = val
             return res
         return convert(rval)
+
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
+        super().from_xml(rval, jptr)
 
     def _default_instance(self, pnode: "InstanceNode", ctype: ContentType,
                           lazy: bool = False) -> "InstanceNode":
