@@ -447,7 +447,7 @@ class InternalNode(SchemaNode):
                 res.extend(child.data_children())
         return res
 
-    def from_raw(self, rval: RawObject, jptr: JSONPointer = "", isroot: bool = False) -> ObjectValue:
+    def from_raw(self, rval: RawObject, jptr: JSONPointer = "", allow_nodata: bool = False) -> ObjectValue:
         """Override the superclass method."""
         if not isinstance(rval, dict):
             raise RawTypeError(jptr, "object")
@@ -466,7 +466,10 @@ class InternalNode(SchemaNode):
                 npath = jptr + "/" + qn
                 if ch is None:
                     raise RawMemberError(npath)
-                iname = (ch.ns+':'+ch.name) if isroot else ch.iname()
+                if not allow_nodata and self.ns == ch.ns:
+                    iname = ch.name
+                else:
+                    iname = '{1}:{0}'.format(*ch.qual_name)
                 res[iname] = ch.from_raw(rval[qn], npath)
         return res
 

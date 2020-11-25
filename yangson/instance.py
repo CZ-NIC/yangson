@@ -186,14 +186,16 @@ class InstanceNode:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
         if not expand_keys:
             return "/" + "/".join(str(c) for c in self.path)
-
         res = []
         inst = self
         while inst.parinst:
-            print(type(inst))
             if isinstance(inst, ArrayEntry):
-                keys = [str(inst.value[k[0]]) for k in inst.schema_node.keys]
-                res.insert(0, inst.schema_node.name + '=' + ','.join(keys))
+                if isinstance(inst.schema_node, ListNode):
+                    keys = [str(inst.value[k[0]]) for k in inst.schema_node.keys]
+                    res.insert(0, inst.schema_node.name + '=' + ','.join(keys))
+                else:
+                    res.insert(0, inst.schema_node.name + '=' + inst.value)
+                inst = inst.parinst
             else:
                 res.insert(0, inst.name)
             inst = inst.parinst
