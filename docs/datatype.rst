@@ -134,7 +134,7 @@ all :class:`~.schemanode.TerminalNode` instances.
          >>> string_t.error_tag
          'invalid-type'
          >>> string_t.error_message
-         'xes and y'
+         'xes and y: abc'
 
    .. rubric:: Public Methods
 

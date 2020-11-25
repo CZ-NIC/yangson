@@ -31,11 +31,13 @@ This module implements the following classes:
 
 from datetime import datetime
 import json
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from urllib.parse import unquote
+import xml.etree.ElementTree as ET
 from .enumerations import ContentType, ValidationScope
 from .exceptions import (BadSchemaNodeType, EndOfInput, InstanceException,
                          InstanceValueError, InvalidKeyValue,
+                         MissingModuleNamespace,
                          NonexistentInstance, NonDataNode,
                          NonexistentSchemaNode, UnexpectedInput)
 from .instvalue import (ArrayValue, InstanceKey, ObjectValue, Value,
@@ -47,6 +49,20 @@ from .typealiases import (InstanceName, JSONPointer, QualName, RawValue,
 __all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
            "InstanceIdParser", "ResourceIdParser", "InstanceRoute",
            "InstanceException", "InstanceValueError", "NonexistentInstance"]
+
+
+class OutputFilter:
+    def begin_member(self, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
+        return True
+
+    def end_member(self, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
+        return True
+
+    def begin_element(self, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
+        return True
+
+    def end_element(self, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
+        return True
 
 
 class LinkedList:
@@ -132,6 +148,8 @@ class InstanceNode:
         """Parent instance node, or ``None`` for the root node."""
         self.schema_node = schema_node  # type: DataNode
         """Data node corresponding to the instance node."""
+        self.schema_data = parinst.schema_data if parinst else None
+        """Link to schema data"""
         self.timestamp = timestamp     # type: datetime
         """Time of the receiver's last modification."""
         self.value = value             # type: Value
@@ -163,9 +181,24 @@ class InstanceNode:
         return (str(self.value) if isinstance(self.value, StructuredValue) else
                 sn.type.canonical_string(self.value))
 
-    def json_pointer(self) -> JSONPointer:
+    def json_pointer(self, expand_keys=False) -> JSONPointer:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
-        return "/" + "/".join(str(c) for c in self.path)
+        if not expand_keys:
+            return "/" + "/".join(str(c) for c in self.path)
+        res = []
+        inst = self
+        while inst.parinst:
+            if isinstance(inst, ArrayEntry):
+                if isinstance(inst.schema_node, ListNode):
+                    keys = [str(inst.value[k[0]]) for k in inst.schema_node.keys]
+                    res.insert(0, inst.schema_node.name + '=' + ','.join(keys))
+                else:
+                    res.insert(0, inst.schema_node.name + '=' + inst.value)
+                inst = inst.parinst
+            else:
+                res.insert(0, inst.name)
+            inst = inst.parinst
+        return "/" + "/".join(str(c) for c in res)
 
     def __getitem__(self, key: InstanceKey) -> "InstanceNode":
         """Return member or entry with the given key.
@@ -203,7 +236,8 @@ class InstanceNode:
             return ita()
         if isinstance(self.value, ObjectValue):
             return iter(self._member_names())
-        raise InstanceValueError(self.json_pointer(), "scalar instance")
+        raise InstanceValueError(self.json_pointer(),
+            "{} is a scalar instance".format(str(type(self.value))))
 
     def is_internal(self) -> bool:
         """Return ``True`` if the receiver is an instance of an internal node.
@@ -335,12 +369,13 @@ class InstanceNode:
         """
         self.schema_node._validate(self, scope, ctype)
 
-    def add_defaults(self, ctype: ContentType = None) -> "InstanceNode":
+    def add_defaults(self, ctype: ContentType = None, tag: bool = False) -> "InstanceNode":
         """Return the receiver with defaults added recursively to its value.
 
         Args:
             ctype: Content type of the defaults to be added. If it is
                 ``None``, the content type will be the same as receiver's.
+            tag: True if added values should be marked with a metadata tag.
         """
         val = self.value
         if not (isinstance(val, StructuredValue) and self.is_internal()):
@@ -350,27 +385,179 @@ class InstanceNode:
             if val:
                 for mn in self._member_names():
                     m = res._member(mn) if res is self else res.sibling(mn)
-                    res = m.add_defaults(ctype)
+                    res = m.add_defaults(ctype, tag=tag)
                 res = res.up()
-            return self.schema_node._add_defaults(res, ctype)
+            res = self.schema_node._add_defaults(res, ctype)
+            if tag and res != self:
+                self._mark_defaults(res.value)
+            return res
         if not val:
             return res
         en = res[0]
         while True:
-            res = en.add_defaults(ctype)
+            res = en.add_defaults(ctype, tag=tag)
             try:
                 en = res.next()
             except NonexistentInstance:
                 break
         return res.up()
 
-    def raw_value(self) -> RawValue:
+    def _mark_defaults(self, objvalue):
+        """Mark all values set in parameter but not in our own value as
+        default with the relevant metadata attribute
+
+        Args:
+            objvalue: new object value after adding defaults
+        """
+        if not isinstance(objvalue, ObjectValue):
+            return
+        for key, value in list(objvalue.items()):
+            if key not in self.value:
+                if isinstance(value, ObjectValue):
+                    metadata = objvalue[key].get('@', {})
+                    metadata['ietf-netconf-with-defaults:default'] = True
+                    objvalue[key]['@'] = metadata
+                else:
+                    metadata = objvalue.get('@'+key, {})
+                    metadata['ietf-netconf-with-defaults:default'] = True
+                    objvalue['@'+key] = metadata
+
+    def _get_attributes(self) -> dict:
+        # collect attributes
+        attr = {}
+        for m in self.value:
+            if m == '@':
+                # handled when processing the level higher or no metadata
+                continue
+
+            if m[0] != '@' and isinstance(self.value[m], ObjectValue) and '@' in self.value[m]:
+                attr[m] = self.value[m]['@']
+            elif m[0] == '@':
+                attr[m[1:]] = self.value[m]
+        return attr
+
+    def raw_value(self, filter: OutputFilter = OutputFilter()) -> RawValue:
         """Return receiver's value in a raw form (ready for JSON encoding)."""
+
         if isinstance(self.value, ObjectValue):
-            return {m: self._member(m).raw_value() for m in self.value}
+            value = {}
+            attr = self._get_attributes()
+            for m in self.value:
+                if m[0] != '@':
+                    m_attr = attr.get(m, {})
+                    member = self[m]
+                    add1 = filter.begin_member(self, member, m_attr)
+                    if add1:
+                        member_value = member.raw_value(filter)
+                    add2 = filter.end_member(self, member, m_attr)
+                    if add1 and add2:
+                        value[m] = member_value
+
+                        if m_attr:
+                            if isinstance(value[m], dict):
+                                value[m]['@'] = attr[m]
+                            else:
+                                value['@'+m] = attr[m]
+
+            return value
         if isinstance(self.value, ArrayValue):
-            return [en.raw_value() for en in self]
+            value = list()
+            for en in self:
+                if isinstance(en, dict) and '@' in en.value:
+                    e_attr = en['@']
+                else:
+                    e_attr = {}
+                add1 = filter.begin_element(self, en, e_attr)
+                if add1:
+                    member_value = en.raw_value(filter)
+                add2 = filter.end_element(self, en, e_attr)
+                if add1 and add2 and member_value:
+                    if e_attr:
+                        member_value['@'] = e_attr
+                    value.append(member_value)
+            return value
         return self.schema_node.type.to_raw(self.value)
+
+    def to_xml(self, filter: OutputFilter = OutputFilter(), elem: ET.Element = None):
+        """put receiver's value into a XML element"""
+        has_default_ns = False
+
+        if elem is None:
+            element = ET.Element(self.schema_node.name)
+
+            module = self.schema_data.modules_by_name.get(self.schema_node.ns)
+            if not module:
+                raise MissingModuleNamespace(self.schema_node.ns)
+            element.attrib['xmlns'] = module.xml_namespace
+        else:
+            element = elem
+
+        if isinstance(self.value, ObjectValue):
+            attr = self._get_attributes()
+            for cname in self:
+                childs = list()
+                if cname[0] == '@':
+                    continue
+
+                m = self[cname]
+                m_attr = attr.get(cname, {}).copy()
+                if filter.begin_member(self, m, m_attr):
+                    sn = m.schema_node
+                    dp = sn.data_parent()
+
+                    if isinstance(m.schema_node, (ListNode, LeafListNode)):
+                        for en in m:
+                            if isinstance(en, dict) and '@' in en.value:
+                                e_attr = en['@'].copy()
+                            else:
+                                e_attr = {}
+                            add1 = filter.begin_element(m, en, e_attr)
+                            if add1:
+                                child = ET.Element(sn.name)
+                                if not dp or dp.ns != sn.ns:
+                                    module = self.schema_data.modules_by_name.get(sn.ns)
+                                    if not module:
+                                        raise MissingModuleNamespace(sn.ns)
+                                    child.attrib['xmlns'] = module.xml_namespace
+                                en.to_xml(filter, child)
+                            add2 = filter.end_element(m, en, e_attr)
+                            if add1 and add2:
+                                for a in e_attr:
+                                    child.attrib[a] = str(e_attr[a])
+                                childs.append(child)
+                    else:
+                        child = ET.Element(sn.name)
+                        if not dp or dp.ns != sn.ns:
+                            module = self.schema_data.modules_by_name.get(sn.ns)
+                            if not module:
+                                raise MissingModuleNamespace(sn.ns)
+                            child.attrib['xmlns'] = module.xml_namespace
+                        m.to_xml(filter, child)
+                        childs.append(child)
+                if filter.end_member(self, m, m_attr):
+                    for c in childs:
+                        for a in m_attr:
+                            # should only happen if the child was no list
+                            if a == 'ietf-netconf-with-defaults:default':
+                                c.attrib['wd:default'] = str(m_attr[a])
+                                has_default_ns = True
+                            else:
+                                c.attrib[a] = str(m_attr[a])
+                        element.append(c)
+            if elem is None and len(element) == 0:
+                return None
+        elif isinstance(self.value, ArrayValue):
+            # Array outside an Object doesn't make sense
+            raise NotImplementedError
+        else:
+            element.text = self.schema_node.type.to_xml(self.value)
+
+        if elem is not None:
+            return element
+        else:
+            if has_default_ns:
+                element.attrib['xmlns:wd'] = 'urn:ietf:params:xml:ns:netconf:default:1.0'
+            return element
 
     def _member_names(self) -> List[InstanceName]:
         if isinstance(self.value, ObjectValue):
@@ -487,8 +674,9 @@ class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
     def __init__(self, value: Value, schema_node: "DataNode",
-                 timestamp: datetime):
+                 schema_data: "SchemaData", timestamp: datetime):
         super().__init__("/", value, None, schema_node, timestamp)
+        self.schema_data = schema_data
 
     def up(self) -> None:
         """Override the superclass method.
@@ -498,9 +686,18 @@ class RootNode(InstanceNode):
         """
         raise NonexistentInstance(self.json_pointer(), "up of top")
 
+    def to_xml(self, filter: OutputFilter = OutputFilter(),
+               tag: str = "content-data",
+               urn: str = "urn:ietf:params:xml:ns:yang:ietf-yang-instance-data"):
+        """put receiver's value into a XML element"""
+        element = ET.Element(tag)
+        element.attrib['xmlns'] = urn
+
+        return super().to_xml(filter, element)[0]
+
     def _copy(self, newval: Value, newts: datetime = None) -> InstanceNode:
         return RootNode(
-            newval, self.schema_node, newts if newts else newval.timestamp)
+            newval, self.schema_node, self.schema_data, newts if newts else newval.timestamp)
 
     def _ancestors_or_self(
             self, qname: Union[QualName, bool] = None) -> List["RootNode"]:

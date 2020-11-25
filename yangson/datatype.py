@@ -47,13 +47,14 @@ This module implements the following classes:
 import base64
 import decimal
 import numbers
+import xml.etree.ElementTree as ET
 import re
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 from .constraint import Intervals, Pattern
 from .exceptions import (
     InvalidArgument, ParserException, ModuleNotRegistered, UnknownPrefix,
-    InvalidLeafrefPath)
+    InvalidLeafrefPath, MissingModuleNamespace)
 from .schemadata import SchemaContext
 from .instance import InstanceNode, InstanceIdParser, InstanceRoute
 from .statement import Statement
@@ -104,9 +105,22 @@ class DataType:
         if isinstance(raw, str):
             return raw
 
+    def from_xml(self, xml: ET.Element) -> Optional[ScalarValue]:
+        """Return a cooked value of the received XML type.
+
+        Args:
+            xml: Text of the XML node
+        """
+        if isinstance(xml.text, str):
+            return xml.text
+
     def to_raw(self, val: ScalarValue) -> Optional[RawScalar]:
         """Return a raw value ready to be serialized in JSON."""
         return val
+
+    def to_xml(self, val: ScalarValue) -> Optional[str]:
+        """Return XML text value ready to be serialized in XML."""
+        return str(val)
 
     def parse_value(self, text: str) -> Optional[ScalarValue]:
         """Parse value of the receiver's type.
@@ -244,6 +258,13 @@ class EmptyType(DataType):
         if raw == [None]:
             return (None,)
 
+    def from_xml(self, xml: str) -> Optional[Tuple[None]]:
+        if xml == '':
+            return (None,)
+
+    def to_xml(self, val: Tuple[None]) -> None:
+        return None
+
 
 class BitsType(DataType):
     """Class representing YANG "bits" type."""
@@ -263,6 +284,12 @@ class BitsType(DataType):
         except AttributeError:
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[Tuple[str]]:
+        try:
+            return tuple(xml.text.split())
+        except AttributeError:
+            return None
+
     def __contains__(self, val: Tuple[str]) -> bool:
         for b in val:
             if b not in self.bit:
@@ -271,6 +298,9 @@ class BitsType(DataType):
         return True
 
     def to_raw(self, val: Tuple[str]) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: Tuple[str]) -> str:
         return self.canonical_string(val)
 
     def as_int(self, val: Tuple[str]) -> int:
@@ -344,6 +374,14 @@ class BooleanType(DataType):
         if isinstance(raw, bool):
             return raw
 
+    def from_xml(self, xml: ET.Element) -> Optional[ScalarValue]:
+        """Return a cooked value of the received XML type.
+
+        Args:
+            xml: Text of the XML node
+        """
+        return self.parse_value(xml.text)
+
     def parse_value(self, text: str) -> Optional[bool]:
         """Parse boolean value.
 
@@ -414,7 +452,7 @@ class StringType(LinearType):
             return False
         for p in self.patterns:
             if (p.regex.match(val) is not None) == p.invert_match:
-                self._set_error_info(p.error_tag, p.error_message)
+                self._set_error_info(p.error_tag, p.error_message + ': ' + val)
                 return False
         return True
 
@@ -439,6 +477,13 @@ class BinaryType(LinearType):
         except TypeError:
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[bytes]:
+        """Override superclass method."""
+        try:
+            return base64.b64decode(xml.text, validate=True)
+        except TypeError:
+            return None
+
     def __contains__(self, val: bytes) -> bool:
         if not isinstance(val, bytes):
             self._set_error_info()
@@ -446,6 +491,9 @@ class BinaryType(LinearType):
         return super().__contains__(val)
 
     def to_raw(self, val: bytes) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: bytes) -> str:
         return self.canonical_string(val)
 
     def canonical_string(self, val: bytes) -> Optional[str]:
@@ -539,8 +587,14 @@ class LeafrefType(LinkType):
     def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
         return self.ref_type.from_raw(raw)
 
+    def from_xml(self, xml: ET.Element) -> Optional[bytes]:
+        return self.ref_type.from_xml(xml)
+
     def to_raw(self, val: ScalarValue) -> RawScalar:
         return self.ref_type.to_raw(val)
+
+    def to_xml(self, val: ScalarValue) -> RawScalar:
+        return self.ref_type.to_xml(val)
 
     def parse_value(self, text: str) -> Optional[ScalarValue]:
         return self.ref_type.parse_value(text)
@@ -580,7 +634,14 @@ class InstanceIdentifierType(LinkType):
         except ParserException:
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[InstanceRoute]:
+        return self.from_raw(xml.text)
+
     def to_raw(self, val: InstanceRoute) -> str:
+        """Override the superclass method."""
+        return str(val)
+
+    def to_xml(self, val: InstanceRoute) -> str:
         """Override the superclass method."""
         return str(val)
 
@@ -607,6 +668,22 @@ class IdentityrefType(DataType):
             return None
         return (i2, i1) if s else (i1, self.sctx.default_ns)
 
+    def from_xml(self, xml: ET.Element) -> Optional[QualName]:
+        try:
+            i1, s, i2 = xml.text.partition(":")
+        except AttributeError:
+            return None
+        if not i1:
+            return (i2, self.sctx.default_ns)
+
+        ns_url = xml.attrib.get('xmlns:'+i1)
+        if not ns_url:
+            raise MissingModuleNamespace(ns_url)
+        module = self.sctx.schema_data.modules_by_ns.get(ns_url)
+        if not module:
+            raise MissingModuleNamespace(ns_url)
+        return (i2, module.main_module[0])
+
     def __contains__(self, val: QualName) -> bool:
         for b in self.bases:
             if not self.sctx.schema_data.is_derived_from(val, b):
@@ -615,6 +692,9 @@ class IdentityrefType(DataType):
         return True
 
     def to_raw(self, val: QualName) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: QualName) -> str:
         return self.canonical_string(val)
 
     def from_yang(self, text: str) -> QualName:
@@ -700,6 +780,10 @@ class Decimal64Type(NumericType):
         super()._handle_properties(stmt, sctx)
 
     def from_raw(self, raw: RawScalar) -> Optional[decimal.Decimal]:
+        """Override superclass method.
+
+        According to [RFC7951]_, a raw instance must be string.
+        """
         if not isinstance(raw, str):
             return None
         try:
@@ -707,7 +791,16 @@ class Decimal64Type(NumericType):
         except decimal.InvalidOperation:
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[decimal.Decimal]:
+        try:
+            return decimal.Decimal(xml.text).quantize(self._epsilon)
+        except decimal.InvalidOperation:
+            return None
+
     def to_raw(self, val: decimal.Decimal) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: decimal.Decimal) -> str:
         return self.canonical_string(val)
 
     def canonical_string(self, val: decimal.Decimal) -> Optional[str]:
@@ -755,6 +848,12 @@ class IntegralType(NumericType):
         except (ValueError, TypeError):
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[int]:
+        try:
+            return int(xml.text)
+        except (ValueError, TypeError):
+            return None
+
     def from_yang(self, text: str) -> int:
         """Override the superclass method."""
         mo = self.octhex.match(text)
@@ -794,7 +893,7 @@ class Int64Type(IntegralType):
     def from_raw(self, raw: RawScalar) -> Optional[int]:
         """Override superclass method.
 
-        A raw instance may be either string or integer.
+        According to [RFC7951]_, a raw instance must be string.
         """
         if not isinstance(raw, str) or isinstance(raw, bool):
             return None
@@ -803,7 +902,20 @@ class Int64Type(IntegralType):
         except (ValueError, TypeError):
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[int]:
+        """Override superclass method.
+
+        XML is always delivered as a text element
+        """
+        try:
+            return int(xml.text)
+        except (ValueError, TypeError):
+            return None
+
     def to_raw(self, val: int) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: int) -> str:
         return self.canonical_string(val)
 
 
@@ -833,7 +945,7 @@ class Uint64Type(IntegralType):
     def from_raw(self, raw: str) -> Optional[int]:
         """Override superclass method.
 
-        A raw instance may be either string or integer.
+        According to [RFC7951]_, a raw instance must be string.
         """
         if not isinstance(raw, str) or isinstance(raw, bool):
             return None
@@ -842,7 +954,20 @@ class Uint64Type(IntegralType):
         except (ValueError, TypeError):
             return None
 
+    def from_xml(self, xml: ET.Element) -> Optional[int]:
+        """Override superclass method.
+
+        XML is always delivered as a text element
+        """
+        try:
+            return int(xml.text)
+        except (ValueError, TypeError):
+            return None
+
     def to_raw(self, val: int) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self, val: int) -> str:
         return self.canonical_string(val)
 
 
@@ -858,6 +983,11 @@ class UnionType(DataType):
         for t in self.types:
             if val in t:
                 return t.to_raw(val)
+
+    def to_xml(self, val: ScalarValue) -> RawScalar:
+        for t in self.types:
+            if val in t:
+                return t.to_xml(val)
 
     def canonical_string(self, val: ScalarValue) -> Optional[str]:
         for t in self.types:
@@ -875,6 +1005,13 @@ class UnionType(DataType):
     def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]:
         for t in self.types:
             val = t.from_raw(raw)
+            if val is not None and val in t:
+                return val
+        return None
+
+    def from_xml(self, xml: ET.Element) -> Optional[ScalarValue]:
+        for t in self.types:
+            val = t.from_xml(xml)
             if val is not None and val in t:
                 return val
         return None
