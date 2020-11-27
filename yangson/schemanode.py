@@ -197,6 +197,11 @@ class SchemaNode:
             res["description"] = self.description
         return res
 
+    def _tree_name(self) -> str:
+        """Return the receiver's name to be displayed in ASCII tree."""
+        return (self.name if self.parent and self.ns == self.parent.ns
+                 else f"{self.ns}:{self.name}")
+
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
                   ctype: ContentType) -> None:
         """Validate instance against the receiver.
@@ -307,7 +312,7 @@ class SchemaNode:
 
     def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
-        return self._tree_line_prefix() + " " + self.iname()
+        return f"{self._tree_line_prefix()} {self._tree_name()}"
 
     def _tree_line_prefix(self) -> str:
         return "+--"
@@ -1345,8 +1350,8 @@ class ChoiceNode(InternalNode):
 
     def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
-        return f"{self._tree_line_prefix()} ({self.iname()})" \
-               f"{'' if self._mandatory else '?'}"
+        return f"{self._tree_line_prefix()} ({self._tree_name()})" \
+            f"{'' if self._mandatory else '?'}"
 
 
 class CaseNode(InternalNode):
@@ -1357,7 +1362,7 @@ class CaseNode(InternalNode):
 
     def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
-        return f"{self._tree_line_prefix()}:({self.iname()})"
+        return f"{self._tree_line_prefix()}:({self._tree_name()})"
 
 
 class LeafNode(DataNode, TerminalNode):
