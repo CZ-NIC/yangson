@@ -12,26 +12,26 @@ from yangson.enumerations import ContentType
 from yangson.xpathparser import XPathParser
 
 tree = """+--rw (test:choiA)?
-|  +--:(test:caseA)
-|  |  +--rw test:contC
+|  +--:(caseA)
+|  |  +--rw contC
 |  |  |  +--rw leafD? <typB(int16)>
 |  |  |  +--rw llistA* <typA(int16)>
-|  |  +--rw test:leafH? <ip-address(union)>
+|  |  +--rw leafH? <ip-address(union)>
 |  +--:(testb:leafQ)
-|  |  +--rw testb:leafQ? <empty>
-|  +--:(test:llistB)
-|     +--rw test:llistB* <ip-address-no-zone(union)>
+|  |  +--rw leafQ? <empty>
+|  +--:(llistB)
+|     +--rw llistB* <ip-address-no-zone(union)>
 +--rw test:contA
 |  +--rw anydA
 |  +--rw anyxA?
 |  +--rw (testb:choiB)
-|  |  +--:(testb:contB)
-|  |  |  +--rw testb:contB!
+|  |  +--:(contB)
+|  |  |  +--rw contB!
 |  |  |     +--rw leafC <typA(int16)>
-|  |  +--:(testb:leafI)
-|  |  |  +--rw testb:leafI? <typB(int16)>
-|  |  +--:(testb:leafN)
-|  |     +--rw testb:leafN? <string>
+|  |  +--:(leafI)
+|  |  |  +--rw leafI? <typB(int16)>
+|  |  +--:(leafN)
+|  |     +--rw leafN? <string>
 |  +--rw leafA? <typA(int16)>
 |  +--rw leafB <typA(int16)>
 |  +--rw testb:leafR? <leafref>
@@ -69,7 +69,7 @@ tree = """+--rw (test:choiA)?
 |  +--rw uint8? <uint8>
 +--rw test:leafX? <port-number(uint16)>
 +---n testb:noA
-|  +--ro testb:leafO? <boolean>
+|  +--ro leafO? <boolean>
 +---x testb:rpcA
    +--ro input
    |  +--ro leafK? <typA(int16)>
