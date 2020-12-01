@@ -204,7 +204,11 @@ def test_types(data_model):
     # type conversions
     def tctest(typ, raw, text, value):
         assert (typ.from_raw(raw) == typ.parse_value(text) == value)
+    lj = data_model.get_data_node(
+        "/test:contA/listA/contD/contE/leafJ").type
     llb = data_model.get_data_node("/test:llistB").type
+    assert (None,) in lj
+    assert lj.to_raw((None,)) == [None]
     assert "192.168.1.254" in llb
     assert "300.1.1.1" not in llb
     assert "127.0.1" not in llb
