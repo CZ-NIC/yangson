@@ -204,7 +204,11 @@ def test_types(data_model):
     # type conversions
     def tctest(typ, raw, text, value):
         assert (typ.from_raw(raw) == typ.parse_value(text) == value)
+    lj = data_model.get_data_node(
+        "/test:contA/listA/contD/contE/leafJ").type
     llb = data_model.get_data_node("/test:llistB").type
+    assert (None,) in lj
+    assert lj.to_raw((None,)) == [None]
     assert "192.168.1.254" in llb
     assert "300.1.1.1" not in llb
     assert "127.0.1" not in llb
@@ -309,7 +313,9 @@ def test_instance(data_model, instance):
     assert len(instance.peek(rid2)) == 2
     conta = instance["test:contA"]
     la = conta["listA"]
+    ada = conta["anydA"]
     assert la.schema_node.unique[0][0].evaluate(la[0])[0].value == "foo1-bar"
+    assert ada.raw_value() == {"foo:bar": [1, 2, 3]}
     la1 = la[-1]
     lt = conta["testb:leafT"]
     assert la1.index == 1

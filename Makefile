@@ -1,5 +1,5 @@
 PROJECT = yangson
-VERSION = 1.3.56
+VERSION = 1.3.58
 .PHONY = tags deps install-deps test
 
 tags:

@@ -258,6 +258,9 @@ class EmptyType(DataType):
         if raw == [None]:
             return (None,)
 
+    def to_raw(self, val: Tuple[None]) -> List[None]:
+        return [None]
+
     def from_xml(self, xml: str) -> Optional[Tuple[None]]:
         if xml == '':
             return (None,)

@@ -448,7 +448,8 @@ class InstanceNode:
 
     def raw_value(self, filter: OutputFilter = OutputFilter()) -> RawValue:
         """Return receiver's value in a raw form (ready for JSON encoding)."""
-
+        if isinstance(self.schema_node, AnyContentNode):
+            return self.schema_node.to_raw(self.value)
         if isinstance(self.value, ObjectValue):
             value = {}
             attr = self._get_attributes()
@@ -1354,7 +1355,9 @@ class InstanceIdParser(Parser):
         return EntryKeys(sel)
 
 
-from .schemanode import (AnydataNode, CaseNode, ChoiceNode, DataNode,       # NOQA
-                         InternalNode, LeafNode, LeafListNode, ListNode,
-                         RpcActionNode, SchemaTreeNode, SequenceNode,
-                         TerminalNode)
+from .schemanode import (       # NOQA
+            AnyContentNode,AnydataNode, CaseNode,
+            ChoiceNode, DataNode,
+            InternalNode, LeafNode, LeafListNode, ListNode,
+            RpcActionNode, SchemaTreeNode, SequenceNode, TerminalNode,
+            )
