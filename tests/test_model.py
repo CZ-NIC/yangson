@@ -313,7 +313,9 @@ def test_instance(data_model, instance):
     assert len(instance.peek(rid2)) == 2
     conta = instance["test:contA"]
     la = conta["listA"]
+    ada = conta["anydA"]
     assert la.schema_node.unique[0][0].evaluate(la[0])[0].value == "foo1-bar"
+    assert ada.raw_value() == {"foo:bar": [1, 2, 3]}
     la1 = la[-1]
     lt = conta["testb:leafT"]
     assert la1.index == 1

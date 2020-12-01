@@ -1469,6 +1469,18 @@ class AnyContentNode(DataNode):
             return res
         return convert(rval)
 
+    def to_raw(self, value: Value) -> RawValue:
+        """Convert the value again to plain Python stuff."""
+        def convert(val):
+            if isinstance(val, ArrayValue):
+                res = [convert(x) for x in val]
+            elif isinstance(val, ObjectValue):
+                res = {x: convert(val[x]) for x in val}
+            else:
+                res = val
+            return res
+        return convert(value)
+
     def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
         super().from_xml(rval, jptr)
 
