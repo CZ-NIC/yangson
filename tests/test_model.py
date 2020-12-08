@@ -12,26 +12,26 @@ from yangson.enumerations import ContentType
 from yangson.xpathparser import XPathParser
 
 tree = """+--rw (test:choiA)?
-|  +--:(test:caseA)
-|  |  +--rw test:contC
+|  +--:(caseA)
+|  |  +--rw contC
 |  |  |  +--rw leafD? <typB(int16)>
 |  |  |  +--rw llistA* <typA(int16)>
-|  |  +--rw test:leafH? <ip-address(union)>
+|  |  +--rw leafH? <ip-address(union)>
 |  +--:(testb:leafQ)
-|  |  +--rw testb:leafQ? <empty>
-|  +--:(test:llistB)
-|     +--rw test:llistB* <ip-address-no-zone(union)>
+|  |  +--rw leafQ? <empty>
+|  +--:(llistB)
+|     +--rw llistB* <ip-address-no-zone(union)>
 +--rw test:contA
 |  +--rw anydA
 |  +--rw anyxA?
 |  +--rw (testb:choiB)
-|  |  +--:(testb:contB)
-|  |  |  +--rw testb:contB!
+|  |  +--:(contB)
+|  |  |  +--rw contB!
 |  |  |     +--rw leafC <typA(int16)>
-|  |  +--:(testb:leafI)
-|  |  |  +--rw testb:leafI? <typB(int16)>
-|  |  +--:(testb:leafN)
-|  |     +--rw testb:leafN? <string>
+|  |  +--:(leafI)
+|  |  |  +--rw leafI? <typB(int16)>
+|  |  +--:(leafN)
+|  |     +--rw leafN? <string>
 |  +--rw leafA? <typA(int16)>
 |  +--rw leafB <typA(int16)>
 |  +--rw testb:leafR? <leafref>
@@ -69,12 +69,12 @@ tree = """+--rw (test:choiA)?
 |  +--rw uint8? <uint8>
 +--rw test:leafX? <port-number(uint16)>
 +---n testb:noA
-|  +--ro testb:leafO? <boolean>
+|  +--ro leafO? <boolean>
 +---x testb:rpcA
    +--ro input
-   |  +--ro testb:leafK? <typA(int16)>
+   |  +--ro leafK? <typA(int16)>
    +--ro output
-      +--ro testb:llistC* <boolean>
+      +--ro llistC* <boolean>
 """
 
 
@@ -204,7 +204,11 @@ def test_types(data_model):
     # type conversions
     def tctest(typ, raw, text, value):
         assert (typ.from_raw(raw) == typ.parse_value(text) == value)
+    lj = data_model.get_data_node(
+        "/test:contA/listA/contD/contE/leafJ").type
     llb = data_model.get_data_node("/test:llistB").type
+    assert (None,) in lj
+    assert lj.to_raw((None,)) == [None]
     assert "192.168.1.254" in llb
     assert "300.1.1.1" not in llb
     assert "127.0.1" not in llb
@@ -309,7 +313,9 @@ def test_instance(data_model, instance):
     assert len(instance.peek(rid2)) == 2
     conta = instance["test:contA"]
     la = conta["listA"]
+    ada = conta["anydA"]
     assert la.schema_node.unique[0][0].evaluate(la[0])[0].value == "foo1-bar"
+    assert ada.raw_value() == {"foo:bar": [1, 2, 3]}
     la1 = la[-1]
     lt = conta["testb:leafT"]
     assert la1.index == 1

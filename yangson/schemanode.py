@@ -197,6 +197,11 @@ class SchemaNode:
             res["description"] = self.description
         return res
 
+    def _tree_name(self) -> str:
+        """Return the receiver's name to be displayed in ASCII tree."""
+        return (self.name if self.parent and self.ns == self.parent.ns
+                 else f"{self.ns}:{self.name}")
+
     def _validate(self, inst: "InstanceNode", scope: ValidationScope,
                   ctype: ContentType) -> None:
         """Validate instance against the receiver.
@@ -307,7 +312,7 @@ class SchemaNode:
 
     def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
-        return self._tree_line_prefix() + " " + self.iname()
+        return f"{self._tree_line_prefix()} {self._tree_name()}"
 
     def _tree_line_prefix(self) -> str:
         return "+--"
@@ -469,7 +474,6 @@ class InternalNode(SchemaNode):
                 npath = jptr + "/" + qn
                 if ch is None:
                     raise RawMemberError(npath)
-
                 if not allow_nodata and self.ns == ch.ns:
                     iname = ch.name
                 else:
@@ -1345,8 +1349,8 @@ class ChoiceNode(InternalNode):
 
     def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
-        return f"{self._tree_line_prefix()} ({self.iname()})" \
-               f"{'' if self._mandatory else '?'}"
+        return f"{self._tree_line_prefix()} ({self._tree_name()})" \
+            f"{'' if self._mandatory else '?'}"
 
 
 class CaseNode(InternalNode):
@@ -1357,7 +1361,7 @@ class CaseNode(InternalNode):
 
     def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
-        return f"{self._tree_line_prefix()}:({self.iname()})"
+        return f"{self._tree_line_prefix()}:({self._tree_name()})"
 
 
 class LeafNode(DataNode, TerminalNode):
@@ -1465,6 +1469,18 @@ class AnyContentNode(DataNode):
             return res
         return convert(rval)
 
+    def to_raw(self, value: Value) -> RawValue:
+        """Convert the value again to plain Python stuff."""
+        def convert(val):
+            if isinstance(val, ArrayValue):
+                res = [convert(x) for x in val]
+            elif isinstance(val, ObjectValue):
+                res = {x: convert(val[x]) for x in val}
+            else:
+                res = val
+            return res
+        return convert(value)
+
     def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
         super().from_xml(rval, jptr)
 
@@ -1523,7 +1539,7 @@ class RpcActionNode(SchemaTreeNode):
         self.get_child("output")._handle_substatements(stmt, sctx)
 
 
-class InputNode(SchemaTreeNode):
+class InputNode(SchemaTreeNode, DataNode):
     """RPC or action input node."""
 
     def __init__(self, ns):
@@ -1536,11 +1552,8 @@ class InputNode(SchemaTreeNode):
     def _flatten(self) -> List[SchemaNode]:
         return [self]
 
-    def _tree_line_prefix(self) -> str:
-        return super()._tree_line_prefix() + "ro"
 
-
-class OutputNode(SchemaTreeNode):
+class OutputNode(SchemaTreeNode, DataNode):
     """RPC or action output node."""
 
     def __init__(self, ns):
@@ -1552,9 +1565,6 @@ class OutputNode(SchemaTreeNode):
 
     def _flatten(self) -> List[SchemaNode]:
         return [self]
-
-    def _tree_line_prefix(self) -> str:
-        return super()._tree_line_prefix() + "ro"
 
 
 class NotificationNode(SchemaTreeNode):
