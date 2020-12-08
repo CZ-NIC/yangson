@@ -16,6 +16,7 @@
 # with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """XPath node-set"""
+from __future__ import annotations
 
 from typing import Callable, Union
 from numbers import Number
@@ -42,24 +43,24 @@ def comparison(meth):
 
 class NodeSet(list):
 
-    def union(self, ns: "NodeSet") -> "NodeSet":
+    def union(self: NodeSet, ns: "NodeSet") -> "NodeSet":
         paths = set([n.path for n in self])
         return self.__class__(self + [n for n in ns if n.path not in paths])
 
-    def bind(self, trans: NodeExpr) -> "NodeSet":
+    def bind(self: NodeSet, trans: NodeExpr) -> "NodeSet":
         res = self.__class__([])
         for n in self:
             res = res.union(trans(n))
         return res
 
-    def __float__(self) -> float:
+    def __float__(self: NodeSet) -> float:
         return float(self[0].value)
 
-    def __str__(self) -> str:
+    def __str__(self: NodeSet) -> str:
         return str(self[0]) if self else ""
 
     @comparison
-    def __eq__(self, val: XPathValue) -> bool:
+    def __eq__(self: NodeSet, val: XPathValue) -> bool:
         for n in self:
             if n.is_internal():
                 continue
@@ -74,7 +75,7 @@ class NodeSet(list):
         return False
 
     @comparison
-    def __ne__(self, val: XPathValue) -> bool:
+    def __ne__(self: NodeSet, val: XPathValue) -> bool:
         for n in self:
             if n.is_internal():
                 continue
@@ -89,7 +90,7 @@ class NodeSet(list):
         return False
 
     @comparison
-    def __gt__(self, val: XPathValue) -> bool:
+    def __gt__(self: NodeSet, val: XPathValue) -> bool:
         try:
             val = float(val)
         except (ValueError, TypeError):
@@ -103,7 +104,7 @@ class NodeSet(list):
         return False
 
     @comparison
-    def __lt__(self, val: XPathValue) -> bool:
+    def __lt__(self: NodeSet, val: XPathValue) -> bool:
         try:
             val = float(val)
         except (ValueError, TypeError):
@@ -117,7 +118,7 @@ class NodeSet(list):
         return False
 
     @comparison
-    def __ge__(self, val: XPathValue) -> bool:
+    def __ge__(self: NodeSet, val: XPathValue) -> bool:
         try:
             val = float(val)
         except (ValueError, TypeError):
@@ -131,7 +132,7 @@ class NodeSet(list):
         return False
 
     @comparison
-    def __le__(self, val: XPathValue) -> bool:
+    def __le__(self: NodeSet, val: XPathValue) -> bool:
         try:
             val = float(val)
         except (ValueError, TypeError):
