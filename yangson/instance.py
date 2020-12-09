@@ -695,7 +695,7 @@ class RootNode(InstanceNode):
         element = ET.Element(tag)
         element.attrib['xmlns'] = urn
 
-        return super().to_xml(filter, element)[0]
+        return super().to_xml(filter, element)
 
     def _copy(self: RootNode, newval: Value, newts: datetime = None) -> InstanceNode:
         return RootNode(

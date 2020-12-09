@@ -10,6 +10,9 @@ from yangson.instvalue import ArrayValue
 from yangson.schemadata import SchemaContext, FeatureExprParser
 from yangson.enumerations import ContentType
 from yangson.xpathparser import XPathParser
+import re
+import copy
+import xml.etree.ElementTree as ET
 
 tree = """+--rw (test:choiA)?
 |  +--:(caseA)
@@ -83,22 +86,57 @@ def data_model():
     return DataModel.from_file("yang-modules/test/yang-library.json",
                                ["yang-modules/test", "yang-modules/ietf"])
 
+@pytest.fixture
+def xml_safe_data_model(data_model):
+    '''
+       Creates a "safe" version of 'data_model' for the XML tests
+
+       ALL OF THESE ISSUES SHOULD BE FIXED!
+    '''
+
+    # ensure we don't disturb the original 
+    data_model2 = copy.deepcopy(data_model)
+
+    # Make /test:contA/anydA be "mandatory false" because
+    # the XML code doesn't support "anydata" (or anyxml),
+    # and thus no such instance data may be present when
+    # processes by XML routines (see "xml_safe_data")
+    anydA = data_model2.get_schema_node("/test:contA/anydA")
+    anydA._mandatory = False
+    anydA.parent._mandatory_children.remove(anydA)
+
+    # Remove 'leafF' as a 'key' for /test:contA/listA because
+    # the XML code throws "RawTypeError: expected boolean value"
+    # when a /test.contA/listA/leafF is present.
+    listA = data_model2.get_schema_node("/test:contA/listA")
+    listA.keys.remove(('leafF', 'test'))
+    kn = listA.get_data_child(*('leafF', 'test'))
+    kn._mandatory = False
+    listA._mandatory_children.remove(kn)
+    listA._key_members.remove(kn.iname())
+    data_model2.schema._make_schema_patterns()
+
+    # return modified data_model
+    return data_model2
+
 
 @pytest.fixture
-def instance(data_model):
-    data = """
-    {
+def data():
+    '''
+    Returns Python object (not a JSON string)
+    '''
+    _data = {
         "test:llistB": ["::1", "127.0.0.1"],
         "test:leafX": 53531,
         "test:contA": {
             "leafB": 9,
             "listA": [{
                 "leafE": "C0FFEE",
-                "leafF": true,
+                "leafF": True,
                 "contD": {
                     "leafG": "foo1-bar",
                     "contE": {
-                        "leafJ": [null],
+                        "leafJ": [None],
                         "leafP": 10
                     }
                 }
@@ -106,7 +144,7 @@ def instance(data_model):
             {
                 "leafE": "ABBA",
                 "leafW": 9,
-                "leafF": false
+                "leafF": False
             }],
             "testb:leafR": "C0FFEE",
             "testb:leafT": "test:CC-BY",
@@ -122,8 +160,50 @@ def instance(data_model):
             "enumeration": "Hearts"
         }
     }
-    """
-    return data_model.from_raw(json.loads(data))
+    return _data
+
+
+@pytest.fixture
+def xml_safe_data(data):
+    '''
+       Creates a "safe" version of 'data' for the XML tests
+
+       ALL OF THESE ISSUES SHOULD BE FIXED!
+    '''
+
+    # ensure we don't disturb the original 
+    data2 = copy.deepcopy(data)
+
+    # remove /test:contA/anydA, since XML code doesn't support 'anydata' (or 'anyxml')
+    data2['test:contA'].pop('anydA')
+
+    # remove /test:contA/listA=C0FFEE/contD/contE/leafJ, as otherwise
+    # 'RawTypeError: expected empty value' is thrown.
+    c0ffee_idx = 0
+    for i in data2['test:contA']['listA']:
+        if i['leafE'] == 'C0FFEE':
+            break
+        c0ffee_idx += 1
+    data2['test:contA']['listA'][c0ffee_idx]['contD']['contE'].pop('leafJ')
+
+    # remove /test:contA/testb:leafT as otherwise 'MissingModuleNamespace' is thrown
+    data2['test:contA'].pop('testb:leafT')
+
+    # remove /test.contA/listA/leafF
+    for i in data2['test:contA']['listA']:
+        i.pop('leafF')
+
+    # change 'decimal64' from '4.50' to '4.5', as that is the canonical value
+    # returned by Yangson
+    data2['test:contT']['decimal64'] = '4.5'
+
+    # return modified data
+    return data2
+
+
+@pytest.fixture
+def instance(data_model, data):
+    return data_model.from_raw(data)
 
 
 def test_schema_data(data_model):
@@ -603,3 +683,78 @@ def test_validation(instance):
         raw = True).top()
     assert inst3.validate(ctype=ContentType.all) is None
     assert instance.validate(ctype=ContentType.all) is None
+
+
+
+
+
+def strip_pretty(s: str):
+    '''
+      This function is global because it is used by 'test_xml_config'
+      and (TBD) 'test_xml_rpc' and (TBD) 'test_xml_notif'
+    '''
+    return re.sub("[^>]*$", "", re.sub("^[^<]*", "", re.sub(">[\\s\r\n]*<", "><", s)))
+
+
+
+def test_xml_config(xml_safe_data_model, xml_safe_data):
+    '''
+      This test encodes known "raw data" to an XML string and back again.
+    '''
+
+    # the known-good XML, in "pretty" form for easier review
+    expected_xml_pretty = """
+      <content-data xmlns="urn:ietf:params:xml:ns:yang:ietf-yang-instance-data">
+        <llistB xmlns="http://example.com/test">::1</llistB>
+        <llistB xmlns="http://example.com/test">127.0.0.1</llistB>
+        <leafX xmlns="http://example.com/test">53531</leafX>
+        <contA xmlns="http://example.com/test">
+          <leafB>9</leafB>
+          <listA>
+            <leafE>C0FFEE</leafE>
+            <contD>
+              <leafG>foo1-bar</leafG>
+              <contE>
+                <leafP>10</leafP>
+              </contE>
+            </contD>
+          </listA>
+          <listA>
+            <leafE>ABBA</leafE>
+            <leafW>9</leafW>
+          </listA>
+          <leafR xmlns="http://example.com/testb">C0FFEE</leafR>
+          <leafV xmlns="http://example.com/testb">99</leafV>
+          <leafN xmlns="http://example.com/testb">hi!</leafN>
+        </contA>
+        <contT xmlns="http://example.com/test">
+          <bits>dos cuatro</bits>
+          <decimal64>4.5</decimal64>
+          <enumeration>Hearts</enumeration>
+        </contT>
+      </content-data>
+    """
+    expected_xml_stripped = strip_pretty(expected_xml_pretty)
+
+    # convert raw object to an InstanceValue 
+    inst = xml_safe_data_model.from_raw(xml_safe_data)
+    inst.validate(ctype=ContentType.all)
+
+    # convert InstanceValue to an XML-encoded string
+    xml_obj = inst.to_xml()
+    xml_text = ET.tostring(xml_obj).decode("utf-8")
+    assert(xml_text == expected_xml_stripped)
+
+    # convert to XML-encoded string back to an InstanceValue
+    xml_obj2 = ET.fromstring(xml_text)
+    #assert(xml_obj2 == xml_obj) # fails due to different ns represenations, but okay
+    inst2 = xml_safe_data_model.from_xml(xml_obj2)
+    #assert(inst2 == inst) # fails due to different obj locations, but okay
+    assert(str(inst2) == str(inst))
+
+    # ensure raw value is same
+    rv = inst2.raw_value()
+    assert(rv == xml_safe_data)
+
+
+
