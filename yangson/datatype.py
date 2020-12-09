@@ -403,6 +403,9 @@ class BooleanType(DataType):
         if val is False:
             return "false"
 
+    def to_xml(self: BooleanType, val: bool) -> str:
+        return self.canonical_string(val)
+
 
 class LinearType(DataType):
     """Abstract class representing character or byte sequences."""

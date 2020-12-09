@@ -529,7 +529,7 @@ class InstanceNode:
                                 childs.append(child)
                     else:
                         child = ET.Element(sn.name)
-                        if not dp or dp.ns != sn.ns:
+                        if not dp or dp.ns != sn.ns or isinstance(m.schema_node, (InputNode, OutputNode)):
                             module = self.schema_data.modules_by_name.get(sn.ns)
                             if not module:
                                 raise MissingModuleNamespace(sn.ns)
@@ -566,9 +566,10 @@ class InstanceNode:
             return [m for m in self.value if not m.startswith("@")]
 
     def _member(self: InstanceNode, name: InstanceName) -> "ObjectMember":
-        pts = name.partition(":")
-        if pts[1] and pts[0] == self.namespace:
-            name = pts[2]
+        if not type(self) is RootNode:
+            pts = name.partition(":")
+            if pts[1] and pts[0] == self.namespace:
+                name = pts[2]
         sibs = self.value.copy()
         try:
             return ObjectMember(
@@ -694,8 +695,10 @@ class RootNode(InstanceNode):
         """put receiver's value into a XML element"""
         element = ET.Element(tag)
         element.attrib['xmlns'] = urn
-
-        return super().to_xml(filter, element)
+        et = super().to_xml(filter, element)
+        if isinstance(self.schema_node, RpcActionNode):
+            return et[0]
+        return et
 
     def _copy(self: RootNode, newval: Value, newts: datetime = None) -> InstanceNode:
         return RootNode(
@@ -1322,6 +1325,6 @@ class InstanceIdParser(Parser):
 
 from .schemanode import (       # NOQA
             AnyContentNode,AnydataNode, CaseNode,
-            ChoiceNode, DataNode,
+            ChoiceNode, DataNode, InputNode,
             InternalNode, LeafNode, LeafListNode, ListNode,
-            RpcActionNode, SequenceNode, TerminalNode)
+            OutputNode, RpcActionNode, SequenceNode, TerminalNode)

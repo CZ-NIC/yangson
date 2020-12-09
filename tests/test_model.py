@@ -13,6 +13,8 @@ from yangson.xpathparser import XPathParser
 import re
 import copy
 import xml.etree.ElementTree as ET
+from yangson.instance import RootNode
+
 
 tree = """+--rw (test:choiA)?
 |  +--:(caseA)
@@ -738,6 +740,8 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
 
     # convert raw object to an InstanceValue 
     inst = xml_safe_data_model.from_raw(xml_safe_data)
+    assert(type(inst) == RootNode)
+    assert(inst.raw_value() == xml_safe_data)
     inst.validate(ctype=ContentType.all)
 
     # convert InstanceValue to an XML-encoded string
@@ -745,10 +749,12 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
     xml_text = ET.tostring(xml_obj).decode("utf-8")
     assert(xml_text == expected_xml_stripped)
 
-    # convert to XML-encoded string back to an InstanceValue
+    # convert XML-encoded string back to an InstanceValue
     xml_obj2 = ET.fromstring(xml_text)
     #assert(xml_obj2 == xml_obj) # fails due to different ns represenations, but okay
     inst2 = xml_safe_data_model.from_xml(xml_obj2)
+    assert(type(inst2) == RootNode)
+    assert(inst2.raw_value() == xml_safe_data)
     #assert(inst2 == inst) # fails due to different obj locations, but okay
     assert(str(inst2) == str(inst))
 
@@ -758,3 +764,111 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
 
 
 
+
+def test_xml_rpc(data_model):
+    '''
+      Encodes known "raw data" RPC input & outputs to an XML strings and back again.
+    '''
+
+    input_obj = {
+        "testb:input" : {
+            "leafK" : 123
+        }
+    }
+
+    input_xml_pretty = """
+      <input xmlns="http://example.com/testb">
+        <leafK>123</leafK>
+      </input>
+    """
+
+    output_obj = {
+        "testb:output" : {
+            "llistC" : [True, True, True]
+        }
+    }
+
+    output_xml_pretty = """
+      <output xmlns="http://example.com/testb">
+        <llistC>true</llistC>
+        <llistC>true</llistC>
+        <llistC>true</llistC>
+      </output>
+    """
+
+    input_xml_stripped = strip_pretty(input_xml_pretty)
+    output_xml_stripped = strip_pretty(output_xml_pretty)
+
+    # get the schema node for the RPC 
+    sn_rpc = data_model.get_schema_node("/testb:rpcA") # used by both tests
+
+
+    #########
+    # INPUT #
+    #########
+
+    # convert raw object to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
+    input_inst_val = sn_rpc.from_raw(input_obj, allow_nodata=True)
+    assert(str(input_inst_val) == str(input_obj))
+
+    # convert InstanceValue to an Instance (a RootNode)
+    input_inst = RootNode(input_inst_val, sn_rpc, data_model.schema_data, input_inst_val.timestamp)
+    #input_inst.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    assert(input_inst.raw_value() == input_obj)
+
+    # convert Instance to an XML-encoded string and compare to known-good
+    input_xml_et_obj = input_inst.to_xml()
+    input_xml_text = ET.tostring(input_xml_et_obj).decode("utf-8")
+    assert(input_xml_text == input_xml_stripped)
+
+    # convert input's XML-encoded string back to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
+    input_xml_et_obj2 = ET.fromstring(input_xml_text)
+    input_inst_val2 = sn_rpc.from_xml(input_xml_et_obj2, isroot=True, allow_nodata=True)
+    assert(input_inst_val2 == input_inst_val)
+
+    # convert InstanceValue back to an Instance (a RootNode)
+    input_inst2 = RootNode(input_inst_val2, sn_rpc, data_model.schema_data, input_inst_val2.timestamp)
+    #input_inst2.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    assert(input_inst2.raw_value() == input_obj)
+
+    # convert Instance to raw value and ensure same
+    input_rv2 = input_inst2.raw_value()
+    assert(input_rv2 == input_obj)
+
+
+
+    ##########
+    # OUTPUT #
+    ##########
+
+    # convert raw object to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
+    output_inst_val = sn_rpc.from_raw(output_obj, allow_nodata=True)
+    assert(str(output_inst_val) == str(output_obj))
+
+    # convert InstanceValue to an Instance (a RootNode)
+    output_inst = RootNode(output_inst_val, sn_rpc, data_model.schema_data, output_inst_val.timestamp)
+    #output_inst.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    assert(output_inst.raw_value() == output_obj)
+
+    # convert Instance to an XML-encoded string and compare to known-good
+    output_xml_et_obj = output_inst.to_xml()
+    output_xml_text = ET.tostring(output_xml_et_obj).decode("utf-8")
+    assert(output_xml_text == output_xml_stripped)
+
+    # convert output's XML-encoded string back to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
+    output_xml_et_obj2 = ET.fromstring(output_xml_text)
+    output_inst_val2 = sn_rpc.from_xml(output_xml_et_obj2, isroot=True, allow_nodata=True)
+    assert(output_inst_val2 == output_inst_val)
+
+    # convert InstanceValue back to an Instance (a RootNode)
+    output_inst2 = RootNode(output_inst_val2, sn_rpc, data_model.schema_data, output_inst_val2.timestamp)
+    #output_inst2.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    assert(output_inst2.raw_value() == output_obj)
+
+    # convert Instance to raw value and ensure same
+    output_rv2 = output_inst2.raw_value()
+    assert(output_rv2 == output_obj)
