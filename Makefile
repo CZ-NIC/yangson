@@ -6,11 +6,10 @@ tags:
 	find $(PROJECT) -name "*.py" | etags -
 
 deps:
-	mv requirements.txt requirements.txt.old
-	pip freeze > requirements.txt
+	pip-compile
 
 install-deps:
-	pip install -r requirements.txt
+	pip-sync
 
 test:
 	@py.test tests
