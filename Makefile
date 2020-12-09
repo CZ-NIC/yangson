@@ -6,10 +6,10 @@ tags:
 	find $(PROJECT) -name "*.py" | etags -
 
 deps:
-	pip-compile
+	@pip-compile
 
 install-deps:
-	pip-sync
+	@pip-sync
 
 test:
 	@py.test tests
