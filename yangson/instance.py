@@ -48,7 +48,8 @@ from .typealiases import (InstanceName, JSONPointer, QualName, RawValue,
 
 __all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
            "InstanceIdParser", "ResourceIdParser", "InstanceRoute",
-           "InstanceException", "InstanceValueError", "NonexistentInstance"]
+           "InstanceException", "InstanceValueError", "NonexistentInstance",
+           "OutputFilter"]
 
 
 class OutputFilter:
@@ -236,7 +237,8 @@ class InstanceNode:
             return ita()
         if isinstance(self.value, ObjectValue):
             return iter(self._member_names())
-        raise InstanceValueError(self.json_pointer(),
+        raise InstanceValueError(
+            self.json_pointer(),
             "{} is a scalar instance".format(str(type(self.value))))
 
     def is_internal(self) -> bool:
@@ -340,8 +342,8 @@ class InstanceNode:
             inst = sel.goto_step(inst)
         return inst
 
-    def peek(self, iroute: "InstanceRoute") -> Optional[Value]:
-        """Return a value within the receiver's subtree.
+    def full_peek(self, iroute: "InstanceRoute") -> Optional[Tuple]:
+        """Return a value and schema within the receiver's subtree.
 
         Args:
             iroute: Instance route (relative to the receiver).
@@ -349,10 +351,18 @@ class InstanceNode:
         val = self.value
         sn = self.schema_node
         for sel in iroute:
-            val, sn = sel.peek_step(val, sn)
             if val is None:
-                return None
-        return val
+                return (None, None)
+            val, sn = sel.peek_step(val, sn)
+        return (val, sn)
+
+    def peek(self, iroute: "InstanceRoute") -> Optional[Value]:
+        """Return a value within the receiver's subtree.
+
+        Args:
+            iroute: Instance route (relative to the receiver).
+        """
+        return self.full_peek(iroute)[0]
 
     def validate(self, scope: ValidationScope = ValidationScope.all,
                  ctype: ContentType = ContentType.config) -> None:
@@ -486,9 +496,10 @@ class InstanceNode:
         if elem is None:
             element = ET.Element(self.schema_node.name)
 
-            module = self.schema_data.modules_by_name.get(self.schema_node.ns)
+            ns = self.schema_node.ns
+            module = self.schema_data.modules_by_name.get(ns)
             if not module:
-                raise MissingModuleNamespace(self.schema_node.ns)
+                raise MissingModuleNamespace(ns if ns else 'None')
             element.attrib['xmlns'] = module.xml_namespace
         else:
             element = elem
@@ -565,9 +576,10 @@ class InstanceNode:
             return [m for m in self.value if not m.startswith("@")]
 
     def _member(self, name: InstanceName) -> "ObjectMember":
-        pts = name.partition(":")
-        if pts[1] and pts[0] == self.namespace:
-            name = pts[2]
+        if not type(self) is RootNode:
+            pts = name.partition(":")
+            if pts[1] and pts[0] == self.namespace:
+                name = pts[2]
         sibs = self.value.copy()
         try:
             return ObjectMember(
@@ -678,6 +690,7 @@ class RootNode(InstanceNode):
                  schema_data: "SchemaData", timestamp: datetime):
         super().__init__("/", value, None, schema_node, timestamp)
         self.schema_data = schema_data
+        """Dictionary of subschema root qnames to subschema paths"""
 
     def up(self) -> None:
         """Override the superclass method.
@@ -1005,6 +1018,20 @@ class MemberName:
             val: Current value (object).
             sn:  Current schema node.
         """
+        qn = (self.name, self.namespace)
+        if isinstance(sn, SchemaTreeNode) and qn in sn.subschema:
+            path = sn.subschema.get((self.name, self.namespace))
+            c_schema = sn
+            c_value = val
+            try:
+                for dp in path.split('/'):
+                    name, sep, ns = dp.partition(':')
+                    c_schema = c_schema.get_data_child(name, ns if ns else None)
+                    c_value = c_value[c_schema.iname()]
+                return c_value, c_schema
+            except (IndexError, KeyError, TypeError):
+                return (None, c_schema)
+
         cn = sn.get_data_child(self.name, self.namespace)
         try:
             return (val[cn.iname()], cn)
@@ -1017,6 +1044,15 @@ class MemberName:
         Args:
             inst: Current instance.
         """
+        sn = inst.schema_node
+        qn = (self.name, self.namespace)
+
+        if isinstance(sn, SchemaTreeNode)and qn in sn.subschema:
+            path = sn.subschema.get((self.name, self.namespace))
+            child = inst
+            for dp in path[1:].split('/'):
+                child = child[dp]
+            return child
         return inst[self.iname()]
 
 
@@ -1323,4 +1359,5 @@ from .schemanode import (       # NOQA
             AnyContentNode,AnydataNode, CaseNode,
             ChoiceNode, DataNode,
             InternalNode, LeafNode, LeafListNode, ListNode,
-            RpcActionNode, SequenceNode, TerminalNode)
+            RpcActionNode, SchemaTreeNode, SequenceNode, TerminalNode,
+            )

@@ -387,6 +387,10 @@ class NonexistentSchemaNode(SchemaNodeException):
         return f"{prefix}{self.name} under {super().__str__()}"
 
 
+class BadRootNode(SchemaNodeException):
+    '''Wrong root node of schema node'''
+    pass
+
 class BadSchemaNodeType(SchemaNodeException):
     """A schema node is of a wrong type."""
 

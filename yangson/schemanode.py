@@ -467,10 +467,7 @@ class InternalNode(SchemaNode):
                 res[qn] = self._process_metadata(rval[qn], jptr)
             else:
                 cn = self._iname2qname(qn)
-                if allow_nodata:
-                    ch = self.get_child(*cn)
-                else:
-                    ch = self.get_data_child(*cn)
+                ch = self.get_data_child(*cn)
                 npath = jptr + "/" + qn
                 if ch is None:
                     raise RawMemberError(npath)
@@ -799,10 +796,14 @@ class SchemaTreeNode(GroupNode):
         super().__init__()
         self.annotations: Dict[QualName, Annotation] = {}
         self.schema_data = schemadata
+        self.subschema: Dict[QualName, "InstanceRoute"] = {}
 
     def data_parent(self) -> InternalNode:
         """Override the superclass method."""
         return self.parent
+
+    def add_subschema(self, container: SchemaNode):
+        self.subschema[container.qual_name] = container.data_path()
 
     def _annotation_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle annotation statement."""
@@ -1137,6 +1138,7 @@ class SequenceNode(DataNode):
             res.append(child)
         else:
             child = None
+
         return child
 
     def entry_from_raw(self, rval: RawEntry,

@@ -27,11 +27,11 @@ import json
 from typing import Optional, Tuple
 import xml.etree.ElementTree as ET
 from .enumerations import ContentType
-from .exceptions import BadYangLibraryData
+from .exceptions import BadYangLibraryData, BadRootNode
 from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
                        RootNode)
 from .schemadata import SchemaData, SchemaContext
-from .schemanode import DataNode, SchemaTreeNode, RawObject, SchemaNode
+from .schemanode import DataNode, SchemaTreeNode, RawObject, SchemaNode, ContainerNode
 from .typealiases import DataPath, SchemaPath
 
 
@@ -80,7 +80,7 @@ class DataModel:
             self.yang_library = json.loads(yltxt)
         except json.JSONDecodeError as e:
             raise BadYangLibraryData(str(e)) from None
-        self.schema_data = SchemaData(self.yang_library, mod_path)
+        self.schema_data = SchemaData(self.yang_library, list(mod_path))
         self.schema = SchemaTreeNode(self.schema_data)
         self.schema._ctype = ContentType.all
         self._build_schema()
@@ -88,6 +88,43 @@ class DataModel:
             "Data model ID: " +
             self.yang_library["ietf-yang-library:modules-state"]
             ["module-set-id"])
+        self.subschema = {}
+
+    def add_submodel(self, container: ContainerNode, submodel: "DataModel"):
+        if container.schema_root() != self.schema:
+            raise BadRootNode(container.iname())
+
+        # update yang library
+        yl_modules = self.yang_library['ietf-yang-library:modules-state']['module']
+        existing = list()
+        for module in yl_modules:
+            existing.append((module['name'], module['revision']))
+
+        sm_modules = submodel.yang_library['ietf-yang-library:modules-state']['module']
+        for module in sm_modules:
+            if (module['name'], module['revision']) not in existing:
+                yl_modules.append(module)
+
+        # update schema data
+        self.schema_data.add(submodel.schema_data)
+
+        # update container
+        for subchild in submodel.schema.children:
+            container.children.append(subchild)
+            subchild.parent = container
+
+            self.schema.subschema[(subchild.name, subchild.ns)] = subchild.data_path()
+            if subchild.mandatory:
+                container._mandatory_children.add(subchild)
+
+        if self.schema.description.startswith('Data model ID: '):
+            self.schema.description = (
+                "Data model ID: " +
+                self.yang_library["ietf-yang-library:modules-state"]
+                ["module-set-id"])
+
+        # rebuild schema patterns
+        self.schema._make_schema_patterns()
 
     def module_set_id(self) -> str:
         """Compute unique id of YANG modules comprising the data model.
@@ -174,9 +211,25 @@ class DataModel:
         self.schema.clear_val_counters()
 
     def parse_instance_id(self, text: str) -> InstanceRoute:
+        split = text.split('/')
+        ns, sep, name = split[1].partition(':')
+
+        if (name, ns) in self.schema.subschema:
+            text = self.schema.subschema[(name, ns)]
+            if len(split) >= 2:
+                text = text + '/' + '/'.join(split[2:])
+
         return InstanceIdParser(text).parse()
 
     def parse_resource_id(self, text: str) -> InstanceRoute:
+        split = text.split('/')
+        ns, sep, name = split[1].partition(':')
+
+        if (name, ns) in self.schema.subschema:
+            text = self.schema.subschema[(name, ns)]
+            if len(split) >= 2:
+                text = text + '/' + '/'.join(split[2:])
+
         return ResourceIdParser(text, self.schema).parse()
 
     def schema_digest(self) -> str:
