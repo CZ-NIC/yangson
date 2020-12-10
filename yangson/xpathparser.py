@@ -25,6 +25,7 @@ The module also defines the following exceptions:
 
 """
 
+from __future__ import annotations
 from typing import List, Optional, Tuple, Union
 from .schemadata import SchemaContext
 from .enumerations import Axis, MultiplicativeOp
@@ -45,7 +46,7 @@ from .xpathast import (
 class XPathParser(Parser):
     """Parser for XPath expressions."""
 
-    def __init__(self, text: str, sctx: SchemaContext):
+    def __init__(self: XPathParser, text: str, sctx: SchemaContext):
         """Initialize the parser instance.
 
         Args:
@@ -54,7 +55,7 @@ class XPathParser(Parser):
         super().__init__(text)
         self.sctx = sctx
 
-    def parse(self) -> Expr:
+    def parse(self: XPathParser) -> Expr:
         """Parse an XPath expression.
 
         Returns:
@@ -68,7 +69,7 @@ class XPathParser(Parser):
         self.skip_ws()
         return self._or_expr()
 
-    def _or_expr(self) -> Expr:
+    def _or_expr(self: XPathParser) -> Expr:
         op1 = self._and_expr()
         while self.test_string("or"):
             self.skip_ws()
@@ -76,7 +77,7 @@ class XPathParser(Parser):
             op1 = OrExpr(op1, op2)
         return op1
 
-    def _and_expr(self) -> Expr:
+    def _and_expr(self: XPathParser) -> Expr:
         op1 = self._equality_expr()
         while self.test_string("and"):
             self.skip_ws()
@@ -84,7 +85,7 @@ class XPathParser(Parser):
             op1 = AndExpr(op1, op2)
         return op1
 
-    def _equality_expr(self) -> Expr:
+    def _equality_expr(self: XPathParser) -> Expr:
         op1 = self._relational_expr()
         while True:
             negate = False
@@ -107,7 +108,7 @@ class XPathParser(Parser):
             op2 = self._relational_expr()
             op1 = EqualityExpr(op1, op2, negate)
 
-    def _relational_expr(self) -> Expr:
+    def _relational_expr(self: XPathParser) -> Expr:
         op1 = self._additive_expr()
         while True:
             try:
@@ -122,7 +123,7 @@ class XPathParser(Parser):
             op2 = self._additive_expr()
             op1 = RelationalExpr(op1, op2, rel == "<", eq)
 
-    def _additive_expr(self) -> Expr:
+    def _additive_expr(self: XPathParser) -> Expr:
         op1 = self._multiplicative_expr()
         while True:
             try:
@@ -135,7 +136,7 @@ class XPathParser(Parser):
             op2 = self._multiplicative_expr()
             op1 = AdditiveExpr(op1, op2, pm == "+")
 
-    def _multiplicative_expr(self) -> Expr:
+    def _multiplicative_expr(self: XPathParser) -> Expr:
         op1 = self._unary_minus_expr()
         while True:
             if self.test_string("*"):
@@ -150,7 +151,7 @@ class XPathParser(Parser):
             op2 = self._unary_minus_expr()
             op1 = MultiplicativeExpr(op1, op2, mulop)
 
-    def _unary_minus_expr(self) -> Expr:
+    def _unary_minus_expr(self: XPathParser) -> Expr:
         negate = None
         while self.test_string("-"):
             negate = not negate
@@ -158,7 +159,7 @@ class XPathParser(Parser):
         expr = self._union_expr()
         return expr if negate is None else UnaryMinusExpr(expr, negate)
 
-    def _union_expr(self) -> Expr:
+    def _union_expr(self: XPathParser) -> Expr:
         op1 = self._lit_num_path()
         while self.test_string("|"):
             self.skip_ws()
@@ -166,7 +167,7 @@ class XPathParser(Parser):
             op1 = UnionExpr(op1, op2)
         return op1
 
-    def _lit_num_path(self) -> Expr:
+    def _lit_num_path(self: XPathParser) -> Expr:
         next = self.peek()
         if next == "(":
             self.adv_skip_ws()
@@ -195,13 +196,13 @@ class XPathParser(Parser):
         self.offset = start
         return self._location_path()
 
-    def _path_expr(self, fname: str) -> Expr:
+    def _path_expr(self: XPathParser, fname: str) -> Expr:
         fexpr = self._filter_expr(fname)
         if self.test_string("/"):
             return PathExpr(fexpr, self._location_path())
         return fexpr
 
-    def _filter_expr(self, fname: str) -> Expr:
+    def _filter_expr(self: XPathParser, fname: str) -> Expr:
         if fname is None:
             prim = self._or_expr()
         else:
@@ -216,7 +217,7 @@ class XPathParser(Parser):
         self.skip_ws()
         return FilterExpr(prim, self._predicates())
 
-    def _predicates(self) -> List[Expr]:
+    def _predicates(self: XPathParser) -> List[Expr]:
         res = []
         while self.test_string("["):
             self.skip_ws()
@@ -225,10 +226,10 @@ class XPathParser(Parser):
             self.skip_ws()
         return res
 
-    def _predicate(self) -> Expr:
+    def _predicate(self: XPathParser) -> Expr:
         return self._or_expr()
 
-    def _location_path(self) -> LocationPath:
+    def _location_path(self: XPathParser) -> LocationPath:
         if self.test_string("/"):
             self.skip_ws()
             if self.at_end():
@@ -242,10 +243,10 @@ class XPathParser(Parser):
             op1 = LocationPath(op1, op2)
         return op1
 
-    def _step(self) -> Step:
+    def _step(self: XPathParser) -> Step:
         return Step(*self._axis_qname(), self._predicates())
 
-    def _axis_qname(self) -> Tuple[Axis, Union[QualName, bool, None]]:
+    def _axis_qname(self: XPathParser) -> Tuple[Axis, Union[QualName, bool, None]]:
         next = self.peek()
         if next == "*":
             self.adv_skip_ws()
@@ -290,7 +291,7 @@ class XPathParser(Parser):
             return Axis.child, (loc, nsp)
         return Axis.child, (yid, self.sctx.default_ns)
 
-    def _node_type(self, typ):
+    def _node_type(self: XPathParser, typ):
         if typ == "node":
             self.adv_skip_ws()
             self.char(")")
@@ -300,7 +301,7 @@ class XPathParser(Parser):
             raise NotSupported(self, f"node type '{typ}()'")
         raise InvalidXPath(self)
 
-    def _qname(self) -> Optional[QualName]:
+    def _qname(self: XPathParser) -> Optional[QualName]:
         """Parse XML QName."""
         if self.test_string("*"):
             self.skip_ws()
@@ -322,25 +323,25 @@ class XPathParser(Parser):
         self.skip_ws()
         return res
 
-    def _opt_arg(self) -> Optional[Expr]:
+    def _opt_arg(self: XPathParser) -> Optional[Expr]:
         return None if self.peek() == ")" else self.parse()
 
-    def _two_args(self) -> Tuple[Expr, Expr]:
+    def _two_args(self: XPathParser) -> Tuple[Expr, Expr]:
         fst = self.parse()
         self.char(",")
         self.skip_ws()
         return fst, self.parse()
 
-    def _func_bit_is_set(self) -> FuncBitIsSet:
+    def _func_bit_is_set(self: XPathParser) -> FuncBitIsSet:
         return FuncBitIsSet(*self._two_args())
 
-    def _func_boolean(self) -> FuncBoolean:
+    def _func_boolean(self: XPathParser) -> FuncBoolean:
         return FuncBoolean(self.parse())
 
-    def _func_ceiling(self) -> FuncCeiling:
+    def _func_ceiling(self: XPathParser) -> FuncCeiling:
         return FuncCeiling(self.parse())
 
-    def _func_concat(self) -> FuncConcat:
+    def _func_concat(self: XPathParser) -> FuncConcat:
         res = [self.parse()]
         while self.test_string(","):
             self.skip_ws()
@@ -349,70 +350,70 @@ class XPathParser(Parser):
             raise InvalidXPath(self)
         return FuncConcat(res)
 
-    def _func_contains(self) -> FuncContains:
+    def _func_contains(self: XPathParser) -> FuncContains:
         return FuncContains(*self._two_args())
 
-    def _func_count(self) -> FuncCount:
+    def _func_count(self: XPathParser) -> FuncCount:
         return FuncCount(self.parse())
 
-    def _func_current(self) -> FuncCurrent:
+    def _func_current(self: XPathParser) -> FuncCurrent:
         return FuncCurrent()
 
-    def _func_deref(self) -> FuncDeref:
+    def _func_deref(self: XPathParser) -> FuncDeref:
         return FuncDeref(self.parse())
 
-    def _func_derived_from(self) -> FuncDerivedFrom:
+    def _func_derived_from(self: XPathParser) -> FuncDerivedFrom:
         return FuncDerivedFrom(*self._two_args(), False, self.sctx)
 
-    def _func_derived_from_or_self(self) -> FuncDerivedFrom:
+    def _func_derived_from_or_self(self: XPathParser) -> FuncDerivedFrom:
         return FuncDerivedFrom(*self._two_args(), True, self.sctx)
 
-    def _func_enum_value(self) -> FuncEnumValue:
+    def _func_enum_value(self: XPathParser) -> FuncEnumValue:
         return FuncEnumValue(self.parse())
 
-    def _func_false(self) -> FuncFalse:
+    def _func_false(self: XPathParser) -> FuncFalse:
         return FuncFalse()
 
-    def _func_floor(self) -> FuncFloor:
+    def _func_floor(self: XPathParser) -> FuncFloor:
         return FuncFloor(self.parse())
 
-    def _func_last(self) -> FuncLast:
+    def _func_last(self: XPathParser) -> FuncLast:
         return FuncLast()
 
-    def _func_local_name(self) -> FuncName:
+    def _func_local_name(self: XPathParser) -> FuncName:
         return FuncName(self._opt_arg(), local=True)
 
-    def _func_name(self) -> FuncName:
+    def _func_name(self: XPathParser) -> FuncName:
         return FuncName(self._opt_arg(), local=False)
 
-    def _func_normalize_space(self) -> FuncNormalizeSpace:
+    def _func_normalize_space(self: XPathParser) -> FuncNormalizeSpace:
         return FuncNormalizeSpace(self._opt_arg())
 
-    def _func_not(self) -> FuncNot:
+    def _func_not(self: XPathParser) -> FuncNot:
         return FuncNot(self.parse())
 
-    def _func_number(self) -> FuncNumber:
+    def _func_number(self: XPathParser) -> FuncNumber:
         return FuncNumber(self._opt_arg())
 
-    def _func_position(self) -> FuncPosition:
+    def _func_position(self: XPathParser) -> FuncPosition:
         return FuncPosition()
 
-    def _func_re_match(self) -> FuncReMatch:
+    def _func_re_match(self: XPathParser) -> FuncReMatch:
         return FuncReMatch(*self._two_args())
 
-    def _func_round(self) -> FuncRound:
+    def _func_round(self: XPathParser) -> FuncRound:
         return FuncRound(self.parse())
 
-    def _func_starts_with(self) -> FuncStartsWith:
+    def _func_starts_with(self: XPathParser) -> FuncStartsWith:
         return FuncStartsWith(*self._two_args())
 
-    def _func_string(self) -> FuncString:
+    def _func_string(self: XPathParser) -> FuncString:
         return FuncString(self._opt_arg())
 
-    def _func_string_length(self) -> FuncStringLength:
+    def _func_string_length(self: XPathParser) -> FuncStringLength:
         return FuncStringLength(self._opt_arg())
 
-    def _func_substring(self) -> FuncSubstring:
+    def _func_substring(self: XPathParser) -> FuncSubstring:
         string, start = self._two_args()
         if self.test_string(","):
             self.skip_ws()
@@ -421,20 +422,20 @@ class XPathParser(Parser):
             length = None
         return FuncSubstring(string, start, length)
 
-    def _func_substring_after(self) -> FuncSubstringAfter:
+    def _func_substring_after(self: XPathParser) -> FuncSubstringAfter:
         return FuncSubstringAfter(*self._two_args())
 
-    def _func_substring_before(self) -> FuncSubstringBefore:
+    def _func_substring_before(self: XPathParser) -> FuncSubstringBefore:
         return FuncSubstringBefore(*self._two_args())
 
-    def _func_sum(self) -> FuncSum:
+    def _func_sum(self: XPathParser) -> FuncSum:
         return FuncSum(self.parse())
 
-    def _func_translate(self) -> FuncTranslate:
+    def _func_translate(self: XPathParser) -> FuncTranslate:
         s1, s2 = self._two_args()
         self.char(",")
         self.skip_ws()
         return FuncTranslate(s1, s2, self.parse())
 
-    def _func_true(self) -> FuncTrue:
+    def _func_true(self: XPathParser) -> FuncTrue:
         return FuncTrue()
