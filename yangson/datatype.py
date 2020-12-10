@@ -263,7 +263,7 @@ class EmptyType(DataType):
         return [None]
 
     def from_xml(self: EmptyType, xml: str) -> Optional[Tuple[None]]:
-        if xml == '':
+        if xml.text is None:
             return (None,)
 
     def to_xml(self: EmptyType, val: Tuple[None]) -> None:
