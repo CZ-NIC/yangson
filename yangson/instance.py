@@ -475,7 +475,7 @@ class InstanceNode:
                 if add1:
                     member_value = en.raw_value(filter)
                 add2 = filter.end_element(self, en, e_attr)
-                if add1 and add2 and member_value:
+                if add1 and add2 and member_value is not None:
                     if e_attr:
                         member_value['@'] = e_attr
                     value.append(member_value)
@@ -681,6 +681,11 @@ class RootNode(InstanceNode):
                  schema_data: SchemaData, timestamp: datetime):
         super().__init__("/", value, None, schema_node, timestamp)
         self.schema_data = schema_data
+
+    @property
+    def namespace(self: InstanceNode) -> None:
+        """Override the superclass property."""
+        return None
 
     def up(self: RootNode) -> None:
         """Override the superclass method.

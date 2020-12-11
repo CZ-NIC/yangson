@@ -477,10 +477,11 @@ class InternalNode(SchemaNode):
                 npath = jptr + "/" + qn
                 if ch is None:
                     raise RawMemberError(npath)
-                if not allow_nodata and self.ns == ch.ns:
-                    iname = ch.name
-                else:
+                if (allow_nodata or isinstance(self, SchemaTreeNode) or
+                    self.ns != ch.ns):
                     iname = '{1}:{0}'.format(*ch.qual_name)
+                else:
+                    iname = ch.name
                 res[iname] = ch.from_raw(rval[qn], npath)
         return res
 
@@ -1542,7 +1543,7 @@ class RpcActionNode(SchemaTreeNode):
         self.get_child("output")._handle_substatements(stmt, sctx)
 
 
-class InputNode(SchemaTreeNode, DataNode):
+class InputNode(InternalNode, DataNode):
     """RPC or action input node."""
 
     def __init__(self: InputNode, ns):
@@ -1556,7 +1557,7 @@ class InputNode(SchemaTreeNode, DataNode):
         return [self]
 
 
-class OutputNode(SchemaTreeNode, DataNode):
+class OutputNode(InternalNode, DataNode):
     """RPC or action output node."""
 
     def __init__(self: OutputNode, ns):
