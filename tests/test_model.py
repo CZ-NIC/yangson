@@ -361,6 +361,7 @@ def test_rpc(data_model, rpc_raw_output):
     cooked = sn.from_raw(rpc_raw_output)
     inst = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
     assert inst.raw_value() == rpc_raw_output
+    assert inst.validate(ctype=ContentType.all) is None
 
 def test_xpath(data_model, instance):
     def xptest(expr, back, res=True, node=instance, module="test"):

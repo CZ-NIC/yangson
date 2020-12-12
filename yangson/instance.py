@@ -681,6 +681,8 @@ class RootNode(InstanceNode):
                  schema_data: SchemaData, timestamp: datetime):
         super().__init__("/", value, None, schema_node, timestamp)
         self.schema_data = schema_data
+        if self.schema_node.schema_pattern is None:
+            self.schema_node._make_schema_patterns()
 
     @property
     def namespace(self: InstanceNode) -> None:

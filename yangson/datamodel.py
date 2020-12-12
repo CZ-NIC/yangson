@@ -203,4 +203,3 @@ class DataModel:
             for aug in mod.find_all("augment"):
                 self.schema._augment_stmt(aug, sctx)
         self.schema._post_process()
-        self.schema._make_schema_patterns()

@@ -372,6 +372,7 @@ class InternalNode(SchemaNode):
         super().__init__()
         self.children: List[SchemaNode] = []
         self._mandatory_children: MutableSet[SchemaNode] = set()
+        self.schema_pattern: Optional[SchemaPattern] = None
 
     @property
     def mandatory(self: InternalNode) -> bool:
