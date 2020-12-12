@@ -804,9 +804,13 @@ class SchemaTreeNode(GroupNode):
         self.annotations: Dict[QualName, Annotation] = {}
         self.schema_data = schemadata
 
-    def data_parent(self: SchemaTreeNode) -> InternalNode:
+    def iname(self: SchemaTreeNode) -> InstanceName:
         """Override the superclass method."""
-        return self.parent
+        return ""
+
+    def data_parent(self: SchemaTreeNode) -> None:
+        """Override the superclass method."""
+        return None
 
     def _annotation_stmt(self: SchemaTreeNode, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle annotation statement."""
