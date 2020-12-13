@@ -7,6 +7,7 @@ from yangson.exceptions import (
     NonexistentInstance, NonexistentSchemaNode, RawTypeError,
     SchemaError, XPathTypeError, InvalidXPath, NotSupported)
 from yangson.instvalue import ArrayValue, ObjectValue
+from yangson.instance import RootNode
 from yangson.schemadata import SchemaContext, FeatureExprParser
 from yangson.enumerations import ContentType
 from yangson.xpathparser import XPathParser
@@ -208,6 +209,15 @@ def xml_safe_data(data):
 def instance(data_model, data):
     return data_model.from_raw(data)
 
+@pytest.fixture
+def rpc_raw_output(data_model):
+    data = """{
+        "testb:output": {
+            "llistC": [true, false, true]
+        }
+    }
+    """
+    return json.loads(data)
 
 def test_schema_data(data_model):
     assert len(data_model.schema_data.implement) == 2
@@ -230,7 +240,6 @@ def test_schema_data(data_model):
     assert not data_model.schema_data.is_derived_from(
         ("CC-BY-SA", "testb"), ("derivatives", "test"))
     assert data_model.schema_data.is_derived_from(("CC-BY-SA", "testb"), ("all-uses", "test"))
-
 
 def test_schema(data_model):
     ca = data_model.get_data_node("/test:contA")
@@ -278,10 +287,8 @@ def test_schema(data_model):
     assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
     assert data_model.get_data_node("/testb:noA/leafO") is None
 
-
 def test_tree(data_model):
     assert data_model.ascii_tree() == tree
-
 
 def test_types(data_model):
     # type conversions
@@ -379,7 +386,6 @@ def test_types(data_model):
     tctest(lw, 10, "10", 10)
     assert lw.from_yang("0xA") == 10
 
-
 def test_instance(data_model, instance):
     def axtest(expr, res):
         assert [i.json_pointer() for i in expr] == res
@@ -433,6 +439,12 @@ def test_instance(data_model, instance):
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln._ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
 
+def test_rpc(data_model, rpc_raw_output):
+    sn = data_model.get_schema_node("/testb:rpcA")
+    cooked = sn.from_raw(rpc_raw_output)
+    inst = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert inst.raw_value() == rpc_raw_output
+    assert inst.validate(ctype=ContentType.all) is None
 
 def test_xpath(data_model, instance):
     def xptest(expr, back, res=True, node=instance, module="test"):
@@ -637,7 +649,6 @@ def test_xpath(data_model, instance):
     xptest("not(bit-is-set(foo, bar))", "not(bit-is-set(test:foo, test:bar))")
     xptest("bit-is-set(., 'dos')", 'bit-is-set(., "dos")', False, conta)
 
-
 def test_instance_paths(data_model, instance):
     rid1 = data_model.parse_resource_id("/test:contA/testb:leafN")
     rid2 = data_model.parse_resource_id(
@@ -659,7 +670,6 @@ def test_instance_paths(data_model, instance):
     with pytest.raises(NonexistentInstance):
         instance.goto(data_model.parse_resource_id(bad_pth))
 
-
 def test_edits(data_model, instance):
     laii = data_model.parse_instance_id("/test:contA/listA")
     la = instance.goto(laii)
@@ -674,7 +684,6 @@ def test_edits(data_model, instance):
     assert modllb.value == ArrayValue(["::1", "2001:db8:0:2::1"])
     with pytest.raises(RawTypeError):
         llb1.update("2001::2::1", raw=True)
-
 
 def test_validation(instance):
     inst2 = instance.put_member("testb:leafQ", "ABBA").top()

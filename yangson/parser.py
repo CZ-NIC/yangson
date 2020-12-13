@@ -23,6 +23,7 @@ This module implements the following class:
 """
 from __future__ import annotations
 
+from __future__ import annotations
 import re
 from typing import Callable, List, Dict, Optional, Tuple
 from typing.re import Pattern

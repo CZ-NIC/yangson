@@ -26,6 +26,7 @@ This module implements the following classes:
 """
 from __future__ import annotations
 
+from __future__ import annotations
 import decimal
 import re
 from typing import Callable, List, Optional, Union

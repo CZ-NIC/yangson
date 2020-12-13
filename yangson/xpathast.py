@@ -25,6 +25,7 @@ class is intended to be public:
 """
 from __future__ import annotations
 
+from __future__ import annotations
 import decimal
 from math import ceil, copysign, floor
 from pyxb.utils.xmlre import XMLToPython, RegularExpressionError

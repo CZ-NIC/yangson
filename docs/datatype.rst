@@ -318,7 +318,7 @@ all :class:`~.schemanode.TerminalNode` instances.
       .. doctest::
 
          >>> string_t.patterns[0].regex
-         re.compile('^x*y$')
+         re.compile('^(x*y)$')
          >>> 'xxxy' in string_t
          True
          >>> 'xxyy' not in string_t  # pattern doesn't match

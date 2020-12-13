@@ -30,9 +30,10 @@ This module implements the following classes:
 """
 from __future__ import annotations
 
+from __future__ import annotations
 from datetime import datetime
 import json
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 from urllib.parse import unquote
 import xml.etree.ElementTree as ET
 from .enumerations import ContentType, ValidationScope
@@ -46,6 +47,8 @@ from .instvalue import (ArrayValue, InstanceKey, ObjectValue, Value,
 from .parser import Parser
 from .typealiases import (InstanceName, JSONPointer, QualName, RawValue,
                           SchemaRoute, _Singleton, YangIdentifier)
+if TYPE_CHECKING:
+    from .schemadata import SchemaData
 
 __all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
            "InstanceIdParser", "ResourceIdParser", "InstanceRoute",
@@ -53,16 +56,16 @@ __all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
 
 
 class OutputFilter:
-    def begin_member(self: OutputFilter, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
+    def begin_member(self: OutputFilter, parent: InstanceNode, node: InstanceNode, attributes: dict)->bool:
         return True
 
-    def end_member(self: OutputFilter, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
+    def end_member(self: OutputFilter, parent: InstanceNode, node: InstanceNode, attributes: dict)->bool:
         return True
 
-    def begin_element(self: OutputFilter, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
+    def begin_element(self: OutputFilter, parent: InstanceNode, node: InstanceNode, attributes: dict)->bool:
         return True
 
-    def end_element(self: OutputFilter, parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
+    def end_element(self: OutputFilter, parent: InstanceNode, node: InstanceNode, attributes: dict)->bool:
         return True
 
 
@@ -81,7 +84,7 @@ class LinkedList:
             res = cls(v, res)
         return res
 
-    def __init__(self: LinkedList, head: Value, tail: "LinkedList"):
+    def __init__(self: LinkedList, head: Value, tail: LinkedList):
         """Initialize the class instance."""
         self.head = head
         """Head of the linked list."""
@@ -141,19 +144,19 @@ class InstanceNode:
     _key: InstanceKey
 
     def __init__(self: InstanceNode, key: InstanceKey, value: Value,
-                 parinst: Optional["InstanceNode"],
-                 schema_node: "DataNode", timestamp: datetime):
+                 parinst: Optional[InstanceNode],
+                 schema_node: DataNode, timestamp: datetime):
         """Initialize the class instance."""
         self._key = key
-        self.parinst = parinst         # type: Optional["InstanceNode"]
+        self.parinst: Optional[InstanceNode] = parinst
         """Parent instance node, or ``None`` for the root node."""
-        self.schema_node = schema_node  # type: DataNode
+        self.schema_node: DataNode = schema_node
         """Data node corresponding to the instance node."""
         self.schema_data = parinst.schema_data if parinst else None
         """Link to schema data"""
-        self.timestamp = timestamp     # type: datetime
+        self.timestamp: datetime = timestamp
         """Time of the receiver's last modification."""
-        self.value = value             # type: Value
+        self.value: Value = value
         """Value of the receiver."""
 
     @property
@@ -201,7 +204,7 @@ class InstanceNode:
             inst = inst.parinst
         return "/" + "/".join(str(c) for c in res)
 
-    def __getitem__(self: InstanceNode, key: InstanceKey) -> "InstanceNode":
+    def __getitem__(self: InstanceNode, key: InstanceKey) -> InstanceNode:
         """Return member or entry with the given key.
 
         Args:
@@ -246,7 +249,7 @@ class InstanceNode:
         return isinstance(self.schema_node, InternalNode)
 
     def put_member(self: InstanceNode, name: InstanceName, value: Value,
-                   raw: bool = False) -> "InstanceNode":
+                   raw: bool = False) -> InstanceNode:
         """Return receiver's member with a new value.
 
         If the member is permitted by the schema but doesn't exist, it
@@ -269,7 +272,7 @@ class InstanceNode:
         newval[name] = csn.from_raw(value, self.json_pointer()) if raw else value
         return self._copy(newval)._member(name)
 
-    def delete_item(self: InstanceNode, key: InstanceKey) -> "InstanceNode":
+    def delete_item(self: InstanceNode, key: InstanceKey) -> InstanceNode:
         """Delete an item (member or entry) from receiver's value.
 
         Args:
@@ -289,7 +292,7 @@ class InstanceNode:
                                       f"item '{key}'") from None
         return self._copy(newval)
 
-    def up(self: InstanceNode) -> "InstanceNode":
+    def up(self: InstanceNode) -> InstanceNode:
         """Return an instance node corresponding to the receiver's parent.
 
         Raises:
@@ -298,7 +301,7 @@ class InstanceNode:
         ts = max(self.timestamp, self.parinst.timestamp)
         return self.parinst._copy(self._zip(), ts)
 
-    def top(self: InstanceNode) -> "InstanceNode":
+    def top(self: InstanceNode) -> InstanceNode:
         """Return an instance node corresponding to the root of the data tree."""
         inst = self
         while inst.parinst:
@@ -306,7 +309,7 @@ class InstanceNode:
         return inst
 
     def update(self: InstanceNode, value: Union[RawValue, Value],
-               raw: bool = False) -> "InstanceNode":
+               raw: bool = False) -> InstanceNode:
         """Update the receiver's value.
 
         Args:
@@ -320,7 +323,7 @@ class InstanceNode:
             value, self.json_pointer()) if raw else value
         return self._copy(newval)
 
-    def goto(self: InstanceNode, iroute: "InstanceRoute") -> "InstanceNode":
+    def goto(self: InstanceNode, iroute: InstanceRoute) -> InstanceNode:
         """Move the focus to an instance inside the receiver's value.
 
         Args:
@@ -341,7 +344,7 @@ class InstanceNode:
             inst = sel.goto_step(inst)
         return inst
 
-    def peek(self: InstanceNode, iroute: "InstanceRoute") -> Optional[Value]:
+    def peek(self: InstanceNode, iroute: InstanceRoute) -> Optional[Value]:
         """Return a value within the receiver's subtree.
 
         Args:
@@ -370,7 +373,7 @@ class InstanceNode:
         """
         self.schema_node._validate(self, scope, ctype)
 
-    def add_defaults(self: InstanceNode, ctype: ContentType = None, tag: bool = False) -> "InstanceNode":
+    def add_defaults(self: InstanceNode, ctype: ContentType = None, tag: bool = False) -> InstanceNode:
         """Return the receiver with defaults added recursively to its value.
 
         Args:
@@ -473,7 +476,7 @@ class InstanceNode:
                 if add1:
                     member_value = en.raw_value(filter)
                 add2 = filter.end_element(self, en, e_attr)
-                if add1 and add2 and member_value:
+                if add1 and add2 and member_value is not None:
                     if e_attr:
                         member_value['@'] = e_attr
                     value.append(member_value)
@@ -601,19 +604,19 @@ class InstanceNode:
                 irt.append(MemberName(sn.name, sn.ns))
         return self.peek(irt)
 
-    def _member_schema_node(self: InstanceNode, name: InstanceName) -> "DataNode":
+    def _member_schema_node(self: InstanceNode, name: InstanceName) -> DataNode:
         qname = self.schema_node._iname2qname(name)
         res = self.schema_node.get_data_child(*qname)
         if res is None:
             raise NonexistentSchemaNode(self.schema_node.qual_name, *qname)
         return res
 
-    def _node_set(self: InstanceNode) -> List["InstanceNode"]:
+    def _node_set(self: InstanceNode) -> List[InstanceNode]:
         """XPath - return the list of all receiver's nodes."""
         return list(self) if isinstance(self.value, ArrayValue) else [self]
 
     def _children(self: InstanceNode, qname:
-                  Union[QualName, bool] = None) -> List["InstanceNode"]:
+                  Union[QualName, bool] = None) -> List[InstanceNode]:
         """XPath - return the list of receiver's children."""
         sn = self.schema_node
         if not isinstance(sn, InternalNode):
@@ -643,7 +646,7 @@ class InstanceNode:
         return res
 
     def _descendants(self: InstanceNode, qname: Union[QualName, bool] = None,
-                     with_self: bool = False) -> List["InstanceNode"]:
+                     with_self: bool = False) -> List[InstanceNode]:
         """XPath - return the list of receiver's descendants."""
         res = ([] if not with_self or (qname and self.qual_name != qname)
                else [self])
@@ -654,20 +657,20 @@ class InstanceNode:
         return res
 
     def _preceding_siblings(
-            self: InstanceNode, qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
+            self: InstanceNode, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """XPath - return the list of receiver's preceding-siblings."""
         return []
 
     def _following_siblings(
-            self: InstanceNode, qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
+            self: InstanceNode, qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """XPath - return the list of receiver's following-siblings."""
         return []
 
-    def _parent(self: InstanceNode) -> List["InstanceNode"]:
+    def _parent(self: InstanceNode) -> List[InstanceNode]:
         """XPath - return the receiver's parent as a singleton list."""
         return [self.up()]
 
-    def _deref(self: InstanceNode) -> List["InstanceNode"]:
+    def _deref(self: InstanceNode) -> List[InstanceNode]:
         """XPath: return the list of nodes that the receiver refers to."""
         return ([] if self.is_internal() else
                 self.schema_node.type._deref(self))
@@ -676,10 +679,17 @@ class InstanceNode:
 class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
-    def __init__(self: RootNode, value: Value, schema_node: "DataNode",
-                 schema_data: "SchemaData", timestamp: datetime):
+    def __init__(self: RootNode, value: Value, schema_node: DataNode,
+                 schema_data: SchemaData, timestamp: datetime):
         super().__init__("/", value, None, schema_node, timestamp)
         self.schema_data = schema_data
+        if self.schema_node.schema_pattern is None:
+            self.schema_node._make_schema_patterns()
+
+    @property
+    def namespace(self: InstanceNode) -> None:
+        """Override the superclass property."""
+        return None
 
     def up(self: RootNode) -> None:
         """Override the superclass method.
@@ -699,18 +709,19 @@ class RootNode(InstanceNode):
         if isinstance(self.schema_node, RpcActionNode):
             return et[0]
         return et
+        #return super().to_xml(filter, element)[0]
 
     def _copy(self: RootNode, newval: Value, newts: datetime = None) -> InstanceNode:
         return RootNode(
             newval, self.schema_node, self.schema_data, newts if newts else newval.timestamp)
 
     def _ancestors_or_self(
-            self: RootNode, qname: Union[QualName, bool] = None) -> List["RootNode"]:
+            self: RootNode, qname: Union[QualName, bool] = None) -> List[RootNode]:
         """XPath - return the list of receiver's ancestors including itself."""
         return [self] if qname is None else []
 
     def _ancestors(
-            self: RootNode, qname: Union[QualName, bool] = None) -> List["RootNode"]:
+            self: RootNode, qname: Union[QualName, bool] = None) -> List[RootNode]:
         """XPath - return the list of receiver's ancestors."""
         return []
 
@@ -720,9 +731,9 @@ class ObjectMember(InstanceNode):
 
     def __init__(self: ObjectMember, key: InstanceName, siblings: Dict[InstanceName, Value],
                  value: Value, parinst: Optional[InstanceNode],
-                 schema_node: "DataNode", timestamp: datetime):
+                 schema_node: DataNode, timestamp: datetime):
         super().__init__(key, value, parinst, schema_node, timestamp)
-        self.siblings = siblings  # type: Dict[InstanceName, Value]
+        self.siblings: Dict[InstanceName, Value] = siblings
         """Sibling members within the parent object."""
 
     @property
@@ -812,13 +823,15 @@ class ObjectMember(InstanceNode):
 class ArrayEntry(InstanceNode):
     """This class represents an array entry."""
 
-    def __init__(self: ArrayEntry, key: int, before: LinkedList, after: LinkedList,
-                 value: Value, parinst: Optional[InstanceNode],
-                 schema_node: "DataNode", timestamp: datetime = None):
+    def __init__(
+            self: ArrayEntry, key: int, before: LinkedList,
+            after: LinkedList, value: Value,
+            parinst: Optional[InstanceNode],
+            schema_node: DataNode, timestamp: datetime = None):
         super().__init__(key, value, parinst, schema_node, timestamp)
-        self.before = before  # type: LinkedList
+        self.before: LinkedList = before
         """Preceding entries of the parent array."""
-        self.after = after  # type: LinkedList
+        self.after: LinkedList = after
         """Following entries of the parent array."""
 
     @property
@@ -960,7 +973,7 @@ class ArrayEntry(InstanceNode):
             res.append(en)
         return res
 
-    def _parent(self: ArrayEntry) -> List["InstanceNode"]:
+    def _parent(self: ArrayEntry) -> List[InstanceNode]:
         """XPath - return the receiver's parent as a singleton list."""
         return [self.up().up()]
 
@@ -990,7 +1003,7 @@ class MemberName:
         self.name = name
         self.namespace = ns
 
-    def __eq__(self: MemberName, other: "MemberName") -> bool:
+    def __eq__(self: MemberName, other: MemberName) -> bool:
         return self.name == other.name and self.namespace == other.namespace
 
     def __str__(self: MemberName) -> str:
@@ -1002,7 +1015,7 @@ class MemberName:
         return f"{self.namespace}:{self.name}" if self.namespace else self.name
 
     def peek_step(self: MemberName, val: ObjectValue,
-                  sn: "DataNode") -> Tuple[Value, "DataNode"]:
+                  sn: DataNode) -> Tuple[Value, DataNode]:
         """Return member value addressed by the receiver + its schema node.
 
         Args:
@@ -1028,7 +1041,7 @@ class ActionName(MemberName):
     """Name of an action (can appear in RESTCONF resource IDs)."""
 
     def peek_step(self: ActionName, val: ObjectValue,
-                  sn: "DataNode") -> Tuple[None, "DataNode"]:
+                  sn: DataNode) -> Tuple[None, DataNode]:
         """Fail because there is no action instance."""
         cn = sn.get_child(self.name, self.namespace)
         return (None, cn)
@@ -1049,7 +1062,7 @@ class EntryIndex:
         """
         self.index = index
 
-    def __eq__(self: EntryIndex, other: "EntryIndex") -> bool:
+    def __eq__(self: EntryIndex, other: EntryIndex) -> bool:
         return self.index == other.index
 
     def __str__(self: EntryIndex) -> str:
@@ -1057,7 +1070,7 @@ class EntryIndex:
         return f"[{self.index + 1}]"
 
     def peek_step(self: EntryIndex, val: ArrayValue,
-                  sn: "DataNode") -> Tuple[Optional[Value], "DataNode"]:
+                  sn: DataNode) -> Tuple[Optional[Value], DataNode]:
         """Return entry value addressed by the receiver + its schema node.
 
         Args:
@@ -1093,10 +1106,10 @@ class EntryValue:
         """Return a string representation of the receiver."""
         return f"[.={json.dumps(self.value)}]"
 
-    def __eq__(self: EntryValue, other: "EntryValue") -> bool:
+    def __eq__(self: EntryValue, other: EntryValue) -> bool:
         return self.value == other.value
 
-    def parse_value(self: EntryValue, sn: "DataNode") -> ScalarValue:
+    def parse_value(self: EntryValue, sn: DataNode) -> ScalarValue:
         """Let schema node's type parse the receiver's value."""
         res = sn.type.parse_value(self.value)
         if res is None:
@@ -1104,7 +1117,7 @@ class EntryValue:
         return res
 
     def peek_step(self: EntryValue, val: ArrayValue,
-                  sn: "DataNode") -> Tuple[Value, "DataNode"]:
+                  sn: DataNode) -> Tuple[Value, DataNode]:
         """Return entry value addressed by the receiver + its schema node.
 
         Args:
@@ -1150,10 +1163,10 @@ class EntryKeys:
             res.append(f"[{kn}={json.dumps(self.keys[k])}]")
         return "".join(res)
 
-    def __eq__(self: EntryKeys, other: "EntryKeys") -> bool:
+    def __eq__(self: EntryKeys, other: EntryKeys) -> bool:
         return self.keys == other.keys
 
-    def parse_keys(self: EntryKeys, sn: "DataNode") -> Dict[InstanceName, ScalarValue]:
+    def parse_keys(self: EntryKeys, sn: DataNode) -> Dict[InstanceName, ScalarValue]:
         """Parse key dictionary in the context of a schema node.
 
         Args:
@@ -1171,7 +1184,7 @@ class EntryKeys:
         return res
 
     def peek_step(self: EntryKeys, val: ArrayValue,
-                  sn: "DataNode") -> Tuple[ObjectValue, "DataNode"]:
+                  sn: DataNode) -> Tuple[ObjectValue, DataNode]:
         """Return the entry addressed by the receiver + its schema node.
 
         Args:
@@ -1204,7 +1217,7 @@ class EntryKeys:
 class ResourceIdParser(Parser):
     """Parser for RESTCONF resource identifiers."""
 
-    def __init__(self: ResourceIdParser, text: str, sn: "DataNode"):
+    def __init__(self: ResourceIdParser, text: str, sn: DataNode):
         """Extend the superclass method.
 
         Args:
@@ -1245,7 +1258,7 @@ class ResourceIdParser(Parser):
                 self.char("/")
             sn = cn
 
-    def _key_values(self: ResourceIdParser, sn: "SequenceNode") -> Union[EntryKeys, EntryValue]:
+    def _key_values(self: ResourceIdParser, sn: SequenceNode) -> Union[EntryKeys, EntryValue]:
         """Parse leaf-list value or list keys."""
         try:
             keys = self.up_to("/")
@@ -1328,3 +1341,6 @@ from .schemanode import (       # NOQA
             ChoiceNode, DataNode, InputNode,
             InternalNode, LeafNode, LeafListNode, ListNode,
             OutputNode, RpcActionNode, SequenceNode, TerminalNode)
+
+            #AnyContentNode, CaseNode, DataNode, InternalNode,
+            #LeafListNode, ListNode, RpcActionNode, SequenceNode)

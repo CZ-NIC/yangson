@@ -23,6 +23,7 @@ This module implements the following class:
 """
 from __future__ import annotations
 
+from __future__ import annotations
 import hashlib
 import json
 from typing import Optional, Tuple
@@ -203,4 +204,3 @@ class DataModel:
             for aug in mod.find_all("augment"):
                 self.schema._augment_stmt(aug, sctx)
         self.schema._post_process()
-        self.schema._make_schema_patterns()
