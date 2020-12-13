@@ -1,16 +1,15 @@
 PROJECT = yangson
-VERSION = 1.3.58
+VERSION = 1.3.62
 .PHONY = tags deps install-deps test
 
 tags:
 	find $(PROJECT) -name "*.py" | etags -
 
 deps:
-	mv requirements.txt requirements.txt.old
-	pip freeze > requirements.txt
+	@pip-compile
 
 install-deps:
-	pip install -r requirements.txt
+	@pip-sync
 
 test:
 	@py.test tests

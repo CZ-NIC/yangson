@@ -17,6 +17,7 @@
 
 """Enumeration classes."""
 
+from __future__ import annotations
 from enum import Enum
 
 
@@ -77,7 +78,7 @@ class Axis(Enum):
     self = 10
     """Just the context node."""
 
-    def __str__(self) -> str:
+    def __str__(self: Axis) -> str:
         """Return string representation of the axis."""
         return self.name.replace("_", "-")
 
@@ -92,6 +93,6 @@ class MultiplicativeOp(Enum):
     modulo = "mod"
     """Modulo operator (``mod``)."""
 
-    def __str__(self) -> str:
+    def __str__(self: MultiplicativeOp) -> str:
         """Return string representation of the operation."""
         return self.value

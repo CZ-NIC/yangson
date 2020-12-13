@@ -13,6 +13,7 @@ man/man1/tqdm.1
 MANIFEST
 pip-selfcheck.json
 pyvenv.cfg
+requirements.txt
 TAGS
 yangson.egg-info
 .kdev4
