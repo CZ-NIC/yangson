@@ -6,7 +6,7 @@ from yangson.exceptions import (
     InvalidArgument, InvalidFeatureExpression, UnknownPrefix,
     NonexistentInstance, NonexistentSchemaNode, RawTypeError,
     SchemaError, XPathTypeError, InvalidXPath, NotSupported)
-from yangson.instvalue import ArrayValue
+from yangson.instvalue import ArrayValue, ObjectValue
 from yangson.schemadata import SchemaContext, FeatureExprParser
 from yangson.enumerations import ContentType
 from yangson.xpathparser import XPathParser
@@ -14,6 +14,7 @@ import re
 import copy
 import xml.etree.ElementTree as ET
 from yangson.instance import RootNode
+from yangson.schemanode import SchemaTreeNode, RpcActionNode, NotificationNode, InputNode, OutputNode
 
 
 tree = """+--rw (test:choiA)?
@@ -801,6 +802,7 @@ def test_xml_rpc(data_model):
 
     # get the schema node for the RPC 
     sn_rpc = data_model.get_schema_node("/testb:rpcA") # used by both tests
+    assert(type(sn_rpc) == RpcActionNode)
 
 
     #########
@@ -872,3 +874,97 @@ def test_xml_rpc(data_model):
     # convert Instance to raw value and ensure same
     output_rv2 = output_inst2.raw_value()
     assert(output_rv2 == output_obj)
+
+
+
+
+def test_top_level_nodes(data_model):
+    rv = {} # will an empty dict work?
+
+    sn = data_model.get_schema_node("/")
+    assert(type(sn) == SchemaTreeNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == SchemaTreeNode)
+
+    sn = data_model.get_schema_node("/testb:rpcA")
+    assert(type(sn) == RpcActionNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == RpcActionNode)
+
+    sn = data_model.get_schema_node("/testb:rpcA/input")
+    assert(type(sn) == InputNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == InputNode)
+
+    sn = data_model.get_schema_node("/testb:rpcA/output")
+    assert(type(sn) == OutputNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == OutputNode)
+
+    sn = data_model.get_schema_node("/test:contA/listA/contD/acA")
+    assert(type(sn) == RpcActionNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == RpcActionNode)
+
+    sn = data_model.get_schema_node("/test:contA/listA/contD/acA/input")
+    assert(type(sn) == InputNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == InputNode)
+
+    sn = data_model.get_schema_node("/test:contA/listA/contD/acA/output")
+    assert(type(sn) == OutputNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == OutputNode)
+
+    sn = data_model.get_schema_node("/testb:noA")
+    assert(type(sn) == NotificationNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == NotificationNode)
+    assert(rn.schema_node.type == NotificationNode)
+
+
+
+def test_binary(data_model):
+    rv = {
+            "test:contT": {
+                "binary": 'base64encodedvalue=='
+            }
+         }
+    #print("rv = " + str(rv))
+
+    root = data_model.from_raw(rv)
+    #print("root = " + str(root))
+
+    sn = data_model.get_schema_node("/")
+    instval = sn.from_raw(rv, allow_nodata=True)
+    #print("instval = " + str(instval))
+
+    inst = RootNode(instval, sn, data_model.schema_data, instval.timestamp)
+    #print("inst.raw_value() = " + str(inst.raw_value()))
+
+    assert(inst.raw_value() == rv)
+
