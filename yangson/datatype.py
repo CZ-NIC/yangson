@@ -681,7 +681,7 @@ class IdentityrefType(DataType):
             i1, s, i2 = xml.text.partition(":")
         except AttributeError:
             return None
-        if not i1:
+        if not i1 or i1 == self.sctx.default_ns:
             return (i2, self.sctx.default_ns)
 
         ns_url = xml.attrib.get('xmlns:'+i1)
