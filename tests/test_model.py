@@ -886,6 +886,187 @@ def test_xml_rpc(data_model):
 
 
 
+def test_xml_action(data_model):
+    '''
+      Encodes known "raw data" Action input & outputs to an XML strings and back again.
+    '''
+
+    output_obj = {
+        "test:output" : {
+            "leafL" : True
+        }
+    }
+
+    output_xml_pretty = """
+      <output xmlns="http://example.com/test">
+        <leafL>true</leafL>
+      </output>
+    """
+
+    output_xml_stripped = strip_pretty(output_xml_pretty)
+
+    # get the schema node for the 'action' 
+    sn_rpc = data_model.get_schema_node("/test:contA/listA/contD/acA")
+    assert(type(sn_rpc) == RpcActionNode)
+
+    #########
+    # INPUT #
+    #########
+
+    # this 'action' has no input.
+
+    ##########
+    # OUTPUT #
+    ##########
+
+    # convert raw object to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
+    output_inst_val = sn_rpc.from_raw(output_obj, allow_nodata=True)
+    assert(str(output_inst_val) == str(output_obj))
+
+    # convert InstanceValue to an Instance (a RootNode)
+    output_inst = RootNode(output_inst_val, sn_rpc, data_model.schema_data, output_inst_val.timestamp)
+    #output_inst.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    assert(output_inst.raw_value() == output_obj)
+
+    # convert Instance to an XML-encoded string and compare to known-good
+    output_xml_et_obj = output_inst.to_xml()
+    output_xml_text = ET.tostring(output_xml_et_obj).decode("utf-8")
+    assert(output_xml_text == output_xml_stripped)
+
+    # convert output's XML-encoded string back to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
+    output_xml_et_obj2 = ET.fromstring(output_xml_text)
+    output_inst_val2 = sn_rpc.from_xml(output_xml_et_obj2, isroot=True, allow_nodata=True)
+    assert(output_inst_val2 == output_inst_val)
+
+    # convert InstanceValue back to an Instance (a RootNode)
+    output_inst2 = RootNode(output_inst_val2, sn_rpc, data_model.schema_data, output_inst_val2.timestamp)
+    #output_inst2.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    assert(output_inst2.raw_value() == output_obj)
+
+    # convert Instance to raw value and ensure same
+    output_rv2 = output_inst2.raw_value()
+    assert(output_rv2 == output_obj)
+
+
+
+
+def test_xml_notification(data_model):
+    '''
+      Encodes known "raw data" Notification to an XML string and back again.
+
+      Work in progress
+
+      Currently stuck on from_raw() needing to be passed an object that
+      doesn't match expectatons...it seems that the top-level element
+      SHOULD be "testb:noA".
+    '''
+
+    # get the schema node for the 'notiication' 
+    sn_notif = data_model.get_schema_node("/testb:noA")
+    assert(type(sn_notif) == NotificationNode)
+
+    #######
+    # NOA # (this works, but too low-level?)
+    #######
+
+    noA_obj = {
+        "testb:leafO" : True
+    }
+    noA_xml_pretty = """
+        <leafO xmlns="http://example.com/testb">true</leafO>
+    """
+    noA_xml_stripped = strip_pretty(noA_xml_pretty)
+
+    # convert raw object to an InstanceValue, an ObjectValue, not a RootNode as per DataModel.from_raw()
+    noa_inst_val = sn_notif.from_raw(noA_obj, allow_nodata=False)
+    assert(str(noa_inst_val) == str(noA_obj))
+
+
+    #########
+    # NOTIF #  (most common?)
+    #########
+
+    notif_obj = {
+        "testb:noA" : {
+            "leafO" : True
+        }
+    }
+    notif_xml_pretty = """
+        <noa xmlns="http://example.com/testb">
+            <leafO>true</leafO>
+        </noa>
+    """
+    notif_xml_stripped = strip_pretty(notif_xml_pretty)
+
+
+    # convert raw object to an InstanceValue, an ObjectValue, not a RootNode as per DataModel.from_raw()
+    notif_inst_val = sn_notif.from_raw(notif_obj, allow_nodata=True)
+    assert(str(notif_inst_val) == str(notif_obj))
+
+
+    ###################
+    # JSON - RESTCONF #  (per RFC 8040)
+    ###################
+
+    restconf_notif_obj = {
+        "ietf-restconf:notification" : {
+            "eventTime" : "2013-12-21T00:01:00Z",
+            "testb:noA" : {
+                "leafO" : True
+            }
+        }
+    }
+
+
+    ######################
+    # JSON - HTTPS-NOTIF #  (per https-notif draft, why change prefix from 'ietf-restconf'?)
+    ######################
+
+    https_notif_obj = {
+        "ietf-https-notif:notification" : {
+            "eventTime" : "2013-12-21T00:01:00Z",
+            "testb:noA" : {
+                "leafO" : True
+            }
+        }
+    }
+
+
+    #######
+    # XML #  (there's only the one definition / namespace for XML-based notifs, from RFC 5277)
+    #######
+
+    ietf_notif_xml_pretty = """
+        <notification xmlns="urn:ietf:params:xml:ns:netconf:notification:1.0">
+            <eventTime>2013-12-21T00:01:00Z</eventTime>
+            <noA xmlns="http://example.com/testb">
+                <leafO>true</leafO>
+            </noA>
+        </notification>
+    """
+    ietf_notif_xml_stripped = strip_pretty(ietf_notif_xml_pretty)
+
+
+
+
+
+
+
+
+
+
+def test_xml_error(data_model):
+    '''
+      Encodes known "raw data" RC Error to an XML string and back again.
+    '''
+    assert(False)
+
+
+
+
+
 
 def test_top_level_nodes(data_model):
     rv = {} # will an empty dict work?
