@@ -677,13 +677,20 @@ class IdentityrefType(DataType):
         return (i2, i1) if s else (i1, self.sctx.default_ns)
 
     def from_xml(self: IdentityrefType, xml: ET.Element) -> Optional[QualName]:
+
         try:
             i1, s, i2 = xml.text.partition(":")
         except AttributeError:
             return None
-        if not i1 or i1 == self.sctx.default_ns:
+
+        if not s:
+            # not prefixed, so assume default ns
+            return (i1, self.sctx.default_ns)
+        elif i1 == self.sctx.default_ns:
+            # prefixed with default ns
             return (i2, self.sctx.default_ns)
 
+        # the following code has issues (Issue #79)
         ns_url = xml.attrib.get('xmlns:'+i1)
         if not ns_url:
             raise MissingModuleNamespace(ns_url)
