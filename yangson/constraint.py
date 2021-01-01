@@ -25,7 +25,6 @@ This module implements the following classes:
 * Must: Class representing the constraint specified by a "must" statement.
 """
 
-from __future__ import annotations
 import decimal
 import re
 from typing import Callable, List, Optional, Union
@@ -45,7 +44,7 @@ Interval = List[Number]
 class Constraint:
     """Abstract class representing annotated YANG constraints."""
 
-    def __init__(self: Constraint, error_tag: Optional[str], error_message: Optional[str]):
+    def __init__(self, error_tag: Optional[str], error_message: Optional[str]):
         """Initialize the class instance."""
         self.error_tag = error_tag
         self.error_message = error_message
@@ -54,7 +53,7 @@ class Constraint:
 class Intervals(Constraint):
     """Class representing a sequence of numeric intervals."""
 
-    def __init__(self: Intervals, intervals: List[Interval],
+    def __init__(self, intervals: List[Interval],
                  parser: Callable[[str], Optional[Number]] = None,
                  error_tag: str = None, error_message: str = None):
         """Initialize the class instance."""
@@ -67,7 +66,7 @@ class Intervals(Constraint):
         self.intervals = intervals
         self.parser = parser if parser else _pint
 
-    def __contains__(self: Intervals, value: Number):
+    def __contains__(self, value: Number):
         """Return ``True`` if the receiver contains the value."""
         for r in self.intervals:
             if len(r) == 1:
@@ -77,12 +76,12 @@ class Intervals(Constraint):
                 return True
         return False
 
-    def __str__(self: Intervals) -> str:
+    def __str__(self) -> str:
         """Return string representation of the receiver."""
         return " | ".join([f"{r[0]!s}..{r[-1]!s}" if len(r) > 1 else str(r[0])
                            for r in self.intervals])
 
-    def restrict_with(self: Intervals, expr: str, error_tag: str = None,
+    def restrict_with(self, expr: str, error_tag: str = None,
                       error_message: str = None) -> None:
         """Combine the receiver with new intervals.
 
@@ -130,7 +129,7 @@ class Intervals(Constraint):
 class Pattern(Constraint):
     """Class representing regular expression pattern."""
 
-    def __init__(self: Pattern, pattern: str, invert_match: bool = False,
+    def __init__(self, pattern: str, invert_match: bool = False,
                  error_tag: str = None,
                  error_message: str = None):
         """Initialize the class instance."""
@@ -147,7 +146,7 @@ class Pattern(Constraint):
 class Must(Constraint):
     """Class representing the constraint specified by a "must" statement."""
 
-    def __init__(self: Must, expression: Expr, error_tag: str = None,
+    def __init__(self, expression: Expr, error_tag: str = None,
                  error_message: str = None):
         """Initialize the class instance."""
         super().__init__(

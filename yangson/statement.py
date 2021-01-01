@@ -23,7 +23,6 @@ This module implements the following classes:
 * Statement: YANG statements.
 """
 
-from __future__ import annotations
 from typing import List, Optional, Tuple
 from .exceptions import (
     EndOfInput, StatementNotFound, UnexpectedInput, InvalidArgument,
@@ -39,7 +38,7 @@ class Statement:
     _escape_table = str.maketrans({'"': '\\"', '\\': '\\\\'})
     """Table for translating characters to their escaped form."""
 
-    def __init__(self: Statement,
+    def __init__(self,
                  kw: YangIdentifier,
                  arg: Optional[str],
                  pref: YangIdentifier = None):
@@ -58,7 +57,7 @@ class Statement:
         self.superstmt = None
         self.substatements = []
 
-    def __str__(self: Statement) -> str:
+    def __str__(self) -> str:
         """Return string representation of the receiver.
         """
         kw = (self.keyword if self.prefix is None
@@ -68,7 +67,7 @@ class Statement:
         rest = " { ... }" if self.substatements else ";"
         return kw + arg + rest
 
-    def find1(self: Statement, kw: YangIdentifier, arg: str = None,
+    def find1(self, kw: YangIdentifier, arg: str = None,
               pref: YangIdentifier = None,
               required: bool = False) -> Optional["Statement"]:
         """Return first substatement with the given parameters.
@@ -90,7 +89,7 @@ class Statement:
         if required:
             raise StatementNotFound(str(self), kw)
 
-    def find_all(self: Statement, kw: YangIdentifier,
+    def find_all(self, kw: YangIdentifier,
                  pref: YangIdentifier = None) -> List["Statement"]:
         """Return the list all substatements with the given keyword and prefix.
 
@@ -101,7 +100,7 @@ class Statement:
         return [c for c in self.substatements
                 if c.keyword == kw and c.prefix == pref]
 
-    def get_definition(self: Statement, name: YangIdentifier,
+    def get_definition(self, name: YangIdentifier,
                        kw: YangIdentifier) -> Optional["Statement"]:
         """Search ancestor statements for a definition.
 
@@ -120,7 +119,7 @@ class Statement:
             stmt = stmt.superstmt
         return None
 
-    def get_error_info(self: Statement) -> Tuple[Optional[str], Optional[str]]:
+    def get_error_info(self) -> Tuple[Optional[str], Optional[str]]:
         """Return receiver's error tag and error message if present."""
         etag = self.find1("error-app-tag")
         emsg = self.find1("error-message")
@@ -134,7 +133,7 @@ class ModuleParser(Parser):
                     "\\": "\\"}  # type: Dict[str,str]
     """Dictionary for mapping escape sequences to characters."""
 
-    def __init__(self: ModuleParser, text: str, name: YangIdentifier = None, rev: str = None):
+    def __init__(self, text: str, name: YangIdentifier = None, rev: str = None):
         """Initialize the parser instance.
 
         Args:
@@ -145,7 +144,7 @@ class ModuleParser(Parser):
         self.name = name
         self.rev = rev
 
-    def parse(self: ModuleParser) -> Statement:
+    def parse(self) -> Statement:
         """Parse a complete YANG module or submodule.
 
         Args:
@@ -175,7 +174,7 @@ class ModuleParser(Parser):
             return res
         raise UnexpectedInput(self, "end of input")
 
-    def _back_break(self: ModuleParser) -> int:
+    def _back_break(self) -> int:
         self.offset -= 1
         return -1
 
@@ -194,7 +193,7 @@ class ModuleParser(Parser):
         except KeyError:
             raise InvalidArgument(text) from None
 
-    def opt_separator(self: ModuleParser) -> bool:
+    def opt_separator(self) -> bool:
         """Parse an optional separator and return ``True`` if found.
 
         Raises:
@@ -234,7 +233,7 @@ class ModuleParser(Parser):
             }])
         return start < self.offset
 
-    def separator(self: ModuleParser) -> None:
+    def separator(self) -> None:
         """Parse a mandatory separator.
 
         Raises:
@@ -245,7 +244,7 @@ class ModuleParser(Parser):
         if not present:
             raise UnexpectedInput(self, "separator")
 
-    def keyword(self: ModuleParser) -> Tuple[Optional[str], str]:
+    def keyword(self) -> Tuple[Optional[str], str]:
         """Parse a YANG statement keyword.
 
         Raises:
@@ -259,7 +258,7 @@ class ModuleParser(Parser):
             return (i1, i2)
         return (None, i1)
 
-    def statement(self: ModuleParser) -> Statement:
+    def statement(self) -> Statement:
         """Parse YANG statement.
 
         Raises:
@@ -289,7 +288,7 @@ class ModuleParser(Parser):
                 sub.superstmt = res
         return res
 
-    def argument(self: ModuleParser) -> bool:
+    def argument(self) -> bool:
         """Parse statement argument.
 
         Return ``True`` if the argument is followed by block of substatements.
@@ -320,7 +319,7 @@ class ModuleParser(Parser):
             raise UnexpectedInput(self, "';', '{'" +
                                   (" or '+'" if quoted else ""))
 
-    def sq_argument(self: ModuleParser) -> str:
+    def sq_argument(self) -> str:
         """Parse single-quoted argument.
 
         Raises:
@@ -329,7 +328,7 @@ class ModuleParser(Parser):
         self.offset += 1
         self._arg += self.up_to("'")
 
-    def dq_argument(self: ModuleParser) -> str:
+    def dq_argument(self) -> str:
         """Parse double-quoted argument.
 
         Raises:
@@ -354,7 +353,7 @@ class ModuleParser(Parser):
                       if self._escape else self.input[start:self.offset])
         self.offset += 1
 
-    def unq_argument(self: ModuleParser) -> str:
+    def unq_argument(self) -> str:
         """Parse unquoted argument.
 
         Raises:
@@ -379,7 +378,7 @@ class ModuleParser(Parser):
             }])
         self._arg = self.input[start:self.offset]
 
-    def substatements(self: ModuleParser) -> List[Statement]:
+    def substatements(self) -> List[Statement]:
         """Parse substatements.
 
         Raises:
