@@ -46,7 +46,7 @@ MetadataObject = Dict[PrefName, ScalarValue]
 class StructuredValue:
     """Abstract class for array and object values."""
 
-    def __init__(self: StructuredValue, ts: datetime):
+    def __init__(self: "StructuredValue", ts: datetime):
         """Initialize class instance.
 
         Args:
@@ -54,15 +54,15 @@ class StructuredValue:
         """
         self.timestamp = ts if ts else datetime.now()
 
-    def copy(self: StructuredValue) -> StructuredValue:
+    def copy(self: "StructuredValue") -> StructuredValue:
         """Return a shallow copy of the receiver."""
         return self.__class__(super().copy(), datetime.now())
 
-    def __setitem__(self: StructuredValue, key: InstanceKey, value: Value) -> None:
+    def __setitem__(self: "StructuredValue", key: InstanceKey, value: Value) -> None:
         super().__setitem__(key, value)
         self.timestamp = datetime.now()
 
-    def __eq__(self: StructuredValue, val: StructuredValue) -> bool:
+    def __eq__(self: "StructuredValue", val: StructuredValue) -> bool:
         """Return ``True`` if the receiver equal to `val`.
 
         Args:
@@ -70,7 +70,7 @@ class StructuredValue:
         """
         return self.__class__ == val.__class__ and hash(self) == hash(val)
 
-    def __hash__(self: StructuredValue) -> int:
+    def __hash__(self: "StructuredValue") -> int:
         """Return hash value for the receiver."""
         raise NotImplementedError()
 
@@ -78,11 +78,11 @@ class StructuredValue:
 class ArrayValue(StructuredValue, list):
     """This class represents cooked array values."""
 
-    def __init__(self: ArrayValue, val: List[EntryValue] = [], ts: datetime = None):
+    def __init__(self: "ArrayValue", val: List[EntryValue] = [], ts: datetime = None):
         StructuredValue.__init__(self, ts)
         list.__init__(self, val)
 
-    def __hash__(self: ArrayValue) -> int:
+    def __hash__(self: "ArrayValue") -> int:
         """Return hash value for the receiver."""
         return tuple([x.__hash__() for x in self]).__hash__()
 
@@ -90,12 +90,12 @@ class ArrayValue(StructuredValue, list):
 class ObjectValue(StructuredValue, dict):
     """This class represents cooked object values."""
 
-    def __init__(self: ObjectValue, val: Dict[InstanceName, Value] = {},
+    def __init__(self: "ObjectValue", val: Dict[InstanceName, Value] = {},
                  ts: datetime = None):
         StructuredValue.__init__(self, ts)
         dict.__init__(self, val)
 
-    def __hash__(self: ObjectValue) -> int:
+    def __hash__(self: "ObjectValue") -> int:
         """Return hash value for the receiver."""
         sks = sorted(self.keys())
         return tuple([(k, self[k].__hash__()) for k in sks]).__hash__()

@@ -59,7 +59,7 @@ class DataModel:
             yltxt = infile.read()
         return cls(yltxt, mod_path, description)
 
-    def __init__(self: DataModel, yltxt: str, mod_path: Tuple[str] = (".",),
+    def __init__(self: "DataModel", yltxt: str, mod_path: Tuple[str] = (".",),
                  description: str = None):
         """Initialize the class instance.
 
@@ -90,7 +90,7 @@ class DataModel:
             self.yang_library["ietf-yang-library:modules-state"]
             ["module-set-id"])
 
-    def module_set_id(self: DataModel) -> str:
+    def module_set_id(self: "DataModel") -> str:
         """Compute unique id of YANG modules comprising the data model.
 
         Returns:
@@ -99,7 +99,7 @@ class DataModel:
         fnames = sorted(["@".join(m) for m in self.schema_data.modules])
         return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
 
-    def from_raw(self: DataModel, robj: RawObject) -> RootNode:
+    def from_raw(self: "DataModel", robj: RawObject) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
@@ -111,7 +111,7 @@ class DataModel:
         cooked = self.schema.from_raw(robj)
         return RootNode(cooked, self.schema, self.schema_data, cooked.timestamp)
 
-    def from_xml(self: DataModel, root: ET.Element) -> RootNode:
+    def from_xml(self: "DataModel", root: ET.Element) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
@@ -123,7 +123,7 @@ class DataModel:
         cooked = self.schema.from_xml(root)
         return RootNode(cooked, self.schema, self.schema_data, cooked.timestamp)
 
-    def get_schema_node(self: DataModel, path: SchemaPath) -> Optional[SchemaNode]:
+    def get_schema_node(self: "DataModel", path: SchemaPath) -> Optional[SchemaNode]:
         """Return the schema node addressed by a schema path.
 
         Args:
@@ -138,7 +138,7 @@ class DataModel:
         return self.schema.get_schema_descendant(
             self.schema_data.path2route(path))
 
-    def get_data_node(self: DataModel, path: DataPath) -> Optional[DataNode]:
+    def get_data_node(self: "DataModel", path: DataPath) -> Optional[DataNode]:
         """Return the data node addressed by a data path.
 
         Args:
@@ -158,7 +158,7 @@ class DataModel:
                 return None
         return node
 
-    def ascii_tree(self: DataModel, no_types: bool = False, val_count: bool = False) -> str:
+    def ascii_tree(self: "DataModel", no_types: bool = False, val_count: bool = False) -> str:
         """Generate ASCII art representation of the schema tree.
 
         Args:
@@ -170,17 +170,17 @@ class DataModel:
         """
         return self.schema._ascii_tree("", no_types, val_count)
 
-    def clear_val_counters(self: DataModel):
+    def clear_val_counters(self: "DataModel"):
         """Clear validation counters in the entire schema tree."""
         self.schema.clear_val_counters()
 
-    def parse_instance_id(self: DataModel, text: str) -> InstanceRoute:
+    def parse_instance_id(self: "DataModel", text: str) -> InstanceRoute:
         return InstanceIdParser(text).parse()
 
-    def parse_resource_id(self: DataModel, text: str) -> InstanceRoute:
+    def parse_resource_id(self: "DataModel", text: str) -> InstanceRoute:
         return ResourceIdParser(text, self.schema).parse()
 
-    def schema_digest(self: DataModel) -> str:
+    def schema_digest(self: "DataModel") -> str:
         """Generate schema digest (to be used primarily by clients).
 
         Returns:
@@ -190,7 +190,7 @@ class DataModel:
         res["config"] = True
         return json.dumps(res)
 
-    def _build_schema(self: DataModel) -> None:
+    def _build_schema(self: "DataModel") -> None:
         for mid in self.schema_data._module_sequence:
             sctx = SchemaContext(
                 self.schema_data, self.schema_data.namespace(mid), mid)
