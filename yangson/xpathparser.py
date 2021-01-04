@@ -25,7 +25,6 @@ The module also defines the following exceptions:
 
 """
 
-from __future__ import annotations
 from typing import List, Optional, Tuple, Union
 from .schemadata import SchemaContext
 from .enumerations import Axis, MultiplicativeOp

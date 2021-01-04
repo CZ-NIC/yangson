@@ -24,7 +24,6 @@ class is intended to be public:
 * Expr: XPath 1.0 expression with YANG 1.1 extensions.
 """
 
-from __future__ import annotations
 import decimal
 from math import ceil, copysign, floor
 from pyxb.utils.xmlre import XMLToPython, RegularExpressionError

@@ -25,7 +25,6 @@ This module implements the following classes:
 * Must: Class representing the constraint specified by a "must" statement.
 """
 
-from __future__ import annotations
 import decimal
 import re
 from typing import Callable, List, Optional, Union

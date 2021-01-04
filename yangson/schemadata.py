@@ -26,7 +26,6 @@ This module implements the following classes:
 * FeatureExprParser: Parser for if-feature expressions.
 """
 
-from __future__ import annotations
 from typing import Any, Dict, List, MutableSet, Tuple
 from .exceptions import (
     InvalidSchemaPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
@@ -52,7 +51,7 @@ class IdentityAdjacency:
 class SchemaContext:
     """Schema data and current schema context."""
 
-    def __init__(self: "SchemaContext", schema_data: SchemaData, default_ns: YangIdentifier,
+    def __init__(self: "SchemaContext", schema_data: "SchemaData", default_ns: YangIdentifier,
                  text_mid: ModuleId):
         """Initialize the class instance."""
         self.schema_data = schema_data

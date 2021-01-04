@@ -17,10 +17,14 @@
 
 """XPath node-set"""
 
-from __future__ import annotations
 from typing import Callable, Union
 from numbers import Number
 from .instance import InstanceNode
+
+# Type aliases
+
+NodeExpr = Callable[[InstanceNode], "NodeSet"]
+XPathValue = Union["NodeSet", str, float, bool]
 
 def comparison(meth):
     def wrap(self, arg):
@@ -37,11 +41,11 @@ def comparison(meth):
 
 class NodeSet(list):
 
-    def union(self: "NodeSet", ns: NodeSet) -> NodeSet:
+    def union(self: "NodeSet", ns: "NodeSet") -> "NodeSet":
         paths = set([n.path for n in self])
         return self.__class__(self + [n for n in ns if n.path not in paths])
 
-    def bind(self: "NodeSet", trans: NodeExpr) -> NodeSet:
+    def bind(self: "NodeSet", trans: NodeExpr) -> "NodeSet":
         res = self.__class__([])
         for n in self:
             res = res.union(trans(n))
@@ -138,8 +142,3 @@ class NodeSet(list):
             except (ValueError, TypeError):
                 continue
         return False
-
-# Type aliases
-
-NodeExpr = Callable[[InstanceNode], NodeSet]
-XPathValue = Union[NodeSet, str, float, bool]

@@ -17,7 +17,6 @@
 
 """This module defines classes for schema patterns."""
 
-from __future__ import annotations
 from typing import List, Optional, TYPE_CHECKING
 from .enumerations import ContentType
 from .typealiases import InstanceName, _Singleton, YangIdentifier
@@ -30,7 +29,7 @@ class SchemaPattern:
     """Abstract class for schema patterns."""
 
     @staticmethod
-    def optional(p: SchemaPattern) -> SchemaPattern:
+    def optional(p: "SchemaPattern") -> "SchemaPattern":
         """Make `p` an optional pattern."""
         return Alternative.combine(Empty(), p)
 
@@ -46,7 +45,7 @@ class SchemaPattern:
         """Return ``True`` the receiver is active in the current context."""
         return True
 
-    def _eval_when(self: "SchemaPattern", cnode: InstanceNode) -> None:
+    def _eval_when(self: "SchemaPattern", cnode: "InstanceNode") -> None:
         return
 
     def _mandatory_members(self: "SchemaPattern", ctype: ContentType) -> List[InstanceName]:
@@ -103,7 +102,7 @@ class Conditional(SchemaPattern):
     def check_when(self: "Conditional") -> bool:
         return not self.when or self._val_when
 
-    def _eval_when(self: "Conditional", cnode: InstanceNode) -> None:
+    def _eval_when(self: "Conditional", cnode: "InstanceNode") -> None:
         self._val_when = bool(self.when.evaluate(cnode))
 
     def _active(self: "Conditional", ctype: ContentType) -> bool:
@@ -132,7 +131,7 @@ class ConditionalPattern(Conditional):
         super().__init__(when)
         self.pattern = p
 
-    def _eval_when(self: "ConditionalPattern", cnode: InstanceNode) -> None:
+    def _eval_when(self: "ConditionalPattern", cnode: "InstanceNode") -> None:
         super()._eval_when(cnode)
         self.pattern._eval_when(cnode)
 
@@ -164,7 +163,7 @@ class Member(Typeable, Conditional):
         Conditional.__init__(self, when)
         self.name = name
 
-    def _eval_when(self: "Member", cnode: InstanceNode) -> None:
+    def _eval_when(self: "Member", cnode: "InstanceNode") -> None:
         if self.when:
             dummy = cnode.put_member(self.name, (None,))
             super()._eval_when(dummy)
@@ -203,7 +202,7 @@ class Alternative(SchemaPattern):
         self.left = p
         self.right = q
 
-    def _eval_when(self: "Alternative", cnode: InstanceNode) -> None:
+    def _eval_when(self: "Alternative", cnode: "InstanceNode") -> None:
         super()._eval_when(cnode)
         self.left._eval_when(cnode)
         self.right._eval_when(cnode)
@@ -284,7 +283,7 @@ class Pair(SchemaPattern):
             Pair.combine(self.left.deriv(x, ctype), self.right),
             Pair.combine(self.right.deriv(x, ctype), self.left))
 
-    def _eval_when(self: "Pair", cnode: InstanceNode) -> None:
+    def _eval_when(self: "Pair", cnode: "InstanceNode") -> None:
         self.left._eval_when(cnode)
         self.right._eval_when(cnode)
 

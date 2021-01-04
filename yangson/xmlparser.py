@@ -18,7 +18,6 @@
 """Extended XML parser that preserves the xmlns attributes
 """
 
-from __future__ import annotations
 import xml.etree.ElementTree as ET
 
 

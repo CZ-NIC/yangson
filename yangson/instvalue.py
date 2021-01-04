@@ -24,7 +24,6 @@ This module implements the following classes:
 * ObjectValue: Cooked object value of an instance node.
 """
 
-from __future__ import annotations
 from datetime import datetime
 from typing import Dict, List, Union
 from .typealiases import InstanceName, PrefName, ScalarValue
@@ -54,7 +53,7 @@ class StructuredValue:
         """
         self.timestamp = ts if ts else datetime.now()
 
-    def copy(self: "StructuredValue") -> StructuredValue:
+    def copy(self: "StructuredValue") -> "StructuredValue":
         """Return a shallow copy of the receiver."""
         return self.__class__(super().copy(), datetime.now())
 
@@ -62,7 +61,7 @@ class StructuredValue:
         super().__setitem__(key, value)
         self.timestamp = datetime.now()
 
-    def __eq__(self: "StructuredValue", val: StructuredValue) -> bool:
+    def __eq__(self: "StructuredValue", val: "StructuredValue") -> bool:
         """Return ``True`` if the receiver equal to `val`.
 
         Args:

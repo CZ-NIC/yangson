@@ -69,7 +69,6 @@ This module defines the following exceptions:
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
 """
 
-from __future__ import annotations
 from typing import TYPE_CHECKING
 from .typealiases import (InstanceName, JSONPointer, ModuleId, PrefName,
                           QualName, ScalarValue, YangIdentifier)
@@ -168,7 +167,7 @@ class NonDataNode(InstanceException):
 class ParserException(YangsonException):
     """Base class for parser exceptions."""
 
-    def __init__(self: "ParserException", parser: Parser):
+    def __init__(self: "ParserException", parser: "Parser"):
         self.parser = parser
 
     def __str__(self: "ParserException") -> str:
@@ -186,7 +185,7 @@ class EndOfInput(ParserException):
 class UnexpectedInput(ParserException):
     """Unexpected input."""
 
-    def __init__(self: "UnexpectedInput", parser: Parser, expected: str = None):
+    def __init__(self: "UnexpectedInput", parser: "Parser", expected: str = None):
         super().__init__(parser)
         self.expected = expected
 
@@ -207,7 +206,7 @@ class InvalidXPath(ParserException):
 class NotSupported(ParserException):
     """Exception to be raised for unimplemented XPath features."""
 
-    def __init__(self: "NotSupported", parser: Parser, feature: str):
+    def __init__(self: "NotSupported", parser: "Parser", feature: str):
         super().__init__(parser)
         self.feature = feature
 

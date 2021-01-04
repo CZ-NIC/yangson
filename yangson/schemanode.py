@@ -41,7 +41,6 @@ This module implements the following classes:
 * AnyxmlNode: YANG anyxml node.
 """
 
-from __future__ import annotations
 from datetime import datetime
 from itertools import product
 from typing import Any, Dict, List, MutableSet, Optional, Set, Tuple
@@ -248,7 +247,7 @@ class SchemaNode:
             method(s, sctx)
 
     def _follow_leafref(
-            self: "SchemaNode", xpath: Expr, init: TerminalNode) -> Optional[DataNode]:
+            self: "SchemaNode", xpath: Expr, init: "TerminalNode") -> Optional["DataNode"]:
         """Return the data node referred to by a leafref path.
 
         Args:

@@ -44,7 +44,6 @@ This module implements the following classes:
 * UnionType: YANG union type.
 """
 
-from __future__ import annotations
 import base64
 import decimal
 import numbers
@@ -169,7 +168,7 @@ class DataType:
         self.error_message = (error_message if error_message else
                               "expected " + str(self))
 
-    def _post_process(self: "DataType", tnode: TerminalNode) -> None:
+    def _post_process(self: "DataType", tnode: "TerminalNode") -> None:
         """Post-process the receiver type on behalf of a terminal node.
 
         By default do nothing.
@@ -610,7 +609,7 @@ class LeafrefType(LinkType):
         ns = self.path.evaluate(node)
         return [n for n in ns if str(n) == str(node)]
 
-    def _post_process(self: "LeafrefType", tnode: TerminalNode) -> None:
+    def _post_process(self: "LeafrefType", tnode: "TerminalNode") -> None:
         ref = tnode._follow_leafref(self.path, tnode)
         if ref is None:
             raise InvalidLeafrefPath(tnode.qual_name)
@@ -1033,7 +1032,7 @@ class UnionType(DataType):
         self.types = [self._resolve_type(ts, sctx)
                       for ts in stmt.find_all("type")]
 
-    def _post_process(self: "UnionType", tnode: TerminalNode) -> None:
+    def _post_process(self: "UnionType", tnode: "TerminalNode") -> None:
         for t in self.types:
             t._post_process(tnode)
 
