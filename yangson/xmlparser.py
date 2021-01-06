@@ -18,8 +18,6 @@
 """Extended XML parser that preserves the xmlns attributes
 """
 
-from __future__ import annotations
-
 import xml.etree.ElementTree as ET
 
 
@@ -28,7 +26,7 @@ class XMLParser(ET.XMLPullParser):
     Extended XML parser that add namespaces to ELements as
     xmlns/xmlns:... attributes
     '''
-    def __init__(self: XMLParser, source: str = None):
+    def __init__(self: "XMLParser", source: str = None):
         '''
         Initialize the XML parser
 
@@ -45,7 +43,7 @@ class XMLParser(ET.XMLPullParser):
             self.close()
             self.parse()
 
-    def parse(self: XMLParser):
+    def parse(self: "XMLParser"):
         '''Parse all events in current available data'''
         for ev_type, ev_data in self.read_events():
             if ev_type == 'start-ns':
@@ -62,7 +60,7 @@ class XMLParser(ET.XMLPullParser):
                     ev_data.attrib[attr] = ns_url
 
     @property
-    def root(self: XMLParser):
+    def root(self: "XMLParser"):
         '''Return root node
 
         Only valid if the first event has been parsed'''

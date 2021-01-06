@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name = "yangson",
-    python_requires=">=3.7",
+    python_requires=">=3.6",
     packages = ["yangson"],
     use_scm_version = True,
     setup_requires=["setuptools_scm"],
@@ -45,7 +45,7 @@ Installation
 
     python -m pip install yangson
 
-Note that *Yangson* requires Python 3.7 or higher.
+Note that *Yangson* requires Python 3.6 or higher.
 
 Links
 =====

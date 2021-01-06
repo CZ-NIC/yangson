@@ -27,7 +27,6 @@ This module implements the following classes:
 """
 from __future__ import annotations
 
-from __future__ import annotations
 from typing import Any, Dict, List, MutableSet, Tuple
 from .exceptions import (
     InvalidSchemaPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
@@ -45,7 +44,7 @@ if False:                       # fake import for type aliases
 class IdentityAdjacency:
     """Adjacency data for an identity."""
 
-    def __init__(self: IdentityAdjacency):
+    def __init__(self: "IdentityAdjacency"):
         self.bases = set()  # type: MutableSet[QualName]
         self.derivs = set()  # type: MutableSet[QualName]
 
@@ -53,7 +52,7 @@ class IdentityAdjacency:
 class SchemaContext:
     """Schema data and current schema context."""
 
-    def __init__(self: SchemaContext, schema_data: SchemaData, default_ns: YangIdentifier,
+    def __init__(self: "SchemaContext", schema_data: "SchemaData", default_ns: YangIdentifier,
                  text_mid: ModuleId):
         """Initialize the class instance."""
         self.schema_data = schema_data
@@ -66,7 +65,7 @@ class SchemaContext:
 class ModuleData:
     """Data related to a YANG module or submodule."""
 
-    def __init__(self: ModuleData, main_module: YangIdentifier, yang_id: YangIdentifier):
+    def __init__(self: "ModuleData", main_module: YangIdentifier, yang_id: YangIdentifier):
         """Initialize the class instance."""
         self.features = set()  # type: MutableSet[YangIdentifier]
         """Set of supported features."""
@@ -95,7 +94,7 @@ class SchemaData:
             mod_path: List of directories to search for YANG modules.
     """
 
-    def __init__(self: SchemaData, yang_lib: Dict[str, Any], mod_path: List[str]) -> None:
+    def __init__(self: "SchemaData", yang_lib: Dict[str, Any], mod_path: List[str]) -> None:
         """Initialize the schema structures."""
         self.identity_adjs = {}  # type: Dict[QualName, IdentityAdjacency]
         """Dictionary of identity bases."""
@@ -112,7 +111,7 @@ class SchemaData:
         """List that defines the order of module processing."""
         self._from_yang_library(yang_lib)
 
-    def _from_yang_library(self: SchemaData, yang_lib: Dict[str, Any]) -> None:
+    def _from_yang_library(self: "SchemaData", yang_lib: Dict[str, Any]) -> None:
         """Set the schema structures from YANG library data.
 
         Args:
@@ -168,7 +167,7 @@ class SchemaData:
         self._process_imports()
         self._check_feature_dependences()
 
-    def _load_module(self: SchemaData, name: YangIdentifier,
+    def _load_module(self: "SchemaData", name: YangIdentifier,
                      rev: RevisionDate, mdata: ModuleData) -> Statement:
         """Read and parse a YANG module or submodule."""
         for d in self.module_search_path:
@@ -188,7 +187,7 @@ class SchemaData:
                 return res
         raise ModuleNotFound(name, rev)
 
-    def _process_imports(self: SchemaData) -> None:
+    def _process_imports(self: "SchemaData") -> None:
         impl = set(self.implement.items())
         if len(impl) == 0:
             return
@@ -225,7 +224,7 @@ class SchemaData:
         if [mid for mid in deps if len(deps[mid]) > 0]:
             raise CyclicImports()
 
-    def _check_feature_dependences(self: SchemaData):
+    def _check_feature_dependences(self: "SchemaData"):
         """Verify feature dependences."""
         for mid in self.modules:
             for fst in self.modules[mid].statement.find_all("feature"):
@@ -235,7 +234,7 @@ class SchemaData:
                 if not self.if_features(fst, mid):
                     raise FeaturePrerequisiteError(fn, fid[0])
 
-    def namespace(self: SchemaData, mid: ModuleId) -> YangIdentifier:
+    def namespace(self: "SchemaData", mid: ModuleId) -> YangIdentifier:
         """Return the namespace corresponding to a module or submodule.
 
         Args:
@@ -250,7 +249,7 @@ class SchemaData:
             raise ModuleNotRegistered(*mid) from None
         return mdata.main_module[0]
 
-    def last_revision(self: SchemaData, mod: YangIdentifier) -> ModuleId:
+    def last_revision(self: "SchemaData", mod: YangIdentifier) -> ModuleId:
         """Return the last revision of a module that's part of the data model.
 
         Args:
@@ -265,7 +264,7 @@ class SchemaData:
             raise ModuleNotRegistered(mod)
         return sorted(revs, key=lambda x: x[1])[-1]
 
-    def prefix2ns(self: SchemaData, prefix: YangIdentifier, mid: ModuleId) -> YangIdentifier:
+    def prefix2ns(self: "SchemaData", prefix: YangIdentifier, mid: ModuleId) -> YangIdentifier:
         """Return the namespace corresponding to a prefix.
 
         Args:
@@ -285,7 +284,7 @@ class SchemaData:
         except KeyError:
             raise UnknownPrefix(prefix, mid) from None
 
-    def resolve_pname(self: SchemaData, pname: PrefName,
+    def resolve_pname(self: "SchemaData", pname: PrefName,
                       mid: ModuleId) -> Tuple[YangIdentifier, ModuleId]:
         """Return the name and module identifier in which the name is defined.
 
@@ -307,7 +306,7 @@ class SchemaData:
         except KeyError:
             raise UnknownPrefix(p, mid) from None
 
-    def translate_pname(self: SchemaData, pname: PrefName, mid: ModuleId) -> QualName:
+    def translate_pname(self: "SchemaData", pname: PrefName, mid: ModuleId) -> QualName:
         """Translate a prefixed name to a qualified name.
         Args:
             pname: Name with an optional prefix.
@@ -319,7 +318,7 @@ class SchemaData:
         loc, nid = self.resolve_pname(pname, mid)
         return (loc, self.namespace(nid))
 
-    def translate_node_id(self: SchemaData, ni: PrefName, sctx: SchemaContext) -> QualName:
+    def translate_node_id(self: "SchemaData", ni: PrefName, sctx: SchemaContext) -> QualName:
         """Translate node identifier to a qualified name.
 
         Args:
@@ -342,7 +341,7 @@ class SchemaData:
         except KeyError:
             raise UnknownPrefix(p, sctx.text_mid) from None
 
-    def prefix(self: SchemaData, imod: YangIdentifier, mid: ModuleId) -> YangIdentifier:
+    def prefix(self: "SchemaData", imod: YangIdentifier, mid: ModuleId) -> YangIdentifier:
         """Return the prefix corresponding to an implemented module.
 
         Args:
@@ -367,7 +366,7 @@ class SchemaData:
                 return p
         raise ModuleNotImported(imod, mid)
 
-    def sni2route(self: SchemaData, sni: SchemaNodeId, sctx: SchemaContext) -> SchemaRoute:
+    def sni2route(self: "SchemaData", sni: SchemaNodeId, sctx: SchemaContext) -> SchemaRoute:
         """Translate schema node identifier to a schema route.
 
         Args:
@@ -412,7 +411,7 @@ class SchemaData:
                 raise InvalidSchemaPath(path)
         return res
 
-    def get_definition(self: SchemaData, stmt: Statement,
+    def get_definition(self: "SchemaData", stmt: Statement,
                        sctx: SchemaContext) -> Tuple[Statement, SchemaContext]:
         """Find the statement defining a grouping or derived type.
 
@@ -453,7 +452,7 @@ class SchemaData:
                     dstmt, SchemaContext(sctx.schema_data, sctx.default_ns, sid))
         raise DefinitionNotFound(kw, stmt.argument)
 
-    def is_derived_from(self: SchemaData, identity: QualName, base: QualName) -> bool:
+    def is_derived_from(self: "SchemaData", identity: QualName, base: QualName) -> bool:
         """Return ``True`` if `identity` is derived from `base`."""
         try:
             bases = self.identity_adjs[identity].bases
@@ -466,7 +465,7 @@ class SchemaData:
                 return True
         return False
 
-    def derived_from(self: SchemaData, identity: QualName) -> MutableSet[QualName]:
+    def derived_from(self: "SchemaData", identity: QualName) -> MutableSet[QualName]:
         """Return list of identities transitively derived from `identity`."""
         try:
             res = self.identity_adjs[identity].derivs
@@ -476,7 +475,7 @@ class SchemaData:
             res |= self.derived_from(id)
         return res
 
-    def derived_from_all(self: SchemaData, identities: List[QualName]) -> MutableSet[QualName]:
+    def derived_from_all(self: "SchemaData", identities: List[QualName]) -> MutableSet[QualName]:
         """Return list of identities transitively derived from all `identity`."""
         if not identities:
             return set()
@@ -485,7 +484,7 @@ class SchemaData:
             res &= self.derived_from(id)
         return res
 
-    def if_features(self: SchemaData, stmt: Statement, mid: ModuleId) -> bool:
+    def if_features(self: "SchemaData", stmt: Statement, mid: ModuleId) -> bool:
         """Evaluate ``if-feature`` substatements on a statement, if any.
 
         Args:
@@ -511,7 +510,7 @@ class SchemaData:
 class FeatureExprParser(Parser):
     """Parser and evaluator for if-feature expressions."""
 
-    def __init__(self: FeatureExprParser, text: str, schema_data: SchemaData, mid: ModuleId):
+    def __init__(self: "FeatureExprParser", text: str, schema_data: SchemaData, mid: ModuleId):
         """Initialize the parser instance.
 
         Args:
@@ -526,7 +525,7 @@ class FeatureExprParser(Parser):
         self.mid = mid
         self.schema_data = schema_data
 
-    def parse(self: FeatureExprParser) -> bool:
+    def parse(self: "FeatureExprParser") -> bool:
         """Parse and evaluate a complete feature expression.
 
         Raises:
@@ -541,7 +540,7 @@ class FeatureExprParser(Parser):
             raise InvalidFeatureExpression(self)
         return res
 
-    def _feature_disj(self: FeatureExprParser) -> bool:
+    def _feature_disj(self: "FeatureExprParser") -> bool:
         x = self._feature_conj()
         if self.test_string("or"):
             if not self.skip_ws():
@@ -549,7 +548,7 @@ class FeatureExprParser(Parser):
             return self._feature_disj() or x
         return x
 
-    def _feature_conj(self: FeatureExprParser) -> bool:
+    def _feature_conj(self: "FeatureExprParser") -> bool:
         x = self._feature_term()
         if self.test_string("and"):
             if not self.skip_ws():
@@ -557,14 +556,14 @@ class FeatureExprParser(Parser):
             return self._feature_conj() and x
         return x
 
-    def _feature_term(self: FeatureExprParser) -> bool:
+    def _feature_term(self: "FeatureExprParser") -> bool:
         if self.test_string("not"):
             if not self.skip_ws():
                 raise InvalidFeatureExpression(self)
             return not self._feature_atom()
         return self._feature_atom()
 
-    def _feature_atom(self: FeatureExprParser) -> bool:
+    def _feature_atom(self: "FeatureExprParser") -> bool:
         if self.peek() == "(":
             self.adv_skip_ws()
             res = self._feature_disj()
