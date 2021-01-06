@@ -1,0 +1,14 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "1234",
+    "module": [
+      {
+        "name": "testd",
+        "revision": "2021-01-05",
+        "schema": "https://example.com/testd.yang",
+        "namespace": "http://example.com/testd",
+        "conformance-type": "implement"
+      }
+    ]
+  }
+}
