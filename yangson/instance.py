@@ -704,10 +704,9 @@ class RootNode(InstanceNode):
         element = ET.Element(tag)
         element.attrib['xmlns'] = urn
         et = super().to_xml(filter, element)
-        if isinstance(self.schema_node, RpcActionNode):
+        if isinstance(self.schema_node, (RpcActionNode, NotificationNode)):
             return et[0]
         return et
-        #return super().to_xml(filter, element)[0]
 
     def _copy(self: "RootNode", newval: Value, newts: datetime = None) -> InstanceNode:
         return RootNode(
@@ -1335,10 +1334,7 @@ class InstanceIdParser(Parser):
 
 
 from .schemanode import (       # NOQA
-            AnyContentNode,AnydataNode, CaseNode,
+            AnyContentNode, AnydataNode, CaseNode,
             ChoiceNode, DataNode, InputNode,
-            InternalNode, LeafNode, LeafListNode, ListNode,
+            InternalNode, LeafNode, LeafListNode, ListNode, NotificationNode,
             OutputNode, RpcActionNode, SequenceNode, TerminalNode)
-
-            #AnyContentNode, CaseNode, DataNode, InternalNode,
-            #LeafListNode, ListNode, RpcActionNode, SequenceNode)

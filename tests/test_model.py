@@ -171,10 +171,6 @@ def xml_safe_data(data):
     # remove /test:contA/anydA, since XML code doesn't support 'anydata' (or 'anyxml')
     data2['test:contA'].pop('anydA')
 
-    # remove /test:contA/testb:leafT as otherwise 'MissingModuleNamespace' is thrown
-    #  - tracked by Issue #79   https://github.com/CZ-NIC/yangson/issues/79
-    #data2['test:contA'].pop('testb:leafT')
-
     # change 'decimal64' from '4.50' to '4.5', as that is the canonical value
     # returned by Yangson
     data2['test:contT']['decimal64'] = '4.5'
@@ -680,8 +676,9 @@ def test_validation(instance):
 
 def strip_pretty(s: str):
     '''
-      This function is global because it is used by 'test_xml_config'
-      and (TBD) 'test_xml_rpc' and (TBD) 'test_xml_notif'
+      This function is global because it is used by the various 'test_xml_*' methods.
+
+      It removes all whitespace so that string-comparisons can succeed.
     '''
     return re.sub("[^>]*$", "", re.sub("^[^<]*", "", re.sub(">[\\s\r\n]*<", "><", s)))
 
@@ -728,9 +725,6 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
         </contT>
       </content-data>
     """
-    # FIXME: this works: <leafT xmlns="http://example.com/testb">test:CC-BY</leafT>
-    # FIXME: but leafT SHOULD declare identity's namespace too:
-    # FIXME:  <leafT xmlns="http://example.com/testb" xmlns:test="http://example.com/test">test:CC-BY</leafT>
     expected_xml_stripped = strip_pretty(expected_xml_pretty)
 
     # convert raw object to an InstanceValue 
@@ -745,10 +739,9 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
     #assert(xml_text == expected_xml_stripped) # fails, see Issue #87
 
     # convert XML-encoded string back to an InstanceValue
-    #parser = XMLParser(xml_text)
     parser = XMLParser(expected_xml_stripped)
     xml_obj2 = parser.root
-    #assert(xml_obj2 == xml_obj) # fails due to different ns representations, but okay
+    #assert(xml_obj2 == xml_obj) # fails due to different ns representations (e.g., "ns0"), but otherwise okay
     inst2 = xml_safe_data_model.from_xml(xml_obj2)
     assert(type(inst2) == RootNode)
     assert(inst2.raw_value() == xml_safe_data)
@@ -812,7 +805,7 @@ def test_xml_rpc(data_model):
 
     # convert InstanceValue to an Instance (a RootNode)
     input_inst = RootNode(input_inst_val, sn_rpc, data_model.schema_data, input_inst_val.timestamp)
-    #input_inst.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    input_inst.validate(ctype=ContentType.all)
     assert(input_inst.raw_value() == input_obj)
 
     # convert Instance to an XML-encoded string and compare to known-good
@@ -822,13 +815,14 @@ def test_xml_rpc(data_model):
 
     # convert input's XML-encoded string back to an InstanceValue
     #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
-    input_xml_et_obj2 = ET.fromstring(input_xml_text)
+    parser = XMLParser(input_xml_text)
+    input_xml_et_obj2 = parser.root
     input_inst_val2 = sn_rpc.from_xml(input_xml_et_obj2, isroot=True, allow_nodata=True)
     assert(input_inst_val2 == input_inst_val)
 
     # convert InstanceValue back to an Instance (a RootNode)
     input_inst2 = RootNode(input_inst_val2, sn_rpc, data_model.schema_data, input_inst_val2.timestamp)
-    #input_inst2.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    input_inst2.validate(ctype=ContentType.all)
     assert(input_inst2.raw_value() == input_obj)
 
     # convert Instance to raw value and ensure same
@@ -848,7 +842,7 @@ def test_xml_rpc(data_model):
 
     # convert InstanceValue to an Instance (a RootNode)
     output_inst = RootNode(output_inst_val, sn_rpc, data_model.schema_data, output_inst_val.timestamp)
-    #output_inst.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    output_inst.validate(ctype=ContentType.all)
     assert(output_inst.raw_value() == output_obj)
 
     # convert Instance to an XML-encoded string and compare to known-good
@@ -858,13 +852,14 @@ def test_xml_rpc(data_model):
 
     # convert output's XML-encoded string back to an InstanceValue
     #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
-    output_xml_et_obj2 = ET.fromstring(output_xml_text)
+    parser = XMLParser(output_xml_text)
+    output_xml_et_obj2 = parser.root
     output_inst_val2 = sn_rpc.from_xml(output_xml_et_obj2, isroot=True, allow_nodata=True)
     assert(output_inst_val2 == output_inst_val)
 
     # convert InstanceValue back to an Instance (a RootNode)
     output_inst2 = RootNode(output_inst_val2, sn_rpc, data_model.schema_data, output_inst_val2.timestamp)
-    #output_inst2.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    output_inst2.validate(ctype=ContentType.all)
     assert(output_inst2.raw_value() == output_obj)
 
     # convert Instance to raw value and ensure same
@@ -893,8 +888,8 @@ def test_xml_action(data_model):
     output_xml_stripped = strip_pretty(output_xml_pretty)
 
     # get the schema node for the 'action' 
-    sn_rpc = data_model.get_schema_node("/test:contA/listA/contD/acA")
-    assert(type(sn_rpc) == RpcActionNode)
+    sn_action = data_model.get_schema_node("/test:contA/listA/contD/acA")
+    assert(type(sn_action) == RpcActionNode)
 
     #########
     # INPUT #
@@ -908,12 +903,12 @@ def test_xml_action(data_model):
 
     # convert raw object to an InstanceValue
     #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
-    output_inst_val = sn_rpc.from_raw(output_obj, allow_nodata=True)
+    output_inst_val = sn_action.from_raw(output_obj, allow_nodata=True)
     assert(str(output_inst_val) == str(output_obj))
 
     # convert InstanceValue to an Instance (a RootNode)
-    output_inst = RootNode(output_inst_val, sn_rpc, data_model.schema_data, output_inst_val.timestamp)
-    #output_inst.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    output_inst = RootNode(output_inst_val, sn_action, data_model.schema_data, output_inst_val.timestamp)
+    #output_inst.validate(ctype=ContentType.all) # see Issue #88
     assert(output_inst.raw_value() == output_obj)
 
     # convert Instance to an XML-encoded string and compare to known-good
@@ -923,13 +918,14 @@ def test_xml_action(data_model):
 
     # convert output's XML-encoded string back to an InstanceValue
     #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
-    output_xml_et_obj2 = ET.fromstring(output_xml_text)
-    output_inst_val2 = sn_rpc.from_xml(output_xml_et_obj2, isroot=True, allow_nodata=True)
+    parser = XMLParser(output_xml_text)
+    output_xml_et_obj2 = parser.root
+    output_inst_val2 = sn_action.from_xml(output_xml_et_obj2, isroot=True, allow_nodata=True)
     assert(output_inst_val2 == output_inst_val)
 
     # convert InstanceValue back to an Instance (a RootNode)
-    output_inst2 = RootNode(output_inst_val2, sn_rpc, data_model.schema_data, output_inst_val2.timestamp)
-    #output_inst2.validate(ctype=ContentType.all) # AttributeError: 'RpcActionNode' object has no attribute 'schema_pattern'
+    output_inst2 = RootNode(output_inst_val2, sn_action, data_model.schema_data, output_inst_val2.timestamp)
+    #output_inst2.validate(ctype=ContentType.all) # see Issue #88
     assert(output_inst2.raw_value() == output_obj)
 
     # convert Instance to raw value and ensure same
@@ -943,11 +939,7 @@ def test_xml_notification(data_model):
     '''
       Encodes known "raw data" Notification to an XML string and back again.
 
-      Work in progress
-
-      Currently stuck on from_raw() needing to be passed an object that
-      doesn't match expectatons...it seems that the top-level element
-      SHOULD be "testb:noA".
+      Work in progress  (see Issue #78)
     '''
 
     # get the schema node for the 'notiication' 
@@ -955,7 +947,7 @@ def test_xml_notification(data_model):
     assert(type(sn_notif) == NotificationNode)
 
     #######
-    # NOA # (this works, but too low-level?)
+    # NOA #
     #######
 
     noA_obj = {
@@ -966,11 +958,40 @@ def test_xml_notification(data_model):
     """
     noA_xml_stripped = strip_pretty(noA_xml_pretty)
 
-    # convert raw object to an InstanceValue, an ObjectValue, not a RootNode as per DataModel.from_raw()
-    noa_inst_val = sn_notif.from_raw(noA_obj, allow_nodata=False)
-    assert(str(noa_inst_val) == str(noA_obj))
+    # convert raw object to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
+    noA_inst_val = sn_notif.from_raw(noA_obj, allow_nodata=True)
+    assert(str(noA_inst_val) == str(noA_obj))
 
-#
+    # convert InstanceValue to an Instance (a RootNode)
+    noA_inst = RootNode(noA_inst_val, sn_notif, data_model.schema_data, noA_inst_val.timestamp)
+    noA_inst.validate(ctype=ContentType.all)
+    assert(noA_inst.raw_value() == noA_obj)
+
+    # convert Instance to an XML-encoded string and compare to known-good
+    noA_xml_et_obj = noA_inst.to_xml()
+    noA_xml_text = ET.tostring(noA_xml_et_obj).decode("utf-8")
+    assert(noA_xml_text == noA_xml_stripped)
+
+    # convert noa's XML-encoded string back to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
+    parser = XMLParser(noA_xml_text)
+    noA_xml_et_obj2 = parser.root
+    noA_inst_val2 = sn_notif.from_xml(noA_xml_et_obj2, isroot=True, allow_nodata=True)
+    assert(noA_inst_val2 == noA_inst_val)
+
+    # convert InstanceValue back to an Instance (a RootNode)
+    noA_inst2 = RootNode(noA_inst_val2, sn_notif, data_model.schema_data, noA_inst_val2.timestamp)
+    noA_inst2.validate(ctype=ContentType.all)
+    assert(noA_inst2.raw_value() == noA_obj)
+
+    # convert Instance to raw value and ensure same
+    noA_rv2 = noA_inst2.raw_value()
+    assert(noA_rv2 == noA_obj)
+
+
+
+
 # Commenting out since none work
 #
 #    #########
@@ -1010,7 +1031,7 @@ def test_xml_notification(data_model):
 #
 #
 #    ######################
-#    # JSON - HTTPS-NOTIF #  (per https-notif draft, why change prefix from 'ietf-restconf'?)
+#    # JSON - HTTPS-NOTIF #  (per https-notif draft)
 #    ######################
 #
 #    https_notif_obj = {
