@@ -736,7 +736,7 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
     # convert InstanceValue to an XML-encoded string
     xml_obj = inst.to_xml()
     xml_text = ET.tostring(xml_obj).decode("utf-8")
-    #assert(xml_text == expected_xml_stripped) # fails, see Issue #87
+    assert(xml_text == expected_xml_stripped)
 
     # convert XML-encoded string back to an InstanceValue
     parser = XMLParser(expected_xml_stripped)
