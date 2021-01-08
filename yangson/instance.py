@@ -28,6 +28,7 @@ This module implements the following classes:
 * ResourceIdParser: Parser for RESTCONF resource identifiers.
 * InstanceIdParser: Parser for instance identifiers.
 """
+from __future__ import annotations
 
 from datetime import datetime
 import json
@@ -474,7 +475,7 @@ class InstanceNode:
                 if add1:
                     member_value = en.raw_value(filter)
                 add2 = filter.end_element(self, en, e_attr)
-                if add1 and add2 and member_value is not None:
+                if add1 and add2 and member_value is not None and member_value != {}:
                     if e_attr:
                         member_value['@'] = e_attr
                     value.append(member_value)
@@ -530,7 +531,7 @@ class InstanceNode:
                                 childs.append(child)
                     else:
                         child = ET.Element(sn.name)
-                        if not dp or dp.ns != sn.ns:
+                        if not dp or dp.ns != sn.ns or isinstance(m.schema_node, (InputNode, OutputNode)):
                             module = self.schema_data.modules_by_name.get(sn.ns)
                             if not module:
                                 raise MissingModuleNamespace(sn.ns)
@@ -702,8 +703,10 @@ class RootNode(InstanceNode):
         """put receiver's value into a XML element"""
         element = ET.Element(tag)
         element.attrib['xmlns'] = urn
-
-        return super().to_xml(filter, element)[0]
+        et = super().to_xml(filter, element)
+        if isinstance(self.schema_node, (RpcActionNode, NotificationNode)):
+            return et[0]
+        return et
 
     def _copy(self: "RootNode", newval: Value, newts: datetime = None) -> InstanceNode:
         return RootNode(
@@ -1331,5 +1334,7 @@ class InstanceIdParser(Parser):
 
 
 from .schemanode import (       # NOQA
-            AnyContentNode, CaseNode, DataNode, InternalNode,
-            LeafListNode, ListNode, RpcActionNode, SequenceNode)
+            AnyContentNode, AnydataNode, CaseNode,
+            ChoiceNode, DataNode, InputNode,
+            InternalNode, LeafNode, LeafListNode, ListNode, NotificationNode,
+            OutputNode, RpcActionNode, SequenceNode, TerminalNode)

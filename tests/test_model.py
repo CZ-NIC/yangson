@@ -6,11 +6,18 @@ from yangson.exceptions import (
     InvalidArgument, InvalidFeatureExpression, UnknownPrefix,
     NonexistentInstance, NonexistentSchemaNode, RawTypeError,
     SchemaError, XPathTypeError, InvalidXPath, NotSupported)
+from yangson.instvalue import ArrayValue, ObjectValue
 from yangson.instance import RootNode
-from yangson.instvalue import ArrayValue
 from yangson.schemadata import SchemaContext, FeatureExprParser
 from yangson.enumerations import ContentType
 from yangson.xpathparser import XPathParser
+import re
+import copy
+import xml.etree.ElementTree as ET
+from yangson.instance import RootNode
+from yangson.schemanode import SchemaTreeNode, RpcActionNode, NotificationNode, InputNode, OutputNode
+from yangson.xmlparser import XMLParser
+
 
 tree = """+--rw (test:choiA)?
 |  +--:(caseA)
@@ -84,22 +91,46 @@ def data_model():
     return DataModel.from_file("yang-modules/test/yang-library.json",
                                ["yang-modules/test", "yang-modules/ietf"])
 
+@pytest.fixture
+def xml_safe_data_model(data_model):
+    '''
+       Creates a "safe" version of 'data_model' for the XML tests
+
+       ALL OF THESE ISSUES SHOULD BE FIXED!
+    '''
+
+    # ensure we don't disturb the original 
+    data_model2 = copy.deepcopy(data_model)
+
+    # Make /test:contA/anydA be "mandatory false" because
+    # the XML code doesn't support "anydata" (or anyxml),
+    # and thus no such instance data may be present when
+    # processes by XML routines (see "xml_safe_data")
+    anydA = data_model2.get_schema_node("/test:contA/anydA")
+    anydA._mandatory = False
+    anydA.parent._mandatory_children.remove(anydA)
+
+    # return modified data_model
+    return data_model2
+
 
 @pytest.fixture
-def instance(data_model):
-    data = """
-    {
+def data():
+    '''
+    Returns Python object (not a JSON string)
+    '''
+    _data = {
         "test:llistB": ["::1", "127.0.0.1"],
         "test:leafX": 53531,
         "test:contA": {
             "leafB": 9,
             "listA": [{
                 "leafE": "C0FFEE",
-                "leafF": true,
+                "leafF": True,
                 "contD": {
                     "leafG": "foo1-bar",
                     "contE": {
-                        "leafJ": [null],
+                        "leafJ": [None],
                         "leafP": 10
                     }
                 }
@@ -107,7 +138,7 @@ def instance(data_model):
             {
                 "leafE": "ABBA",
                 "leafW": 9,
-                "leafF": false
+                "leafF": False
             }],
             "testb:leafR": "C0FFEE",
             "testb:leafT": "test:CC-BY",
@@ -123,8 +154,34 @@ def instance(data_model):
             "enumeration": "Hearts"
         }
     }
-    """
-    return data_model.from_raw(json.loads(data))
+    return _data
+
+
+@pytest.fixture
+def xml_safe_data(data):
+    '''
+       Creates a "safe" version of 'data' for the XML tests
+
+       ALL OF THESE ISSUES SHOULD BE FIXED!
+    '''
+
+    # ensure we don't disturb the original 
+    data2 = copy.deepcopy(data)
+
+    # remove /test:contA/anydA, since XML code doesn't support 'anydata' (or 'anyxml')
+    data2['test:contA'].pop('anydA')
+
+    # change 'decimal64' from '4.50' to '4.5', as that is the canonical value
+    # returned by Yangson
+    data2['test:contT']['decimal64'] = '4.5'
+
+    # return modified data
+    return data2
+
+
+@pytest.fixture
+def instance(data_model, data):
+    return data_model.from_raw(data)
 
 @pytest.fixture
 def rpc_raw_output(data_model):
@@ -612,3 +669,501 @@ def test_validation(instance):
         raw = True).top()
     assert inst3.validate(ctype=ContentType.all) is None
     assert instance.validate(ctype=ContentType.all) is None
+
+
+
+
+
+def strip_pretty(s: str):
+    '''
+      This function is global because it is used by the various 'test_xml_*' methods.
+
+      It removes all whitespace so that string-comparisons can succeed.
+    '''
+    return re.sub("[^>]*$", "", re.sub("^[^<]*", "", re.sub(">[\\s\r\n]*<", "><", s)))
+
+
+
+def test_xml_config(xml_safe_data_model, xml_safe_data):
+    '''
+      This test encodes known "raw data" to an XML string and back again.
+    '''
+
+    # the known-good XML, in "pretty" form for easier review
+    expected_xml_pretty = """
+      <content-data xmlns="urn:ietf:params:xml:ns:yang:ietf-yang-instance-data">
+        <llistB xmlns="http://example.com/test">::1</llistB>
+        <llistB xmlns="http://example.com/test">127.0.0.1</llistB>
+        <leafX xmlns="http://example.com/test">53531</leafX>
+        <contA xmlns="http://example.com/test">
+          <leafB>9</leafB>
+          <listA>
+            <leafE>C0FFEE</leafE>
+            <leafF>true</leafF>
+            <contD>
+              <leafG>foo1-bar</leafG>
+              <contE>
+                <leafJ />
+                <leafP>10</leafP>
+              </contE>
+            </contD>
+          </listA>
+          <listA>
+            <leafE>ABBA</leafE>
+            <leafW>9</leafW>
+            <leafF>false</leafF>
+          </listA>
+          <leafR xmlns="http://example.com/testb">C0FFEE</leafR>
+          <leafT xmlns="http://example.com/testb" xmlns:test="http://example.com/test">test:CC-BY</leafT>
+          <leafV xmlns="http://example.com/testb">99</leafV>
+          <leafN xmlns="http://example.com/testb">hi!</leafN>
+        </contA>
+        <contT xmlns="http://example.com/test">
+          <bits>dos cuatro</bits>
+          <decimal64>4.5</decimal64>
+          <enumeration>Hearts</enumeration>
+        </contT>
+      </content-data>
+    """
+    expected_xml_stripped = strip_pretty(expected_xml_pretty)
+
+    # convert raw object to an InstanceValue 
+    inst = xml_safe_data_model.from_raw(xml_safe_data)
+    assert(type(inst) == RootNode)
+    assert(inst.raw_value() == xml_safe_data)
+    inst.validate(ctype=ContentType.all)
+
+    # convert InstanceValue to an XML-encoded string
+    xml_obj = inst.to_xml()
+    xml_text = ET.tostring(xml_obj).decode("utf-8")
+    #assert(xml_text == expected_xml_stripped) # fails, see Issue #87
+
+    # convert XML-encoded string back to an InstanceValue
+    parser = XMLParser(expected_xml_stripped)
+    xml_obj2 = parser.root
+    #assert(xml_obj2 == xml_obj) # fails due to different ns representations (e.g., "ns0"), but otherwise okay
+    inst2 = xml_safe_data_model.from_xml(xml_obj2)
+    assert(type(inst2) == RootNode)
+    assert(inst2.raw_value() == xml_safe_data)
+    #assert(inst2 == inst) # fails due to different obj locations, but okay
+    assert(str(inst2) == str(inst))
+
+    # ensure raw value is same
+    rv = inst2.raw_value()
+    assert(rv == xml_safe_data)
+
+
+
+
+def test_xml_rpc(data_model):
+    '''
+      Encodes known "raw data" RPC input & outputs to an XML strings and back again.
+    '''
+
+    input_obj = {
+        "testb:input" : {
+            "leafK" : 123
+        }
+    }
+
+    input_xml_pretty = """
+      <input xmlns="http://example.com/testb">
+        <leafK>123</leafK>
+      </input>
+    """
+
+    output_obj = {
+        "testb:output" : {
+            "llistC" : [True, False, True]
+        }
+    }
+
+    output_xml_pretty = """
+      <output xmlns="http://example.com/testb">
+        <llistC>true</llistC>
+        <llistC>false</llistC>
+        <llistC>true</llistC>
+      </output>
+    """
+
+    input_xml_stripped = strip_pretty(input_xml_pretty)
+    output_xml_stripped = strip_pretty(output_xml_pretty)
+
+    # get the schema node for the RPC 
+    sn_rpc = data_model.get_schema_node("/testb:rpcA") # used by both tests
+    assert(type(sn_rpc) == RpcActionNode)
+
+
+    #########
+    # INPUT #
+    #########
+
+    # convert raw object to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
+    input_inst_val = sn_rpc.from_raw(input_obj, allow_nodata=True)
+    assert(str(input_inst_val) == str(input_obj))
+
+    # convert InstanceValue to an Instance (a RootNode)
+    input_inst = RootNode(input_inst_val, sn_rpc, data_model.schema_data, input_inst_val.timestamp)
+    input_inst.validate(ctype=ContentType.all)
+    assert(input_inst.raw_value() == input_obj)
+
+    # convert Instance to an XML-encoded string and compare to known-good
+    input_xml_et_obj = input_inst.to_xml()
+    input_xml_text = ET.tostring(input_xml_et_obj).decode("utf-8")
+    assert(input_xml_text == input_xml_stripped)
+
+    # convert input's XML-encoded string back to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
+    parser = XMLParser(input_xml_text)
+    input_xml_et_obj2 = parser.root
+    input_inst_val2 = sn_rpc.from_xml(input_xml_et_obj2, isroot=True, allow_nodata=True)
+    assert(input_inst_val2 == input_inst_val)
+
+    # convert InstanceValue back to an Instance (a RootNode)
+    input_inst2 = RootNode(input_inst_val2, sn_rpc, data_model.schema_data, input_inst_val2.timestamp)
+    input_inst2.validate(ctype=ContentType.all)
+    assert(input_inst2.raw_value() == input_obj)
+
+    # convert Instance to raw value and ensure same
+    input_rv2 = input_inst2.raw_value()
+    assert(input_rv2 == input_obj)
+
+
+
+    ##########
+    # OUTPUT #
+    ##########
+
+    # convert raw object to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
+    output_inst_val = sn_rpc.from_raw(output_obj, allow_nodata=True)
+    assert(str(output_inst_val) == str(output_obj))
+
+    # convert InstanceValue to an Instance (a RootNode)
+    output_inst = RootNode(output_inst_val, sn_rpc, data_model.schema_data, output_inst_val.timestamp)
+    output_inst.validate(ctype=ContentType.all)
+    assert(output_inst.raw_value() == output_obj)
+
+    # convert Instance to an XML-encoded string and compare to known-good
+    output_xml_et_obj = output_inst.to_xml()
+    output_xml_text = ET.tostring(output_xml_et_obj).decode("utf-8")
+    assert(output_xml_text == output_xml_stripped)
+
+    # convert output's XML-encoded string back to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
+    parser = XMLParser(output_xml_text)
+    output_xml_et_obj2 = parser.root
+    output_inst_val2 = sn_rpc.from_xml(output_xml_et_obj2, isroot=True, allow_nodata=True)
+    assert(output_inst_val2 == output_inst_val)
+
+    # convert InstanceValue back to an Instance (a RootNode)
+    output_inst2 = RootNode(output_inst_val2, sn_rpc, data_model.schema_data, output_inst_val2.timestamp)
+    output_inst2.validate(ctype=ContentType.all)
+    assert(output_inst2.raw_value() == output_obj)
+
+    # convert Instance to raw value and ensure same
+    output_rv2 = output_inst2.raw_value()
+    assert(output_rv2 == output_obj)
+
+
+
+def test_xml_action(data_model):
+    '''
+      Encodes known "raw data" Action input & outputs to an XML strings and back again.
+    '''
+
+    output_obj = {
+        "test:output" : {
+            "leafL" : True
+        }
+    }
+
+    output_xml_pretty = """
+      <output xmlns="http://example.com/test">
+        <leafL>true</leafL>
+      </output>
+    """
+
+    output_xml_stripped = strip_pretty(output_xml_pretty)
+
+    # get the schema node for the 'action' 
+    sn_action = data_model.get_schema_node("/test:contA/listA/contD/acA")
+    assert(type(sn_action) == RpcActionNode)
+
+    #########
+    # INPUT #
+    #########
+
+    # this 'action' has no input.
+
+    ##########
+    # OUTPUT #
+    ##########
+
+    # convert raw object to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
+    output_inst_val = sn_action.from_raw(output_obj, allow_nodata=True)
+    assert(str(output_inst_val) == str(output_obj))
+
+    # convert InstanceValue to an Instance (a RootNode)
+    output_inst = RootNode(output_inst_val, sn_action, data_model.schema_data, output_inst_val.timestamp)
+    #output_inst.validate(ctype=ContentType.all) # see Issue #88
+    assert(output_inst.raw_value() == output_obj)
+
+    # convert Instance to an XML-encoded string and compare to known-good
+    output_xml_et_obj = output_inst.to_xml()
+    output_xml_text = ET.tostring(output_xml_et_obj).decode("utf-8")
+    assert(output_xml_text == output_xml_stripped)
+
+    # convert output's XML-encoded string back to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
+    parser = XMLParser(output_xml_text)
+    output_xml_et_obj2 = parser.root
+    output_inst_val2 = sn_action.from_xml(output_xml_et_obj2, isroot=True, allow_nodata=True)
+    assert(output_inst_val2 == output_inst_val)
+
+    # convert InstanceValue back to an Instance (a RootNode)
+    output_inst2 = RootNode(output_inst_val2, sn_action, data_model.schema_data, output_inst_val2.timestamp)
+    #output_inst2.validate(ctype=ContentType.all) # see Issue #88
+    assert(output_inst2.raw_value() == output_obj)
+
+    # convert Instance to raw value and ensure same
+    output_rv2 = output_inst2.raw_value()
+    assert(output_rv2 == output_obj)
+
+
+
+
+def test_xml_notification(data_model):
+    '''
+      Encodes known "raw data" Notification to an XML string and back again.
+
+      Work in progress  (see Issue #78)
+    '''
+
+    # get the schema node for the 'notiication' 
+    sn_notif = data_model.get_schema_node("/testb:noA")
+    assert(type(sn_notif) == NotificationNode)
+
+    #######
+    # NOA #
+    #######
+
+    noA_obj = {
+        "testb:leafO" : True
+    }
+    noA_xml_pretty = """
+        <leafO xmlns="http://example.com/testb">true</leafO>
+    """
+    noA_xml_stripped = strip_pretty(noA_xml_pretty)
+
+    # convert raw object to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
+    noA_inst_val = sn_notif.from_raw(noA_obj, allow_nodata=True)
+    assert(str(noA_inst_val) == str(noA_obj))
+
+    # convert InstanceValue to an Instance (a RootNode)
+    noA_inst = RootNode(noA_inst_val, sn_notif, data_model.schema_data, noA_inst_val.timestamp)
+    noA_inst.validate(ctype=ContentType.all)
+    assert(noA_inst.raw_value() == noA_obj)
+
+    # convert Instance to an XML-encoded string and compare to known-good
+    noA_xml_et_obj = noA_inst.to_xml()
+    noA_xml_text = ET.tostring(noA_xml_et_obj).decode("utf-8")
+    assert(noA_xml_text == noA_xml_stripped)
+
+    # convert noa's XML-encoded string back to an InstanceValue
+    #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
+    parser = XMLParser(noA_xml_text)
+    noA_xml_et_obj2 = parser.root
+    noA_inst_val2 = sn_notif.from_xml(noA_xml_et_obj2, isroot=True, allow_nodata=True)
+    assert(noA_inst_val2 == noA_inst_val)
+
+    # convert InstanceValue back to an Instance (a RootNode)
+    noA_inst2 = RootNode(noA_inst_val2, sn_notif, data_model.schema_data, noA_inst_val2.timestamp)
+    noA_inst2.validate(ctype=ContentType.all)
+    assert(noA_inst2.raw_value() == noA_obj)
+
+    # convert Instance to raw value and ensure same
+    noA_rv2 = noA_inst2.raw_value()
+    assert(noA_rv2 == noA_obj)
+
+
+
+
+# Commenting out since none work
+#
+#    #########
+#    # NOTIF #  (most common?)
+#    #########
+#
+#    notif_obj = {
+#        "testb:noA" : {
+#            "leafO" : True
+#        }
+#    }
+#    notif_xml_pretty = """
+#        <noa xmlns="http://example.com/testb">
+#            <leafO>true</leafO>
+#        </noa>
+#    """
+#    notif_xml_stripped = strip_pretty(notif_xml_pretty)
+#
+#
+#    # convert raw object to an InstanceValue, an ObjectValue, not a RootNode as per DataModel.from_raw()
+#    notif_inst_val = sn_notif.from_raw(notif_obj, allow_nodata=True)
+#    assert(str(notif_inst_val) == str(notif_obj))
+#
+#
+#    ###################
+#    # JSON - RESTCONF #  (per RFC 8040)
+#    ###################
+#
+#    restconf_notif_obj = {
+#        "ietf-restconf:notification" : {
+#            "eventTime" : "2013-12-21T00:01:00Z",
+#            "testb:noA" : {
+#                "leafO" : True
+#            }
+#        }
+#    }
+#
+#
+#    ######################
+#    # JSON - HTTPS-NOTIF #  (per https-notif draft)
+#    ######################
+#
+#    https_notif_obj = {
+#        "ietf-https-notif:notification" : {
+#            "eventTime" : "2013-12-21T00:01:00Z",
+#            "testb:noA" : {
+#                "leafO" : True
+#            }
+#        }
+#    }
+#
+#
+#    #######
+#    # XML #  (there's only the one definition / namespace for XML-based notifs, from RFC 5277)
+#    #######
+#
+#    ietf_notif_xml_pretty = """
+#        <notification xmlns="urn:ietf:params:xml:ns:netconf:notification:1.0">
+#            <eventTime>2013-12-21T00:01:00Z</eventTime>
+#            <noA xmlns="http://example.com/testb">
+#                <leafO>true</leafO>
+#            </noA>
+#        </notification>
+#    """
+#    ietf_notif_xml_stripped = strip_pretty(ietf_notif_xml_pretty)
+#
+
+
+
+
+
+
+
+# Commenting out since depends on Issue #56: "Support RFC 8791 (YANG Data Structure Extensions)"
+#
+#def test_xml_error(data_model):
+#    '''
+#      Encodes known "raw data" RC Error to an XML string and back again.
+#    '''
+#    assert(False)
+#
+
+
+
+
+
+def test_top_level_nodes(data_model):
+    rv = {} # will an empty dict work?
+
+    sn = data_model.get_schema_node("/")
+    assert(type(sn) == SchemaTreeNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == SchemaTreeNode)
+
+    sn = data_model.get_schema_node("/testb:rpcA")
+    assert(type(sn) == RpcActionNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == RpcActionNode)
+
+    sn = data_model.get_schema_node("/testb:rpcA/input")
+    assert(type(sn) == InputNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == InputNode)
+
+    sn = data_model.get_schema_node("/testb:rpcA/output")
+    assert(type(sn) == OutputNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == OutputNode)
+
+    sn = data_model.get_schema_node("/test:contA/listA/contD/acA")
+    assert(type(sn) == RpcActionNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == RpcActionNode)
+
+    sn = data_model.get_schema_node("/test:contA/listA/contD/acA/input")
+    assert(type(sn) == InputNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == InputNode)
+
+    sn = data_model.get_schema_node("/test:contA/listA/contD/acA/output")
+    assert(type(sn) == OutputNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == OutputNode)
+
+    sn = data_model.get_schema_node("/testb:noA")
+    assert(type(sn) == NotificationNode)
+    cooked = sn.from_raw(rv)
+    assert(type(cooked) == ObjectValue)
+    rn = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
+    assert(type(rn) == RootNode)
+    assert(type(rn.schema_node) == NotificationNode)
+
+
+# Commented out because it fails.  See Issue #75 for details.
+#def test_binary(data_model):
+#    rv = {
+#            "test:contT": {
+#                "binary": 'base64encodedvalue=='
+#            }
+#         }
+#    #print("rv = " + str(rv))
+#
+#    root = data_model.from_raw(rv)
+#    #print("root = " + str(root))
+#
+#    sn = data_model.get_schema_node("/")
+#    instval = sn.from_raw(rv, allow_nodata=True)
+#    #print("instval = " + str(instval))
+#
+#    inst = RootNode(instval, sn, data_model.schema_data, instval.timestamp)
+#    #print("inst.raw_value() = " + str(inst.raw_value()))
+#
+#    assert(inst.raw_value() == rv)
+#

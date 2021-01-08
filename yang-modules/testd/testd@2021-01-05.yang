@@ -1,0 +1,20 @@
+module testd {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/testd";
+
+  prefix "td";
+
+  revision 2021-01-05;
+
+  container library {
+    list artist {
+      key name;
+
+      leaf name {
+        type string;
+      }
+    }
+  }
+}

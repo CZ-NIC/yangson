@@ -21,6 +21,7 @@ This module implements the following class:
 
 * DataModel: Basic entry point to the YANG data model.
 """
+from __future__ import annotations
 
 import hashlib
 import json

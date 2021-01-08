@@ -43,6 +43,7 @@ This module implements the following classes:
 * Uint64Type: YANG uint64 type.
 * UnionType: YANG union type.
 """
+from __future__ import annotations
 
 import base64
 import decimal
@@ -261,8 +262,8 @@ class EmptyType(DataType):
     def to_raw(self: "EmptyType", val: Tuple[None]) -> List[None]:
         return [None]
 
-    def from_xml(self: "EmptyType", xml: str) -> Optional[Tuple[None]]:
-        if xml == '':
+    def from_xml(self: "EmptyType", xml: ET.Element) -> Optional[Tuple[None]]:
+        if xml.text == None:
             return (None,)
 
     def to_xml(self: "EmptyType", val: Tuple[None]) -> None:
@@ -401,6 +402,9 @@ class BooleanType(DataType):
             return "true"
         if val is False:
             return "false"
+
+    def to_xml(self: BooleanType, val: bool) -> str:
+        return self.canonical_string(val)
 
 
 class LinearType(DataType):
@@ -676,9 +680,15 @@ class IdentityrefType(DataType):
             i1, s, i2 = xml.text.partition(":")
         except AttributeError:
             return None
-        if not i1:
+
+        if not s:
+            # not prefixed, so assume default ns
+            return (i1, self.sctx.default_ns)
+        elif i1 == self.sctx.default_ns:
+            # prefixed with default ns
             return (i2, self.sctx.default_ns)
 
+        # the following code has issues (Issue #79)
         ns_url = xml.attrib.get('xmlns:'+i1)
         if not ns_url:
             raise MissingModuleNamespace(ns_url)

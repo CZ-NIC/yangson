@@ -24,6 +24,7 @@ This module defines the following classes:
 The module also defines the following exceptions:
 
 """
+from __future__ import annotations
 
 from typing import List, Optional, Tuple, Union
 from .schemadata import SchemaContext

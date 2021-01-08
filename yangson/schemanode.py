@@ -40,6 +40,7 @@ This module implements the following classes:
 * AnydataNode: YANG anydata node.
 * AnyxmlNode: YANG anyxml node.
 """
+from __future__ import annotations
 
 from datetime import datetime
 from itertools import product
@@ -1525,6 +1526,14 @@ class RpcActionNode(SchemaTreeNode):
         super().__init__()
         self.default_deny: DefaultDeny = DefaultDeny.none
         self._ctype = ContentType.nonconfig
+
+    def iname(self: "SchemaTreeNode") -> InstanceName:
+        """Override the superclass method."""
+        return super(GroupNode, self).iname()
+
+    def data_parent(self: "SchemaTreeNode") -> None:
+        """Override the superclass method."""
+        return self.parent
 
     def _handle_substatements(self: "RpcActionNode", stmt: Statement,
                               sctx: SchemaContext) -> None:

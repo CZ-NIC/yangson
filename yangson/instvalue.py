@@ -23,6 +23,7 @@ This module implements the following classes:
 * ArrayValue: Cooked array value of an instance node.
 * ObjectValue: Cooked object value of an instance node.
 """
+from __future__ import annotations
 
 from datetime import datetime
 from typing import Dict, List, Union
