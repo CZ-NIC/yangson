@@ -1566,6 +1566,10 @@ class InputNode(InternalNode, DataNode):
         self.name = "input"
         self.ns = ns
 
+    def iname(self: "InputNode") -> InstanceName:
+        """Override the superclass method."""
+        return self.ns + ":" + self.name
+
     def _flatten(self: "InputNode") -> List[SchemaNode]:
         return [self]
 
@@ -1579,6 +1583,10 @@ class OutputNode(InternalNode, DataNode):
         self._config = False
         self.name = "output"
         self.ns = ns
+
+    def iname(self: "OutputNode") -> InstanceName:
+        """Override the superclass method."""
+        return self.ns + ":" + self.name
 
     def _flatten(self: "OutputNode") -> List[SchemaNode]:
         return [self]

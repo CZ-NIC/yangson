@@ -908,7 +908,7 @@ def test_xml_action(data_model):
 
     # convert InstanceValue to an Instance (a RootNode)
     output_inst = RootNode(output_inst_val, sn_action, data_model.schema_data, output_inst_val.timestamp)
-    #output_inst.validate(ctype=ContentType.all) # see Issue #88
+    output_inst.validate(ctype=ContentType.all)
     assert(output_inst.raw_value() == output_obj)
 
     # convert Instance to an XML-encoded string and compare to known-good
@@ -925,7 +925,7 @@ def test_xml_action(data_model):
 
     # convert InstanceValue back to an Instance (a RootNode)
     output_inst2 = RootNode(output_inst_val2, sn_action, data_model.schema_data, output_inst_val2.timestamp)
-    #output_inst2.validate(ctype=ContentType.all) # see Issue #88
+    output_inst2.validate(ctype=ContentType.all)
     assert(output_inst2.raw_value() == output_obj)
 
     # convert Instance to raw value and ensure same
