@@ -1344,7 +1344,5 @@ from .schemanode import (       # NOQA
             ChoiceNode, DataNode, InputNode,
             InternalNode, LeafNode, LeafListNode, ListNode, NotificationNode,
             OutputNode, RpcActionNode, SequenceNode, TerminalNode)
-
 from .datatype import (
             IdentityrefType)
- 

@@ -456,7 +456,7 @@ class InternalNode(SchemaNode):
                 res.extend(child.data_children())
         return res
 
-    def from_raw(self: "InternalNode", rval: RawObject, jptr: JSONPointer = "", allow_nodata: bool = False) -> ObjectValue:
+    def from_raw(self: "InternalNode", rval: RawObject, jptr: JSONPointer = "") -> ObjectValue:
         """Override the superclass method."""
         if not isinstance(rval, dict):
             raise RawTypeError(jptr, "object")
@@ -471,33 +471,33 @@ class InternalNode(SchemaNode):
                 res[qn] = self._process_metadata(rval[qn], jptr)
             else:
                 cn = self._iname2qname(qn)
-                if allow_nodata:
+                ch = self.get_data_child(*cn)
+                if jptr == "" and ch is None:
                     ch = self.get_child(*cn)
-                else:
-                    ch = self.get_data_child(*cn)
+                    if not isinstance(ch, SchemaTreeNode):
+                        ch = None
                 npath = jptr + "/" + qn
                 if ch is None:
                     raise RawMemberError(npath)
-                if (allow_nodata or isinstance(self, SchemaTreeNode) or
-                    self.ns != ch.ns):
+                if jptr == "" or self.ns != ch.ns:
                     iname = '{1}:{0}'.format(*ch.qual_name)
                 else:
                     iname = ch.name
                 res[iname] = ch.from_raw(rval[qn], npath)
         return res
 
-    def from_xml(self: "InternalNode", rval: ET.Element, jptr: JSONPointer = "", isroot: bool = False, allow_nodata: bool = False) -> ObjectValue:
+    def from_xml(self: "InternalNode", rval: ET.Element, jptr: JSONPointer = "") -> ObjectValue:
         res = ObjectValue()
-        if isroot:
-            self._process_xmlobj_child(res, None, rval, jptr, allow_nodata)
+        if isinstance(self, RpcActionNode) and jptr == "":
+            self._process_xmlobj_child(res, None, rval, jptr)
         else:
             for xmlchild in rval:
-                self._process_xmlobj_child(res, rval, xmlchild, jptr, allow_nodata)
+                self._process_xmlobj_child(res, rval, xmlchild, jptr)
         return res
 
     def _process_xmlobj_child(
             self: "InternalNode", res: ObjectValue, rval: ET.Element,
-            xmlchild: ET.Element, jptr: JSONPointer, allow_nodata):
+            xmlchild: ET.Element, jptr: JSONPointer):
         if xmlchild.tag[0] == '{':
             xmlns, name = xmlchild.tag[1:].split('}')
             nsmap = self.schema_root().schema_data.modules_by_ns
@@ -511,10 +511,11 @@ class InternalNode(SchemaNode):
             fqn = ns + ':' + name
         qn = fqn if ns != self.ns else name
 
-        if allow_nodata:
+        ch = self.get_data_child(name, ns)
+        if jptr == "" and ch is None:
             ch = self.get_child(name, ns)
-        else:
-            ch = self.get_data_child(name, ns)
+            if not isinstance(ch, SchemaTreeNode):
+                ch = None
         npath = jptr + "/" + qn
         if ch is None:
             raise RawMemberError(npath)
