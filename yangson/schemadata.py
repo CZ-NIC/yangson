@@ -25,8 +25,6 @@ This module implements the following classes:
 * SchemaData: Repository of YANG schema structures and methods.
 * FeatureExprParser: Parser for if-feature expressions.
 """
-from __future__ import annotations
-
 from typing import Any, Dict, List, MutableSet, Tuple
 from .exceptions import (
     InvalidSchemaPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,

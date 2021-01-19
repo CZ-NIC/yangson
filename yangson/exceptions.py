@@ -68,8 +68,6 @@ This module defines the following exceptions:
 * :exc:`YangsonException`: Base class for all Yangson exceptions.
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
 """
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 from .typealiases import (InstanceName, JSONPointer, ModuleId, PrefName,
                           QualName, ScalarValue, YangIdentifier)

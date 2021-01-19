@@ -16,8 +16,6 @@
 # with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """This module defines classes for schema patterns."""
-from __future__ import annotations
-
 from typing import List, Optional, TYPE_CHECKING
 from .enumerations import ContentType
 from .typealiases import InstanceName, _Singleton, YangIdentifier

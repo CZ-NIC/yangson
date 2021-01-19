@@ -22,8 +22,6 @@ This module implements the following classes:
 * ModuleParser: Recursive-descent parser for YANG modules.
 * Statement: YANG statements.
 """
-from __future__ import annotations
-
 from typing import List, Optional, Tuple
 from .exceptions import (
     EndOfInput, StatementNotFound, UnexpectedInput, InvalidArgument,
