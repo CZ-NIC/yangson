@@ -43,8 +43,6 @@ This module implements the following classes:
 * Uint64Type: YANG uint64 type.
 * UnionType: YANG union type.
 """
-from __future__ import annotations
-
 import base64
 import decimal
 import numbers
@@ -403,7 +401,7 @@ class BooleanType(DataType):
         if val is False:
             return "false"
 
-    def to_xml(self: BooleanType, val: bool) -> str:
+    def to_xml(self: "BooleanType", val: bool) -> str:
         return self.canonical_string(val)
 
 

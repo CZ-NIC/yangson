@@ -16,8 +16,6 @@
 # with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """XPath node-set"""
-from __future__ import annotations
-
 from typing import Callable, Union
 from numbers import Number
 from .instance import InstanceNode

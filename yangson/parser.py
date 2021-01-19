@@ -21,8 +21,6 @@ This module implements the following class:
 
 * Parser: Recursive-descent parser.
 """
-from __future__ import annotations
-
 import re
 from typing import Callable, List, Dict, Optional, Tuple
 from typing.re import Pattern

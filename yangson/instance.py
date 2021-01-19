@@ -28,8 +28,6 @@ This module implements the following classes:
 * ResourceIdParser: Parser for RESTCONF resource identifiers.
 * InstanceIdParser: Parser for instance identifiers.
 """
-from __future__ import annotations
-
 from datetime import datetime
 import json
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union

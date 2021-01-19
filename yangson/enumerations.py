@@ -16,8 +16,6 @@
 # with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """Enumeration classes."""
-from __future__ import annotations
-
 from enum import Enum
 
 

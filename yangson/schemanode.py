@@ -40,8 +40,6 @@ This module implements the following classes:
 * AnydataNode: YANG anydata node.
 * AnyxmlNode: YANG anyxml node.
 """
-from __future__ import annotations
-
 from datetime import datetime
 from itertools import product
 from typing import Any, Dict, List, MutableSet, Optional, Set, Tuple
