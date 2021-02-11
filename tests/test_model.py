@@ -736,7 +736,7 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
     # convert InstanceValue to an XML-encoded string
     xml_obj = inst.to_xml()
     xml_text = ET.tostring(xml_obj).decode("utf-8")
-    #assert(xml_text == expected_xml_stripped) # fails, see Issue #87
+    assert(xml_text == expected_xml_stripped)
 
     # convert XML-encoded string back to an InstanceValue
     parser = XMLParser(expected_xml_stripped)
@@ -751,7 +751,6 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
     # ensure raw value is same
     rv = inst2.raw_value()
     assert(rv == xml_safe_data)
-
 
 
 
@@ -800,7 +799,7 @@ def test_xml_rpc(data_model):
 
     # convert raw object to an InstanceValue
     #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
-    input_inst_val = sn_rpc.from_raw(input_obj, allow_nodata=True)
+    input_inst_val = sn_rpc.from_raw(input_obj)
     assert(str(input_inst_val) == str(input_obj))
 
     # convert InstanceValue to an Instance (a RootNode)
@@ -817,7 +816,7 @@ def test_xml_rpc(data_model):
     #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
     parser = XMLParser(input_xml_text)
     input_xml_et_obj2 = parser.root
-    input_inst_val2 = sn_rpc.from_xml(input_xml_et_obj2, isroot=True, allow_nodata=True)
+    input_inst_val2 = sn_rpc.from_xml(input_xml_et_obj2)
     assert(input_inst_val2 == input_inst_val)
 
     # convert InstanceValue back to an Instance (a RootNode)
@@ -837,7 +836,7 @@ def test_xml_rpc(data_model):
 
     # convert raw object to an InstanceValue
     #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
-    output_inst_val = sn_rpc.from_raw(output_obj, allow_nodata=True)
+    output_inst_val = sn_rpc.from_raw(output_obj)
     assert(str(output_inst_val) == str(output_obj))
 
     # convert InstanceValue to an Instance (a RootNode)
@@ -854,7 +853,7 @@ def test_xml_rpc(data_model):
     #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
     parser = XMLParser(output_xml_text)
     output_xml_et_obj2 = parser.root
-    output_inst_val2 = sn_rpc.from_xml(output_xml_et_obj2, isroot=True, allow_nodata=True)
+    output_inst_val2 = sn_rpc.from_xml(output_xml_et_obj2)
     assert(output_inst_val2 == output_inst_val)
 
     # convert InstanceValue back to an Instance (a RootNode)
@@ -865,7 +864,6 @@ def test_xml_rpc(data_model):
     # convert Instance to raw value and ensure same
     output_rv2 = output_inst2.raw_value()
     assert(output_rv2 == output_obj)
-
 
 
 def test_xml_action(data_model):
@@ -887,7 +885,7 @@ def test_xml_action(data_model):
 
     output_xml_stripped = strip_pretty(output_xml_pretty)
 
-    # get the schema node for the 'action' 
+    # get the schema node for the 'action'
     sn_action = data_model.get_schema_node("/test:contA/listA/contD/acA")
     assert(type(sn_action) == RpcActionNode)
 
@@ -903,7 +901,7 @@ def test_xml_action(data_model):
 
     # convert raw object to an InstanceValue
     #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
-    output_inst_val = sn_action.from_raw(output_obj, allow_nodata=True)
+    output_inst_val = sn_action.from_raw(output_obj)
     assert(str(output_inst_val) == str(output_obj))
 
     # convert InstanceValue to an Instance (a RootNode)
@@ -920,7 +918,7 @@ def test_xml_action(data_model):
     #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
     parser = XMLParser(output_xml_text)
     output_xml_et_obj2 = parser.root
-    output_inst_val2 = sn_action.from_xml(output_xml_et_obj2, isroot=True, allow_nodata=True)
+    output_inst_val2 = sn_action.from_xml(output_xml_et_obj2)
     assert(output_inst_val2 == output_inst_val)
 
     # convert InstanceValue back to an Instance (a RootNode)
@@ -946,76 +944,28 @@ def test_xml_notification(data_model):
     sn_notif = data_model.get_schema_node("/testb:noA")
     assert(type(sn_notif) == NotificationNode)
 
-    #######
-    # NOA #
-    #######
+    #########
+    # NOTIF #  (most common?)
+    #########
 
-    noA_obj = {
-        "testb:leafO" : True
+    notif_obj = {
+        "testb:noA" : {
+            "leafO" : True
+        }
     }
-    noA_xml_pretty = """
-        <leafO xmlns="http://example.com/testb">true</leafO>
+    notif_xml_pretty = """
+        <noa xmlns="http://example.com/testb">
+            <leafO>true</leafO>
+        </noa>
     """
-    noA_xml_stripped = strip_pretty(noA_xml_pretty)
-
-    # convert raw object to an InstanceValue
-    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
-    noA_inst_val = sn_notif.from_raw(noA_obj, allow_nodata=True)
-    assert(str(noA_inst_val) == str(noA_obj))
-
-    # convert InstanceValue to an Instance (a RootNode)
-    noA_inst = RootNode(noA_inst_val, sn_notif, data_model.schema_data, noA_inst_val.timestamp)
-    noA_inst.validate(ctype=ContentType.all)
-    assert(noA_inst.raw_value() == noA_obj)
-
-    # convert Instance to an XML-encoded string and compare to known-good
-    noA_xml_et_obj = noA_inst.to_xml()
-    noA_xml_text = ET.tostring(noA_xml_et_obj).decode("utf-8")
-    assert(noA_xml_text == noA_xml_stripped)
-
-    # convert noa's XML-encoded string back to an InstanceValue
-    #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
-    parser = XMLParser(noA_xml_text)
-    noA_xml_et_obj2 = parser.root
-    noA_inst_val2 = sn_notif.from_xml(noA_xml_et_obj2, isroot=True, allow_nodata=True)
-    assert(noA_inst_val2 == noA_inst_val)
-
-    # convert InstanceValue back to an Instance (a RootNode)
-    noA_inst2 = RootNode(noA_inst_val2, sn_notif, data_model.schema_data, noA_inst_val2.timestamp)
-    noA_inst2.validate(ctype=ContentType.all)
-    assert(noA_inst2.raw_value() == noA_obj)
-
-    # convert Instance to raw value and ensure same
-    noA_rv2 = noA_inst2.raw_value()
-    assert(noA_rv2 == noA_obj)
+    notif_xml_stripped = strip_pretty(notif_xml_pretty)
 
 
+    # convert raw object to an InstanceValue, an ObjectValue, not a RootNode as per DataModel.from_raw()
+    notif_inst_val = data_model.schema.from_raw(notif_obj) # , force_namespace=True)  #)
 
+    assert(str(notif_inst_val) == str(notif_obj))
 
-# Commenting out since none work
-#
-#    #########
-#    # NOTIF #  (most common?)
-#    #########
-#
-#    notif_obj = {
-#        "testb:noA" : {
-#            "leafO" : True
-#        }
-#    }
-#    notif_xml_pretty = """
-#        <noa xmlns="http://example.com/testb">
-#            <leafO>true</leafO>
-#        </noa>
-#    """
-#    notif_xml_stripped = strip_pretty(notif_xml_pretty)
-#
-#
-#    # convert raw object to an InstanceValue, an ObjectValue, not a RootNode as per DataModel.from_raw()
-#    notif_inst_val = sn_notif.from_raw(notif_obj, allow_nodata=True)
-#    assert(str(notif_inst_val) == str(notif_obj))
-#
-#
 #    ###################
 #    # JSON - RESTCONF #  (per RFC 8040)
 #    ###################
@@ -1159,7 +1109,7 @@ def test_top_level_nodes(data_model):
 #    #print("root = " + str(root))
 #
 #    sn = data_model.get_schema_node("/")
-#    instval = sn.from_raw(rv, allow_nodata=True)
+#    instval = sn.from_raw(rv)
 #    #print("instval = " + str(instval))
 #
 #    inst = RootNode(instval, sn, data_model.schema_data, instval.timestamp)

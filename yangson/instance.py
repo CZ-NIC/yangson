@@ -552,7 +552,13 @@ class InstanceNode:
             # Array outside an Object doesn't make sense
             raise NotImplementedError
         else:
-            element.text = self.schema_node.type.to_xml(self.value)
+            sn = self.schema_node
+            if isinstance(sn.type, IdentityrefType) and sn.ns != self.value[1]:
+                module = self.schema_data.modules_by_name.get(self.value[1])
+                if not module:
+                    raise MissingModuleNamespace(sn.ns)
+                element.attrib['xmlns:'+self.value[1]] = module.xml_namespace
+            element.text = sn.type.to_xml(self.value)
 
         if elem is not None:
             return element
@@ -1336,3 +1342,5 @@ from .schemanode import (       # NOQA
             ChoiceNode, DataNode, InputNode,
             InternalNode, LeafNode, LeafListNode, ListNode, NotificationNode,
             OutputNode, RpcActionNode, SequenceNode, TerminalNode)
+from .datatype import (
+            IdentityrefType)
