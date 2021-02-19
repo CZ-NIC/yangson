@@ -577,7 +577,7 @@ class InternalNode(SchemaNode):
             newp = p.deriv(m, ctype)
             if isinstance(newp, NotAllowed):
                 raise SchemaError(
-                    inst.json_pointer(),
+                    inst,
                     ("" if ctype == ContentType.all else ctype.name + " ") +
                     "member-not-allowed", m)
             p = newp
@@ -585,7 +585,7 @@ class InternalNode(SchemaNode):
             mms = p._mandatory_members(ctype)
             msg = "one of " if len(mms) > 1 else ""
             raise SchemaError(
-                inst.json_pointer(), "missing-data",
+                inst, "missing-data",
                 "expected " + msg + ", ".join([repr(m) for m in mms]))
 
     def _make_schema_patterns(self: "InternalNode") -> None:
@@ -896,8 +896,7 @@ class DataNode(SchemaNode):
     def _check_must(self: "DataNode", inst: InstanceNode) -> None:
         for m in self.must:
             if not m.expression.evaluate(inst):
-                raise SemanticError(inst.json_pointer(), m.error_tag,
-                                    m.error_message)
+                raise SemanticError(inst, m.error_tag, m.error_message)
 
     def _pattern_entry(self: "DataNode") -> SchemaPattern:
         m = Member(self.iname(), self.content_type(), self.when)
@@ -960,7 +959,7 @@ class TerminalNode(SchemaNode):
             except YangsonException:
                 tgt = []
             if not tgt:
-                raise SemanticError(inst.json_pointer(expand_keys=True), "instance-required")
+                raise SemanticError(inst, "instance-required")
         super()._validate(inst, scope, ctype)
 
     def _default_value(self: "TerminalNode", inst: InstanceNode, ctype: ContentType,
@@ -1065,10 +1064,10 @@ class SequenceNode(DataNode):
 
     def _check_cardinality(self: "SequenceNode", inst: InstanceNode) -> None:
         if len(inst.value) < self.min_elements:
-            raise SemanticError(inst.json_pointer(), "too-few-elements")
+            raise SemanticError(inst, "too-few-elements")
         if (self.max_elements is not None and
                 len(inst.value) > self.max_elements):
-            raise SemanticError(inst.json_pointer(), "too-many-elements")
+            raise SemanticError(inst, "too-many-elements")
 
     def _post_process(self: "SequenceNode") -> None:
         super()._post_process()
@@ -1205,12 +1204,11 @@ class ListNode(SequenceNode, InternalNode):
             try:
                 kval = tuple([en[k] for k in self._key_members])
             except KeyError as e:
-                raise SchemaError(inst._entry(i).json_pointer(),
+                raise SchemaError(inst._entry(i),
                                   "list-key-missing", e.args[0]) from None
             if kval in ukeys:
-                raise SemanticError(
-                    inst.json_pointer(), "non-unique-key",
-                    repr(kval[0] if len(kval) < 2 else kval))
+                raise SemanticError(inst, "non-unique-key",
+                                    repr(kval[0] if len(kval) < 2 else kval))
             ukeys.add(kval)
 
     def _check_unique(self: "ListNode", unique: List[LocationPath],
@@ -1224,7 +1222,7 @@ class ListNode(SequenceNode, InternalNode):
                 uvals.append(uval)
             tups = set(product(*uvals))
             if tups & allvals:
-                raise SemanticError(inst.json_pointer(), "data-not-unique")
+                raise SemanticError(inst, "data-not-unique")
             else:
                 allvals |= tups
 
@@ -1427,8 +1425,7 @@ class LeafListNode(SequenceNode, TerminalNode):
     def _check_list_props(self: "LeafListNode", inst: InstanceNode) -> None:
         if (self.content_type() == ContentType.config and
                 len(set(inst.value)) < len(inst.value)):
-            raise SemanticError(
-                inst.json_pointer(), "repeated-leaf-list-value")
+            raise SemanticError(inst, "repeated-leaf-list-value")
 
     def _default_stmt(self: "LeafListNode", stmt: Statement, sctx: SchemaContext) -> None:
         if self._default is None:
