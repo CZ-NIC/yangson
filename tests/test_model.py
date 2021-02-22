@@ -5,9 +5,10 @@ from yangson import DataModel
 from yangson.exceptions import (
     InvalidArgument, InvalidFeatureExpression, UnknownPrefix,
     NonexistentInstance, NonexistentSchemaNode, RawTypeError,
-    SchemaError, XPathTypeError, InvalidXPath, NotSupported)
+    SchemaError, XPathTypeError, InvalidXPath, NotSupported,
+    InstanceValueError)
 from yangson.instvalue import ArrayValue, ObjectValue
-from yangson.instance import RootNode
+from yangson.instance import RootNode, ObjectMember, ArrayEntry
 from yangson.schemadata import SchemaContext, FeatureExprParser
 from yangson.enumerations import ContentType
 from yangson.xpathparser import XPathParser
@@ -15,7 +16,7 @@ import re
 import copy
 import xml.etree.ElementTree as ET
 from yangson.instance import RootNode
-from yangson.schemanode import SchemaTreeNode, RpcActionNode, NotificationNode, InputNode, OutputNode
+from yangson.schemanode import SchemaTreeNode, RpcActionNode, NotificationNode, InputNode, OutputNode, InternalNode, TerminalNode, ListNode, LeafListNode, AnydataNode, SequenceNode
 from yangson.xmlparser import XMLParser
 
 
@@ -29,6 +30,50 @@ tree = """+--rw (test:choiA)?
 |  |  +--rw leafQ? <empty>
 |  +--:(llistB)
 |     +--rw llistB* <ip-address-no-zone(union)>
++--ro test:cont-cf
+|  +--ro leaf-list* <int8>
+|  +--ro list-dk* [k1 k2]
+|  |  +--ro k1 <string>
+|  |  +--ro k2 <string>
+|  |  +--ro l2
+|  |  |  +--ro leaf-list* <int8>
+|  |  |  +--ro list-dk* [k1 k2]
+|  |  |  |  +--ro k1 <string>
+|  |  |  |  +--ro k2 <string>
+|  |  |  |  +--ro v? <int8>
+|  |  |  +--ro list-nk*
+|  |  |  |  +--ro v? <int8>
+|  |  |  +--ro list-sk* [k]
+|  |  |     +--ro k <string>
+|  |  |     +--ro v? <int8>
+|  |  +--ro v? <int8>
+|  +--ro list-nk*
+|  |  +--ro l2
+|  |  |  +--ro leaf-list* <int8>
+|  |  |  +--ro list-dk* [k1 k2]
+|  |  |  |  +--ro k1 <string>
+|  |  |  |  +--ro k2 <string>
+|  |  |  |  +--ro v? <int8>
+|  |  |  +--ro list-nk*
+|  |  |  |  +--ro v? <int8>
+|  |  |  +--ro list-sk* [k]
+|  |  |     +--ro k <string>
+|  |  |     +--ro v? <int8>
+|  |  +--ro v? <int8>
+|  +--ro list-sk* [k]
+|     +--ro k <string>
+|     +--ro l2
+|     |  +--ro leaf-list* <int8>
+|     |  +--ro list-dk* [k1 k2]
+|     |  |  +--ro k1 <string>
+|     |  |  +--ro k2 <string>
+|     |  |  +--ro v? <int8>
+|     |  +--ro list-nk*
+|     |  |  +--ro v? <int8>
+|     |  +--ro list-sk* [k]
+|     |     +--ro k <string>
+|     |     +--ro v? <int8>
+|     +--ro v? <int8>
 +--rw test:contA
 |  +--rw anydA
 |  +--rw anyxA?
@@ -84,7 +129,6 @@ tree = """+--rw (test:choiA)?
    +--ro output
       +--ro llistC* <boolean>
 """
-
 
 @pytest.fixture
 def data_model():
@@ -262,6 +306,7 @@ def test_schema(data_model):
     assert data_model.get_data_node("/testb:noA/leafO") is None
 
 def test_tree(data_model):
+    print(data_model.ascii_tree())
     assert data_model.ascii_tree() == tree
 
 def test_types(data_model):
@@ -408,7 +453,7 @@ def test_instance(data_model, instance):
     axtest(la1._following_siblings(), [])
     assert len(conta._children()) == 10
     axtest(la1._children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance._descendants(with_self=True)) == 32
+    assert len(instance._descendants(with_self=True)) == 33
     axtest(conta._descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln._ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
@@ -422,6 +467,11 @@ def test_rpc(data_model, rpc_raw_output):
 
 def test_xpath(data_model, instance):
     def xptest(expr, back, res=True, node=instance, module="test"):
+        print("expr = " + str(expr))
+        print("back = " + str(back))
+        print("res = " + str(res))
+        print("node = " + str(node))
+        print("module = " + str(module))
         mid = data_model.schema_data.last_revision(module)
         xpp = XPathParser(expr, SchemaContext(data_model.schema_data,
                                               module, mid))
@@ -487,7 +537,7 @@ def test_xpath(data_model, instance):
     xptest("local-name()", "local-name()", "leafR", lr)
     xptest("name()", "name()", "testb:leafR", lr)
     xptest("name(../t:listA)", "name(../test:listA)", "listA", lr, "testb")
-    xptest("count(descendant-or-self::*)", "count(descendant-or-self::*)", 32)
+    xptest("count(descendant-or-self::*)", "count(descendant-or-self::*)", 33)
     xptest("count(descendant::t:leafE)", "count(descendant::test:leafE)", 2)
     xptest("count(preceding-sibling::*)", "count(preceding-sibling::*)",
            0, lr, "testb")
@@ -1117,3 +1167,58 @@ def test_top_level_nodes(data_model):
 #
 #    assert(inst.raw_value() == rv)
 #
+
+
+def test_instance_ids(data_model, data):
+    ''' primarily focused on Issues #86, #91, and #95 '''
+
+    data2 = copy.deepcopy(data) # don't alter orig
+
+    # splice in some more data
+    s1 = {
+        'leaf-list': [1 ,2, 3],
+        'list-nk': [ {'v':1}, {'v':2}, {'v':3} ],
+        'list-sk': [ {'k':'a','v':1}, {'k':'b','v':2}, {'k':'c','v':3} ],
+        'list-dk': [ {'k1':'a1','k2':'a2','v':1}, {'k1':'b1','k2':'b2','v':2}, {'k1':'c1','k2':'c2','v':3} ]
+    }
+    data2['test:cont-cf'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-nk'][0]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-nk'][1]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-nk'][2]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-sk'][0]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-sk'][1]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-sk'][2]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-dk'][0]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-dk'][1]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-dk'][2]['l2'] = copy.deepcopy(s1)
+
+    inst = data_model.from_raw(data2)
+    assert inst.validate(ctype=ContentType.all) is None
+
+    def traverse(inst):
+        '''
+           for each node:
+             - roundtrip the instance-id
+        '''
+        #print("jptr: " + inst.json_pointer())
+
+        # ensure the 'instance_id()' is valid
+        iid = inst.instance_id()
+        if iid != '/': # FIXME: bug in parse_instance_id()? [UnexpectedInput: /§: expected YANG identifier]
+            irt = data_model.parse_instance_id(iid)
+            inst2 = inst.top().goto(irt)
+            assert(str(inst) == str(inst2))
+
+        try: # recurse, if needed
+            for child in inst:
+                if isinstance(inst.schema_node, SequenceNode) and isinstance(inst, ObjectMember):
+                    traverse(child)
+                else:
+                    traverse(inst[child])
+        except (InstanceValueError, # e.g., TerminalNodes
+                AttributeError      # e.g., AnyData
+               ):
+            pass # it's okay that some instances don't have children...
+
+    # run recursive traversal test
+    traverse(inst)

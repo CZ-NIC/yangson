@@ -201,6 +201,35 @@ class InstanceNode:
             inst = inst.parinst
         return "/" + "/".join(str(c) for c in res)
 
+
+    def instance_id(self: "InstanceNode") -> str:
+        '''this returns the JSON-form described in Section 6.11 of RFC 7951'''
+        res = []
+        inst = self
+        while inst.parinst:
+            if isinstance(inst, ArrayEntry):
+                seg = inst.name
+                if isinstance(inst.schema_node, ListNode):
+                    if len(inst.schema_node.keys) == 0:
+                        seg += '[' + str(inst.index+1) + ']'
+                    else:
+                        for k in inst.schema_node.keys:
+                            val = str(inst.value[k[0]])
+                            if type(inst.schema_node.get_child(*k).type) == BooleanType:
+                                val = val.lower()
+                            seg += '[' + k[0] + "='" + val + "']"
+                else: # LeaflistNode
+                    val = str(inst.value)
+                    if type(inst.schema_node.type) == BooleanType:
+                        val = val.lower()
+                    seg += "[.='" + val + "']"
+                res.insert(0, seg)
+                inst = inst.parinst
+            else:
+                res.insert(0, inst.name)
+            inst = inst.parinst
+        return "/" + "/".join(str(c) for c in res)
+
     def __getitem__(self: "InstanceNode", key: InstanceKey) -> "InstanceNode":
         """Return member or entry with the given key.
 
@@ -1343,4 +1372,4 @@ from .schemanode import (       # NOQA
             InternalNode, LeafNode, LeafListNode, ListNode, NotificationNode,
             OutputNode, RpcActionNode, SequenceNode, TerminalNode)
 from .datatype import (
-            IdentityrefType)
+            IdentityrefType, BooleanType)
