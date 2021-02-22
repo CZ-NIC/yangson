@@ -182,24 +182,9 @@ class InstanceNode:
         return (str(self.value) if isinstance(self.value, StructuredValue) else
                 sn.type.canonical_string(self.value))
 
-    def json_pointer(self: "InstanceNode", expand_keys=False) -> JSONPointer:
+    def json_pointer(self: "InstanceNode") -> JSONPointer:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
-        if not expand_keys:
-            return "/" + "/".join(str(c) for c in self.path)
-        res = []
-        inst = self
-        while inst.parinst:
-            if isinstance(inst, ArrayEntry):
-                if isinstance(inst.schema_node, ListNode):
-                    keys = [str(inst.value[k[0]]) for k in inst.schema_node.keys]
-                    res.insert(0, inst.schema_node.name + '=' + ','.join(keys))
-                else:
-                    res.insert(0, inst.schema_node.name + '=' + inst.value)
-                inst = inst.parinst
-            else:
-                res.insert(0, inst.name)
-            inst = inst.parinst
-        return "/" + "/".join(str(c) for c in res)
+        return "/" + "/".join([str(c) for c in self.path])
 
     def __getitem__(self: "InstanceNode", key: InstanceKey) -> "InstanceNode":
         """Return member or entry with the given key.

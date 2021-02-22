@@ -949,7 +949,7 @@ class TerminalNode(SchemaNode):
         """Extend the superclass method."""
         if (scope.value & ValidationScope.syntax.value and
                 inst.value not in self.type):
-            raise YangTypeError(inst.json_pointer(expand_keys=True), self.type.error_tag,
+            raise YangTypeError(inst, self.type.error_tag,
                                 self.type.error_message)
         if (isinstance(self.type, LinkType) and        # referential integrity
                 scope.value & ValidationScope.semantics.value and
