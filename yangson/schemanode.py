@@ -836,7 +836,7 @@ class DataNode(SchemaNode):
         Args:
             rval: Raw value to be used for the returned instance.
         """
-        val = self.from_raw(rval)
+        val = self.from_raw(rval, jptr = "/")
         return ObjectMember(self.iname(), {}, val, None, self, datetime.now())
 
     def split_instance_route(self: "DataNode", route: InstanceRoute) -> Optional[Tuple[
@@ -1269,7 +1269,7 @@ class ListNode(SequenceNode, InternalNode):
         Args:
             rval: Raw object to be used for the returned entry.
         """
-        val = self.entry_from_raw(rval)
+        val = self.entry_from_raw(rval, jptr = "/")
         return ArrayEntry(0, EmptyList(), EmptyList(), val, None, self,
                           val.timestamp)
 
