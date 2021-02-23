@@ -73,6 +73,7 @@ from .typealiases import (InstanceName, JSONPointer, ModuleId, PrefName,
                           QualName, ScalarValue, YangIdentifier)
 if TYPE_CHECKING:
     from .parser import Parser
+    from .instance import InstanceNode
 
 class YangsonException(Exception):
     """Base class for all Yangson exceptions."""
@@ -142,12 +143,13 @@ class InvalidKeyValue(YangsonException):
 class InstanceException(YangsonException):
     """Abstract class for exceptions related to operations on instance nodes."""
 
-    def __init__(self: "InstanceException", path: JSONPointer, message: str):
-        self.path = path
+    def __init__(self: "InstanceException", instance: "InstanceNode",
+                 message: str):
+        self.instance = instance
         self.message = message
 
     def __str__(self: "InstanceException"):
-        return f"[{self.path}] {self.message}"
+        return f"[{self.instance.json_pointer()}] {self.message}"
 
 
 class InstanceValueError(InstanceException):
@@ -419,14 +421,15 @@ class RawTypeError(RawDataError):
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
 
-    def __init__(self: "ValidationError", path: JSONPointer, tag: str, message: str = None):
-        self.path = path
+    def __init__(self: "ValidationError", instance: "InstanceNode",
+                 tag: str, message: str = None):
+        self.instance = instance
         self.tag = tag
         self.message = message
 
     def __str__(self: "ValidationError") -> str:
         msg = ": " + self.message if self.message else ""
-        return f"[{self.path}] {self.tag}{msg}"
+        return f"[{self.instance.json_pointer()}] {self.tag}{msg}"
 
 
 class SchemaError(ValidationError):

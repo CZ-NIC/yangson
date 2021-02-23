@@ -182,24 +182,9 @@ class InstanceNode:
         return (str(self.value) if isinstance(self.value, StructuredValue) else
                 sn.type.canonical_string(self.value))
 
-    def json_pointer(self: "InstanceNode", expand_keys=False) -> JSONPointer:
+    def json_pointer(self: "InstanceNode") -> JSONPointer:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
-        if not expand_keys:
-            return "/" + "/".join(str(c) for c in self.path)
-        res = []
-        inst = self
-        while inst.parinst:
-            if isinstance(inst, ArrayEntry):
-                if isinstance(inst.schema_node, ListNode):
-                    keys = [str(inst.value[k[0]]) for k in inst.schema_node.keys]
-                    res.insert(0, inst.schema_node.name + '=' + ','.join(keys))
-                else:
-                    res.insert(0, inst.schema_node.name + '=' + inst.value)
-                inst = inst.parinst
-            else:
-                res.insert(0, inst.name)
-            inst = inst.parinst
-        return "/" + "/".join(str(c) for c in res)
+        return "/" + "/".join([str(c) for c in self.path])
 
     def __getitem__(self: "InstanceNode", key: InstanceKey) -> "InstanceNode":
         """Return member or entry with the given key.
@@ -216,7 +201,7 @@ class InstanceNode:
             return self._member(key)
         if isinstance(self.value, ArrayValue):
             return self._entry(key)
-        raise InstanceValueError(self.json_pointer(), "scalar instance")
+        raise InstanceValueError(self, "scalar instance")
 
     def __iter__(self: "InstanceNode"):
         """Return receiver's iterator.
@@ -237,7 +222,7 @@ class InstanceNode:
             return ita()
         if isinstance(self.value, ObjectValue):
             return iter(self._member_names())
-        raise InstanceValueError(self.json_pointer(),
+        raise InstanceValueError(self,
             "{} is a scalar instance".format(str(type(self.value))))
 
     def is_internal(self: "InstanceNode") -> bool:
@@ -263,7 +248,7 @@ class InstanceNode:
             InstanceValueError: If the receiver's value is not an object.
         """
         if not isinstance(self.value, ObjectValue):
-            raise InstanceValueError(self.json_pointer(), "member of non-object")
+            raise InstanceValueError(self, "member of non-object")
         csn = self._member_schema_node(name)
         newval = self.value.copy()
         newval[name] = csn.from_raw(value, self.json_pointer()) if raw else value
@@ -280,13 +265,12 @@ class InstanceNode:
             InstanceValueError: If the receiver's value is a scalar.
         """
         if not isinstance(self.value, StructuredValue):
-            raise InstanceValueError(self.json_pointer(), "scalar value")
+            raise InstanceValueError(self, "scalar value")
         newval = self.value.copy()
         try:
             del newval[key]
         except (KeyError, IndexError, TypeError):
-            raise NonexistentInstance(self.json_pointer(),
-                                      f"item '{key}'") from None
+            raise NonexistentInstance(self, f"item '{key}'") from None
         return self._copy(newval)
 
     def up(self: "InstanceNode") -> "InstanceNode":
@@ -581,8 +565,7 @@ class InstanceNode:
                 name, sibs, sibs.pop(name), self,
                 self._member_schema_node(name), self.value.timestamp)
         except KeyError:
-            raise NonexistentInstance(self.json_pointer(),
-                                      f"member '{name}'") from None
+            raise NonexistentInstance(self, f"member '{name}'") from None
 
     def _entry(self: "InstanceNode", index: int) -> "ArrayEntry":
         val = self.value
@@ -593,7 +576,7 @@ class InstanceNode:
                               val[index], self, self.schema_node,
                               val.timestamp)
         except (IndexError, TypeError):
-            raise NonexistentInstance(self.json_pointer(), "entry " + str(index)) from None
+            raise NonexistentInstance(self, "entry " + str(index)) from None
 
     def _peek_schema_route(self: "InstanceNode", sroute: SchemaRoute) -> Value:
         irt = InstanceRoute()
@@ -699,7 +682,7 @@ class RootNode(InstanceNode):
         Raises:
             NonexistentInstance: root node has no parent
         """
-        raise NonexistentInstance(self.json_pointer(), "up of top")
+        raise NonexistentInstance(self, "up of top")
 
     def to_xml(self: "RootNode", filter: OutputFilter = OutputFilter(),
                tag: str = "content-data",
@@ -762,8 +745,7 @@ class ObjectMember(InstanceNode):
             return ObjectMember(name, sibs, newval, self.parinst,
                                 ssn, self.timestamp)
         except KeyError:
-            raise NonexistentInstance(self.json_pointer(),
-                                      f"member '{name}'") from None
+            raise NonexistentInstance(self, f"member '{name}'") from None
 
     def look_up(self: "ObjectMember", **keys: Dict[InstanceName, ScalarValue]) -> "ArrayEntry":
         """Return the entry with matching keys.
@@ -776,7 +758,7 @@ class ObjectMember(InstanceNode):
             NonexistentInstance: If no entry with matching keys exists.
         """
         if not isinstance(self.schema_node, ListNode):
-            raise InstanceValueError(self.json_pointer(), "lookup on non-list")
+            raise InstanceValueError(self, "lookup on non-list")
         try:
             for i in range(len(self.value)):
                 en = self.value[i]
@@ -787,11 +769,11 @@ class ObjectMember(InstanceNode):
                         break
                 if flag:
                     return self._entry(i)
-            raise NonexistentInstance(self.json_pointer(), "entry lookup failed")
+            raise NonexistentInstance(self, "entry lookup failed")
         except KeyError:
-            raise NonexistentInstance(self.json_pointer(), "entry lookup failed") from None
+            raise NonexistentInstance(self, "entry lookup failed") from None
         except TypeError:
-            raise InstanceValueError(self.json_pointer(), "lookup on non-list") from None
+            raise InstanceValueError(self, "lookup on non-list") from None
 
     def _zip(self: "ObjectMember") -> ObjectValue:
         """Zip the receiver into an object and return it."""
@@ -868,7 +850,7 @@ class ArrayEntry(InstanceNode):
         try:
             newval, nbef = self.before.pop()
         except IndexError:
-            raise NonexistentInstance(self.json_pointer(), "previous of first") from None
+            raise NonexistentInstance(self, "previous of first") from None
         return ArrayEntry(
             self.index - 1, nbef, self.after.cons(self.value), newval,
             self.parinst, self.schema_node, self.timestamp)
@@ -882,7 +864,7 @@ class ArrayEntry(InstanceNode):
         try:
             newval, naft = self.after.pop()
         except IndexError:
-            raise NonexistentInstance(self.json_pointer(), "next of last") from None
+            raise NonexistentInstance(self, "next of last") from None
         return ArrayEntry(
             self.index + 1, self.before.cons(self.value), naft, newval,
             self.parinst, self.schema_node, self.timestamp)
@@ -1049,7 +1031,7 @@ class ActionName(MemberName):
 
     def goto_step(self: "ActionName", inst: InstanceNode) -> None:
         """Raise an exception because there is no action instance."""
-        raise NonDataNode(inst.json_pointer(), "action " + self.iname())
+        raise NonDataNode(inst, "action " + self.iname())
 
 
 class EntryIndex:
@@ -1140,8 +1122,7 @@ class EntryValue:
             return inst._entry(
                 inst.value.index(self.parse_value(inst.schema_node)))
         except ValueError:
-            raise NonexistentInstance(inst.json_pointer(),
-                                      f"entry '{self.value!s}'") from None
+            raise NonexistentInstance(inst, f"entry '{self.value!s}'") from None
 
 
 class EntryKeys:
