@@ -128,25 +128,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> mex5a.find_all('rpc')
          []
 
-   .. method:: get_definition(name: YangIdentifier, kw:
-           YangIdentifier) -> Statement
-
-      Search the receiver's parent statement and then all ancestor
-      statements from inside out for the definition whose name is
-      *name*. The second argument, *kw*, has to be ``grouping`` or
-      ``typedef``, and controls whtehr the method looks for the
-      definition of a grouping or typedef, respectively.
-
-      This method raises :exc:`~.DefinitionNotFound` if the search
-      is not successful.
-
-      .. doctest::
-
-         >>> str(lfs.get_definition('my-string', 'typedef'))
-         'typedef "my-string" { ... }'
-         >>> lfs.get_definition('my-string', 'grouping') is None
-         True
-
 .. class:: ModuleParser(text: str, name: YangIdentifier = None, rev: str = None)
 
    This class is a subclass of :class:`.Parser`, and implements a

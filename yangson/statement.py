@@ -99,19 +99,16 @@ class Statement:
         return [c for c in self.substatements
                 if c.keyword == kw and c.prefix == pref]
 
-    def get_definition(self: "Statement", name: YangIdentifier,
-                       kw: YangIdentifier) -> Optional["Statement"]:
-        """Search ancestor statements for a definition.
+    def _get_scoped_definition(self: "Statement", name: YangIdentifier,
+                               kw: YangIdentifier) -> Optional["Statement"]:
+        """Search ancestor statements for a scoped (non-importable) definition.
 
         Args:
             name: Name of a grouping or datatype (with no prefix).
             kw: ``grouping`` or ``typedef``.
-
-        Raises:
-            DefinitionNotFound: If the definition is not found.
         """
         stmt = self.superstmt
-        while stmt:
+        while stmt.superstmt:
             res = stmt.find1(kw, name)
             if res:
                 return res
