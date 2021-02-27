@@ -184,8 +184,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       the result is the value returned by Python standard function
       :class:`str`.
 
-   .. automethod:: json_pointer() -> JSONPointer
-
    .. method:: __getitem__(key: InstanceKey) -> InstanceNode
 
       This method allows for selecting receiver's member or entry
@@ -211,8 +209,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> foo = bag['foo']
          >>> foo.path
          ('example-2:bag', 'foo')
-         >>> foo.json_pointer()
-         '/example-2:bag/foo'
          >>> bag['baz']
          Traceback (most recent call last):
          ...
@@ -251,6 +247,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       An attempt to iterate over an :class:`InstanceNode` that has a
       scalar value raises :exc:`~.InstanceValueError`.
+
+   .. automethod:: json_pointer() -> JSONPointer
+
+      .. doctest::
+
+         >>> fool.json_pointer()
+         '/example-2:bag/foo/3'
 
    .. method:: is_internal() -> bool
 
