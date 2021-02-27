@@ -1,4 +1,4 @@
-# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2021 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -182,10 +182,6 @@ class InstanceNode:
         return (str(self.value) if isinstance(self.value, StructuredValue) else
                 sn.type.canonical_string(self.value))
 
-    def json_pointer(self: "InstanceNode") -> JSONPointer:
-        """Return JSON Pointer [RFC6901]_ of the receiver."""
-        return "/" + "/".join([str(c) for c in self.path])
-
     def __getitem__(self: "InstanceNode", key: InstanceKey) -> "InstanceNode":
         """Return member or entry with the given key.
 
@@ -224,6 +220,19 @@ class InstanceNode:
             return iter(self._member_names())
         raise InstanceValueError(self,
             "{} is a scalar instance".format(str(type(self.value))))
+
+    def json_pointer(self: "InstanceNode") -> JSONPointer:
+        """Return JSON Pointer [RFC6901]_ of the receiver."""
+        return "/" + "/".join([str(c) for c in self.path])
+
+    def instance_route(self: "InstanceNone") -> "InstanceRoute":
+        """Return :class:`InstanceRoute` of the receiver."""
+        res = InstanceRoute()
+        inst = self
+        while inst.parinst:
+            res.insert(0, inst._instance_route_entry())
+            inst = inst.parinst
+        return res
 
     def is_internal(self: "InstanceNode") -> bool:
         """Return ``True`` if the receiver is an instance of an internal node.
@@ -513,7 +522,8 @@ class InstanceNode:
                                 childs.append(child)
                     else:
                         child = ET.Element(sn.name)
-                        if not dp or dp.ns != sn.ns or isinstance(m.schema_node, (InputNode, OutputNode)):
+                        if not dp or dp.ns != sn.ns or isinstance(
+                                m.schema_node, (InputNode, OutputNode)):
                             module = self.schema_data.modules_by_name.get(sn.ns)
                             if not module:
                                 raise MissingModuleNamespace(sn.ns)
@@ -589,7 +599,8 @@ class InstanceNode:
                 irt.append(MemberName(sn.name, sn.ns))
         return self.peek(irt)
 
-    def _member_schema_node(self: "InstanceNode", name: InstanceName) -> "DataNode":
+    def _member_schema_node(self: "InstanceNode",
+                            name: InstanceName) -> "DataNode":
         qname = self.schema_node._iname2qname(name)
         res = self.schema_node.get_data_child(*qname)
         if res is None:
@@ -642,12 +653,14 @@ class InstanceNode:
         return res
 
     def _preceding_siblings(
-            self: "InstanceNode", qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
+            self: "InstanceNode",
+            qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
         """XPath - return the list of receiver's preceding-siblings."""
         return []
 
     def _following_siblings(
-            self: "InstanceNode", qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
+            self: "InstanceNode",
+            qname: Union[QualName, bool] = None) -> List["InstanceNode"]:
         """XPath - return the list of receiver's following-siblings."""
         return []
 
@@ -781,7 +794,8 @@ class ObjectMember(InstanceNode):
         res[self.name] = self.value
         return res
 
-    def _copy(self: "ObjectMember", newval: Value, newts: datetime = None) -> "ObjectMember":
+    def _copy(self: "ObjectMember", newval: Value,
+              newts: datetime = None) -> "ObjectMember":
         if newts:
             ts = newts
         elif isinstance(newval, StructuredValue):
@@ -791,14 +805,20 @@ class ObjectMember(InstanceNode):
         return ObjectMember(self.name, self.siblings, newval, self.parinst,
                             self.schema_node, ts)
 
+    def _instance_route_entry(self: "ObjectMember") -> "MemberName":
+        p, s, loc = self._key.partition(":")
+        return MemberName(loc if s else p, p if s else None)
+
     def _ancestors_or_self(
-            self: "ObjectMember", qname: Union[QualName, bool] = None) -> List[InstanceNode]:
+            self: "ObjectMember",
+            qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """XPath - return the list of receiver's ancestors including itself."""
         res = [] if qname and self.qual_name != qname else [self]
         return res + self.up()._ancestors_or_self(qname)
 
     def _ancestors(
-            self: "ObjectMember", qname: Union[QualName, bool] = None) -> List[InstanceNode]:
+            self: "ObjectMember",
+            qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """XPath - return the list of receiver's ancestors."""
         return self.up()._ancestors_or_self(qname)
 
@@ -859,7 +879,8 @@ class ArrayEntry(InstanceNode):
         """Return an instance node corresponding to the next entry.
 
         Raises:
-            NonexistentInstance: If the receiver is the last entry of the parent array.
+            NonexistentInstance: If the receiver is the last entry of the
+                parent array.
         """
         try:
             newval, naft = self.after.pop()
@@ -911,7 +932,8 @@ class ArrayEntry(InstanceNode):
         res.extend(list(self.after))
         return ArrayValue(res, self.timestamp)
 
-    def _copy(self: "ArrayEntry", newval: Value, newts: datetime = None) -> "ArrayEntry":
+    def _copy(self: "ArrayEntry", newval: Value,
+              newts: datetime = None) -> "ArrayEntry":
         if newts:
             ts = newts
         elif isinstance(newval, StructuredValue):
@@ -921,19 +943,36 @@ class ArrayEntry(InstanceNode):
         return ArrayEntry(self.index, self.before, self.after, newval,
                           self.parinst, self.schema_node, ts)
 
+    def _instance_route_entry(self: "ArrayEntry"):
+        sn = self.schema_node
+        if isinstance(sn, LeafListNode):
+            return EntryValue(sn.type.canonical_string(self.value))
+        if not sn.keys:
+            return EntryIndex(self._key)
+        kdict = {}
+        for k in sn.keys:
+            if k[1] == sn.ns:
+                kdict[(k[0], None)] = str(self[k[0]])
+            else:
+                kdict[k] = str(self[f"{k[1]}:{k[0]}"])
+        return EntryKeys(kdict)
+
     def _ancestors_or_self(
-            self: "ArrayEntry", qname: Union[QualName, bool] = None) -> List[InstanceNode]:
+            self: "ArrayEntry",
+            qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """XPath - return the list of receiver's ancestors including itself."""
         res = [] if qname and self.qual_name != qname else [self]
         return res + self.up()._ancestors(qname)
 
     def _ancestors(
-            self: "ArrayEntry", qname: Union[QualName, bool] = None) -> List[InstanceNode]:
+            self: "ArrayEntry",
+            qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """XPath - return the list of receiver's ancestors."""
         return self.up()._ancestors(qname)
 
     def _preceding_siblings(
-            self: "ArrayEntry", qname: Union[QualName, bool] = None) -> List[InstanceNode]:
+            self: "ArrayEntry",
+            qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """XPath - return the list of receiver's preceding siblings."""
         if qname and self.qual_name != qname:
             return []
@@ -945,7 +984,8 @@ class ArrayEntry(InstanceNode):
         return res
 
     def _following_siblings(
-            self: "ArrayEntry", qname: Union[QualName, bool] = None) -> List[InstanceNode]:
+            self: "ArrayEntry",
+            qname: Union[QualName, bool] = None) -> List[InstanceNode]:
         """XPath - return the list of receiver's following siblings."""
         if qname and self.qual_name != qname:
             return []
@@ -965,7 +1005,7 @@ class InstanceRoute(list):
     """This class represents a route into an instance value."""
 
     def __str__(self: "InstanceRoute") -> str:
-        """Return a string representation of the receiver."""
+        """Return instance-id as the string representation of the receiver."""
         return "".join([str(c) for c in self])
 
     def __hash__(self: "InstanceRoute") -> int:
@@ -990,7 +1030,7 @@ class MemberName:
         return self.name == other.name and self.namespace == other.namespace
 
     def __str__(self: "MemberName") -> str:
-        """Return a string representation of the receiver."""
+        """Return a string representation of the receiver (i-i segment)."""
         return "/" + self.iname()
 
     def iname(self: "MemberName") -> str:
@@ -1049,7 +1089,7 @@ class EntryIndex:
         return self.index == other.index
 
     def __str__(self: "EntryIndex") -> str:
-        """Return a string representation of the receiver."""
+        """Return a string representation of the receiver (i-i segment)."""
         return f"[{self.index + 1}]"
 
     def peek_step(self: "EntryIndex", val: ArrayValue,
@@ -1086,7 +1126,7 @@ class EntryValue:
         self.value = value
 
     def __str__(self: "EntryValue") -> str:
-        """Return a string representation of the receiver."""
+        """Return a string representation of the receiver (i-i segment)."""
         return f"[.={json.dumps(self.value)}]"
 
     def __eq__(self: "EntryValue", other: "EntryValue") -> bool:
@@ -1129,7 +1169,8 @@ class EntryKeys:
     """Key-based selectors for a list entry."""
 
     def __init__(
-            self: "EntryKeys", keys: Dict[Tuple[YangIdentifier, Optional[YangIdentifier]], str]):
+            self: "EntryKeys",
+            keys: Dict[Tuple[YangIdentifier, Optional[YangIdentifier]], str]):
         """Initialize the class instance.
 
         Args:
@@ -1138,7 +1179,7 @@ class EntryKeys:
         self.keys = keys
 
     def __str__(self: "EntryKeys") -> str:
-        """Return a string representation of the receiver."""
+        """Return a string representation of the receiver (i-i segment)."""
         res = []
         for k in self.keys:
             kn = f"{k[1]}:{k[0]}" if k[1] else k[0]
@@ -1148,7 +1189,8 @@ class EntryKeys:
     def __eq__(self: "EntryKeys", other: "EntryKeys") -> bool:
         return self.keys == other.keys
 
-    def parse_keys(self: "EntryKeys", sn: "DataNode") -> Dict[InstanceName, ScalarValue]:
+    def parse_keys(self: "EntryKeys",
+                   sn: "DataNode") -> Dict[InstanceName, ScalarValue]:
         """Parse key dictionary in the context of a schema node.
 
         Args:

@@ -255,6 +255,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> fool.json_pointer()
          '/example-2:bag/foo/3'
 
+   .. automethod:: instance_route() -> InstanceRoute
+
+      .. doctest::
+
+         >>> str(fool.instance_route())
+         '/example-2:bag/foo[number="8"]'
+
    .. method:: is_internal() -> bool
 
       Return ``True`` if the receiver is an instance of an internal
