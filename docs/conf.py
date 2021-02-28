@@ -15,6 +15,7 @@
 
 import sys
 import os
+import doctest
 from pkg_resources import get_distribution
 
 # If extensions (or modules to document with autodoc) are in another directory,
@@ -361,6 +362,7 @@ epub_exclude_files = ['search.html']
 
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 doctest_test_doctest_blocks = ""
+doctest_default_flags = doctest.ELLIPSIS | doctest.DONT_ACCEPT_TRUE_FOR_1
 
 html_context = {
     "DONATIONS": {  # Variables used to construct URL for the "Donate" button:
