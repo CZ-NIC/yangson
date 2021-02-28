@@ -5,9 +5,10 @@ from yangson import DataModel
 from yangson.exceptions import (
     InvalidArgument, InvalidFeatureExpression, UnknownPrefix,
     NonexistentInstance, NonexistentSchemaNode, RawTypeError,
-    SchemaError, XPathTypeError, InvalidXPath, NotSupported)
+    SchemaError, XPathTypeError, InvalidXPath, NotSupported,
+    InstanceValueError)
 from yangson.instvalue import ArrayValue, ObjectValue
-from yangson.instance import RootNode
+from yangson.instance import RootNode, ObjectMember, ArrayEntry
 from yangson.schemadata import SchemaContext, FeatureExprParser
 from yangson.enumerations import ContentType
 from yangson.xpathparser import XPathParser
@@ -15,7 +16,7 @@ import re
 import copy
 import xml.etree.ElementTree as ET
 from yangson.instance import RootNode
-from yangson.schemanode import SchemaTreeNode, RpcActionNode, NotificationNode, InputNode, OutputNode
+from yangson.schemanode import SchemaTreeNode, RpcActionNode, NotificationNode, InputNode, OutputNode, InternalNode, TerminalNode, ListNode, LeafListNode, AnydataNode, SequenceNode
 from yangson.xmlparser import XMLParser
 
 
@@ -29,6 +30,50 @@ tree = """+--rw (test:choiA)?
 |  |  +--rw leafQ? <empty>
 |  +--:(llistB)
 |     +--rw llistB* <ip-address-no-zone(union)>
++--ro test:cont-cf
+|  +--ro leaf-list* <int8>
+|  +--ro list-dk* [k1 k2]
+|  |  +--ro k1 <string>
+|  |  +--ro k2 <string>
+|  |  +--ro l2
+|  |  |  +--ro leaf-list* <int8>
+|  |  |  +--ro list-dk* [k1 k2]
+|  |  |  |  +--ro k1 <string>
+|  |  |  |  +--ro k2 <string>
+|  |  |  |  +--ro v? <int8>
+|  |  |  +--ro list-nk*
+|  |  |  |  +--ro v? <int8>
+|  |  |  +--ro list-sk* [k]
+|  |  |     +--ro k <string>
+|  |  |     +--ro v? <int8>
+|  |  +--ro v? <int8>
+|  +--ro list-nk*
+|  |  +--ro l2
+|  |  |  +--ro leaf-list* <int8>
+|  |  |  +--ro list-dk* [k1 k2]
+|  |  |  |  +--ro k1 <string>
+|  |  |  |  +--ro k2 <string>
+|  |  |  |  +--ro v? <int8>
+|  |  |  +--ro list-nk*
+|  |  |  |  +--ro v? <int8>
+|  |  |  +--ro list-sk* [k]
+|  |  |     +--ro k <string>
+|  |  |     +--ro v? <int8>
+|  |  +--ro v? <int8>
+|  +--ro list-sk* [k]
+|     +--ro k <string>
+|     +--ro l2
+|     |  +--ro leaf-list* <int8>
+|     |  +--ro list-dk* [k1 k2]
+|     |  |  +--ro k1 <string>
+|     |  |  +--ro k2 <string>
+|     |  |  +--ro v? <int8>
+|     |  +--ro list-nk*
+|     |  |  +--ro v? <int8>
+|     |  +--ro list-sk* [k]
+|     |     +--ro k <string>
+|     |     +--ro v? <int8>
+|     +--ro v? <int8>
 +--rw test:contA
 |  +--rw anydA
 |  +--rw anyxA?
@@ -84,7 +129,6 @@ tree = """+--rw (test:choiA)?
    +--ro output
       +--ro llistC* <boolean>
 """
-
 
 @pytest.fixture
 def data_model():
@@ -195,7 +239,7 @@ def rpc_raw_output(data_model):
 
 def test_schema_data(data_model):
     assert len(data_model.schema_data.implement) == 2
-    assert data_model.module_set_id() == "dec8dc2d848e7994c38c5e4ae65bc31383922ce8"
+    assert data_model.module_set_id() == "db63c52c6639c5596356bacee142380928ca3ac1"
     tid = data_model.schema_data.last_revision("test")
     stid = data_model.schema_data.last_revision("subtest")
     tbid = data_model.schema_data.last_revision("testb")
@@ -408,7 +452,7 @@ def test_instance(data_model, instance):
     axtest(la1._following_siblings(), [])
     assert len(conta._children()) == 10
     axtest(la1._children(("leafF", "test")), ["/test:contA/listA/1/leafF"])
-    assert len(instance._descendants(with_self=True)) == 32
+    assert len(instance._descendants(with_self=True)) == 33
     axtest(conta._descendants(("listA", "test")),
            ["/test:contA/listA/0", "/test:contA/listA/1"])
     axtest(tbln._ancestors_or_self(("leafN", "testb")), ["/test:contA/testb:leafN"])
@@ -487,7 +531,7 @@ def test_xpath(data_model, instance):
     xptest("local-name()", "local-name()", "leafR", lr)
     xptest("name()", "name()", "testb:leafR", lr)
     xptest("name(../t:listA)", "name(../test:listA)", "listA", lr, "testb")
-    xptest("count(descendant-or-self::*)", "count(descendant-or-self::*)", 32)
+    xptest("count(descendant-or-self::*)", "count(descendant-or-self::*)", 33)
     xptest("count(descendant::t:leafE)", "count(descendant::test:leafE)", 2)
     xptest("count(preceding-sibling::*)", "count(preceding-sibling::*)",
            0, lr, "testb")
@@ -670,10 +714,6 @@ def test_validation(instance):
     assert inst3.validate(ctype=ContentType.all) is None
     assert instance.validate(ctype=ContentType.all) is None
 
-
-
-
-
 def strip_pretty(s: str):
     '''
       This function is global because it is used by the various 'test_xml_*' methods.
@@ -681,8 +721,6 @@ def strip_pretty(s: str):
       It removes all whitespace so that string-comparisons can succeed.
     '''
     return re.sub("[^>]*$", "", re.sub("^[^<]*", "", re.sub(">[\\s\r\n]*<", "><", s)))
-
-
 
 def test_xml_config(xml_safe_data_model, xml_safe_data):
     '''
@@ -752,8 +790,6 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
     rv = inst2.raw_value()
     assert(rv == xml_safe_data)
 
-
-
 def test_xml_rpc(data_model):
     '''
       Encodes known "raw data" RPC input & outputs to an XML strings and back again.
@@ -792,7 +828,6 @@ def test_xml_rpc(data_model):
     sn_rpc = data_model.get_schema_node("/testb:rpcA") # used by both tests
     assert(type(sn_rpc) == RpcActionNode)
 
-
     #########
     # INPUT #
     #########
@@ -828,8 +863,6 @@ def test_xml_rpc(data_model):
     input_rv2 = input_inst2.raw_value()
     assert(input_rv2 == input_obj)
 
-
-
     ##########
     # OUTPUT #
     ##########
@@ -864,7 +897,6 @@ def test_xml_rpc(data_model):
     # convert Instance to raw value and ensure same
     output_rv2 = output_inst2.raw_value()
     assert(output_rv2 == output_obj)
-
 
 def test_xml_action(data_model):
     '''
@@ -929,9 +961,6 @@ def test_xml_action(data_model):
     # convert Instance to raw value and ensure same
     output_rv2 = output_inst2.raw_value()
     assert(output_rv2 == output_obj)
-
-
-
 
 def test_xml_notification(data_model):
     '''
@@ -1009,12 +1038,6 @@ def test_xml_notification(data_model):
 #    ietf_notif_xml_stripped = strip_pretty(ietf_notif_xml_pretty)
 #
 
-
-
-
-
-
-
 # Commenting out since depends on Issue #56: "Support RFC 8791 (YANG Data Structure Extensions)"
 #
 #def test_xml_error(data_model):
@@ -1023,10 +1046,6 @@ def test_xml_notification(data_model):
 #    '''
 #    assert(False)
 #
-
-
-
-
 
 def test_top_level_nodes(data_model):
     rv = {} # will an empty dict work?
@@ -1095,7 +1114,6 @@ def test_top_level_nodes(data_model):
     assert(type(rn) == RootNode)
     assert(type(rn.schema_node) == NotificationNode)
 
-
 # Commented out because it fails.  See Issue #75 for details.
 #def test_binary(data_model):
 #    rv = {
@@ -1117,3 +1135,56 @@ def test_top_level_nodes(data_model):
 #
 #    assert(inst.raw_value() == rv)
 #
+
+def test_instance_ids(data_model, data):
+    ''' primarily focused on Issues #86, #91, and #95 '''
+
+    data2 = copy.deepcopy(data) # don't alter orig
+
+    # splice in some more data
+    s1 = {
+        'leaf-list': [1 ,2, 3],
+        'list-nk': [ {'v':1}, {'v':2}, {'v':3} ],
+        'list-sk': [ {'k':'a','v':1}, {'k':'b','v':2}, {'k':'c','v':3} ],
+        'list-dk': [ {'k1':'a1','k2':'a2','v':1}, {'k1':'b1','k2':'b2','v':2}, {'k1':'c1','k2':'c2','v':3} ]
+    }
+    data2['test:cont-cf'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-nk'][0]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-nk'][1]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-nk'][2]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-sk'][0]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-sk'][1]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-sk'][2]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-dk'][0]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-dk'][1]['l2'] = copy.deepcopy(s1)
+    data2['test:cont-cf']['list-dk'][2]['l2'] = copy.deepcopy(s1)
+
+    inst = data_model.from_raw(data2)
+    assert inst.validate(ctype=ContentType.all) is None
+
+    def traverse(inst):
+        '''
+           for each node:
+             - roundtrip the instance-id
+        '''
+        #print("jptr: " + inst.json_pointer())
+
+        # ensure the 'instance_id()' is valid
+        iid = str(inst.instance_route())
+        irt = data_model.parse_instance_id(iid)
+        inst2 = inst.top().goto(irt)
+        assert(str(inst) == str(inst2))
+
+        try: # recurse, if needed
+            for child in inst:
+                if isinstance(inst.schema_node, SequenceNode) and isinstance(inst, ObjectMember):
+                    traverse(child)
+                else:
+                    traverse(inst[child])
+        except (InstanceValueError, # e.g., TerminalNodes
+                AttributeError      # e.g., AnyData
+               ):
+            pass # it's okay that some instances don't have children...
+
+    # run recursive traversal test
+    traverse(inst)

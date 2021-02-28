@@ -18,7 +18,7 @@ module test {
 
   include subtest;
 
-  revision 2016-04-26;
+  revision 2021-02-28;
 
   feature feA;
 
@@ -215,4 +215,60 @@ module test {
       }
     }
   }
+
+  container cont-cf {
+    description
+      "config false to test the 'no list key' scenarios";
+    config false;
+    grouping g {
+      leaf-list leaf-list {
+        type int8;
+      }
+      list list-nk { // no key
+        leaf v {
+          type int8;
+        }
+      }
+      list list-sk { // single key
+        key 'k';
+        leaf k {
+          type string;
+        }
+        leaf v {
+          type int8;
+        }
+      }
+      list list-dk { // double key
+        key 'k1 k2';
+        leaf k1 {
+          type string;
+        }
+        leaf k2 {
+          type string;
+        }
+        leaf v {
+          type int8;
+        }
+      }
+    } // end grouping g
+
+    uses g {
+      augment 'list-nk' {
+        container l2 {
+          uses g;
+        }
+      }
+      augment 'list-sk' {
+        container l2 {
+          uses g;
+        }
+      }
+      augment 'list-dk' {
+        container l2 {
+          uses g;
+        }
+      }
+    } // end uses g
+  } // end cont-cf
+
 }

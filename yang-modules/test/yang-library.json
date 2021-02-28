@@ -1,6 +1,6 @@
 {
   "ietf-yang-library:modules-state": {
-    "module-set-id": "b6d7e0614440c5ad8a7370fe46c777254d331983",
+    "module-set-id": "db63c52c6639c5596356bacee142380928ca3ac1",
     "module": [
       {
         "name": "testb",
@@ -11,7 +11,7 @@
       },
       {
         "name": "test",
-        "revision": "2016-04-26",
+        "revision": "2021-02-28",
         "feature": [
           "feA"
         ],
