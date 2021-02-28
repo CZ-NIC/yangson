@@ -112,7 +112,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> mex5a.find1('rpc', required=True)
          Traceback (most recent call last):
          ...
-         yangson.statement.StatementNotFound: `rpc' in `module "example-5-a" { ... }'
+         yangson.exceptions.StatementNotFound: `rpc' in `module "example-5-a" { ... }'
 
    .. method:: find_all(kw: YangIdentifier, pref: YangIdentifier = \
            None) -> List[Statement]

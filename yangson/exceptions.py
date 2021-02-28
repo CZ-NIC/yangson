@@ -1,4 +1,4 @@
-# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2021 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -149,7 +149,7 @@ class InstanceException(YangsonException):
         self.message = message
 
     def __str__(self: "InstanceException"):
-        return f"[{self.instance.json_pointer()}] {self.message}"
+        return f"[{self.instance.instance_route()}] {self.message}"
 
 
 class InstanceValueError(InstanceException):
@@ -429,7 +429,7 @@ class ValidationError(YangsonException):
 
     def __str__(self: "ValidationError") -> str:
         msg = ": " + self.message if self.message else ""
-        return f"[{self.instance.json_pointer()}] {self.tag}{msg}"
+        return f"[{self.instance.instance_route()}] {self.tag}{msg}"
 
 
 class SchemaError(ValidationError):

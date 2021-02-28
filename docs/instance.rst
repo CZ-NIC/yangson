@@ -212,7 +212,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> bag['baz']
          Traceback (most recent call last):
          ...
-         yangson.instance.NonexistentInstance: [/example-2:bag] member baz
+         yangson.exceptions.NonexistentInstance: [/example-2:bag] member 'baz'
          >>> foo6 = foo[0]
          >>> foo6.value['number']
          6
@@ -222,7 +222,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> foo[4]
          Traceback (most recent call last):
          ...
-         yangson.instance.NonexistentInstance: [/example-2:bag/foo] entry 4
+         yangson.exceptions.NonexistentInstance: [/example-2:bag/foo] entry 4
 
    .. method:: __iter__()
 
@@ -300,7 +300,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> bag.put_member('quux', 0)
          Traceback (most recent call last):
          ...
-         yangson.schemanode.NonexistentSchemaNode: quux in module example-2
+         yangson.exceptions.NonexistentSchemaNode: quux under example-2:bag
 
    .. method:: delete_item(key: InstanceKey) -> InstanceNode
 
@@ -358,7 +358,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> inst.up()
          Traceback (most recent call last):
          ...
-         yangson.instance.NonexistentInstance: [/] up of top
+         yangson.exceptions.NonexistentInstance: [/] up of top
 
    .. automethod:: top() -> InstanceNode
 
@@ -432,7 +432,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> inst.goto(irt2)
          Traceback (most recent call last):
          ...
-         yangson.instance.NonexistentInstance: [/example-2:bag] member baz
+         yangson.exceptions.NonexistentInstance: [/example-2:bag] member 'baz'
 
    .. method:: peek(iroute: InstanceRoute) -> Optional[Value]
 
@@ -497,7 +497,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> badinst.validate()
          Traceback (most recent call last):
          ...
-         yangson.schemanode.YangTypeError: [/example-2:bag/baz] invalid type: 'ILLEGAL'
+         yangson.exceptions.YangTypeError: [/example-2:bag/baz] invalid-type: expected decimal64
 
       In the following example, member ``baz`` is not allowed because
       it is a conditional leaf and its **when** constraint evaluates
@@ -511,7 +511,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> bad2.validate()
          Traceback (most recent call last):
          ...
-         yangson.schemanode.SchemaError: [/example-2:bag] not allowed: member 'baz'
+         yangson.exceptions.SchemaError: [/example-2:bag] config member-not-allowed: baz
 
    .. method:: add_defaults(ctype: ContentType = None) -> InstanceNode
 
@@ -630,7 +630,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> foo6.previous()
          Traceback (most recent call last):
          ...
-         yangson.instance.NonexistentInstance: [/example-2:bag/foo/0] previous of first
+         yangson.exceptions.NonexistentInstance: [/example-2:bag/foo[number="6"]] previous of first
 
    .. method:: next() -> ArrayEntry
 
@@ -647,7 +647,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> foo8.next()
          Traceback (most recent call last):
          ...
-         yangson.instance.NonexistentInstance: [/example-2:bag/foo/3] next of last
+         yangson.exceptions.NonexistentInstance: [/example-2:bag/foo[number="8"]] next of last
 
    .. method:: insert_before(value: Union[RawValue, Value], raw: bool \
            = False) -> ArrayEntry

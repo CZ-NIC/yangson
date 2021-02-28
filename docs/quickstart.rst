@@ -211,7 +211,7 @@ However, if we try the same for the other data tree, we don't find the
    >>> i2wd['example-2:bag']['baz'].value
    Traceback (most recent call last):
    ...
-   yangson.instance.NonexistentInstance: [/example-2:bag] member 'baz'
+   yangson.exceptions.NonexistentInstance: [/example-2:bag] member 'baz'
 
 Why is that? The reason is also hidden in the above definition of
 the *baz* leaf: due to the edit that we made, the **when** expression
@@ -231,7 +231,7 @@ happens to be the key of the *foo* list:
    >>> broken1.validate()
    Traceback (most recent call last):
    ...
-   yangson.schemanode.SemanticError: [/example-2:bag/foo] non-unique-key: 6
+   yangson.exceptions.SemanticError: [/example-2:bag/foo] non-unique-key: 6
 
 Correct! Both entries of the *foo* list now have the same key, namely ``6``.
 
@@ -243,7 +243,7 @@ doesn't conform to the leaf's type, as in the following example:
    >>> inw.update('INFINITY').validate()
    Traceback (most recent call last):
    ...
-   yangson.schemanode.YangTypeError: [/example-2:bag/foo/1/in-words] invalid-type: must be number in words
+   yangson.exceptions.YangTypeError: [/example-2:bag/foo[number="3"]/in-words] invalid-type: must be number in words: INFINITY
 
 This is again correct because the new value ``INFINITY`` doesn't match
 the regular expression pattern in the definition of the *in-words*
@@ -262,4 +262,4 @@ And finally, we delete a leaf that's defined as mandatory in the data model:
    >>> broken2.validate()
    Traceback (most recent call last):
    ...
-   yangson.schemanode.SchemaError: [/example-2:bag] missing-data: expected 'bar'
+   yangson.exceptions.SchemaError: [/example-2:bag] missing-data: expected 'bar'
