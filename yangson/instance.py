@@ -1006,7 +1006,10 @@ class InstanceRoute(list):
 
     def __str__(self: "InstanceRoute") -> str:
         """Return instance-id as the string representation of the receiver."""
-        return "".join([str(c) for c in self])
+        if self:
+            return "".join([str(c) for c in self])
+        else:
+            return "/"
 
     def __hash__(self: "InstanceRoute") -> int:
         """Return the hash value of the receiver."""
@@ -1282,7 +1285,8 @@ class ResourceIdParser(Parser):
                 self.char("/")
             sn = cn
 
-    def _key_values(self: "ResourceIdParser", sn: "SequenceNode") -> Union[EntryKeys, EntryValue]:
+    def _key_values(self: "ResourceIdParser",
+                    sn: "SequenceNode") -> Union[EntryKeys, EntryValue]:
         """Parse leaf-list value or list keys."""
         try:
             keys = self.up_to("/")
@@ -1312,6 +1316,8 @@ class InstanceIdParser(Parser):
     def parse(self: "InstanceIdParser") -> InstanceRoute:
         """Parse instance identifier."""
         res = InstanceRoute()
+        if self.input == "/":
+            return res
         while True:
             self.char("/")
             res.append(MemberName(*self.prefixed_name()))
