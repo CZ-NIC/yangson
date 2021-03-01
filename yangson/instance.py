@@ -225,7 +225,7 @@ class InstanceNode:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
         return "/" + "/".join([str(c) for c in self.path])
 
-    def instance_route(self: "InstanceNone") -> "InstanceRoute":
+    def instance_route(self: "InstanceNode") -> "InstanceRoute":
         """Return :class:`InstanceRoute` of the receiver."""
         res = InstanceRoute()
         inst = self
