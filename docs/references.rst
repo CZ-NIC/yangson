@@ -11,7 +11,7 @@ __ https://tools.ietf.org/html/draft-ietf-netmod-rfc6087bis
 .. [Hue97] Huet, G. The Zipper. *J. Functional Programming* **7** (5):
        549–554, 1997. Available online__.
 
-__ https://www.st.cs.uni-saarland.de/edu/seminare/2005/advanced-fp/docs/huet-zipper.pdf
+__ http://gallium.inria.fr/~huet/PUBLIC/zip.pdf
 
 .. [PEP484] van Rossum, G.; Lehtosalo, J.; Langa, Ł. *Type Hints.*
         `PEP 484`__, Python Software Foundation, 2014.
