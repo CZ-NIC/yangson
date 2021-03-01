@@ -94,7 +94,7 @@ class MissingAnnotationTarget(AnnotationException):
         self.iname = iname
 
     def __str__(self: "MissingAnnotationTarget"):
-        return f"[{self.path}] no instance '{self.iname}'"
+        return f"{{{self.path}}} no instance '{self.iname}'"
 
 
 class UndefinedAnnotation(AnnotationException):
@@ -105,7 +105,7 @@ class UndefinedAnnotation(AnnotationException):
         self.aname = aname
 
     def __str__(self: "UndefinedAnnotation"):
-        return f"[{self.path}] Undefined annotation '{self.aname}'"
+        return f"{{{self.path}}} Undefined annotation '{self.aname}'"
 
 
 class AnnotationTypeError(AnnotationException):
@@ -117,7 +117,7 @@ class AnnotationTypeError(AnnotationException):
         self.msg = msg
 
     def __str__(self: "AnnotationTypeError"):
-        return f"[{self.path}] value of '{self.aname}' {self.msg}"
+        return f"{{{self.path}}} value of '{self.aname}' {self.msg}"
 
 
 class InvalidArgument(YangsonException):
@@ -149,7 +149,7 @@ class InstanceException(YangsonException):
         self.message = message
 
     def __str__(self: "InstanceException"):
-        return f"[{self.instance.instance_route()}] {self.message}"
+        return f"{{{self.instance.instance_route()}}} {self.message}"
 
 
 class InstanceValueError(InstanceException):
@@ -415,7 +415,7 @@ class RawTypeError(RawDataError):
         self.message = "expected " + expected
 
     def __str__(self: "RawTypeError"):
-        return f"[{self.path}] {self.message}"
+        return f"{{{self.path}}} {self.message}"
 
 
 class ValidationError(YangsonException):
@@ -429,7 +429,7 @@ class ValidationError(YangsonException):
 
     def __str__(self: "ValidationError") -> str:
         msg = ": " + self.message if self.message else ""
-        return f"[{self.instance.instance_route()}] {self.tag}{msg}"
+        return f"{{{self.instance.instance_route()}}} {self.tag}{msg}"
 
 
 class SchemaError(ValidationError):
