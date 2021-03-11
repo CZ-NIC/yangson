@@ -50,8 +50,7 @@ from .datatype import (DataType, LinkType,
 from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
 from .exceptions import (
     AnnotationTypeError, InvalidArgument,
-    MissingAnnotationTarget, MissingAugmentTarget, MissingModuleNamespace,
-    RawMemberError,
+    MissingAnnotationTarget, MissingModuleNamespace, RawMemberError,
     RawTypeError, SchemaError, SemanticError, UndefinedAnnotation,
     YangsonException, YangTypeError)
 from .instvalue import (
@@ -649,8 +648,8 @@ class InternalNode(SchemaNode):
             return
         path = sctx.schema_data.sni2route(stmt.argument, sctx)
         target = self.get_schema_descendant(path)
-        if target is None:
-            raise MissingAugmentTarget(stmt.argument)
+        if target is None:      # silently ignore missing target
+            return
         if stmt.find1("when"):
             gr = GroupNode()
             target._add_child(gr)

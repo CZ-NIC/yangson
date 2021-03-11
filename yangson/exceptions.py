@@ -36,7 +36,6 @@ This module defines the following exceptions:
 * :exc:`InvalidSchemaPath`: Invalid schema path
 * :exc:`InvalidXPath`: An XPath expression is invalid.
 * :exc:`MissingAnnotationTarget`: Instance node that is being annotated doesn't exist.
-* :exc:`MissingAugmentTarget`: Target schema node for an augment is missing.
 * :exc:`MissingModule`: Abstract exception class – a module is missing.
 * :exc:`ModuleContentMismatch`: Abstract exception class – unexpected module name or revision.
 * :exc:`ModuleNameMismatch`: The module name doesn't match the expected name.
@@ -287,24 +286,6 @@ class InvalidSchemaPath(YangsonException):
 
     def __str__(self: "InvalidSchemaPath") -> str:
         return self.path
-
-
-class MissingAugmentTarget(YangsonException):
-    """Target schema node for an augment is missing.
-
-    This can also happen in the two following cases:
-
-    * the target node depends on a feature that is not supported
-    * the module in which the target node is defined is missing
-      in the YANG library, or included with a conformance type of
-      ``import``.
-    """
-
-    def __init__(self: "MissingAugmentTarget", sni: str):
-        self.sni = sni
-
-    def __str__(self: "MissingAugmentTarget") -> str:
-        return self.sni
 
 
 class UnknownPrefix(YangsonException):

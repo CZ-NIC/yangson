@@ -235,7 +235,7 @@ happens to be the key of the *foo* list:
 
 Correct! Both entries of the *foo* list now have the same key, namely ``6``.
 
-Other thing that YANG doesn't permit is to install a leaf value that
+Another thing that YANG doesn't permit is to install a leaf value that
 doesn't conform to the leaf's type, as in the following example:
 
 .. doctest::
