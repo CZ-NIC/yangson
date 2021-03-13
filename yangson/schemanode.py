@@ -355,6 +355,7 @@ class SchemaNode:
         "presence": "_presence_stmt",
         "rpc": "_rpc_action_stmt",
         "unique": "_unique_stmt",
+        "units": "_units_stmt",
         "uses": "_uses_stmt",
         "when": "_when_stmt",
     }
@@ -915,6 +916,7 @@ class TerminalNode(SchemaNode):
         super().__init__()
         self.type: DataType = None
         self._default: Optional[Value] = None
+        self._units: Optional[str] = None
 
     def content_type(self: "TerminalNode") -> ContentType:
         """Override superclass method."""
@@ -923,7 +925,14 @@ class TerminalNode(SchemaNode):
         return (ContentType.config if self.parent.config else
                 ContentType.nonconfig)
 
-    def from_raw(self: "TerminalNode", rval: RawScalar, jptr: JSONPointer = "") -> ScalarValue:
+    @property
+    def units(self: "TerminalNode") -> Optional[str]:
+        """Units of the receiver's value, if specified."""
+        return (self._units if self._units is not None
+                else self.type.units)
+
+    def from_raw(self: "TerminalNode", rval: RawScalar,
+                 jptr: JSONPointer = "") -> ScalarValue:
         """Override the superclass method."""
         res = self.type.from_raw(rval)
         if res is None:
@@ -944,8 +953,12 @@ class TerminalNode(SchemaNode):
             res["default"] = self.type.to_raw(df)
         return res
 
-    def _validate(self: "TerminalNode", inst: InstanceNode, scope: ValidationScope,
-                  ctype: ContentType) -> None:
+    def _units_stmt(self: "TerminalNode", stmt: Statement,
+                      sctx: SchemaContext) -> None:
+        self._units = stmt.argument
+
+    def _validate(self: "TerminalNode", inst: InstanceNode,
+                  scope: ValidationScope, ctype: ContentType) -> None:
         """Extend the superclass method."""
         if (scope.value & ValidationScope.syntax.value and
                 inst.value not in self.type):
@@ -1402,7 +1415,8 @@ class LeafNode(DataNode, TerminalNode):
         res = super()._tree_line() + ("" if self._mandatory else "?")
         return res if no_type else f"{res} <{self.type}>"
 
-    def _default_stmt(self: "LeafNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _default_stmt(self: "LeafNode", stmt: Statement,
+                      sctx: SchemaContext) -> None:
         self._default = stmt.argument
 
 

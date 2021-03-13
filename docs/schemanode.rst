@@ -480,6 +480,17 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> barsn.default
          True
 
+   .. attribute:: units
+
+      A string specifying units of receiver's values or ``None`` if no units
+      are specified. Note that units may also be specified in receiver's
+      type.
+
+      .. doctest::
+
+         >>> fsn.units
+         'foondela'
+
 .. class:: ContainerNode
 
    This class is a subclass of :class:`DataNode` and

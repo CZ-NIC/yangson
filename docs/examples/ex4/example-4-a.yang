@@ -16,6 +16,7 @@ module example-4-a {
     presence "true";
     leaf foo {
       type uint8;
+      units "foondela";
       mandatory "true";
       nacm:default-deny-write;
     }

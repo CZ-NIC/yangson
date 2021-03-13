@@ -75,6 +75,7 @@ class DataType:
         self.name = name
         self.error_tag = None
         self.error_message = None
+        self.units = None
 
     def __contains__(self: "DataType", val: ScalarValue) -> bool:
         """Return ``True`` if the receiver type contains `val`.
@@ -206,6 +207,9 @@ class DataType:
                 btyp = False
             else:
                 res._handle_restrictions(typst, tsc)
+            ust = tdef.find1("units")
+            if ust:
+                res.units = ust.argument
             dfst = tdef.find1("default")
             if dfst:
                 res.default = res.from_yang(dfst.argument)

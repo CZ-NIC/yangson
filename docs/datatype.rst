@@ -106,6 +106,16 @@ all :class:`~.schemanode.TerminalNode` instances.
          >>> string_t.default
          'xxy'
 
+   .. attribute:: units
+
+      Units of the type's values may be specified using
+      the **units** statement inside a **typedef**.
+
+      .. doctest::
+
+         >>> string_t.units is None
+         True
+
    .. attribute:: name
 
       Name of the type if it is derived, otherwise ``None``.
