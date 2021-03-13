@@ -200,4 +200,10 @@ class DataModel:
             mod = self.schema_data.modules[mid].statement
             for aug in mod.find_all("augment"):
                 self.schema._augment_stmt(aug, sctx)
+        for mid in self.schema_data._module_sequence:
+            sctx = SchemaContext(
+                self.schema_data, self.schema_data.namespace(mid), mid)
+            mod = self.schema_data.modules[mid].statement
+            for dev in mod.find_all("deviation"):
+                self.schema._deviation_stmt(dev, sctx)
         self.schema._post_process()

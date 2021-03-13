@@ -6,6 +6,17 @@
         "name": "example-2",
         "namespace": "http://example.com/example-2",
         "revision": "",
+        "deviation": [
+          { "name": "example-2-dev",
+            "revision": ""
+          }
+        ],
+        "conformance-type": "implement"
+      },
+      {
+        "name": "example-2-dev",
+        "namespace": "http://example.com/example-2-dev",
+        "revision": "",
         "conformance-type": "implement"
       },
       {

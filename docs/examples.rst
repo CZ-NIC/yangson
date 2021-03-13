@@ -59,6 +59,15 @@ File: ``examples/ex2/example-2.yang``
 .. literalinclude:: examples/ex2/example-2.yang
    :language: none
 
+.. _mod-ex2-dev:
+
+.. rubric:: YANG Module *example-2-dev* (deviations)
+
+File: ``examples/ex2/example-2-dev.yang``
+
+.. literalinclude:: examples/ex2/example-2-dev.yang
+   :language: none
+
 .. rubric:: Instance document
 
 File: ``examples/ex2/example-data.json``

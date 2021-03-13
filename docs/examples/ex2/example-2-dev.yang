@@ -1,0 +1,20 @@
+module example-2-dev {
+
+  namespace "http://example.com/example-2-dev";
+
+  prefix ex2d;
+
+  import example-2 {
+    prefix ex2;
+  }
+
+  deviation "/ex2:bag/ex2:foo/ex2:unlucky" {
+    deviate "not-supported";
+  }
+
+  deviation "/ex2:bag/ex2:foo/ex2:prime" {
+    deviate "add" {
+      default "false";
+    }
+  }
+}

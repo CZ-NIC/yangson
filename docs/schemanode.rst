@@ -185,6 +185,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. rubric:: Public Methods
 
+   .. automethod:: delete() -> None
+
    .. automethod:: schema_root() -> GroupNode
 
       .. doctest::

@@ -15,7 +15,6 @@ module example-2 {
       }
       leaf prime {
         type boolean;
-	default false;
       }
       leaf in-words {
         type string {
@@ -23,6 +22,10 @@ module example-2 {
 	    error-message "must be number in words";
 	  }
         }
+      }
+      leaf unlucky {
+        type boolean;
+	default false;
       }
     }
     leaf bar {

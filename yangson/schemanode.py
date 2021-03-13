@@ -1,4 +1,4 @@
-# Copyright © 2016-2019 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2021 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -114,6 +114,10 @@ class SchemaNode:
         """Is the receiver a mandatory node?"""
         return False
 
+    def delete(self: "SchemaNode") -> None:
+        """Remove the receiver from the schema."""
+        self.parent.children.remove(self)
+
     def schema_root(self: "SchemaNode") -> "SchemaTreeNode":
         """Return the root node of the receiver's schema."""
         sn = self
@@ -179,6 +183,18 @@ class SchemaNode:
     def clear_val_counters(self: "SchemaNode") -> None:
         """Clear receiver's validation counter."""
         self.val_count = 0
+
+    def _apply_deviate(self: "SchemaNode", stmt: Statement,
+                       sctx: SchemaContext) -> None:
+        """Apply **deviate** statement to the receiver."""
+        arg = stmt.argument
+        if arg == "not-supported":
+            self.delete()
+        else:
+            for subst in stmt.substatements:
+                method = getattr(self, "_deviate_" +
+                                 subst.keyword.replace("-", "_", 1))
+                method(subst, sctx, action=arg)
 
     def _get_description(self: "SchemaNode", stmt: Statement):
         dst = stmt.find1("description")
@@ -274,32 +290,64 @@ class SchemaNode:
     def _noop(self: "SchemaNode", stmt: Statement, sctx: SchemaContext) -> None:
         pass
 
-    def _config_stmt(self: "SchemaNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _config_stmt(self: "SchemaNode", stmt: Statement,
+                     sctx: SchemaContext) -> None:
         if stmt.argument == "false":
             self._ctype = ContentType.nonconfig
 
-    def _description_stmt(self: "SchemaNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _deviate_config(self: "SchemaNode", stmt: Statement,
+                         sctx: SchemaContext, action: str) -> None:
+        if action == "delete":
+            self._ctype = None
+        elif action in ("add", "replace"):
+            self._config_stmt(stmt, sctx)
+
+    def _description_stmt(self: "SchemaNode", stmt: Statement,
+                          sctx: SchemaContext) -> None:
         self.description = stmt.argument
 
-    def _must_stmt(self: "SchemaNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _must_stmt(self: "SchemaNode", stmt: Statement,
+                   sctx: SchemaContext) -> None:
         xpp = XPathParser(stmt.argument, sctx)
         mex = xpp.parse()
         if not xpp.at_end():
             raise InvalidArgument(stmt.argument)
         self.must.append(Must(mex, *stmt.get_error_info()))
 
-    def _when_stmt(self: "SchemaNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _deviate_must(self: "SchemaNode", stmt: Statement,
+                      sctx: SchemaContext, action: str) -> None:
+        if action in ("add", "replace"):
+            if action == "replace":
+                self.must = []
+            self._must_stmt(stmt, sctx)
+        elif action == "delete":
+            mstr = str(XPathParser(stmt.argument, sctx).parse())
+            for i in range(len(self.must)):
+                if str(self.must[i].expression) == mstr:
+                    del self.must[i]
+                    return
+
+    def _when_stmt(self: "SchemaNode", stmt: Statement,
+                   sctx: SchemaContext) -> None:
         xpp = XPathParser(stmt.argument, sctx)
         wex = xpp.parse()
         if not xpp.at_end():
             raise InvalidArgument(stmt.argument)
         self.when = wex
 
-    def _mandatory_stmt(self: "SchemaNode", stmt, sctx: SchemaContext) -> None:
+    def _mandatory_stmt(self: "SchemaNode", stmt,
+                        sctx: SchemaContext) -> None:
         if stmt.argument == "true":
             self._mandatory = True
         elif stmt.argument == "false":
             self._mandatory = False
+
+    def _deviate_mandatory(self: "SchemaNode", stmt: Statement,
+                         sctx: SchemaContext, action: str) -> None:
+        if action == "delete":
+            self._mandatory = False
+        elif action in ("add", "replace"):
+            self._mandatory_stmt(stmt, sctx)
 
     def _post_process(self: "SchemaNode") -> None:
         pass
@@ -307,7 +355,8 @@ class SchemaNode:
     def _is_identityref(self: "SchemaNode") -> bool:
         return False
 
-    def _default_nodes(self: "SchemaNode", inst: InstanceNode) -> List[InstanceNode]:
+    def _default_nodes(self: "SchemaNode",
+                       inst: InstanceNode) -> List[InstanceNode]:
         return []
 
     def _tree_line(self: "SchemaNode", no_type: bool = False) -> str:
@@ -643,12 +692,13 @@ class InternalNode(SchemaNode):
         self._add_child(node)
         node._handle_substatements(stmt, sctx)
 
-    def _augment_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _augment_stmt(self: "InternalNode", stmt: Statement,
+                      sctx: SchemaContext) -> None:
         """Handle **augment** statement."""
         if not sctx.schema_data.if_features(stmt, sctx.text_mid):
             return
-        path = sctx.schema_data.sni2route(stmt.argument, sctx)
-        target = self.get_schema_descendant(path)
+        target = self.get_schema_descendant(
+            sctx.schema_data.sni2route(stmt.argument, sctx))
         if target is None:      # silently ignore missing target
             return
         if stmt.find1("when"):
@@ -656,6 +706,16 @@ class InternalNode(SchemaNode):
             target._add_child(gr)
             target = gr
         target._handle_substatements(stmt, sctx)
+
+    def _deviation_stmt(self: "InternalNode", stmt: Statement,
+                        sctx: SchemaContext) -> None:
+        """Handle **deviation** statement."""
+        target = self.get_schema_descendant(
+            sctx.schema_data.sni2route(stmt.argument, sctx))
+        if target is None:      # silently ignore missing target
+            return
+        for dstmt in stmt.find_all("deviate"):
+            target._apply_deviate(dstmt, sctx)
 
     def _refine_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
         """Handle **refine** statement."""
@@ -945,6 +1005,11 @@ class TerminalNode(SchemaNode):
             raise RawTypeError(jptr, self.type.yang_type() + " value")
         return res
 
+    def _deviate_type(self: "TerminalNode", stmt: Statement,
+                         sctx: SchemaContext, action: str) -> None:
+        if action == "replace":
+            self.type = DataType._resolve_type(stmt, sctx)
+
     def _node_digest(self: "TerminalNode") -> Dict[str, Any]:
         res = super()._node_digest()
         res["type"] = self.type._type_digest(self.config)
@@ -956,6 +1021,13 @@ class TerminalNode(SchemaNode):
     def _units_stmt(self: "TerminalNode", stmt: Statement,
                       sctx: SchemaContext) -> None:
         self._units = stmt.argument
+
+    def _deviate_units(self: "TerminalNode", stmt: Statement,
+                       sctx: SchemaContext, action: str) -> None:
+        if action == "delete":
+            self._units = None
+        elif action in ("add", "replace"):
+            self._units_stmt(stmt, sctx)
 
     def _validate(self: "TerminalNode", inst: InstanceNode,
                   scope: ValidationScope, ctype: ContentType) -> None:
@@ -1087,17 +1159,34 @@ class SequenceNode(DataNode):
         if self.min_elements > 0:
             self.parent._add_mandatory_child(self)
 
-    def _min_elements_stmt(self: "SequenceNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _min_elements_stmt(self: "SequenceNode", stmt: Statement,
+                           sctx: SchemaContext) -> None:
         self.min_elements = int(stmt.argument)
 
-    def _max_elements_stmt(self: "SequenceNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _deviate_min_elements(self: "SequenceNode", stmt: Statement,
+                              sctx: SchemaContext, action: str) -> None:
+        if action == "delete":
+            self.min_elements = 0
+        elif action in ("add", "replace"):
+            self._min_elements_stmt(stmt, sctx)
+
+    def _max_elements_stmt(self: "SequenceNode", stmt: Statement,
+                           sctx: SchemaContext) -> None:
         arg = stmt.argument
         if arg == "unbounded":
             self.max_elements = None
         else:
             self.max_elements = int(arg)
 
-    def _ordered_by_stmt(self: "SequenceNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _deviate_max_elements(self: "SequenceNode", stmt: Statement,
+                              sctx: SchemaContext, action: str) -> None:
+        if action == "delete":
+            self.max_elements = None
+        elif action in ("add", "replace"):
+            self._max_elements_stmt(stmt, sctx)
+
+    def _ordered_by_stmt(self: "SequenceNode", stmt: Statement,
+                         sctx: SchemaContext) -> None:
         self.user_ordered = stmt.argument == "user"
 
     def _tree_line(self: "SequenceNode", no_type: bool = False) -> str:
@@ -1257,7 +1346,8 @@ class ListNode(SequenceNode, InternalNode):
         for k in stmt.argument.split():
             self.keys.append(sctx.schema_data.translate_node_id(k, sctx))
 
-    def _unique_stmt(self: "ListNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _parse_unique(self: "ListNode", stmt: Statement,
+                     sctx: SchemaContext) -> List[LocationPath]:
         uspec = []
         for sid in stmt.argument.split():
             xpp = XPathParser(sid, sctx)
@@ -1265,7 +1355,24 @@ class ListNode(SequenceNode, InternalNode):
             if not xpp.at_end():
                 raise InvalidArgument(stmt.argument)
             uspec.append(uex)
-        self.unique.append(uspec)
+        return uspec
+
+    def _unique_stmt(self: "ListNode", stmt: Statement,
+                     sctx: SchemaContext) -> None:
+        self.unique.append(self._parse_unique(stmt, sctx))
+
+    def _deviate_unique(self: "ListNode", stmt: Statement,
+                        sctx: SchemaContext, action: str) -> None:
+        if action in ("add", "replace"):
+            if action == "replace":
+                self.unique = []
+            self._unique_stmt(stmt, sctx)
+        elif action == "delete":
+            uniq = self._parse_unique(stmt, sctx)
+            for i in range(len(self.unique)):
+                if self.unique[i] == uniq:
+                    del self.unique[i]
+                    return
 
     def _tree_line(self: "ListNode", no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -1315,7 +1422,8 @@ class ChoiceNode(InternalNode):
         else:
             return inst
 
-    def _active_case(self: "ChoiceNode", value: ObjectValue) -> Optional["CaseNode"]:
+    def _active_case(self: "ChoiceNode",
+                     value: ObjectValue) -> Optional["CaseNode"]:
         """Return receiver's case that's active in an instance node value."""
         for c in self.children:
             for cc in c.data_children():
@@ -1338,7 +1446,8 @@ class ChoiceNode(InternalNode):
         if self._mandatory:
             self.parent._add_mandatory_child(self)
 
-    def _default_nodes(self: "ChoiceNode", inst: InstanceNode) -> List[InstanceNode]:
+    def _default_nodes(self: "ChoiceNode",
+                       inst: InstanceNode) -> List[InstanceNode]:
         res = []
         if self.default_case is None:
             return res
@@ -1361,9 +1470,17 @@ class ChoiceNode(InternalNode):
             self._add_child(cn)
             cn._handle_child(node, stmt, sctx)
 
-    def _default_stmt(self: "ChoiceNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _default_stmt(self: "ChoiceNode", stmt: Statement,
+                      sctx: SchemaContext) -> None:
         self.default_case = sctx.schema_data.translate_node_id(
             stmt.argument, sctx)
+
+    def _deviate_default(self: "ChoiceNode", stmt: Statement,
+                         sctx: SchemaContext, action: str) -> None:
+        if action == "delete":
+            self.default_case = None
+        elif action in ("add", "replace"):
+            self._default_stmt(stmt, sctx)
 
     def _tree_line(self: "ChoiceNode", no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
@@ -1419,6 +1536,13 @@ class LeafNode(DataNode, TerminalNode):
                       sctx: SchemaContext) -> None:
         self._default = stmt.argument
 
+    def _deviate_default(self: "LeafNode", stmt: Statement,
+                         sctx: SchemaContext, action: str) -> None:
+        if action == "delete":
+            self._default = None
+        elif action in ("add", "replace"):
+            self._default_stmt(stmt, sctx)
+
 
 class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
@@ -1441,11 +1565,25 @@ class LeafListNode(SequenceNode, TerminalNode):
                 len(set(inst.value)) < len(inst.value)):
             raise SemanticError(inst, "repeated-leaf-list-value")
 
-    def _default_stmt(self: "LeafListNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _default_stmt(self: "LeafListNode",
+                      stmt: Statement, sctx: SchemaContext) -> None:
         if self._default is None:
             self._default = [stmt.argument]
         else:
             self._default.append(stmt.argument)
+
+    def _deviate_default(self: "LeafListNode", stmt: Statement,
+                         sctx: SchemaContext, action: str) -> None:
+        if action in ("add", "replace"):
+            if action == "replace":
+                self._default = []
+            self._default_stmt(stmt, sctx)
+        elif action == "delete":
+            val = self.type.parse_value(stmt.argument)
+            for i in range(len(self._default)):
+                if self._default[i] == val:
+                    del self._default[i]
+                    return
 
     def _post_process(self: "LeafListNode") -> None:
         super()._post_process()

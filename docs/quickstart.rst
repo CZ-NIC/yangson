@@ -44,7 +44,12 @@ by reading YANG library data [RFC7895]_ from a file:
    Distribution directory *tools/python* contains the script *mkylib.py* that
    can help with preparing YANG library data.
 
-Here is an ASCII art depicting the schema tree:
+This example also uses *deviations* (see sec. `5.6.3`_ in [RFC7950]_) specified in YANG module :ref:`example-2-dev <mod-ex2-dev>`:
+
+* leaf ``unlucky`` is removed from the schema
+* a default value is added for the leaf ``prime``.
+
+With the deviations applied, the resulting schema tree looks like this:
 
 .. doctest::
 
@@ -263,3 +268,5 @@ And finally, we delete a leaf that's defined as mandatory in the data model:
    Traceback (most recent call last):
    ...
    yangson.exceptions.SchemaError: {/example-2:bag} missing-data: expected 'bar'
+
+.. _5.6.3: https://www.rfc-editor.org/rfc/rfc7950.html#section-5.6.3
