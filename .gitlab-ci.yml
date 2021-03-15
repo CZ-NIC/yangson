@@ -8,7 +8,7 @@ stages:
 before_script:
   - apt update
   - apt install -yqq git make
-  - pip install pip-tools
+  - pip install pip-tools importlib-metadata
   - pip-compile
   - pip-sync
 
