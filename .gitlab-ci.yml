@@ -16,6 +16,8 @@ test:
   stage: test
   script:
     - make test
+    - cd docs
+    - make doctest
 
 build-docs:
   stage: build-docs
