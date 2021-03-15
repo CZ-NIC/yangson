@@ -5,23 +5,20 @@ stages:
   - build-docs
   - publish-docs
 
+before_script:
+  - apt update
+  - apt install -yqq git make
+  - pip install pip-tools
+  - pip-compile
+  - pip-sync
+
 test:
   stage: test
-  before_script:
-    - apk add git make
-    - pip install pip-tools
-    - pip-compile
-    - pip-sync
   script:
     - make test
 
 build-docs:
   stage: build-docs
-  before_script:
-    - apk add git make
-    - pip install pip-tools
-    - pip-compile
-    - pip-sync
   script:
     - cd docs
     - make html
