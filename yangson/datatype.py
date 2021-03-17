@@ -702,7 +702,9 @@ class IdentityrefType(DataType):
     def __contains__(self: "IdentityrefType", val: QualName) -> bool:
         for b in self.bases:
             if not self.sctx.schema_data.is_derived_from(val, b):
-                self._set_error_info(error_message=f"not derived from {b[1]}:{b[0]}")
+                self._set_error_info(
+                    error_message=f"'{self.canonical_string(val)}'" +
+                    f" not derived from '{self.canonical_string(b)}'")
                 return False
         return True
 
@@ -720,7 +722,8 @@ class IdentityrefType(DataType):
         except (ModuleNotRegistered, UnknownPrefix):
             raise InvalidArgument(text)
 
-    def canonical_string(self: "IdentityrefType", val: ScalarValue) -> Optional[str]:
+    def canonical_string(self: "IdentityrefType",
+                         val: ScalarValue) -> Optional[str]:
         """Return canonical form of a value."""
         return f"{val[1]}:{val[0]}"
 
