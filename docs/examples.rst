@@ -13,6 +13,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 Example 1
 =========
 
+.. rubric:: Schema Tree
+
+::
+
+   +--rw example-1:greeting? <string>
+
 This example is used in the documentation of the :mod:`.datamodel`
 module.
 
@@ -44,6 +50,18 @@ Example 2
 
 This example is used in the documentation of the :mod:`.instance`
 module, and also in :ref:`quick-start`.
+
+.. rubric:: Schema Tree
+
+::
+
+   +--rw example-2:bag
+      +--rw bar <boolean>
+      +--rw baz? <decimal64>
+      +--rw foo* [number]
+         +--rw in-words? <string>
+         +--rw number <uint8>
+         +--rw prime? <boolean>
 
 .. rubric:: YANG Library
 
@@ -83,6 +101,18 @@ Example 3
 This example is used in the documentation of the :mod:`.schemadata`
 module.
 
+.. rubric:: Schema Tree
+
+::
+
+   +--rw example-3-a:top
+      +--rw bar? <string>
+      +--rw example-3-b:bar? <string>
+      +--rw baz? <ipv4-address-no-zone(string)>
+      +--rw example-3-b:baz? <port-number(uint16)>
+      +--rw foo? <empty>
+      +--rw quux? <uint8>
+
 .. rubric:: YANG Library
 
 File: ``examples/ex3/yang-library-ex3.json``
@@ -119,6 +149,20 @@ Example 4
 This example is used in the documentation of
 the :mod:`.schemanode`, :mod:`.xpathast` and :mod:`.xpathparser` modules.
 
+.. rubric:: Schema Tree
+
+::
+
+   +--rw example-4-a:bag!
+   |  +--ro bar? <boolean>
+   |  +--rw foo <uint8>
+   |  +--rw (opts)?
+   |     +--:(a)
+   |     |  +--rw baz? <empty>
+   |     +--:(example-4-b:fooref)
+   |        +--rw fooref? <leafref>
+   +--rw example-4-b:quux* <decimal64>
+
 .. rubric:: YANG Library
 
 File: ``examples/ex4/yang-library-ex4.json``
@@ -153,7 +197,23 @@ Example 5
 =========
 
 This example is used in the documentation of the :mod:`.datatype` and
-:mod:`statement` modules.
+:mod:`.statement` modules.
+
+.. rubric:: Schema Tree
+
+::
+
+   +--rw example-5-a:binary-leaf? <binary>
+   +--rw example-5-a:bits-leaf? <bits>
+   +--rw example-5-a:boolean-leaf? <boolean>
+   +--rw example-5-a:decimal64-leaf? <decimal64>
+   +--rw example-5-a:empty-leaf? <empty>
+   +--rw example-5-a:enumeration-leaf? <enumeration>
+   +--rw example-5-a:identityref-leaf? <identityref>
+   +--rw example-5-a:instance-identifier-leaf? <instance-identifier>
+   +--rw example-5-a:leafref-leaf? <leafref>
+   +--rw example-5-a:string-leaf? <my-string(string)>
+   +--rw example-5-a:union-leaf? <union>
 
 .. rubric:: YANG Library
 
