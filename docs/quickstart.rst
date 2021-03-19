@@ -81,9 +81,17 @@ and validate it against the data model:
 
 No output means that the validation was successful.
 
-We can now print the ASCII tree again, this time without showing the types
-but instead displaying *validation counters* that indicate how many times each
-schema node has been used for validating instances. This is useful for assessing
+It is also possible to validate a subtree of instance data against the corresponding schema node. For example:
+
+.. doctest::
+
+   >>> foo2 = inst['example-2:bag']['foo'][2]
+   >>> foo2.validate()
+
+We can now print the ASCII tree again, this time without showing the
+types but instead displaying *validation counters* that indicate how
+many times each schema node has been used for validating instances
+during the previous two validation runs. This is useful for assessing
 the coverage of instance data with respect to the schema.
 
 .. doctest::
@@ -92,10 +100,10 @@ the coverage of instance data with respect to the schema.
    +--rw example-2:bag {1}
       +--rw bar {1}
       +--rw baz? {0}
-      +--rw foo* [number] {4}
-         +--rw in-words? {4}
-         +--rw number {4}
-         +--rw prime? {2}
+      +--rw foo* [number] {5}
+         +--rw in-words? {5}
+         +--rw number {5}
+         +--rw prime? {3}
 
 Moving Around and Editing the Data Tree
 =======================================
