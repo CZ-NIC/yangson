@@ -213,13 +213,15 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       contains members with information about the corresponding data
       node (including the anonymous root node), namely:
 
-      * The following members are available for all nodes:
+      * The following members are available for all nodes that have them:
 
-    - ``class`` – class of the node, with these possible values:
-      ``root``, ``container``, ``leaf``, ``list``, ``leaf-list``,
-      ``anydata`` and ``anyxml``
-    - ``description`` – description string as defined in the data
-      model, or empty string if the node has no description.
+        - ``kind`` – class of the node, with these possible values:
+          ``schematree``, ``container``, ``leaf``, ``list``, ``leaf-list``,
+          ``anydata`` and ``anyxml``
+	- ``config`` – ```false`` if the node (and its descendants) don't
+	  represent configuration
+	- ``mandatory`` with the value of ``true`` if the node is mandatory
+        - ``description`` – description string as defined in the data model
 
       * Internal nodes (the root node, containers, and lists) have the
         ``children`` member. Its value is an object with a name/value
@@ -231,14 +233,15 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
         ``children`` object is then another object containing the
         child's schema digest.
 
-      * The following members are added for terminal nodes (leafs and
+      * The following members are added for terminal nodes (leaves and
         leaf-lists):
 
-    - ``base-type`` – base type of the terminal node such as
-      ``uint8``, ``string`` etc.
-    - ``derived`` – this member is present only if the node's type
-      is derived, and contains the name of the derived type.
-
+        - ``type`` – specifies the base type of the terminal node such
+          as ``uint8``, ``string``, the derived type name (if any), and
+          possibly extra information specific for the type
+        - ``default`` – the default value for the node, if defined
+	- ``units`` - units for the node's values, if specified
+      
       * Container nodes also have the ``presence`` member that is
         ``true`` for containers with presence (see sec. `7.5.1`_ of
         [RFC7950]_), and ``false`` otherwise.

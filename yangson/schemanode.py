@@ -1016,6 +1016,8 @@ class TerminalNode(SchemaNode):
         df = self.default
         if df is not None:
             res["default"] = self.type.to_raw(df)
+        if self.units:
+            res["units"] = self.units
         return res
 
     def _units_stmt(self: "TerminalNode", stmt: Statement,
