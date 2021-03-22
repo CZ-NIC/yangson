@@ -24,6 +24,7 @@ to the appropriate directory:
 
    >>> import os
    >>> import json
+   >>> import yaml
    >>> from yangson import DataModel
    >>> os.chdir("examples/ex2")
 
@@ -277,4 +278,25 @@ And finally, we delete a leaf that's defined as mandatory in the data model:
    ...
    yangson.exceptions.SchemaError: {/example-2:bag} missing-data: expected 'bar'
 
+Instances in YAML Representation
+================================
+
+Instance data may alternatively be read from a YAML document:
+
+.. doctest::
+
+   >>> with open('example-data.yaml') as infile:
+   ...   ri = yaml.load(infile)
+   >>> inst = dm.from_raw(ri)
+   >>> inst.validate()
+   >>> inst.peek(irt)
+   'three'
+
+.. warning::
+   This is an experimental feature relying on the close relationship
+   between JSON and YAML. However, it hasn't been heavily tested and
+   may fail for some corner cases. Please report bugs and problems to
+   `GitHub`_.
+
 .. _5.6.3: https://www.rfc-editor.org/rfc/rfc7950.html#section-5.6.3
+.. _GitHub: https://github.com/CZ-NIC/yangson/issues

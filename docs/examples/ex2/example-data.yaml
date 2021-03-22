@@ -1,0 +1,16 @@
+example-2:bag:
+  bar: true
+  foo:
+  - in-words: six
+    number: 6
+  - '@':
+      ietf-origin:origin: ietf-origin:system
+    in-words: three
+    number: 3
+    prime: true
+  - in-words: seven
+    number: 7
+    prime: true
+  - in-words: eight
+    number: 8
+
