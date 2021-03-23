@@ -59,8 +59,7 @@ itself.
 *Yangson* is currently able to parse only the compact syntax of YANG
 files. Modules written in the alternative XML format (YIN) can be
 converted to the compact syntax by using the XSLT stylesheet
-*yin2yang.xsl* that is also included in *Yangson* distribution
-(directory *tools/xslt*).
+*yin2yang.xsl* that can be obtained from the `YIN Tools`_ project.
 
 Doctest Examples
 ================
@@ -88,3 +87,4 @@ command from the ``docs`` directory::
 .. _persistent structures: https://en.wikipedia.org/wiki/Persistent_data_structure
 .. _5.2: https://tools.ietf.org/html/rfc7950#section-5.2
 .. _PyPI: https://pypi.python.org
+.. _YIN Tools: https://github.com/llhotka/yin-tools
