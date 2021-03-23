@@ -93,6 +93,13 @@ File: ``examples/ex2/example-data.json``
 .. literalinclude:: examples/ex2/example-data.json
    :language: json
 
+The same instance document in YAML representation is used in :ref:`quick-start`:
+
+File: ``examples/ex2/example-data.yaml``
+
+.. literalinclude:: examples/ex2/example-data.yaml
+   :language: yaml
+
 .. _sec-ex3:
 
 Example 3

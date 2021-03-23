@@ -292,11 +292,12 @@ Instance data may alternatively be read from a YAML document:
    >>> inst.peek(irt)
    'three'
 
-.. warning::
-   This is an experimental feature relying on the close relationship
-   between JSON and YAML. However, it hasn't been heavily tested and
-   may fail for some corner cases. Please report bugs and problems to
-   `GitHub`_.
+This approach parses YAML data into a :term:`raw value` using the
+Python module `PyYAML`_, and relies on the close relationship between
+JSON and YAML. However, it hasn't been heavily tested and may fail for
+some corner cases. For example, the PyYAML parser interprets
+*unquoted* strings ``yes`` and ``no`` as :py:class:`bool` values
+``True`` and ``False``.
 
 .. _5.6.3: https://www.rfc-editor.org/rfc/rfc7950.html#section-5.6.3
-.. _GitHub: https://github.com/CZ-NIC/yangson/issues
+.. _PyYAML: https://pypi.org/project/PyYAML/
