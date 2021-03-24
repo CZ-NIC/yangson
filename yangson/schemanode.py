@@ -355,10 +355,6 @@ class SchemaNode:
     def _is_identityref(self: "SchemaNode") -> bool:
         return False
 
-    def _default_nodes(self: "SchemaNode",
-                       inst: InstanceNode) -> List[InstanceNode]:
-        return []
-
     def _tree_line(self: "SchemaNode", no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
         return f"{self._tree_line_prefix()} {self._tree_name()}"
@@ -1061,10 +1057,6 @@ class TerminalNode(SchemaNode):
     def _is_identityref(self: "TerminalNode") -> bool:
         return isinstance(self.type, IdentityrefType)
 
-    def _default_nodes(self: "TerminalNode", inst: InstanceNode) -> List[InstanceNode]:
-        di = self._default_instance(inst, ContentType.all)
-        return [] if di is None else [self]
-
     def _ascii_tree(self: "TerminalNode", indent: str, no_types: bool, val_count: bool) -> str:
         return ""
 
@@ -1105,14 +1097,6 @@ class ContainerNode(DataNode, InternalNode):
                        lazy: bool) -> Optional[InstanceNode]:
         inst.value = ObjectValue()
         return inst if lazy else self._add_defaults(inst, ctype)
-
-    def _default_nodes(self: "ContainerNode", inst: InstanceNode) -> List[InstanceNode]:
-        if self.presence:
-            return []
-        res = inst.put_member(self.iname(), ObjectValue())
-        if self.when is None or self.when.evaluate(res):
-            return [res]
-        return []
 
     def _presence_stmt(self: "ContainerNode", stmt: Statement, sctx: SchemaContext) -> None:
         self.presence = True
@@ -1447,15 +1431,6 @@ class ChoiceNode(InternalNode):
         super()._post_process()
         if self._mandatory:
             self.parent._add_mandatory_child(self)
-
-    def _default_nodes(self: "ChoiceNode",
-                       inst: InstanceNode) -> List[InstanceNode]:
-        res = []
-        if self.default_case is None:
-            return res
-        for cn in self.get_child(*self.default_case).children:
-            res.extend(cn._default_nodes(inst))
-        return res
 
     def _tree_line_prefix(self: "ChoiceNode") -> str:
         return super()._tree_line_prefix() + (
