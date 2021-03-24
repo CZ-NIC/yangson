@@ -430,7 +430,7 @@ class LocationPath(BinaryExpr):
 
     def _eval(self: "LocationPath", xctx: XPathContext) -> XPathValue:
         lres = self.left._eval(xctx)
-        ns = lres.bind(self.right._node_trans(xctx))
+        ns = lres.bind(self.right._node_trans())
         return self.right._apply_predicates(ns, xctx)
 
     def __str__(self: "LocationPath") -> str:
@@ -500,7 +500,7 @@ class Step(Expr):
     def _children_ast(self: "Step", indent) -> str:
         return self._predicates_str(indent)
 
-    def _node_trans(self: "Step", xctx) -> NodeExpr:
+    def _node_trans(self: "Step") -> NodeExpr:
         return {
             Axis.ancestor: lambda n, qn=self.qname: n._ancestors(qn),
             Axis.ancestor_or_self:
@@ -522,7 +522,7 @@ class Step(Expr):
         }[self.axis]
 
     def _eval(self: "Step", xctx: XPathContext) -> XPathValue:
-        ns = NodeSet(self._node_trans(xctx)(xctx.cnode))
+        ns = NodeSet(self._node_trans()(xctx.cnode))
         return self._apply_predicates(ns, xctx)
 
 
