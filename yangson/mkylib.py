@@ -14,7 +14,6 @@ import sys
 
 from yangson.statement import ModuleParser
 
-ydir = sys.argv[1]
 """Name of the directory with YANG (sub)modules."""
 data_kws = ["augment", "container", "leaf", "leaf-list", "list", "rpc", "notification", "identity"]
 """Keywords of statements that contribute nodes to the schema tree."""
@@ -22,6 +21,9 @@ modmap = {}
 """Dictionary for collecting module data."""
 submodmap = {}
 """Dictionary for collecting submodule data."""
+
+class GeneratingError(Exception):
+    """Error when producing ietf-yang-library data"""
 
 
 def module_entry(yfile):
@@ -63,7 +65,7 @@ def module_entry(yfile):
         modmap[(mst.argument, rev)] = rec
 
 
-def main():
+def process_directory(ydir):
     for infile in os.listdir(ydir):
         if not infile.endswith(".yang"):
             continue
@@ -82,13 +84,11 @@ def main():
             try:
                 srec = submodmap[subm]
             except KeyError:
-                print(f"Submodule {subm} not available.", file=sys.stderr)
-                return 1
+                raise GeneratingError(f"Submodule {subm} not available.")
             if srev is None or srev == srec["revision"]:
                 sen["revision"] = srec["revision"]
             else:
-                print(f"Submodule {subm} revision mismatch.", file=sys.stderr)
-                return 1
+                raise GeneratingError(f"Submodule {subm} revision mismatch.")
             imp_only = imp_only or srec["import-only"]
             fts += srec["features"]
             sarr.append(sen)
@@ -104,9 +104,16 @@ def main():
             "module": marr
         }
     }
-    print(json.dumps(res, indent=2))
-    return 0
+    return res
+
+
+def main():
+    try:
+        print(json.dumps(process_directory(sys.argv[1]), indent=2))
+    except GeneratingError as e:
+        print(e, file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    main()
