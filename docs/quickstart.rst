@@ -235,19 +235,30 @@ default value doesn't apply.
 Breaking the Schema
 ===================
 
-Let's also try to violate the data model schema in various ways.
-First, we modify the *name* sibling of our *inw* instance, which
+In order to see validation in action, we will try to violate the data model schema in various ways. First, let's modify the *inw* instance as follows:
+
+.. doctest::
+
+   >>> broken1 = inw.update("six").top()
+   >>> broken1.validate()
+   Traceback (most recent call last):
+   ...
+   yangson.exceptions.SemanticError: {/example-2:bag/foo} data-not-unique
+
+This is correct because the values of the *in-words* leaf are required to be unique among all entries of the *foo* list, but two of them now have the value of ``six``.
+
+Next we modify the *name* sibling of our *inw* instance, which
 happens to be the key of the *foo* list:
 
 .. doctest::
 
-   >>> broken1 = inw.sibling('number').update(6).top()
-   >>> broken1.validate()
+   >>> broken2 = inw.sibling('number').update(6).top()
+   >>> broken2.validate()
    Traceback (most recent call last):
    ...
    yangson.exceptions.SemanticError: {/example-2:bag/foo} non-unique-key: 6
 
-Correct! Both entries of the *foo* list now have the same key, namely ``6``.
+In this case, two entries of the *foo* list have the same key, namely ``6``, which illegal.
 
 Another thing that YANG doesn't permit is to install a leaf value that
 doesn't conform to the leaf's type, as in the following example:
@@ -272,8 +283,8 @@ And finally, we delete a leaf that's defined as mandatory in the data model:
 
 .. doctest::
 
-   >>> broken2 = inw.up().up().up().delete_item('bar').top()
-   >>> broken2.validate()
+   >>> broken3 = inw.up().up().up().delete_item('bar').top()
+   >>> broken3.validate()
    Traceback (most recent call last):
    ...
    yangson.exceptions.SchemaError: {/example-2:bag} missing-data: expected 'bar'
