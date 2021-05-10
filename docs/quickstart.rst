@@ -286,7 +286,7 @@ Instance data may alternatively be read from a YAML document:
 .. doctest::
 
    >>> with open('example-data.yaml') as infile:
-   ...   ri = yaml.load(infile)
+   ...   ri = yaml.load(infile, Loader=yaml.SafeLoader)
    >>> inst = dm.from_raw(ri)
    >>> inst.validate()
    >>> inst.peek(irt)
