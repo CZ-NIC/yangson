@@ -243,9 +243,9 @@ In order to see validation in action, we will try to violate the data model sche
    >>> broken1.validate()
    Traceback (most recent call last):
    ...
-   yangson.exceptions.SemanticError: {/example-2:bag/foo} data-not-unique
+   yangson.exceptions.SemanticError: {/example-2:bag/foo} data-not-unique: entry 1
 
-This is correct because the values of the *in-words* leaf are required to be unique among all entries of the *foo* list, but two of them now have the value of ``six``.
+This is correct because the values of the *in-words* leaf are required to be unique among all entries of the *foo* list, but entry #1 now has the same value as the previous entry, namely ``six``.
 
 Next we modify the *name* sibling of our *inw* instance, which
 happens to be the key of the *foo* list:

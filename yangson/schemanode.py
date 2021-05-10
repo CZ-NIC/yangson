@@ -1302,7 +1302,8 @@ class ListNode(SequenceNode, InternalNode):
     def _check_unique(self: "ListNode", unique: List[LocationPath],
                       inst: InstanceNode) -> None:
         allvals = set()
-        for en in inst:
+        for i in range(len(inst.value)):
+            en = inst[i]
             den = en.add_defaults()
             uvals = []
             for uex in unique:
@@ -1310,7 +1311,7 @@ class ListNode(SequenceNode, InternalNode):
                 uvals.append(uval)
             tups = set(product(*uvals))
             if tups & allvals:
-                raise SemanticError(inst, "data-not-unique")
+                raise SemanticError(inst, f"data-not-unique: entry {i}")
             else:
                 allvals |= tups
 
