@@ -172,8 +172,9 @@ class InstanceNode:
         res = []
         inst: InstanceNode = self
         while inst.parinst:
-            res.insert(0, inst._key)
+            res.append(inst._key)
             inst = inst.parinst
+        res.reverse()
         return tuple(res)
 
     def __str__(self: "InstanceNode") -> str:
