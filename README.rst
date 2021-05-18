@@ -6,6 +6,12 @@
 .. image:: https://img.shields.io/badge/python-3.7-blue.svg
    :alt: Python 3.7
 
+.. image:: https://img.shields.io/badge/python-3.8-blue.svg
+   :alt: Python 3.8
+
+.. image:: https://img.shields.io/badge/python-3.9-blue.svg
+   :alt: Python 3.9
+
 ******************
 Welcome to Yangson
 ******************
