@@ -952,10 +952,13 @@ class ArrayEntry(InstanceNode):
             return EntryIndex(self._key)
         kdict = {}
         for k in sn.keys:
-            if k[1] == sn.ns:
-                kdict[(k[0], None)] = str(self[k[0]])
-            else:
-                kdict[k] = str(self[f"{k[1]}:{k[0]}"])
+            try:
+                if k[1] == sn.ns:
+                    kdict[(k[0], None)] = str(self[k[0]])
+                else:
+                    kdict[k] = str(self[f"{k[1]}:{k[0]}"])
+            except NonexistentInstance:
+                return EntryIndex(self._key)
         return EntryKeys(kdict)
 
     def _ancestors_or_self(
