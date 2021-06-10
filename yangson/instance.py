@@ -231,8 +231,9 @@ class InstanceNode:
         res = InstanceRoute()
         inst = self
         while inst.parinst:
-            res.insert(0, inst._instance_route_entry())
+            res.append(inst._instance_route_entry())
             inst = inst.parinst
+        res.reverse()
         return res
 
     def is_internal(self: "InstanceNode") -> bool:
