@@ -11,7 +11,8 @@ setup(
     author_email = "lhotka@nic.cz",
     url = "https://github.com/CZ-NIC/yangson",
     entry_points = {
-        "console_scripts": ["yangson=yangson.__main__:main"]
+        "console_scripts": ["yangson=yangson.__main__:main",
+                            "yangson-mkylib=yangson.mkylib:main"]
         },
     install_requires = ["PyXB"],
     tests_require = ["pytest"],

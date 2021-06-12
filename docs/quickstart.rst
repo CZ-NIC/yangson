@@ -42,8 +42,7 @@ by reading YANG library data [RFC7895]_ from a file:
    'Data model ID: 9a9b7d2d28d4d78fa42e12348346990e3fb1c1b9'
 
 .. note::
-   Distribution directory *tools/python* contains the script *mkylib.py* that
-   can help with preparing YANG library data.
+   YANG library data can be created by running *yangson-mkylib*.
 
 This example also uses *deviations* (see sec. `5.6.3`_ in [RFC7950]_) specified in YANG module :ref:`example-2-dev <mod-ex2-dev>`:
 
