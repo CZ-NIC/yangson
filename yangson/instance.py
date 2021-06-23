@@ -378,8 +378,8 @@ class InstanceNode:
             A list with all validation exception objects
         """
         errors = set()
-        nodes_no_defaults = [RpcActionNode, InputNode, OutputNode, AnyContentNode, AnydataNode, AnyxmlNode]
-        if type(self.schema_node) in nodes_no_defaults or not self._children():
+        ignore_children = [RpcActionNode, InputNode, OutputNode, AnyContentNode, AnydataNode, AnyxmlNode]
+        if type(self.schema_node) in ignore_children or not self._children():
             try:
                 self.validate(scope, ctype)
             except (YangTypeError, SchemaError, SemanticError) as validationError:
