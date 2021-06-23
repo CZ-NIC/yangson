@@ -6,7 +6,7 @@ from yangson.exceptions import (
     InvalidArgument, InvalidFeatureExpression, UnknownPrefix,
     NonexistentInstance, NonexistentSchemaNode, RawTypeError,
     SchemaError, XPathTypeError, InvalidXPath, NotSupported,
-    InstanceValueError)
+    InstanceValueError, YangTypeError)
 from yangson.instvalue import ArrayValue, ObjectValue
 from yangson.instance import RootNode, ObjectMember, ArrayEntry
 from yangson.schemadata import SchemaContext, FeatureExprParser
@@ -463,6 +463,7 @@ def test_rpc(data_model, rpc_raw_output):
     inst = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
     assert inst.raw_value() == rpc_raw_output
     assert inst.validate(ctype=ContentType.all) is None
+    assert inst.get_error_list(ctype=ContentType.all) == []
 
 def test_xpath(data_model, instance):
     def xptest(expr, back, res=True, node=instance, module="test"):
@@ -707,12 +708,16 @@ def test_validation(instance):
     inst2 = instance.put_member("testb:leafQ", "ABBA").top()
     with pytest.raises(SchemaError):
         inst2.validate(ctype=ContentType.all)
+    assert len(inst2.get_error_list(ctype=ContentType.all)) == 1
+    assert type(inst2.get_error_list(ctype=ContentType.all)[0]) == YangTypeError
     inst3 = instance["test:contA"].put_member(
         "testb:leafS",
         "/test:contA/listA[leafE='C0FFEE'][leafF='true']/contD/contE/leafP",
         raw = True).top()
     assert inst3.validate(ctype=ContentType.all) is None
+    assert inst3.get_error_list(ctype=ContentType.all) == []
     assert instance.validate(ctype=ContentType.all) is None
+    assert instance.get_error_list(ctype=ContentType.all) == []
 
 def strip_pretty(s: str):
     '''
@@ -770,6 +775,7 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
     assert(type(inst) == RootNode)
     assert(inst.raw_value() == xml_safe_data)
     inst.validate(ctype=ContentType.all)
+    assert(inst.get_error_list(ctype=ContentType.all) == [])
 
     # convert InstanceValue to an XML-encoded string
     xml_obj = inst.to_xml()
@@ -841,6 +847,7 @@ def test_xml_rpc(data_model):
     input_inst = RootNode(input_inst_val, sn_rpc, data_model.schema_data, input_inst_val.timestamp)
     input_inst.validate(ctype=ContentType.all)
     assert(input_inst.raw_value() == input_obj)
+    assert(input_inst.get_error_list(ctype=ContentType.all) == [])
 
     # convert Instance to an XML-encoded string and compare to known-good
     input_xml_et_obj = input_inst.to_xml()
@@ -858,6 +865,7 @@ def test_xml_rpc(data_model):
     input_inst2 = RootNode(input_inst_val2, sn_rpc, data_model.schema_data, input_inst_val2.timestamp)
     input_inst2.validate(ctype=ContentType.all)
     assert(input_inst2.raw_value() == input_obj)
+    assert (input_inst2.get_error_list(ctype=ContentType.all) == [])
 
     # convert Instance to raw value and ensure same
     input_rv2 = input_inst2.raw_value()
@@ -893,6 +901,7 @@ def test_xml_rpc(data_model):
     output_inst2 = RootNode(output_inst_val2, sn_rpc, data_model.schema_data, output_inst_val2.timestamp)
     output_inst2.validate(ctype=ContentType.all)
     assert(output_inst2.raw_value() == output_obj)
+    assert (output_inst2.get_error_list(ctype=ContentType.all) == [])
 
     # convert Instance to raw value and ensure same
     output_rv2 = output_inst2.raw_value()
@@ -957,6 +966,7 @@ def test_xml_action(data_model):
     output_inst2 = RootNode(output_inst_val2, sn_action, data_model.schema_data, output_inst_val2.timestamp)
     output_inst2.validate(ctype=ContentType.all)
     assert(output_inst2.raw_value() == output_obj)
+    assert (output_inst2.get_error_list(ctype=ContentType.all) == [])
 
     # convert Instance to raw value and ensure same
     output_rv2 = output_inst2.raw_value()
@@ -1161,6 +1171,7 @@ def test_instance_ids(data_model, data):
 
     inst = data_model.from_raw(data2)
     assert inst.validate(ctype=ContentType.all) is None
+    assert (inst.get_error_list(ctype=ContentType.all) == [])
 
     def traverse(inst):
         '''

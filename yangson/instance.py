@@ -38,7 +38,8 @@ from .exceptions import (BadSchemaNodeType, EndOfInput, InstanceException,
                          InstanceValueError, InvalidKeyValue,
                          MissingModuleNamespace,
                          NonexistentInstance, NonDataNode,
-                         NonexistentSchemaNode, UnexpectedInput)
+                         NonexistentSchemaNode, UnexpectedInput,
+                         YangTypeError, SchemaError, SemanticError)
 from .instvalue import (ArrayValue, InstanceKey, ObjectValue, Value,
                         ScalarValue, StructuredValue)
 from .parser import Parser
@@ -364,6 +365,29 @@ class InstanceNode:
             YangTypeError: If the value is a scalar of incorrect type.
         """
         self.schema_node._validate(self, scope, ctype)
+
+    def get_error_list(self: "InstanceNode", scope: ValidationScope = ValidationScope.all,
+                 ctype: ContentType = ContentType.config) -> list:
+        """Get a list of validation exception objects as a result of validating the instance node.
+
+        Args:
+            scope: Scope of the validation (syntax, semantics or all).
+            ctype: Receiver's content type.
+
+        Returns:
+            A list with all validation exception objects
+        """
+        errors = set()
+        nodes_no_defaults = [RpcActionNode, InputNode, OutputNode, AnyContentNode, AnydataNode, AnyxmlNode]
+        if type(self.schema_node) in nodes_no_defaults or not self._children():
+            try:
+                self.validate(scope, ctype)
+            except (YangTypeError, SchemaError, SemanticError) as validationError:
+                errors.add(validationError)
+        else:
+            for child_node in self._children():
+                errors.update(child_node.get_error_list(scope, ctype))
+        return list(errors)
 
     def add_defaults(self: "InstanceNode", ctype: ContentType = None, tag: bool = False) -> "InstanceNode":
         """Return the receiver with defaults added recursively to its value.
@@ -1371,10 +1395,10 @@ class InstanceIdParser(Parser):
         return EntryKeys(sel)
 
 
-from .schemanode import (       # NOQA
-            AnyContentNode, AnydataNode, CaseNode,
-            ChoiceNode, DataNode, InputNode,
-            InternalNode, LeafNode, LeafListNode, ListNode, NotificationNode,
-            OutputNode, RpcActionNode, SequenceNode, TerminalNode)
+from .schemanode import (  # NOQA
+    AnyContentNode, AnydataNode, CaseNode,
+    ChoiceNode, DataNode, InputNode,
+    InternalNode, LeafNode, LeafListNode, ListNode, NotificationNode,
+    OutputNode, RpcActionNode, SequenceNode, TerminalNode, AnyxmlNode)
 from .datatype import (
             IdentityrefType)
