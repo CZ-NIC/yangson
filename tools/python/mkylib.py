@@ -31,8 +31,7 @@ def module_entry(yfile):
         yfile (file): File containing a YANG module or submodule.
     """
     ytxt = yfile.read()
-    mp = ModuleParser(ytxt)
-    mst = mp.statement()
+    mst = ModuleParser(ytxt).parse()
     submod = mst.keyword == "submodule"
     import_only = True
     rev = ""
@@ -98,6 +97,7 @@ def main():
             men["submodule"] = sarr
         men["conformance-type"] = "import" if imp_only else "implement"
         marr.append(men)
+    marr = sorted(marr, key=lambda item: item['name'])
     res = {
         "ietf-yang-library:modules-state": {
             "module-set-id": "",
