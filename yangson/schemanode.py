@@ -192,8 +192,13 @@ class SchemaNode:
             self.delete()
         else:
             for subst in stmt.substatements:
-                method = getattr(self, "_deviate_" +
-                                 subst.keyword.replace("-", "_", 1))
+                try:
+                    method = getattr(self, "_deviate_" +
+                                     subst.keyword.replace("-", "_", 1))
+                except AttributeError as error:
+                    if subst.prefix:  # ignore unsupported extension
+                        continue
+                    raise error from None
                 method(subst, sctx, action=arg)
 
     def _get_description(self: "SchemaNode", stmt: Statement):
