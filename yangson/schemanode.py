@@ -1184,19 +1184,24 @@ class SequenceNode(DataNode):
         """Extend the superclass method."""
         return super()._tree_line() + "*"
 
-    def from_raw(self: "SequenceNode", rval: RawList, jptr: JSONPointer = "") -> ArrayValue:
+    def from_raw(self: "SequenceNode", rval: RawList,
+                 jptr: JSONPointer = "") -> ArrayValue:
         """Override the superclass method."""
         if not isinstance(rval, list):
             raise RawTypeError(jptr, "array")
         res = ArrayValue()
         idx = 0
-        for en in rval:
+        for i in range(len(rval)):
             if isinstance(self, ListNode):
-                keys = [str(en.get(k[0], '<missing>')) for k in self.keys]
+                try:
+                    keys = [str(rval[i].get(k[0], '<missing>'))
+                            for k in self.keys]
+                except AttributeError:
+                    raise RawTypeError(f"{jptr}/{i}", "object")
                 element = "=" + ",".join(keys)
             else:
                 element = "/" + str(idx)
-            res.append(self.entry_from_raw(en, jptr + element))
+            res.append(self.entry_from_raw(rval[i], jptr + element))
             idx = idx + 1
         return res
 
