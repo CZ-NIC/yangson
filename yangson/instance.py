@@ -145,6 +145,7 @@ class InstanceNode:
                  schema_node: "DataNode", timestamp: datetime):
         """Initialize the class instance."""
         self._key = key
+        self._path = None
         self.parinst: Optional[InstanceNode] = parinst
         """Parent instance node, or ``None`` for the root node."""
         self.schema_node: DataNode = schema_node
@@ -169,13 +170,15 @@ class InstanceNode:
     @property
     def path(self: "InstanceNode") -> Tuple[InstanceKey]:
         """Return the list of keys on the path from root to the receiver."""
-        res = []
-        inst: InstanceNode = self
-        while inst.parinst:
-            res.append(inst._key)
-            inst = inst.parinst
-        res.reverse()
-        return tuple(res)
+        if self._path is None:
+            res = []
+            inst: InstanceNode = self
+            while inst.parinst:
+                res.append(inst._key)
+                inst = inst.parinst
+            res.reverse()
+            self._path = tuple(res)
+        return self._path
 
     def __str__(self: "InstanceNode") -> str:
         """Return string representation of the receiver's value."""
