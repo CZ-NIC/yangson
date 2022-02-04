@@ -49,7 +49,7 @@ class NodeSet(list):
                                 for m in trans(n)}.values())
 
     def __float__(self: "NodeSet") -> float:
-        return float(self[0].value)
+        return (float(self[0].value) if self else float("nan"))
 
     def __str__(self: "NodeSet") -> str:
         return str(self[0]) if self else ""

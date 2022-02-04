@@ -478,11 +478,18 @@ def test_xpath(data_model, instance):
         xptest("foo()", "foo()")
     with pytest.raises(NotSupported):
         xptest("id()", "id()")
+    with pytest.raises(XPathTypeError):
+        xptest("count('foo')", 'count("foo")')
     xptest("true()", "true()")
     xptest("false()", "false()", False)
+    xptest("true() or count(1)", "true() or count(1.0)")
+    xptest("false() and count(1)", "false() and count(1.0)", False)
     xptest("1 div 0", "1.0 div 0.0", float('inf'))
     xptest("-1 div 0", "-1.0 div 0.0", float('-inf'))
+    xptest("string(t:contT/t:int8)", "string(test:contT/test:int8)", "")
+    xptest("string(number(t:contT/t:int8))", "string(number(test:contT/test:int8))", "NaN")
     xptest("string(0 div 0)", "string(0.0 div 0.0)", "NaN")
+    xptest("boolean(0 div 0)", "boolean(0.0 div 0.0)", False)
     xptest("5 mod 2", "5.0 mod 2.0", 1)
     xptest("5 mod -2", "5.0 mod -2.0", 1)
     xptest("- 5 mod 2", "-5.0 mod 2.0", -1)
