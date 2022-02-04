@@ -212,8 +212,7 @@ class OrExpr(BinaryExpr):
         return self._as_str("or")
 
     def _eval(self: "OrExpr", xctx: XPathContext) -> bool:
-        lres, rres = self._eval_ops(xctx)
-        return lres or rres
+        return self.left._eval(xctx) or self.right._eval(xctx)
 
 
 class AndExpr(BinaryExpr):
@@ -224,8 +223,7 @@ class AndExpr(BinaryExpr):
         return self._as_str("and")
 
     def _eval(self: "AndExpr", xctx: XPathContext) -> bool:
-        lres, rres = self._eval_ops(xctx)
-        return lres and rres
+        return self.left._eval(xctx) and self.right._eval(xctx)
 
 
 class EqualityExpr(BinaryExpr):
