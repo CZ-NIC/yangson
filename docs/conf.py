@@ -366,7 +366,7 @@ doctest_default_flags = doctest.ELLIPSIS | doctest.DONT_ACCEPT_TRUE_FOR_1
 
 html_context = {
     "DONATIONS": {  # Variables used to construct URL for the "Donate" button:
-        "url": "https://donations.nic.cz",
+        "url": "https://donations.nic.cz/en",
         "slug": "yangson",
         "return_url": "https://yangson.labs.nic.cz/"
     }
