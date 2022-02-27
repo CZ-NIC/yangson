@@ -33,6 +33,7 @@ import json
 from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING, Union
 from urllib.parse import unquote
 import xml.etree.ElementTree as ET
+from .schemanode import ContainerNode
 from .enumerations import ContentType, ValidationScope
 from .exceptions import (BadSchemaNodeType, EndOfInput, InstanceException,
                          InstanceValueError, InvalidKeyValue,
@@ -381,7 +382,8 @@ class InstanceNode:
         ignore_nodes = [RpcActionNode, InputNode, OutputNode, AnyContentNode, AnydataNode, AnyxmlNode]
         if type(self.schema_node) not in ignore_nodes:
             try:
-                self.validate(scope, ctype)
+                if not isinstance(self.schema_node, ContainerNode) or self.schema_node.must:
+                    self.validate(scope, ctype)
             except (YangTypeError, SchemaError, SemanticError) as validationError:
                 errors.add(validationError)
             if self._children():
