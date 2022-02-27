@@ -708,16 +708,19 @@ def test_validation(instance):
     inst2 = instance.put_member("testb:leafQ", "ABBA").top()
     with pytest.raises(SchemaError):
         inst2.validate(ctype=ContentType.all)
-    assert len(inst2.get_error_list(ctype=ContentType.all)) == 1
-    assert type(inst2.get_error_list(ctype=ContentType.all)[0]) == YangTypeError
+        assert len(inst2.get_error_list(ctype=ContentType.all)) == 1
+        assert type(inst2.get_error_list(ctype=ContentType.all)[0]) == YangTypeError
     inst3 = instance["test:contA"].put_member(
         "testb:leafS",
         "/test:contA/listA[leafE='C0FFEE'][leafF='true']/contD/contE/leafP",
         raw = True).top()
+    inst4 = instance["test:contA"].put_member(
+        "leafA", 9).top()
     assert inst3.validate(ctype=ContentType.all) is None
     assert inst3.get_error_list(ctype=ContentType.all) == []
     assert instance.validate(ctype=ContentType.all) is None
     assert instance.get_error_list(ctype=ContentType.all) == []
+    assert len(inst4.get_error_list(ctype=ContentType.all)) == 2
 
 def strip_pretty(s: str):
     '''
