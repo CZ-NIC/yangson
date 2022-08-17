@@ -552,12 +552,13 @@ class InstanceNode:
             raise NotImplementedError
         else:
             sn = self.schema_node
-            if isinstance(sn.type, IdentityrefType) and sn.ns != self.value[1]:
-                module = self.schema_data.modules_by_name.get(self.value[1])
-                if not module:
-                    raise MissingModuleNamespace(sn.ns)
-                element.attrib['xmlns:'+self.value[1]] = module.xml_namespace
-            element.text = sn.type.to_xml(self.value)
+            if isinstance(sn, TerminalNode):
+                if isinstance(sn.type, IdentityrefType):
+                    module = self.schema_data.modules_by_name.get(self.value[1])
+                    if not module:
+                        raise MissingModuleNamespace(sn.ns)
+                    element.attrib['xmlns:'+self.value[1]] = module.xml_namespace
+                element.text = sn.type.to_xml(self.value)
 
         if elem is not None:
             return element
