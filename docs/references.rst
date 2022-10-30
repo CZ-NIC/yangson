@@ -61,6 +61,11 @@ __ https://tools.ietf.org/html/rfc7952
 
 __ https://tools.ietf.org/html/rfc8040
 
+.. [RFC8340] Bjorklund, M.; Berger, L. (ed.) *YANG Tree Diagrams.*
+       `RFC 8340`__, IETF, 2018. 12 p. ISSN 2070-1721.
+
+__ https://tools.ietf.org/html/rfc8340
+
 .. [XPath] Clark, J.; DeRose S. *XML Path Language (XPath) Version
        1.0*. W3C Recommendation `REC-xpath-19991116`__, World Wide
        Web Consortium, 1999.
