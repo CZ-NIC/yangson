@@ -1195,3 +1195,133 @@ def test_instance_ids(data_model, data):
 
     # run recursive traversal test
     traverse(inst)
+
+
+
+
+def test_merge_no_op(data_model, data):
+
+    # raw -> inst
+    inst = data_model.from_raw(data)
+    assert inst.validate(ctype=ContentType.all) is None
+
+    # merge same raw into inst (nothing should change)
+    new_inst = inst.merge(data, True)
+    assert new_inst.validate(ctype=ContentType.all) is None
+    new_rv = new_inst.raw_value()
+    data['test:contT']['decimal64'] = '4.5' # the canonical value returned by Yangson
+    assert(new_rv == data)
+
+
+
+def test_merge_simple(data_model, data):
+
+    # raw -> inst
+    inst = data_model.from_raw(data)
+    assert inst.validate(ctype=ContentType.all) is None
+
+    # prep data to merge
+    incoming = {
+      "test:llistB": [
+        "127.0.0.1",
+        "10.20.30.40"
+      ],
+      "test:leafX": 55555,
+      "test:contA": {
+        "leafB": 9,
+        "listA": [
+          {
+            "leafE": "C0FFEE",
+            "leafF": True,
+            "contD": {
+              "leafG": "foo1-bar",
+              "contE": {
+                "leafJ": [None],
+                "leafP": 11
+              }
+            }
+          },
+          {
+            "leafE": "ABBA",
+            "leafW": 9,
+            "leafF": False
+          },
+          {
+            "leafE": "deadbea7",
+            "leafF": False,
+            "contD": {
+              "leafG": "foo1-bar2"
+            }
+          }
+        ],
+        "testb:leafR": "C0FFEE",
+        "testb:leafT": "test:CC-BY",
+        "testb:leafV": 99,
+        "anydA": { "foo:bar": [ 2, 3, 4 ] },
+        "testb:leafN": "hi!"
+      },
+      "test:contT": {
+        "bits": "dos",
+        "decimal64": "4.5",
+        "enumeration": "Clubs"
+      }
+    }
+    valid = data_model.from_raw(incoming)
+    assert valid.validate(ctype=ContentType.all) is None
+
+    expected = {
+      "test:llistB": [
+        "::1",
+        "127.0.0.1",
+        "10.20.30.40"
+      ],
+      "test:leafX": 55555,
+      "test:contA": {
+        "leafB": 9,
+        "listA": [
+          {
+            "leafE": "C0FFEE",
+            "leafF": True,
+            "contD": {
+              "leafG": "foo1-bar",
+              "contE": {
+                "leafJ": [None],
+                "leafP": 11
+              }
+            }
+          },
+          {
+            "leafE": "ABBA",
+            "leafW": 9,
+            "leafF": False
+          },
+          {
+            "leafE": "deadbea7",
+            "leafF": False,
+            "contD": {
+              "leafG": "foo1-bar2"
+            }
+          }
+        ],
+        "testb:leafR": "C0FFEE",
+        "testb:leafT": "test:CC-BY",
+        "testb:leafV": 99,
+        "anydA": { "foo:bar": [ 2, 3, 4 ] },
+        "testb:leafN": "hi!"
+      },
+      "test:contT": {
+        "bits": "dos",
+        "decimal64": "4.5",
+        "enumeration": "Clubs"
+      }
+    }
+
+
+    # merge and test
+    new = inst.merge(incoming, True)
+    assert inst.validate(ctype=ContentType.all) is None
+    new_rv = new.raw_value()
+    #data['test:contT']['decimal64'] = '4.5' # the canonical value returned by Yangson
+    assert(new_rv == expected)
+
+

@@ -397,6 +397,45 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          ...
          yangson.exceptions.RawTypeError: {/example-2:bag/foo/0/in-words} expected string value
 
+   .. method:: merge(value: Union[RawValue, Value], raw: bool = \
+           False) -> InstanceNode
+
+      Return a new instance node whose value is the receiver's value
+      merged with the *value* argument, in the sense of the **merge**
+      operation in [RFC8072]_. The *raw* flag has to be set to
+      ``True`` if *value* is a :term:`raw value`.
+
+      The method uses (recursively) the following rules for merging
+      instance values, as specified in [RFC7950]_, sections `7.5.8`_,
+      `7.6.7`_, `7.7.9`_ and `7.8.6`_.
+
+      * If the receiver is a leaf or anydata instance, the result is
+        the same as for :meth:`update`, i.e. the receiver's value is
+        overwritten by *value*.
+
+      * Otherwise, receiver's entries or members are matched against
+        the entries or members in *value* using list keys, leaf-list
+        values or member names. Matching entries/members are merged,
+        and non-matching entries/members are copied from both sources
+        into the result.
+
+      * If the receiver is a list or leaf-list instance, then the
+        non-matching entries from *value* are appended at the
+        end. This is also true for lists/leaf-lists ordered by user
+        (see section `7.7.7`_ in [RFC7950]_).
+
+      .. doctest::
+
+         >>> mfoo = foo.merge([{'number': 8, 'in-words': 'acht'},
+         ... {'number': 9, 'in-words': 'nine'},
+         ... {'number': 6, 'in-words': 'sechs'},
+         ... {'number': 11, 'prime': True, 'in-words': 'eleven'}],
+         ... raw = True)
+         >>> [en['in-words'].value for en in mfoo]
+         ['sechs', 'three', 'seven', 'acht', 'nine', 'eleven']
+         >>> [en['in-words'].value for en in foo] # original instance doesn't change
+         ['six', 'three', 'seven', 'eight']
+
    .. method:: goto(iroute: InstanceRoute) -> InstanceNode
 
       Return an :class:`InstanceNode` corresponding to a target
@@ -698,7 +737,12 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
 .. _4: https://tools.ietf.org/html/rfc7951#section-4
 .. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
+.. _7.5.8: https://tools.ietf.org/html/rfc7950#section-7.5.8
 .. _7.6.1: https://tools.ietf.org/html/rfc7950#section-7.6.1
+.. _7.6.7: https://tools.ietf.org/html/rfc7950#section-7.6.7
 .. _7.7.2: https://tools.ietf.org/html/rfc7950#section-7.7.2
+.. _7.7.7: https://tools.ietf.org/html/rfc7950#section-7.7.7
+.. _7.7.9: https://tools.ietf.org/html/rfc7950#section-7.7.9
+.. _7.8.6: https://tools.ietf.org/html/rfc7950#section-7.8.6
 .. _8.3: https://tools.ietf.org/html/rfc6241#section-8.3
 .. _9: https://tools.ietf.org/html/rfc7950#section-9
