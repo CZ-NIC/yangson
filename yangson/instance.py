@@ -309,7 +309,7 @@ class InstanceNode:
 
         Args:
             value: New value.
-            raw: Flag to be set if `value` is raw.
+            raw: Flag indicating that `value` is raw.
 
         Returns:
             Copy of the receiver with the updated value.
@@ -317,6 +317,52 @@ class InstanceNode:
         newval = self.schema_node.from_raw(
             value, self.json_pointer()) if raw else value
         return self._copy(newval)
+
+    def merge(self: "InstanceNode", value: Union[RawValue, Value],
+               raw: bool = False) -> "InstanceNode":
+        """Merge receiver's value with another value.
+
+        Args:
+            value: New value to be merged.
+            raw: Flag indicating that `value` is raw.
+
+        Returns:
+            Copy of the receiver with the merged value.
+        """
+        if not (self.is_internal() and self.value):
+            return self.update(value, raw)
+        newval = self.schema_node.from_raw(
+            value, self.json_pointer()) if raw else value
+        if isinstance(self.value, ArrayValue):
+            return self._merge_list(newval)
+        return self._merge_container(newval)
+
+    def _merge_list(self: "InstanceNode",
+                    value: ArrayValue) -> "InstanceNode":
+        keys = self.schema_node._key_members
+        mki = {}
+        for i in range(len(value)):
+            mki[tuple([value[i][k] for k in keys])] = i
+        inst = self._copy(self.value)
+        for i in range(len(self.value)):
+            kval = tuple([self.value[i][k] for k in keys])
+            if kval in mki:
+                inst = inst[i].merge(value[mki[kval]]).up()
+                del mki[kval]
+        inst.value += [value[i] for i in sorted(mki.values())]
+        return inst
+
+    def _merge_container(self: "InstanceNode",
+                         value: ObjectValue) -> "InstanceNode":
+        inst = self._copy(self.value)
+        rest = []
+        for k in value:
+            if k in self.value:
+                inst = inst[k].merge(value[k]).up()
+            else:
+                rest.append(k)
+        inst.value.update({k : value[k] for k in rest})
+        return inst
 
     def goto(self: "InstanceNode", iroute: "InstanceRoute") -> "InstanceNode":
         """Move the focus to an instance inside the receiver's value.
