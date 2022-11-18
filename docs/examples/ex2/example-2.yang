@@ -9,6 +9,7 @@ module example-2 {
   container bag {
     list foo {
       key "number";
+      ordered-by user;
       unique "in-words";
       leaf number {
         type uint8;
