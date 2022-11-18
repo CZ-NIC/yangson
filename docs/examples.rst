@@ -58,7 +58,7 @@ module, and also in :ref:`quick-start`.
    +--rw example-2:bag
       +--rw bar <boolean>
       +--rw baz? <decimal64>
-      +--rw foo* [number]
+      +--rw foo# [number]
          +--rw in-words? <string>
          +--rw number <uint8>
          +--rw prime? <boolean>
@@ -168,7 +168,7 @@ the :mod:`.schemanode`, :mod:`.xpathast` and :mod:`.xpathparser` modules.
    |     |  +--rw baz? <empty>
    |     +--:(example-4-b:fooref)
    |        +--rw fooref? <leafref>
-   +--rw example-4-b:quux* <decimal64>
+   +--rw example-4-b:quux# <decimal64>
 
 .. rubric:: YANG Library
 

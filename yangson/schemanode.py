@@ -1126,7 +1126,8 @@ class SequenceNode(DataNode):
         """Is the receiver a mandatory node?"""
         return self.min_elements > 0
 
-    def _validate(self: "SequenceNode", inst: InstanceNode, scope: ValidationScope,
+    def _validate(self: "SequenceNode", inst: InstanceNode,
+                  scope: ValidationScope,
                   ctype: ContentType) -> None:
         """Extend the superclass method."""
         if isinstance(inst, ArrayEntry):
@@ -1182,7 +1183,7 @@ class SequenceNode(DataNode):
 
     def _tree_line(self: "SequenceNode", no_type: bool = False) -> str:
         """Extend the superclass method."""
-        return super()._tree_line() + "*"
+        return super()._tree_line() + ("#" if self.user_ordered else "*")
 
     def from_raw(self: "SequenceNode", rval: RawList,
                  jptr: JSONPointer = "") -> ArrayValue:

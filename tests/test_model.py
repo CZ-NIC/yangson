@@ -29,7 +29,7 @@ tree = """+--rw (test:choiA)?
 |  +--:(testb:leafQ)
 |  |  +--rw leafQ? <empty>
 |  +--:(llistB)
-|     +--rw llistB* <ip-address-no-zone(union)>
+|     +--rw llistB# <ip-address-no-zone(union)>
 +--ro test:cont-cf
 |  +--ro leaf-list* <int8>
 |  +--ro list-dk* [k1 k2]
