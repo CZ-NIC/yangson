@@ -58,10 +58,12 @@ With the deviations applied, the resulting schema tree looks like this:
    +--rw example-2:bag
       +--rw bar <boolean>
       +--rw baz? <decimal64>
-      +--rw foo* [number]
+      +--rw foo# [number]
          +--rw in-words? <string>
          +--rw number <uint8>
          +--rw prime? <boolean>
+
+For the most part, Yangson uses the ASCII tree representation described in [RFC8340]_, the differences are described in the documentation for :meth:`.DataModel.ascii_tree` method.
 
 Loading and Validating Instance Data
 ====================================
@@ -101,7 +103,7 @@ the coverage of instance data with respect to the schema.
    +--rw example-2:bag {1}
       +--rw bar {1}
       +--rw baz? {0}
-      +--rw foo* [number] {5}
+      +--rw foo# [number] {5}
          +--rw in-words? {5}
          +--rw number {5}
          +--rw prime? {3}

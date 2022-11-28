@@ -45,13 +45,11 @@ class NodeSet(list):
         return self.__class__(self + [n for n in ns if n.path not in paths])
 
     def bind(self: "NodeSet", trans: NodeExpr) -> "NodeSet":
-        res = self.__class__([])
-        for n in self:
-            res = res.union(trans(n))
-        return res
+        return self.__class__({m.path: m for n in self
+                                for m in trans(n)}.values())
 
     def __float__(self: "NodeSet") -> float:
-        return float(self[0].value)
+        return (float(self[0].value) if self else float("nan"))
 
     def __str__(self: "NodeSet") -> str:
         return str(self[0]) if self else ""

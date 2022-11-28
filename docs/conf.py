@@ -54,7 +54,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Yangson'
-copyright = '2016, 2017, CZ.NIC, z. s. p. o.'
+copyright = '2016–2022, CZ.NIC, z. s. p. o.'
 author = 'Ladislav Lhotka'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -366,7 +366,7 @@ doctest_default_flags = doctest.ELLIPSIS | doctest.DONT_ACCEPT_TRUE_FOR_1
 
 html_context = {
     "DONATIONS": {  # Variables used to construct URL for the "Donate" button:
-        "url": "https://donations.nic.cz",
+        "url": "https://donations.nic.cz/en",
         "slug": "yangson",
         "return_url": "https://yangson.labs.nic.cz/"
     }

@@ -24,7 +24,7 @@ class is intended to be public:
 * Expr: XPath 1.0 expression with YANG 1.1 extensions.
 """
 import decimal
-from math import ceil, copysign, floor
+from math import ceil, copysign, floor, isnan
 from pyxb.utils.xmlre import XMLToPython, RegularExpressionError
 from xml.sax.saxutils import quoteattr
 import re
@@ -212,8 +212,7 @@ class OrExpr(BinaryExpr):
         return self._as_str("or")
 
     def _eval(self: "OrExpr", xctx: XPathContext) -> bool:
-        lres, rres = self._eval_ops(xctx)
-        return lres or rres
+        return self.left._eval(xctx) or self.right._eval(xctx)
 
 
 class AndExpr(BinaryExpr):
@@ -224,8 +223,7 @@ class AndExpr(BinaryExpr):
         return self._as_str("and")
 
     def _eval(self: "AndExpr", xctx: XPathContext) -> bool:
-        lres, rres = self._eval_ops(xctx)
-        return lres and rres
+        return self.left._eval(xctx) and self.right._eval(xctx)
 
 
 class EqualityExpr(BinaryExpr):
@@ -542,7 +540,10 @@ class FuncBitIsSet(BinaryExpr):
 class FuncBoolean(UnaryExpr):
 
     def _eval(self: "FuncBoolean", xctx: XPathContext) -> bool:
-        return bool(self.expr._eval(xctx))
+        val = self.expr._eval(xctx)
+        if isinstance(val, float) and isnan(val):
+            return False
+        return bool(val)
 
 
 class FuncCeiling(UnaryExpr):
@@ -577,7 +578,9 @@ class FuncCount(UnaryExpr):
 
     def _eval(self: "FuncCount", xctx: XPathContext) -> int:
         ns = self.expr._eval(xctx)
-        return float(len(ns))
+        if isinstance(ns, NodeSet):
+            return float(len(ns))
+        raise XPathTypeError(repr(ns))
 
 
 class FuncCurrent(Expr):

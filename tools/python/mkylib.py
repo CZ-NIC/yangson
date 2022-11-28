@@ -32,6 +32,7 @@ def module_entry(yfile):
     """
     ytxt = yfile.read()
     mp = ModuleParser(ytxt)
+    mp.opt_separator()
     mst = mp.statement()
     submod = mst.keyword == "submodule"
     import_only = True
@@ -98,6 +99,7 @@ def main():
             men["submodule"] = sarr
         men["conformance-type"] = "import" if imp_only else "implement"
         marr.append(men)
+    marr = sorted(marr, key=lambda item: item['name'])
     res = {
         "ietf-yang-library:modules-state": {
             "module-set-id": "",

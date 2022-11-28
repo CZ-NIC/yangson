@@ -192,8 +192,13 @@ class SchemaNode:
             self.delete()
         else:
             for subst in stmt.substatements:
-                method = getattr(self, "_deviate_" +
-                                 subst.keyword.replace("-", "_", 1))
+                try:
+                    method = getattr(self, "_deviate_" +
+                                     subst.keyword.replace("-", "_", 1))
+                except AttributeError as error:
+                    if subst.prefix:  # ignore unsupported extension
+                        continue
+                    raise error from None
                 method(subst, sctx, action=arg)
 
     def _get_description(self: "SchemaNode", stmt: Statement):
@@ -1121,7 +1126,8 @@ class SequenceNode(DataNode):
         """Is the receiver a mandatory node?"""
         return self.min_elements > 0
 
-    def _validate(self: "SequenceNode", inst: InstanceNode, scope: ValidationScope,
+    def _validate(self: "SequenceNode", inst: InstanceNode,
+                  scope: ValidationScope,
                   ctype: ContentType) -> None:
         """Extend the superclass method."""
         if isinstance(inst, ArrayEntry):
@@ -1177,21 +1183,26 @@ class SequenceNode(DataNode):
 
     def _tree_line(self: "SequenceNode", no_type: bool = False) -> str:
         """Extend the superclass method."""
-        return super()._tree_line() + "*"
+        return super()._tree_line() + ("#" if self.user_ordered else "*")
 
-    def from_raw(self: "SequenceNode", rval: RawList, jptr: JSONPointer = "") -> ArrayValue:
+    def from_raw(self: "SequenceNode", rval: RawList,
+                 jptr: JSONPointer = "") -> ArrayValue:
         """Override the superclass method."""
         if not isinstance(rval, list):
             raise RawTypeError(jptr, "array")
         res = ArrayValue()
         idx = 0
-        for en in rval:
+        for i in range(len(rval)):
             if isinstance(self, ListNode):
-                keys = [str(en.get(k[0], '<missing>')) for k in self.keys]
+                try:
+                    keys = [str(rval[i].get(k[0], '<missing>'))
+                            for k in self.keys]
+                except AttributeError:
+                    raise RawTypeError(f"{jptr}/{i}", "object")
                 element = "=" + ",".join(keys)
             else:
                 element = "/" + str(idx)
-            res.append(self.entry_from_raw(en, jptr + element))
+            res.append(self.entry_from_raw(rval[i], jptr + element))
             idx = idx + 1
         return res
 
