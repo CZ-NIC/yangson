@@ -431,18 +431,18 @@ class InstanceNode:
         Returns:
             A list with all validation exception objects
         """
-        from .schemanode import ContainerNode
+        from .schemanode import ContainerNode, SchemaTreeNode
         errors = set()
         ignore_nodes = [RpcActionNode, InputNode, OutputNode, AnyContentNode, AnydataNode, AnyxmlNode]
-        if type(self.schema_node) not in ignore_nodes and self.schema_node.val_count == 0:
+        if type(self.schema_node) not in ignore_nodes:
             try:
-                if not isinstance(self.schema_node, ContainerNode) or self.schema_node.must:
+                if type(self.schema_node) not in [ContainerNode, SchemaTreeNode] or self.schema_node.must:
                     self.validate(scope, ctype)
             except (YangTypeError, SchemaError, SemanticError) as validationError:
                 errors.add(validationError)
             if self._children():
                 for child_node in self._children():
-                    if child_node.schema_node not in ignore_nodes:
+                    if child_node.schema_node not in ignore_nodes and self.schema_node.val_count == 0:
                         errors.update(child_node.get_error_list(scope, ctype))
         return list(errors)
 
