@@ -380,7 +380,7 @@ class InstanceNode:
         from .schemanode import ContainerNode
         errors = set()
         ignore_nodes = [RpcActionNode, InputNode, OutputNode, AnyContentNode, AnydataNode, AnyxmlNode]
-        if type(self.schema_node) not in ignore_nodes:
+        if type(self.schema_node) not in ignore_nodes and self.schema_node.val_count == 0:
             try:
                 if not isinstance(self.schema_node, ContainerNode) or self.schema_node.must:
                     self.validate(scope, ctype)
