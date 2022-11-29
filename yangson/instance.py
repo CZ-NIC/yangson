@@ -431,19 +431,20 @@ class InstanceNode:
         Returns:
             A list with all validation exception objects
         """
-        from .schemanode import ContainerNode, SchemaTreeNode
+        from .schemanode import TerminalNode
         errors = set()
-        ignore_nodes = [RpcActionNode, InputNode, OutputNode, AnyContentNode, AnydataNode, AnyxmlNode]
-        if type(self.schema_node) not in ignore_nodes:
+        if (
+            isinstance(self.schema_node, TerminalNode)
+            or self.schema_node.must
+            or self.schema_node.when
+        ):
             try:
-                if type(self.schema_node) not in [ContainerNode, SchemaTreeNode] or self.schema_node.must:
-                    self.validate(scope, ctype)
+                self.validate(scope, ctype)
             except (YangTypeError, SchemaError, SemanticError) as validationError:
                 errors.add(validationError)
-            if self._children():
-                for child_node in self._children():
-                    if child_node.schema_node not in ignore_nodes and self.schema_node.val_count == 0:
-                        errors.update(child_node.get_error_list(scope, ctype))
+        if self._children():
+            for child_node in self._children():
+                errors.update(child_node.get_error_list(scope, ctype))
         return list(errors)
 
     def add_defaults(self: "InstanceNode", ctype: ContentType = None, tag: bool = False) -> "InstanceNode":
