@@ -432,15 +432,18 @@ class InstanceNode:
             A list with all validation exception objects
         """
         from .schemanode import InternalNode, TerminalNode
-        errors = set()
+        error_messages = []
+        errors = []
         if isinstance(self.schema_node, InternalNode) or isinstance(self.schema_node, TerminalNode):
             try:
                 self.validate(scope, ctype)
             except (YangTypeError, SchemaError, SemanticError) as validationError:
-                errors.add(validationError)
+                if str(validationError) not in error_messages:
+                    error_messages.append(str(validationError))
+                    errors.append(validationError)
         if self._children():
             for child_node in self._children():
-                errors.update(child_node.get_error_list(scope, ctype))
+                errors.extend(child_node.get_error_list(scope, ctype))
         return list(errors)
 
     def add_defaults(self: "InstanceNode", ctype: ContentType = None, tag: bool = False) -> "InstanceNode":
