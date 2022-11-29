@@ -431,13 +431,9 @@ class InstanceNode:
         Returns:
             A list with all validation exception objects
         """
-        from .schemanode import TerminalNode
+        from .schemanode import InternalNode, TerminalNode
         errors = set()
-        if (
-            isinstance(self.schema_node, TerminalNode)
-            or self.schema_node.must
-            or self.schema_node.when
-        ):
+        if isinstance(self.schema_node, InternalNode) or isinstance(self.schema_node, TerminalNode):
             try:
                 self.validate(scope, ctype)
             except (YangTypeError, SchemaError, SemanticError) as validationError:
