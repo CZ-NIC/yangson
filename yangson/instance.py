@@ -444,7 +444,7 @@ class InstanceNode:
         if self._children():
             for child_node in self._children():
                 errors.extend(child_node.get_error_list(scope, ctype))
-        return list(errors)
+        return errors
 
     def add_defaults(self: "InstanceNode", ctype: ContentType = None, tag: bool = False) -> "InstanceNode":
         """Return the receiver with defaults added recursively to its value.
