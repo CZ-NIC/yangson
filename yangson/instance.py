@@ -441,9 +441,11 @@ class InstanceNode:
                 if str(validationError) not in error_messages:
                     error_messages.append(str(validationError))
                     errors.append(validationError)
-        if self._children():
-            for child_node in self._children():
-                errors.extend(child_node.get_error_list(scope, ctype))
+                
+                # Only validate children nodes if the Internal Node had an error
+                if self._children():
+                    for child_node in self._children():
+                        errors.extend(child_node.get_error_list(scope, ctype))
         return errors
 
     def add_defaults(self: "InstanceNode", ctype: ContentType = None, tag: bool = False) -> "InstanceNode":
