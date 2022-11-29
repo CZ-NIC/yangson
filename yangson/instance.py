@@ -434,15 +434,15 @@ class InstanceNode:
         from .schemanode import InternalNode, TerminalNode
         error_messages = []
         errors = []
-        if isinstance(self.schema_node, InternalNode) or isinstance(self.schema_node, TerminalNode):
+        if isinstance(self.schema_node, (InternalNode, TerminalNode)):
             try:
                 self.validate(scope, ctype)
-            except (YangTypeError, SchemaError, SemanticError) as validationError:
-                if str(validationError) not in error_messages:
-                    error_messages.append(str(validationError))
-                    errors.append(validationError)
+            except (YangTypeError, SchemaError, SemanticError) as validation_error:
+                if str(validation_error) not in error_messages:
+                    error_messages.append(str(validation_error))
+                    errors.append(validation_error)
                 
-                # Only validate children nodes if the Internal Node had an error
+                # Only validate children nodes if the InternalNode had an error
                 if self._children():
                     for child_node in self._children():
                         errors.extend(child_node.get_error_list(scope, ctype))
