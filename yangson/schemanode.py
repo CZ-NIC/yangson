@@ -1339,10 +1339,10 @@ class ListNode(SequenceNode, InternalNode):
                 kn._mandatory = True
                 self._mandatory_children.add(kn)
 
-    def _key_stmt(self: "ListNode", stmt: Statement, sctx: SchemaContext) -> None:
-        self.keys = []
-        for k in stmt.argument.split():
-            self.keys.append(sctx.schema_data.translate_node_id(k, sctx))
+    def _key_stmt(self: "ListNode", stmt: Statement,
+                  sctx: SchemaContext) -> None:
+        self.keys = [sctx.schema_data.translate_node_id(k, sctx)
+                     for k in stmt.argument.split()]
 
     def _parse_unique(self: "ListNode", stmt: Statement,
                      sctx: SchemaContext) -> List[LocationPath]:
