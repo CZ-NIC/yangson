@@ -23,7 +23,7 @@ This module implements the following class:
 """
 import re
 from typing import Callable, List, Dict, Optional, Tuple
-from typing.re import Pattern
+from typing import Pattern
 from .exceptions import EndOfInput, UnexpectedInput
 from .typealiases import YangIdentifier
 
