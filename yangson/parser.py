@@ -22,8 +22,7 @@ This module implements the following class:
 * Parser: Recursive-descent parser.
 """
 import re
-from typing import Callable, List, Dict, Optional, Tuple
-from typing.re import Pattern
+from typing import Callable, List, Dict, Optional, Pattern, Tuple
 from .exceptions import EndOfInput, UnexpectedInput
 from .typealiases import YangIdentifier
 
