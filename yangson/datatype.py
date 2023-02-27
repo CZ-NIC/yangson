@@ -44,6 +44,7 @@ This module implements the following classes:
 * UnionType: YANG union type.
 """
 import base64
+import binascii
 import decimal
 import numbers
 import xml.etree.ElementTree as ET
@@ -483,7 +484,7 @@ class BinaryType(LinearType):
         """Override superclass method."""
         try:
             return base64.b64decode(raw, validate=True)
-        except TypeError:
+        except (TypeError, binascii.Error):
             return None
 
     def from_xml(self: "BinaryType", xml: ET.Element) -> Optional[bytes]:

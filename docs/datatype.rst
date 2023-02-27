@@ -2,7 +2,6 @@
 Data Types
 **********
 
-
 .. module:: yangson.datatype
    :synopsis: Classes representing YANG data types
 
@@ -343,8 +342,9 @@ all :class:`~.schemanode.TerminalNode` instances.
 
 .. class:: BinaryType
 
-   This class is a subclass of :class:`StringType`, and represents YANG
-   **binary** type.
+   This class is a subclass of :class:`StringType`, and represents
+   YANG **binary** type. Raw values are strings obtained as output of
+   the *Base 64* encoding [RFC4648]_.
 
    The :term:`cooked value` is a Python :class:`bytes` object.
 
@@ -352,6 +352,14 @@ all :class:`~.schemanode.TerminalNode` instances.
 
       >>> binary_t.to_raw(b'\xFF\xFE')
       '//4='
+
+   Characters outside the encoding alphabet of Base 64 are not
+   permitted in a raw value:
+
+   .. doctest::
+
+      >>> binary_t.from_raw('u#Q==') is None
+      True
 
 .. class:: EnumerationType
 
