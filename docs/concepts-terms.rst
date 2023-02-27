@@ -17,7 +17,7 @@ YANG are less than intuitive, and some are perhaps even slightly
 peculiar. This section gives an overview of fundamental YANG concepts
 and terms the are needed for understanding the documentation of the
 *Yangson* library. However, it is no substitute for studying YANG
-documentation, especially [RFC7950]_ and [Bie16]_.
+documentation, especially [RFC7950]_ and [RFC8407]_.
 
 Another factor that may confuse users of the *Yangson* library is
 conflicting terminology: some terms, such as *module* or *instance*,
