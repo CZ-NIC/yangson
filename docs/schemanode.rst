@@ -702,8 +702,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    This class is a subclass of :class:`GroupNode`. Its instances
    represent YANG **notification** nodes.
 
-.. _7.5.3: https://tools.ietf.org/html/rfc7950#section-7.5.3
-.. _7.8.3: https://tools.ietf.org/html/rfc7950#section-7.8.3
-.. _7.9.2: https://tools.ietf.org/html/rfc7950#section-7.9.2
-.. _7.21.5: https://tools.ietf.org/html/rfc7950#section-7.21.5
+.. _7.5.3: https://rfc-editor.org/rfc/rfc7950.html#section-7.5.3
+.. _7.8.3: https://rfc-editor.org/rfc/rfc7950.html#section-7.8.3
+.. _7.9.2: https://rfc-editor.org/rfc/rfc7950.html#section-7.9.2
+.. _7.21.5: https://rfc-editor.org/rfc/rfc7950.html#section-7.21.5
 .. _method resolution order: https://www.python.org/download/releases/2.3/mro/

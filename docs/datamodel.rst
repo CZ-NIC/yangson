@@ -271,8 +271,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> len(dm.schema_digest())
          222
 
-.. _3.5.3: https://tools.ietf.org/html/rfc8040#section-3.5.3
-.. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
-.. _7.5.1: https://tools.ietf.org/html/rfc7950#section-7.5.1
-.. _7.7.7: https://tools.ietf.org/html/rfc7950#section-7.7.7
+.. _3.5.3: https://rfc-editor.org/rfc/rfc8040.html#section-3.5.3
+.. _6.1: https://rfc-editor.org/rfc/rfc7951.html#section-6.1
+.. _7.5.1: https://rfc-editor.org/rfc/rfc7950.html#section-7.5.1
+.. _7.7.7: https://rfc-editor.org/rfc/rfc7950.html#section-7.7.7
 .. _pyang: https://github.com/mbj4668/pyang

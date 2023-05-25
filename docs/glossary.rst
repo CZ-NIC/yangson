@@ -183,13 +183,13 @@ specification, see section `3`_ of [RFC7950]_.
       :class:`~.ValidationScope`. See also
       :meth:`yangson.instance.InstanceNode.validate`.
 
-.. _2.2: https://tools.ietf.org/html/rfc7895#section-2.2
-.. _3: https://tools.ietf.org/html/rfc7950#section-3
-.. _3.5.3: https://tools.ietf.org/html/rfc8040#section-3.5.3
-.. _4: https://tools.ietf.org/html/rfc7951#section-4
-.. _6.2: https://tools.ietf.org/html/rfc7950#section-6.2
-.. _6.2.1: https://tools.ietf.org/html/rfc7950#section-6.2.1
-.. _6.11: https://tools.ietf.org/html/rfc7951#section-6.11
-.. _6.5: https://tools.ietf.org/html/rfc7950#section-6.5
-.. _9.13: https://tools.ietf.org/html/rfc7950#section-9.13
-.. _14: https://tools.ietf.org/html/rfc7950#section-14
+.. _2.2: https://rfc-editor.org/rfc/rfc7895.html#section-2.2
+.. _3: https://rfc-editor.org/rfc/rfc7950.html#section-3
+.. _3.5.3: https://rfc-editor.org/rfc/rfc8040.html#section-3.5.3
+.. _4: https://rfc-editor.org/rfc/rfc7951.html#section-4
+.. _6.2: https://rfc-editor.org/rfc/rfc7950.html#section-6.2
+.. _6.2.1: https://rfc-editor.org/rfc/rfc7950.html#section-6.2.1
+.. _6.11: https://rfc-editor.org/rfc/rfc7951.html#section-6.11
+.. _6.5: https://rfc-editor.org/rfc/rfc7950.html#section-6.5
+.. _9.13: https://rfc-editor.org/rfc/rfc7950.html#section-9.13
+.. _14: https://rfc-editor.org/rfc/rfc7950.html#section-14

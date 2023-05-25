@@ -55,9 +55,9 @@ If they are present in the data model, *Yangson* also uses them.
 ``too-many-elements``
     A **max-elements** constraint is violated, see sec. `7.7.6`_ of [RFC7950]_.
 
-.. _15: https://tools.ietf.org/html/rfc7950#section-15
-.. _7.5.4.2: https://tools.ietf.org/html/rfc7950#section-7.5.4.2
-.. _7.5.3: https://tools.ietf.org/html/rfc7950#section-7.5.3
-.. _7.7.5: https://tools.ietf.org/html/rfc7950#section-7.7.5
-.. _7.7.6: https://tools.ietf.org/html/rfc7950#section-7.7.6
-.. _7.8.3: https://tools.ietf.org/html/rfc7950#section-7.8.3
+.. _15: https://rfc-editor.org/rfc/rfc7950.html#section-15
+.. _7.5.4.2: https://rfc-editor.org/rfc/rfc7950.html#section-7.5.4.2
+.. _7.5.3: https://rfc-editor.org/rfc/rfc7950.html#section-7.5.3
+.. _7.7.5: https://rfc-editor.org/rfc/rfc7950.html#section-7.7.5
+.. _7.7.6: https://rfc-editor.org/rfc/rfc7950.html#section-7.7.6
+.. _7.8.3: https://rfc-editor.org/rfc/rfc7950.html#section-7.8.3

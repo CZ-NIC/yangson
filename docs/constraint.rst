@@ -181,9 +181,9 @@ The *constraint* module implements the following classes:
       A compiled XPath expression, i.e. an instance of the
       :class:`.xpathast.Expr` class.
 
-.. _7.5.3: https://tools.ietf.org/html/rfc7950#section-7.5.3
-.. _7.5.4.1: https://tools.ietf.org/html/rfc7950#section-7.5.4.1
-.. _7.5.4.2: https://tools.ietf.org/html/rfc7950#section-7.5.4.2
-.. _9.2.4: https://tools.ietf.org/html/rfc7950#section-9.2.4
-.. _9.4.4: https://tools.ietf.org/html/rfc7950#section-9.4.4
-.. _9.4.5: https://tools.ietf.org/html/rfc7950#section-9.4.5
+.. _7.5.3: https://rfc-editor.org/rfc/rfc7950.html#section-7.5.3
+.. _7.5.4.1: https://rfc-editor.org/rfc/rfc7950.html#section-7.5.4.1
+.. _7.5.4.2: https://rfc-editor.org/rfc/rfc7950.html#section-7.5.4.2
+.. _9.2.4: https://rfc-editor.org/rfc/rfc7950.html#section-9.2.4
+.. _9.4.4: https://rfc-editor.org/rfc/rfc7950.html#section-9.4.4
+.. _9.4.5: https://rfc-editor.org/rfc/rfc7950.html#section-9.4.5

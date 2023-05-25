@@ -735,14 +735,14 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> str(irt2)
          '/example-2:bag/baz'
 
-.. _4: https://tools.ietf.org/html/rfc7951#section-4
-.. _6.1: https://tools.ietf.org/html/rfc7951#section-6.1
-.. _7.5.8: https://tools.ietf.org/html/rfc7950#section-7.5.8
-.. _7.6.1: https://tools.ietf.org/html/rfc7950#section-7.6.1
-.. _7.6.7: https://tools.ietf.org/html/rfc7950#section-7.6.7
-.. _7.7.2: https://tools.ietf.org/html/rfc7950#section-7.7.2
-.. _7.7.7: https://tools.ietf.org/html/rfc7950#section-7.7.7
-.. _7.7.9: https://tools.ietf.org/html/rfc7950#section-7.7.9
-.. _7.8.6: https://tools.ietf.org/html/rfc7950#section-7.8.6
-.. _8.3: https://tools.ietf.org/html/rfc6241#section-8.3
-.. _9: https://tools.ietf.org/html/rfc7950#section-9
+.. _4: https://rfc-editor.org/rfc/rfc7951.html#section-4
+.. _6.1: https://rfc-editor.org/rfc/rfc7951.html#section-6.1
+.. _7.5.8: https://rfc-editor.org/rfc/rfc7950.html#section-7.5.8
+.. _7.6.1: https://rfc-editor.org/rfc/rfc7950.html#section-7.6.1
+.. _7.6.7: https://rfc-editor.org/rfc/rfc7950.html#section-7.6.7
+.. _7.7.2: https://rfc-editor.org/rfc/rfc7950.html#section-7.7.2
+.. _7.7.7: https://rfc-editor.org/rfc/rfc7950.html#section-7.7.7
+.. _7.7.9: https://rfc-editor.org/rfc/rfc7950.html#section-7.7.9
+.. _7.8.6: https://rfc-editor.org/rfc/rfc7950.html#section-7.8.6
+.. _8.3: https://rfc-editor.org/rfc/rfc6241.html#section-8.3
+.. _9: https://rfc-editor.org/rfc/rfc7950.html#section-9

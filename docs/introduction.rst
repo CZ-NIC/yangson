@@ -85,6 +85,6 @@ command from the ``docs`` directory::
   $ make doctest
 
 .. _persistent structures: https://en.wikipedia.org/wiki/Persistent_data_structure
-.. _5.2: https://tools.ietf.org/html/rfc7950#section-5.2
+.. _5.2: https://rfc-editor.org/rfc/rfc7950.html#section-5.2
 .. _PyPI: https://pypi.python.org
 .. _YIN Tools: https://github.com/llhotka/yin-tools

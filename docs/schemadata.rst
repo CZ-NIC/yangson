@@ -503,6 +503,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          ... dm.schema_data, ('example-3-a', '2017-08-01')).parse()
          False
 
-.. _5.6.5: https://tools.ietf.org/html/rfc7950#section-5.6.5
-.. _5.1: https://tools.ietf.org/html/rfc7950#section-5.1
-.. _6.4.1: https://tools.ietf.org/html/rfc7950#section-6.4.1
+.. _5.6.5: https://rfc-editor.org/rfc/rfc7950.html#section-5.6.5
+.. _5.1: https://rfc-editor.org/rfc/rfc7950.html#section-5.1
+.. _6.4.1: https://rfc-editor.org/rfc/rfc7950.html#section-6.4.1

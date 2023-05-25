@@ -574,8 +574,8 @@ all :class:`~.schemanode.TerminalNode` instances.
          >>> type(union_t.types[0])
          <class 'yangson.datatype.StringType'>
 
-.. _7.3: https://tools.ietf.org/html/rfc7950#section-7.3
-.. _9.1: https://tools.ietf.org/html/rfc7950#section-9.1
-.. _9.7.4.2: https://tools.ietf.org/html/rfc7950#section-9.7.4.2
-.. _9.9.3: https://tools.ietf.org/html/rfc7950#section-9.9.3
-.. _9.13: https://tools.ietf.org/html/rfc7950#section-9.13
+.. _7.3: https://rfc-editor.org/rfc/rfc7950.html#section-7.3
+.. _9.1: https://rfc-editor.org/rfc/rfc7950.html#section-9.1
+.. _9.7.4.2: https://rfc-editor.org/rfc/rfc7950.html#section-9.7.4.2
+.. _9.9.3: https://rfc-editor.org/rfc/rfc7950.html#section-9.9.3
+.. _9.13: https://rfc-editor.org/rfc/rfc7950.html#section-9.13
