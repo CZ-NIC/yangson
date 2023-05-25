@@ -162,7 +162,7 @@ the :mod:`.schemanode`, :mod:`.xpathast` and :mod:`.xpathparser` modules.
 
    +--rw example-4-a:bag!
    |  +--ro bar? <boolean>
-   |  +--rw foo <uint8>
+   |  x--rw foo <uint8>
    |  +--rw (opts)?
    |     +--:(a)
    |     |  +--rw baz? <empty>

@@ -105,21 +105,21 @@ tree = """+--rw (test:choiA)?
 |     +--rw leafE <hex-number(string)>
 |     +--rw leafF <boolean>
 |     +--rw leafW? <typE(leafref)>
-+--rw test:contT
-|  +--rw binary? <binary>
-|  +--rw bits? <typD(bits)>
-|  +--rw boolean? <boolean>
-|  +--rw decimal64? <decimal64>
-|  +--rw enumeration? <typC(enumeration)>
-|  +--rw int16? <int16>
-|  +--rw int32? <int32>
-|  +--rw int64? <int64>
-|  +--rw int8? <int8>
-|  +--rw string? <string>
-|  +--rw uint16? <uint16>
-|  +--rw uint32? <uint32>
-|  +--rw uint64? <uint64>
-|  +--rw uint8? <uint8>
+x--rw test:contT
+|  x--rw binary? <binary>
+|  x--rw bits? <typD(bits)>
+|  x--rw boolean? <boolean>
+|  x--rw decimal64 <decimal64>
+|  x--rw enumeration? <typC(enumeration)>
+|  x--rw int16? <int16>
+|  x--rw int32? <int32>
+|  x--rw int64? <int64>
+|  x--rw int8? <int8>
+|  x--rw string? <string>
+|  x--rw uint16? <uint16>
+|  x--rw uint32? <uint32>
+|  x--rw uint64? <uint64>
+|  x--rw uint8? <uint8>
 +--rw test:leafX? <port-number(uint16)>
 +---n testb:noA
 |  +--ro leafO? <boolean>
@@ -720,6 +720,15 @@ def test_validation(instance):
         raw = True).top()
     assert inst3.validate(ctype=ContentType.all) is None
     assert instance.validate(ctype=ContentType.all) is None
+
+def test_status_validation(instance):
+    inst4 = instance["test:contT"].delete_item("decimal64").top()
+    # deprecated subtree (if present) still has to comply with the schema
+    with pytest.raises(SchemaError):
+        inst4.validate(ctype=ContentType.all)
+    inst5 = instance.delete_item("test:contT")
+    # but the entire deprecated subtree may be missing
+    assert inst5.validate(ctype=ContentType.all) is None
 
 def strip_pretty(s: str):
     '''

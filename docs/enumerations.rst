@@ -8,6 +8,9 @@ Enumeration Classes
 .. autoclass:: ContentType
    :members:
 
+.. autoclass:: NodeStatus
+   :members:
+
 .. autoclass:: ValidationScope
    :members:
 
@@ -19,3 +22,5 @@ Enumeration Classes
 
 .. autoclass:: MultiplicativeOp
    :members:
+
+.. _7.21.2: https://www.rfc-editor.org/rfc/rfc7950.html#section-7.21.2

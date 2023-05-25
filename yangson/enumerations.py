@@ -30,6 +30,25 @@ class ContentType(Enum):
     """All data."""
 
 
+class NodeStatus(Enum):
+    """Enumeration of node definition statuses.
+
+    See sec. `7.21.2`_ in [RFC7950]_. The value represents the status symbol
+    used in tree diagrams [RFC8340]_.
+    """
+
+    current = "+"
+    """The definition is current and valid."""
+    deprecated = "x"
+    """The definition is obsolete but permits new/continued implementations."""
+    obsolete = "o"
+    """The definition is obsolete and SHOULD NOT be implemented."""
+
+    def __str__(self: "NodeStatus") -> str:
+        """Return string representation of the definition status."""
+        return self.name
+
+
 class ValidationScope(Enum):
     """Enumeration of validation scopes."""
     syntax = 1

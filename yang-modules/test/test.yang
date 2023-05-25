@@ -137,8 +137,9 @@ module test {
   }
 
   container contT {
+    status deprecated;
     description
-      "Leafs of all types.";
+      "Leaves of all types.";
     leaf int8 {
       type int8 {
         range "-100..max";
@@ -172,6 +173,7 @@ module test {
         fraction-digits "18";
         range "1..max";
       }
+      mandatory true;
     }
     leaf string {
       type string {

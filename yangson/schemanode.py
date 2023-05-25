@@ -1,4 +1,4 @@
-# Copyright © 2016-2021 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2023 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -47,7 +47,8 @@ import xml.etree.ElementTree as ET
 from .constraint import Must
 from .datatype import (DataType, LinkType,
                        RawScalar, IdentityrefType)
-from .enumerations import Axis, ContentType, DefaultDeny, ValidationScope
+from .enumerations import (Axis, ContentType, DefaultDeny,
+                           NodeStatus, ValidationScope)
 from .exceptions import (
     AnnotationTypeError, InvalidArgument,
     MissingAnnotationTarget, MissingModuleNamespace, RawMemberError,
@@ -98,6 +99,8 @@ class SchemaNode:
         self.val_count = 0
         self._ctype = None
         """Content type of the receiver."""
+        self._status = None
+        """Status of node definition."""
 
     @property
     def qual_name(self: "SchemaNode") -> QualName:
@@ -113,6 +116,11 @@ class SchemaNode:
     def mandatory(self: "SchemaNode") -> bool:
         """Is the receiver a mandatory node?"""
         return False
+
+    @property
+    def status(self: "SchemaNode") -> NodeStatus:
+        """Return receiver's definition status."""
+        return self._status if self._status else self.parent.status
 
     def delete(self: "SchemaNode") -> None:
         """Remove the receiver from the schema."""
@@ -300,6 +308,17 @@ class SchemaNode:
         if stmt.argument == "false":
             self._ctype = ContentType.nonconfig
 
+    def _status_stmt(self: "SchemaNode", stmt: Statement,
+                     sctx: SchemaContext) -> None:
+        if stmt.argument == "deprecated":
+            nst = NodeStatus.deprecated
+        elif stmt.argument == "obsolete":
+            nst = NodeStatus.obsolete
+        else:
+            nst = NodeStatus.current
+        if nst != self.parent.status:
+            self._status = nst
+
     def _deviate_config(self: "SchemaNode", stmt: Statement,
                          sctx: SchemaContext, action: str) -> None:
         if action == "delete":
@@ -365,7 +384,7 @@ class SchemaNode:
         return f"{self._tree_line_prefix()} {self._tree_name()}"
 
     def _tree_line_prefix(self: "SchemaNode") -> str:
-        return "+--"
+        return self.status.value + "--"
 
     def _nacm_default_deny_stmt(self: "SchemaNode", stmt: Statement,
                                 sctx: SchemaContext) -> None:
@@ -404,6 +423,7 @@ class SchemaNode:
         "ordered-by": "_ordered_by_stmt",
         "presence": "_presence_stmt",
         "rpc": "_rpc_action_stmt",
+        "status": "_status_stmt",
         "unique": "_unique_stmt",
         "units": "_units_stmt",
         "uses": "_uses_stmt",
@@ -647,8 +667,9 @@ class InternalNode(SchemaNode):
                 dc._make_schema_patterns()
 
     def _schema_pattern(self: "InternalNode") -> SchemaPattern:
-        todo = [c for c in self.children
-                if not isinstance(c, (RpcActionNode, NotificationNode))]
+        todo = [c for c in self.children if not (
+            isinstance(c, (RpcActionNode, NotificationNode)) or
+            c._status == NodeStatus.obsolete)]
         if not todo:
             return Empty()
         prev = todo[0]._pattern_entry()
@@ -864,6 +885,7 @@ class SchemaTreeNode(GroupNode):
         super().__init__()
         self.annotations: Dict[QualName, Annotation] = {}
         self.schema_data = schemadata
+        self._status = NodeStatus.current
 
     def iname(self: "SchemaTreeNode") -> InstanceName:
         """Override the superclass method."""
@@ -962,7 +984,8 @@ class DataNode(SchemaNode):
 
     def _pattern_entry(self: "DataNode") -> SchemaPattern:
         m = Member(self.iname(), self.content_type(), self.when)
-        return m if self.mandatory else SchemaPattern.optional(m)
+        return m if (self.mandatory and self._status !=
+                     NodeStatus.deprecated) else SchemaPattern.optional(m)
 
     def _tree_line_prefix(self: "DataNode") -> str:
         return super()._tree_line_prefix() + (

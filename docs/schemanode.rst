@@ -182,6 +182,17 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> rsn.mandatory
          False
 
+   .. attribute:: status
+
+      This property gives the status of the schema node definition represented
+      as a member of the :class:`~.enumerations.NodeStatus` enumeration.
+
+      .. doctest::
+
+         >>> fsn.status
+         <NodeStatus.deprecated: 'x'>
+         >>> print(rsn.status)
+         current
 
    .. rubric:: Public Methods
 

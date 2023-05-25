@@ -18,6 +18,7 @@ module example-4-a {
       type uint8;
       units "foondela";
       mandatory "true";
+      status deprecated;
       nacm:default-deny-write;
     }
     leaf bar {
