@@ -1,13 +1,13 @@
 module example-4-a {
 
-  yang-version "1.1";
+  yang-version 1.1;
 
   namespace "http://example.com/example-4-a";
 
-  prefix "ex4a";
+  prefix ex4a;
 
   import ietf-netconf-acm {
-    prefix "nacm";
+    prefix nacm;
     revision-date 2018-02-14;
   }
 
@@ -17,14 +17,14 @@ module example-4-a {
     leaf foo {
       type uint8;
       units "foondela";
-      mandatory "true";
+      mandatory true;
       status deprecated;
       nacm:default-deny-write;
     }
     leaf bar {
       type boolean;
       default "true";
-      config "false";
+      config false;
     }
     choice opts {
       default "a";

@@ -1,18 +1,18 @@
 module example-3-b {
 
-  yang-version "1.1";
+  yang-version 1.1;
 
   namespace "http://example.com/example-3/b";
 
-  prefix "ex3b";
+  prefix ex3b;
 
   import ietf-inet-types {
-    prefix "oin";
+    prefix oin;
     revision-date 2010-09-24;
   }
 
   import example-3-a {
-    prefix "ex3a";
+    prefix ex3a;
   }
 
   revision 2016-08-22;

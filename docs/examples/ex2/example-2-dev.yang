@@ -9,11 +9,11 @@ module example-2-dev {
   }
 
   deviation "/ex2:bag/ex2:foo/ex2:unlucky" {
-    deviate "not-supported";
+    deviate not-supported;
   }
 
   deviation "/ex2:bag/ex2:foo/ex2:prime" {
-    deviate "add" {
+    deviate add {
       default "false";
     }
   }

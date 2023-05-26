@@ -1,10 +1,10 @@
 module example-2 {
 
-  yang-version "1.1";
+  yang-version 1.1;
 
   namespace "http://example.com/example-2";
 
-  prefix "ex2";
+  prefix ex2;
 
   container bag {
     list foo {
@@ -26,17 +26,17 @@ module example-2 {
       }
       leaf unlucky {
         type boolean;
-	default false;
+	default "false";
       }
     }
     leaf bar {
       type boolean;
-      mandatory "true";
+      mandatory true;
     }
     leaf baz {
       when "not(../foo/in-words = 'forty-two')";
       type decimal64 {
-        fraction-digits "7";
+        fraction-digits 7;
       }
       default "0";
     }
