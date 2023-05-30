@@ -1,11 +1,12 @@
-"""
-This script reads all *.yang files in a directory that is passed as the parameter.
-Each file should contain a YANG module or submodule. The script then prints YANG
-library data (JSON text) for all the modules and submodules.
+"""This script reads all *.yang files in a directory that is passed
+as the parameter.  Each file should contain a YANG module or
+submodule. The script then prints YANG library data (JSON text) for
+all the modules and submodules.
 
-If a submodule is included from a main module (with revision), then the submodule
-must be present in the same directory. Otherwise an error message is printed and 
-exit code is 1.
+If a submodule is included from a main module (with revision), then
+the submodule must be present in the same directory. Otherwise an
+error message is printed and exit code is 1.
+
 """
 
 import json
