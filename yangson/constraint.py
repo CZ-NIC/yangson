@@ -27,7 +27,7 @@ This module implements the following classes:
 import decimal
 import re
 from typing import Callable, List, Optional, Union
-from pyxb.utils.xmlre import RegularExpressionError, XMLToPython
+from elementpath import RegexError, translate_pattern
 
 from .exceptions import InvalidArgument
 from .xpathast import Expr
@@ -137,8 +137,10 @@ class Pattern(Constraint):
         self.pattern = pattern
         self.invert_match = invert_match
         try:
-            self.regex = re.compile(XMLToPython(pattern))
-        except RegularExpressionError:
+            self.regex = re.compile(translate_pattern(
+                pattern, back_references=False,
+                lazy_quantifiers=False, anchors=False))
+        except RegexError:
             raise InvalidArgument(pattern) from None
 
 

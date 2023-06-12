@@ -25,7 +25,7 @@ class is intended to be public:
 """
 import decimal
 from math import ceil, copysign, floor, isnan
-from pyxb.utils.xmlre import XMLToPython, RegularExpressionError
+from elementpath import RegexError, translate_pattern
 from xml.sax.saxutils import quoteattr
 import re
 from typing import List, Optional, Tuple
@@ -740,8 +740,10 @@ class FuncReMatch(BinaryExpr):
     def _eval(self: "FuncReMatch", xctx: XPathContext) -> bool:
         lres, rres = self._eval_ops_string(xctx)
         try:
-            return re.match(XMLToPython(rres), lres) is not None
-        except RegularExpressionError:
+            return re.match(translate_pattern(
+                rres, back_references=False,
+                lazy_quantifiers=False, anchors=False), lres) is not None
+        except RegexError:
             raise InvalidArgument(rres) from None
 
 
