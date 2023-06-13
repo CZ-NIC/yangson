@@ -328,9 +328,11 @@ all :class:`~.schemanode.TerminalNode` instances.
 
          >>> string_t.patterns[0].regex
          re.compile('^(x*y)$')
-         >>> 'xxxy' in string_t
+         >>> 'xxxy' in string_t  # match
          True
-         >>> 'xxyy' not in string_t  # pattern doesn't match
+         >>> 'xxyy' not in string_t  # no match
+         True
+         >>> 'xxy\n' not in string_t  # no match
          True
 
    .. attribute:: invert_patterns
