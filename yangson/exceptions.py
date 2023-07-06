@@ -211,7 +211,7 @@ class NotSupported(ParserException):
         self.feature = feature
 
     def __str__(self: "NotSupported") -> str:
-        return super().str() + ": " + str(self.feature)
+        return str(super()) + ": " + str(self.feature)
 
 
 class MissingModule(YangsonException):
