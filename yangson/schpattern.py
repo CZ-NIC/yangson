@@ -41,13 +41,14 @@ class SchemaPattern:
         return False
 
     def _active(self: "SchemaPattern", ctype: ContentType) -> bool:
-        """Return ``True`` the receiver is active in the current context."""
+        """Return ``True`` if the receiver is active in the current context."""
         return True
 
     def _eval_when(self: "SchemaPattern", cnode: "InstanceNode") -> None:
         return
 
-    def _mandatory_members(self: "SchemaPattern", ctype: ContentType) -> List[InstanceName]:
+    def _mandatory_members(self: "SchemaPattern",
+                           ctype: ContentType) -> List[InstanceName]:
         return []
 
 
@@ -138,7 +139,8 @@ class ConditionalPattern(Conditional):
         """Override the superclass method."""
         return (not self.check_when() or self.pattern.nullable(ctype))
 
-    def deriv(self: "ConditionalPattern", x: str, ctype: ContentType) -> SchemaPattern:
+    def deriv(self: "ConditionalPattern", x: str,
+              ctype: ContentType) -> SchemaPattern:
         """Return derivative of the receiver."""
         return (self.pattern.deriv(x, ctype) if self.check_when() else
                 NotAllowed())
@@ -150,8 +152,10 @@ class ConditionalPattern(Conditional):
     def __str__(self: "ConditionalPattern") -> str:
         return str(self.pattern)
 
-    def _mandatory_members(self: "ConditionalPattern", ctype: ContentType) -> List[InstanceName]:
-        return self.pattern._mandatory_members(ctype) if self._active(ctype) else []
+    def _mandatory_members(self: "ConditionalPattern",
+                           ctype: ContentType) -> List[InstanceName]:
+        return (self.pattern._mandatory_members(ctype) if self._active(ctype)
+                else [])
 
 
 class Member(Typeable, Conditional):
@@ -183,7 +187,8 @@ class Member(Typeable, Conditional):
     def __str__(self: "Member") -> str:
         return f"member '{self.name}'"
 
-    def _mandatory_members(self: "Member", ctype: ContentType) -> List[InstanceName]:
+    def _mandatory_members(self: "Member",
+                           ctype: ContentType) -> List[InstanceName]:
         return [self.name] if self._active(ctype) else []
 
 
@@ -210,7 +215,8 @@ class Alternative(SchemaPattern):
         """Override the superclass method."""
         return self.left.nullable(ctype) or self.right.nullable(ctype)
 
-    def deriv(self: "Alternative", x: str, ctype: ContentType) -> SchemaPattern:
+    def deriv(self: "Alternative", x: str,
+              ctype: ContentType) -> SchemaPattern:
         """Return derivative of the receiver."""
         return Alternative.combine(self.left.deriv(x, ctype),
                                    self.right.deriv(x, ctype))
@@ -223,7 +229,8 @@ class Alternative(SchemaPattern):
     def __str__(self: "Alternative") -> str:
         return f"{self.left!s} or {self.right!s}"
 
-    def _mandatory_members(self: "Alternative", ctype: ContentType) -> List[InstanceName]:
+    def _mandatory_members(self: "Alternative",
+                           ctype: ContentType) -> List[InstanceName]:
         lm = self.left._mandatory_members(ctype)
         rm = self.right._mandatory_members(ctype)
         return [] if not lm or not rm else lm + rm
@@ -249,7 +256,8 @@ class ChoicePattern(Alternative, Typeable):
                 f"Choice {self.name}\n{self.left.tree(indent + 2)}\n"
                 f"{self.right.tree(indent + 2)}")
 
-    def _members(self: "ChoicePattern", ctype: ContentType) -> List[InstanceName]:
+    def _members(self: "ChoicePattern",
+                 ctype: ContentType) -> List[InstanceName]:
         return super()._members(ctype) if self._active(ctype) else []
 
 
@@ -294,5 +302,7 @@ class Pair(SchemaPattern):
     def __str__(self: "Pair") -> str:
         return str(self.left)
 
-    def _mandatory_members(self: "Pair", ctype: ContentType) -> List[InstanceName]:
-        return self.left._mandatory_members(ctype) + self.right._mandatory_members(ctype)
+    def _mandatory_members(self: "Pair",
+                           ctype: ContentType) -> List[InstanceName]:
+        return (self.left._mandatory_members(ctype) +
+                self.right._mandatory_members(ctype))
