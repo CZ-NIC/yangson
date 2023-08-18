@@ -26,6 +26,7 @@ to the appropriate directory:
    >>> import json
    >>> import yaml
    >>> from yangson import DataModel
+   >>> from yangson.enumerations import ContentType
    >>> os.chdir("examples/ex2")
 
 Initializing the Data Model
@@ -56,7 +57,7 @@ With the deviations applied, the resulting schema tree looks like this:
 
    >>> print(dm.ascii_tree(), end='')
    +--rw example-2:bag
-      +--rw bar <boolean>
+      +--ro bar <boolean>
       +--rw baz? <decimal64>
       +--rw foo# [number]
          +--rw in-words? <string>
@@ -64,6 +65,8 @@ With the deviations applied, the resulting schema tree looks like this:
          +--rw prime? <boolean>
 
 For the most part, Yangson uses the ASCII tree representation described in [RFC8340]_, the differences are described in the documentation for :meth:`.DataModel.ascii_tree` method.
+
+As we can see in the ASCII tree, the data model contains both configuration data nodes (``rw``) and a single leaf ``bar`` representing state data (``ro``).
 
 Loading and Validating Instance Data
 ====================================
@@ -80,9 +83,25 @@ and validate it against the data model:
 
 .. doctest::
 
-   >>> inst.validate()
+   >>> inst.validate(ctype=ContentType.all)
 
-No output means that the validation was successful.
+No output means that the validation was successful. Note that we had to use validation for content type ``all`` because the instance document contains both configuration and state data. The default content type for the :meth:`.InstanceNode.validate` method is configuration (``ContentType.config``).
+
+Speaking about content type, it is also worth pointing out that the empty instance is valid as configuration:
+
+.. doctest::
+
+   >>> empty = dm.from_raw({})
+   >>> empty.validate()
+
+However, it is *not* valid as content type ``all``, i.e. combined configuration and state data, because the state data leaf ``bar`` is mandatory, which in turn makes the top-level container ``example-2:bag`` mandatory (see sec. `3`_ in [RFC7950]_):
+
+.. doctest::
+
+   >>> empty.validate(ctype=ContentType.all)
+   Traceback (most recent call last):
+   ...
+   yangson.exceptions.SchemaError: {/} missing-data: expected 'example-2:bag'
 
 It is also possible to validate a subtree of instance data against the corresponding schema node. For example:
 
@@ -94,14 +113,14 @@ It is also possible to validate a subtree of instance data against the correspon
 We can now print the ASCII tree again, this time without showing the
 types but instead displaying *validation counters* that indicate how
 many times each schema node has been used for validating instances
-during the previous two validation runs. This is useful for assessing
+during the previous two validation runs on `inst`. This is useful for assessing
 the coverage of instance data with respect to the schema.
 
 .. doctest::
 
    >>> print(dm.ascii_tree(no_types=True, val_count=True), end='')
    +--rw example-2:bag {1}
-      +--rw bar {1}
+      +--ro bar {1}
       +--rw baz? {0}
       +--rw foo# [number] {5}
          +--rw in-words? {5}
@@ -180,7 +199,7 @@ still valid:
 
 .. doctest::
 
-   >>> inst2.validate()
+   >>> inst2.validate(ctype=ContentType.all)
 
 Adding Default Values
 =====================
@@ -242,7 +261,7 @@ In order to see validation in action, we will try to violate the data model sche
 .. doctest::
 
    >>> broken1 = inw.update("six").top()
-   >>> broken1.validate()
+   >>> broken1.validate(ctype=ContentType.all)
    Traceback (most recent call last):
    ...
    yangson.exceptions.SemanticError: {/example-2:bag/foo} data-not-unique: entry 1
@@ -255,7 +274,7 @@ happens to be the key of the *foo* list:
 .. doctest::
 
    >>> broken2 = inw.sibling('number').update(6).top()
-   >>> broken2.validate()
+   >>> broken2.validate(ctype=ContentType.all)
    Traceback (most recent call last):
    ...
    yangson.exceptions.SemanticError: {/example-2:bag/foo} non-unique-key: 6
@@ -286,7 +305,7 @@ And finally, we delete a leaf that's defined as mandatory in the data model:
 .. doctest::
 
    >>> broken3 = inw.up().up().up().delete_item('bar').top()
-   >>> broken3.validate()
+   >>> broken3.validate(ctype=ContentType.all)
    Traceback (most recent call last):
    ...
    yangson.exceptions.SchemaError: {/example-2:bag} missing-data: expected 'bar'
@@ -301,7 +320,7 @@ Instance data may alternatively be read from a YAML document:
    >>> with open('example-data.yaml') as infile:
    ...   ri = yaml.load(infile, Loader=yaml.SafeLoader)
    >>> inst = dm.from_raw(ri)
-   >>> inst.validate()
+   >>> inst.validate(ctype=ContentType.all)
    >>> inst.peek(irt)
    'three'
 
@@ -312,5 +331,6 @@ some corner cases. For example, the PyYAML parser interprets
 *unquoted* strings ``yes`` and ``no`` as :py:class:`bool` values
 ``True`` and ``False``.
 
+.. _3: https://www.rfc-editor.org/rfc/rfc7950.html#section-3
 .. _5.6.3: https://www.rfc-editor.org/rfc/rfc7950.html#section-5.6.3
 .. _PyYAML: https://pypi.org/project/PyYAML/

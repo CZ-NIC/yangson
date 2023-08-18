@@ -14,6 +14,7 @@ module example-4-b {
     type decimal64 {
       fraction-digits 4;
     }
+    default 2.7182;
     max-elements 2;
     ordered-by user;
   }

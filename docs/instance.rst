@@ -10,6 +10,7 @@
    import json
    import os
    from yangson import DataModel
+   from yangson.enumerations import ContentType
    os.chdir("examples/ex2")
 
 .. testcleanup::
@@ -531,9 +532,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-         >>> inst.validate() # no output means OK
+         >>> inst.validate(ctype=ContentType.all) # no output means OK
          >>> badinst = bag.put_member('baz', 'ILLEGAL').top()
-         >>> badinst.validate()
+         >>> badinst.validate(ctype=ContentType.all)
          Traceback (most recent call last):
          ...
          yangson.exceptions.YangTypeError: {/example-2:bag/baz} invalid-type: expected decimal64
@@ -547,10 +548,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> e2foo6 = e2bag['foo'][0]
          >>> bad2 = e2foo6.update(
          ... {'number': 42, 'in-words': 'forty-two'}, raw=True).top()
-         >>> bad2.validate()
+         >>> bad2.validate(ctype=ContentType.all)
          Traceback (most recent call last):
          ...
-         yangson.exceptions.SchemaError: {/example-2:bag} config member-not-allowed: baz
+         yangson.exceptions.SchemaError: {/example-2:bag} member-not-allowed: baz
 
    .. method:: add_defaults(ctype: ContentType = None) -> InstanceNode
 

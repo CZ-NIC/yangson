@@ -32,6 +32,11 @@ class SchemaPattern:
         """Make `p` an optional pattern."""
         return Alternative.combine(Empty(), p)
 
+    @staticmethod
+    def optional_config(p: "SchemaPattern") -> "SchemaPattern":
+        """Make `p` an optional in configuration."""
+        return Alternative.combine(EmptyConfig(), p)
+
     def nullable(self: "SchemaPattern", ctype: ContentType) -> bool:
         """Return ``True`` the receiver is nullable."""
         return False
@@ -49,7 +54,7 @@ class SchemaPattern:
 
     def _mandatory_members(self: "SchemaPattern",
                            ctype: ContentType) -> List[InstanceName]:
-        return []
+        return None
 
 
 class Empty(SchemaPattern, metaclass=_Singleton):
@@ -72,6 +77,29 @@ class Empty(SchemaPattern, metaclass=_Singleton):
 
     def __str__(self: "Empty") -> str:
         return "Empty"
+
+
+class EmptyConfig(SchemaPattern, metaclass=_Singleton):
+    """A pattern empty in configuration, not allowed otherwise."""
+
+    def nullable(self: "EmptyConfig", ctype: ContentType) -> bool:
+        """Override the superclass method."""
+        return ctype == ContentType.config
+
+    def deriv(self: "EmptyConfig", x: str, ctype: ContentType) -> SchemaPattern:
+        """Return derivative of the receiver."""
+        return NotAllowed()
+
+    def tree(self: "EmptyConfig", indent: int = 0):
+        return " " * indent + "EmptyConfig"
+
+    def __str__(self: "EmptyConfig") -> str:
+        return "EmptyConfig"
+
+    def _mandatory_members(self: "Member",
+                           ctype: ContentType) -> List[InstanceName]:
+        if ctype.value & ContentType.nonconfig.value:
+            return []
 
 
 class NotAllowed(SchemaPattern, metaclass=_Singleton):
@@ -154,8 +182,8 @@ class ConditionalPattern(Conditional):
 
     def _mandatory_members(self: "ConditionalPattern",
                            ctype: ContentType) -> List[InstanceName]:
-        return (self.pattern._mandatory_members(ctype) if self._active(ctype)
-                else [])
+        if self._active(ctype):
+            return self.pattern._mandatory_members(ctype)
 
 
 class Member(Typeable, Conditional):
@@ -189,7 +217,8 @@ class Member(Typeable, Conditional):
 
     def _mandatory_members(self: "Member",
                            ctype: ContentType) -> List[InstanceName]:
-        return [self.name] if self._active(ctype) else []
+        if self._active(ctype):
+            return [self.name]
 
 
 class Alternative(SchemaPattern):
@@ -233,7 +262,8 @@ class Alternative(SchemaPattern):
                            ctype: ContentType) -> List[InstanceName]:
         lm = self.left._mandatory_members(ctype)
         rm = self.right._mandatory_members(ctype)
-        return [] if not lm or not rm else lm + rm
+        if lm is not None and rm is not None:
+            return lm + rm
 
 
 class ChoicePattern(Alternative, Typeable):
@@ -304,5 +334,10 @@ class Pair(SchemaPattern):
 
     def _mandatory_members(self: "Pair",
                            ctype: ContentType) -> List[InstanceName]:
-        return (self.left._mandatory_members(ctype) +
-                self.right._mandatory_members(ctype))
+        if self.left._mandatory_members(ctype) is None:
+            return self.right._mandatory_members(ctype)
+        elif self.right._mandatory_members(ctype) is None:
+            return self.left._mandatory_members(ctype)
+        else:
+            return (self.left._mandatory_members(ctype) +
+                    self.right._mandatory_members(ctype))

@@ -114,8 +114,13 @@ class SchemaNode:
 
     @property
     def mandatory(self: "SchemaNode") -> bool:
-        """Is the receiver a mandatory node?"""
+        """Is the receiver a mandatory node in the complete data tree?"""
         return False
+
+    @property
+    def mandatory_config(self: "SchemaNode") -> bool:
+        """Is the receiver mandatory node in a configuration?"""
+        return self.mandatory and self.config
 
     @property
     def status(self: "SchemaNode") -> NodeStatus:
@@ -435,17 +440,21 @@ class SchemaNode:
 class InternalNode(SchemaNode):
     """Abstract class for schema nodes that have children."""
 
+    _mandatory_children: Tuple[MutableSet[SchemaNode], MutableSet[SchemaNode]]
+    """Two sets of mandatory children: item 0 = nonconfig, 1 = config."""
+
     def __init__(self: "InternalNode"):
         """Initialize the class instance."""
         super().__init__()
         self.children: List[SchemaNode] = []
-        self._mandatory_children: MutableSet[SchemaNode] = set()
         self.schema_pattern: Optional[SchemaPattern] = None
+        self._mandatory_children = (set(), set())
 
     @property
     def mandatory(self: "InternalNode") -> bool:
-        """Is the receiver a mandatory node?"""
-        return len(self._mandatory_children) > 0
+        """Override the superclass property."""
+        return bool(self._mandatory_children[0] or
+                    self._mandatory_children[1])
 
     def get_child(self: "InternalNode", name: YangIdentifier,
                   ns: YangIdentifier = None) -> Optional[SchemaNode]:
@@ -684,7 +693,10 @@ class InternalNode(SchemaNode):
 
     def _add_mandatory_child(self: "InternalNode", node: SchemaNode) -> None:
         """Add `node` to the set of mandatory children."""
-        self._mandatory_children.add(node)
+        if node.mandatory_config:
+            self._mandatory_children[1].add(node)
+        else:
+            self._mandatory_children[0].add(node)
 
     def _add_defaults(self: "InternalNode", inst: InstanceNode, ctype: ContentType,
                       lazy: bool = False) -> InstanceNode:
@@ -1102,8 +1114,13 @@ class ContainerNode(DataNode, InternalNode):
 
     @property
     def mandatory(self: "ContainerNode") -> bool:
-        """Is the receiver a mandatory node?"""
+        """Extend the superclass property."""
         return not self.presence and super().mandatory
+
+    @property
+    def mandatory_config(self: "InternalNode") -> bool:
+        """Override the superclass property."""
+        return bool(self._mandatory_children[1])
 
     def _node_digest(self: "ContainerNode") -> Dict[str, Any]:
         res = super()._node_digest()
@@ -1111,9 +1128,10 @@ class ContainerNode(DataNode, InternalNode):
         return res
 
     def _add_mandatory_child(self: "ContainerNode", node: SchemaNode):
-        if not (self.presence or self.mandatory):
-            self.parent._add_mandatory_child(self)
+        propagate = not (self.presence or self.mandatory)
         super()._add_mandatory_child(node)
+        if propagate:
+            self.parent._add_mandatory_child(self)
 
     def _default_instance(self: "ContainerNode", pnode: InstanceNode, ctype: ContentType,
                           lazy: bool = False) -> InstanceNode:
@@ -1125,6 +1143,16 @@ class ContainerNode(DataNode, InternalNode):
                        lazy: bool) -> Optional[InstanceNode]:
         inst.value = ObjectValue()
         return inst if lazy else self._add_defaults(inst, ctype)
+
+    def _pattern_entry(self: "ContainerNode") -> SchemaPattern:
+        m = Member(self.iname(), self.content_type(), self.when)
+        if self._status == NodeStatus.deprecated:
+            return SchemaPattern.optional(m)
+        if self.mandatory:
+            return (m if self.mandatory_config else
+                    SchemaPattern.optional_config(m))
+        else:
+            return SchemaPattern.optional(m)
 
     def _presence_stmt(self: "ContainerNode", stmt: Statement, sctx: SchemaContext) -> None:
         self.presence = True
@@ -1146,7 +1174,7 @@ class SequenceNode(DataNode):
 
     @property
     def mandatory(self: "SequenceNode") -> bool:
-        """Is the receiver a mandatory node?"""
+        """Override the superclass property."""
         return self.min_elements > 0
 
     def _validate(self: "SequenceNode", inst: InstanceNode,
@@ -1360,7 +1388,7 @@ class ListNode(SequenceNode, InternalNode):
             self._key_members.append(kn.iname())
             if not kn._mandatory:
                 kn._mandatory = True
-                self._mandatory_children.add(kn)
+                self._add_mandatory_child(kn)
 
     def _key_stmt(self: "ListNode", stmt: Statement,
                   sctx: SchemaContext) -> None:
@@ -1423,7 +1451,7 @@ class ChoiceNode(InternalNode):
 
     @property
     def mandatory(self: "ChoiceNode") -> bool:
-        """Is the receiver a mandatory node?"""
+        """Override the superclass property."""
         return self._mandatory
 
     def _add_defaults(self: "ChoiceNode", inst: InstanceNode,
@@ -1464,7 +1492,7 @@ class ChoiceNode(InternalNode):
 
     def _post_process(self: "ChoiceNode") -> None:
         super()._post_process()
-        if self._mandatory:
+        if self.mandatory:
             self.parent._add_mandatory_child(self)
 
     def _tree_line_prefix(self: "ChoiceNode") -> str:
@@ -1521,7 +1549,7 @@ class LeafNode(DataNode, TerminalNode):
 
     @property
     def mandatory(self: "LeafNode") -> bool:
-        """Is the receiver a mandatory node?"""
+        """Override the superclass property."""
         return self._mandatory
 
     @property
@@ -1622,7 +1650,7 @@ class AnyContentNode(DataNode):
 
     @property
     def mandatory(self: "AnyContentNode") -> bool:
-        """Is the receiver a mandatory node?"""
+        """Override the superclass property."""
         return self._mandatory
 
     def from_raw(self: "AnyContentNode", rval: RawValue, jptr: JSONPointer = "") -> Value:

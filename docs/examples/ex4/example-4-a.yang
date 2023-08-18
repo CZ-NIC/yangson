@@ -23,7 +23,7 @@ module example-4-a {
     }
     leaf bar {
       type boolean;
-      default "true";
+      mandatory "true";
       config false;
     }
     choice opts {

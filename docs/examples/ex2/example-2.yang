@@ -31,6 +31,7 @@ module example-2 {
     }
     leaf bar {
       type boolean;
+      config false;
       mandatory true;
     }
     leaf baz {

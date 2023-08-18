@@ -53,7 +53,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    >>> dm = DataModel.from_file('yang-library-ex4.json',
    ... mod_path=['.', '../../../yang-modules/ietf'])
+   >>> barsn = dm.get_schema_node('/example-4-a:bag/bar')
    >>> fsn = dm.get_schema_node('/example-4-a:bag/foo')
+   >>> qsn = dm.get_data_node('/example-4-b:quux')
    >>> rsn = dm.get_schema_node('/example-4-a:bag/opts/example-4-b:fooref/fooref')
    >>> with open('example-data.json') as infile:
    ...     ri = json.load(infile)
@@ -148,8 +150,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       If a sequence of instances is validated, the attribute accumulates the
       counts for all of them. Validation counters for the entire schema can
-      be reset to zero by using the method :meth:`~.DataModel.clear_val_counters`
-      in the :class:`~.datamodel.DataModel` class.
+      be reset to zero by using the method
+      :meth:`~.DataModel.clear_val_counters` in the
+      :class:`~.datamodel.DataModel` class.
 
    .. rubric:: Properties
 
@@ -175,11 +178,22 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
    .. attribute:: mandatory
 
       This boolean property is ``True`` if the receiver is a mandatory
-      node, and ``False`` otherwise.
+      node in the complete data tree (configuration & state data), and
+      ``False`` otherwise.
 
       .. doctest::
 
-         >>> rsn.mandatory
+         >>> barsn.mandatory
+         True
+
+   .. attribute:: mandatory_config
+
+      This boolean property is ``True`` if the receiver is a mandatory
+      node in configuration data, and ``False`` otherwise.
+
+      .. doctest::
+
+         >>> barsn.mandatory_config
          False
 
    .. attribute:: status
@@ -310,8 +324,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-         >>> barsn = bsn.get_child('bar', 'example-4-a')
-         >>> barsn.qual_name
+         >>> bsn.get_child('bar', 'example-4-a').qual_name
          ('bar', 'example-4-a')
 
    .. method:: get_schema_descendant(route: SchemaRoute) -> Optional[SchemaNode]
@@ -490,8 +503,8 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-         >>> barsn.default
-         True
+         >>> qsn.default
+         [Decimal('2.7182')]
 
    .. attribute:: units
 
@@ -543,7 +556,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-         >>> qsn = dm.get_data_node('/example-4-b:quux')
          >>> qsn.min_elements
          0
 

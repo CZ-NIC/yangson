@@ -152,7 +152,7 @@ def xml_safe_data_model(data_model):
     # processes by XML routines (see "xml_safe_data")
     anydA = data_model2.get_schema_node("/test:contA/anydA")
     anydA._mandatory = False
-    anydA.parent._mandatory_children.remove(anydA)
+    anydA.parent._mandatory_children[1].remove(anydA)
 
     # return modified data_model
     return data_model2
@@ -282,8 +282,8 @@ def test_schema(data_model):
         "test:contD/acA/output/leafL"))
     assert la.parent == chb.parent == ca
     assert ll.parent.name == "output"
-    assert chb in ca._mandatory_children
-    assert ada in ca._mandatory_children
+    assert chb in ca._mandatory_children[1]
+    assert ada in ca._mandatory_children[1]
     assert (ada.content_type() == axa.content_type() == la.content_type() ==
             ld.content_type() == lc.content_type() == lj.content_type() ==
             ln.content_type() == ContentType.config)
