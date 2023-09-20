@@ -8,9 +8,9 @@ stages:
 before_script:
   - apt update
   - apt install -yqq git make
-  - pip install pip-tools importlib-metadata
-  - pip-compile
-  - pip-sync
+  - pip install poetry
+  - poetry install
+  - source $(poetry env info --path)/bin/activate
 
 test:
   stage: test
