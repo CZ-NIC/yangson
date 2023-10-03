@@ -16,7 +16,7 @@
 import sys
 import os
 import doctest
-from pkg_resources import get_distribution
+import importlib.metadata
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -62,7 +62,7 @@ author = 'Ladislav Lhotka'
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-release = get_distribution('yangson').version
+release = importlib.metadata.version('yangson')
 # The short X.Y version.
 version = '.'.join(release.split('.')[:2])
 
