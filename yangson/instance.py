@@ -818,11 +818,13 @@ class ObjectMember(InstanceNode):
         except KeyError:
             raise NonexistentInstance(self, f"member '{name}'") from None
 
-    def look_up(self: "ObjectMember", **keys: dict[InstanceName, ScalarValue]) -> "ArrayEntry":
+    def look_up(self: "ObjectMember", raw: bool = False, /,
+                **keys: dict[InstanceName, ScalarValue]) -> "ArrayEntry":
         """Return the entry with matching keys.
 
         Args:
             keys: Keys and values specified as keyword arguments.
+            raw: Flag to be set if the key value(s) are raw.
 
         Raises:
             InstanceValueError: If the receiver's value is not a YANG list.
@@ -830,21 +832,24 @@ class ObjectMember(InstanceNode):
         """
         if not isinstance(self.schema_node, ListNode):
             raise InstanceValueError(self, "lookup on non-list")
-        try:
-            for i in range(len(self.value)):
-                en = self.value[i]
-                flag = True
-                for k in keys:
+        if raw:
+             for k in keys:
+                ksn = self._member_schema_node(k)
+                keys[k] = ksn.from_raw(keys[k], self.json_pointer())
+        for i in range(len(self.value)):
+            en = self.value[i]
+            flag = True
+            for k in keys:
+                try:
                     if en[k] != keys[k]:
                         flag = False
                         break
-                if flag:
-                    return self._entry(i)
-            raise NonexistentInstance(self, "entry lookup failed")
-        except KeyError:
-            raise NonexistentInstance(self, "entry lookup failed") from None
-        except TypeError:
-            raise InstanceValueError(self, "lookup on non-list") from None
+                except KeyError:
+                    flag = False
+                    break
+            if flag:
+                return self._entry(i)
+        raise NonexistentInstance(self, "entry lookup failed")
 
     def _zip(self: "ObjectMember") -> ObjectValue:
         """Zip the receiver into an object and return it."""

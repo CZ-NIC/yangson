@@ -61,7 +61,7 @@ With the deviations applied, the resulting schema tree looks like this:
       +--rw baz? <decimal64>
       +--rw foo# [number]
          +--rw in-words? <string>
-         +--rw number <uint8>
+         +--rw number <uint64>
          +--rw prime? <boolean>
 
 For the most part, Yangson uses the ASCII tree representation described in [RFC8340]_, the differences are described in the documentation for :meth:`.DataModel.ascii_tree` method.

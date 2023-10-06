@@ -12,7 +12,7 @@ module example-2 {
       ordered-by user;
       unique "in-words";
       leaf number {
-        type uint8;
+        type uint64;
       }
       leaf prime {
         type boolean;

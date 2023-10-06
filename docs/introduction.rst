@@ -15,7 +15,7 @@ Main Features
 * Support for YANG version 1.1 [RFC7950]_ and YANG library [RFC7895]_.
 
 * Instance data are internally represented as a `persistent data
-  structure`__. This makes the code thread-safe, and also allows for
+  structure`_. This makes the code thread-safe, and also allows for
   copying and updating data trees in a space-efficient way.
 
 * Parser and evaluator for XPath 1.0 expressions [XPath]_ and
@@ -28,8 +28,6 @@ Main Features
   entity-tags) and resource identifiers.
 
 * Support for NETCONF Access Control Module (NACM) [RFC6536]_.
-
-__ https://en.wikipedia.org/wiki/Persistent_data_structure
 
 Installation
 ============
@@ -84,7 +82,7 @@ command from the ``docs`` directory::
 
   $ make doctest
 
-.. _persistent structures: https://en.wikipedia.org/wiki/Persistent_data_structure
+.. _persistent data structure: https://en.wikipedia.org/wiki/Persistent_data_structure
 .. _5.2: https://rfc-editor.org/rfc/rfc7950.html#section-5.2
 .. _PyPI: https://pypi.python.org
 .. _YIN Tools: https://github.com/llhotka/yin-tools

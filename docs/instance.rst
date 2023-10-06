@@ -325,25 +325,62 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> len(foo.value)   # foo is unchanged
          4
 
-   .. method:: look_up(**keys: Dict[InstanceName, ScalarValue]) -> ArrayEntry
+   .. method:: look_up(raw: bool = False, /, \
+           **keys: Dict[InstanceName, ScalarValue]) -> ArrayEntry
 
       Return an instance node corresponding to the receiver's entry
       with specified keys. The receiver must be a YANG list.
 
-      The keys are passed to this method as a sequence of keyword
-      arguments ``kwarg=value`` where ``kwarg`` is the :term:`instance
-      name`\ s of a list key, and ``value`` is the corresponding list
-      key value.
-
-      This method raises :exc:`~.InstanceValueError` if the receiver is
-      not a YANG list, and :exc:`~.NonexistentInstance` if no entry with
-      matching keys exists.
+      The keys are passed to this method as a sequence of Python `keyword
+      arguments`_ in the form ``key=value`` where ``key`` is the :term:`instance
+      name` of a key, and ``value`` is the corresponding key value.
 
       .. doctest::
 
          >>> foo8 = foo.look_up(number=8)
          >>> foo8.json_pointer()
          '/example-2:bag/foo/3'
+
+      Keyword arguments won't work for keys with namespace-qualified
+      names such as ``yangmod:index``. In this case, the keys and
+      values have to be packed in a dictionary and passed to the
+      method as follows::
+
+        mylist.look_up(**{'yangmod:index': 42})
+
+      By default, the values of all keys are expected to be passed as
+      :term:`cooked value`\ s. If :term:`raw value`\ s are passed
+      instead, the *raw* flag has to be set to ``True``. In this case,
+      this flag must appear as the **first positional** argument so as
+      to avoid interference with the remaining arguments that are
+      specified in the ``key=value`` form:
+
+      .. doctest::
+
+         >>> foo.look_up(True, number='8').json_pointer()
+         '/example-2:bag/foo/3'
+
+      Whilst this method is mainly intended for use with YANG list
+      keys (as the *number* leaf in the example above) but, with a bit
+      of caution, it can be used with any child nodes of the receiver:
+
+      .. doctest::
+
+         >>> foo.look_up(prime=True)['number'].value
+         3
+
+      The first list entry that satisfies the look-up criteria is returned.
+
+      .. note::
+
+         Default values of leaves are always ignored by the look-up
+         procedure. Therefore, if you need to take defaults into
+         account, populate the receiver first with default values by
+         using the :meth:`add_defaults` method.
+
+      This method raises :exc:`~.InstanceValueError` if the receiver is
+      not a YANG list, and :exc:`~.NonexistentInstance` if no entry with
+      matching keys exists.
 
    .. method:: up() -> InstanceNode
 
@@ -427,10 +464,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-         >>> mfoo = foo.merge([{'number': 8, 'in-words': 'acht'},
-         ... {'number': 9, 'in-words': 'nine'},
-         ... {'number': 6, 'in-words': 'sechs'},
-         ... {'number': 11, 'prime': True, 'in-words': 'eleven'}],
+         >>> mfoo = foo.merge([{'number': '8', 'in-words': 'acht'},
+         ... {'number': '9', 'in-words': 'nine'},
+         ... {'number': '6', 'in-words': 'sechs'},
+         ... {'number': '11', 'prime': True, 'in-words': 'eleven'}],
          ... raw = True)
          >>> [en['in-words'].value for en in mfoo]
          ['sechs', 'three', 'seven', 'acht', 'nine', 'eleven']
@@ -547,7 +584,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
          >>> e2foo6 = e2bag['foo'][0]
          >>> bad2 = e2foo6.update(
-         ... {'number': 42, 'in-words': 'forty-two'}, raw=True).top()
+         ... {'number': '42', 'in-words': 'forty-two'}, raw=True).top()
          >>> bad2.validate(ctype=ContentType.all)
          Traceback (most recent call last):
          ...
@@ -699,7 +736,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-         >>> foo4 = foo8.insert_before({'number': 4, 'in-words': 'four'}, raw=True)
+         >>> foo4 = foo8.insert_before({'number': '4', 'in-words': 'four'}, raw=True)
          >>> [en['number'] for en in foo4.up().value]
          [6, 3, 7, 4, 8]
 
@@ -713,7 +750,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. doctest::
 
-         >>> foo5 = foo4.insert_after({'number': 5, 'in-words': 'five'}, raw=True)
+         >>> foo5 = foo4.insert_after({'number': '5', 'in-words': 'five'}, raw=True)
          >>> [en['number'] for en in foo5.up().value]
          [6, 3, 7, 4, 5, 8]
 
@@ -736,6 +773,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> str(irt2)
          '/example-2:bag/baz'
 
+.. _keyword arguments: https://docs.python.org/3/tutorial/controlflow.html#keyword-arguments
 .. _4: https://rfc-editor.org/rfc/rfc7951.html#section-4
 .. _6.1: https://rfc-editor.org/rfc/rfc7951.html#section-6.1
 .. _7.5.8: https://rfc-editor.org/rfc/rfc7950.html#section-7.5.8
