@@ -219,9 +219,6 @@ class DataType:
         res._handle_restrictions(stmt, sctx)
         return res
 
-    def _deref(self: "DataType", node: InstanceNode) -> List[InstanceNode]:
-        return []
-
     def _handle_properties(self: "DataType", stmt: Statement, sctx: SchemaContext) -> None:
         """Handle type substatements."""
         self._handle_restrictions(stmt, sctx)
@@ -659,7 +656,8 @@ class InstanceIdentifierType(LinkType):
         """Override the superclass method."""
         return XPathParser(text, self.sctx).parse().as_instance_route()
 
-    def _deref(self: "InstanceIdentifierType", node: InstanceNode) -> List[InstanceNode]:
+    @staticmethod
+    def _deref(node: InstanceNode) -> List[InstanceNode]:
         return [node.top().goto(node.value)]
 
 
