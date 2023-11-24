@@ -11,12 +11,12 @@
         "namespace": "http://example.com/example-3/a",
         "revision": "2017-08-01",
         "conformance-type": "implement",
-	      "submodule": [
-	        {
-	          "name": "example-3-suba",
-	          "revision": "2017-08-01"
-	        }
-	      ]
+	"submodule": [
+	  {
+	    "name": "example-3-suba",
+	    "revision": "2017-08-01"
+	  }
+	]
       },
       {
         "name": "example-3-b",
