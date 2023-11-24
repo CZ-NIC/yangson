@@ -26,7 +26,7 @@ This module implements the following classes:
 """
 import decimal
 import re
-from typing import Callable, List, Optional, Union
+from typing import Callable, Optional, Union
 from elementpath import RegexError, translate_pattern
 
 from .exceptions import InvalidArgument
@@ -36,7 +36,7 @@ from .xpathast import Expr
 Number = Union[int, decimal.Decimal]
 """Union of numeric classes appearing in interval constraints."""
 
-Interval = List[Number]
+Interval = list[Number]
 """Numeric interval consisting either of one number or a pair of bounds."""
 
 
@@ -52,7 +52,7 @@ class Constraint:
 class Intervals(Constraint):
     """Class representing a sequence of numeric intervals."""
 
-    def __init__(self: "Intervals", intervals: List[Interval],
+    def __init__(self: "Intervals", intervals: list[Interval],
                  parser: Callable[[str], Optional[Number]] = None,
                  error_tag: str = None, error_message: str = None):
         """Initialize the class instance."""
@@ -98,7 +98,7 @@ class Intervals(Constraint):
                 raise InvalidArgument(expr)
             return res
 
-        def simpl(rng: List[Number]) -> List[Number]:
+        def simpl(rng: list[Number]) -> list[Number]:
             return ([rng[0]] if rng[0] == rng[1] else rng)
 
         def to_num(xs): return [parse(x) for x in xs]

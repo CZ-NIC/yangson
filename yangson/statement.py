@@ -22,7 +22,7 @@ This module implements the following classes:
 * ModuleParser: Recursive-descent parser for YANG modules.
 * Statement: YANG statements.
 """
-from typing import List, Optional, Tuple
+from typing import Optional
 from .exceptions import (
     EndOfInput, StatementNotFound, UnexpectedInput, InvalidArgument,
     ModuleNameMismatch, ModuleRevisionMismatch)
@@ -89,7 +89,7 @@ class Statement:
             raise StatementNotFound(str(self), kw)
 
     def find_all(self: "Statement", kw: YangIdentifier,
-                 pref: YangIdentifier = None) -> List["Statement"]:
+                 pref: YangIdentifier = None) -> list["Statement"]:
         """Return the list all substatements with the given keyword and prefix.
 
         Args:
@@ -115,7 +115,7 @@ class Statement:
             stmt = stmt.superstmt
         return None
 
-    def get_error_info(self: "Statement") -> Tuple[Optional[str], Optional[str]]:
+    def get_error_info(self: "Statement") -> tuple[Optional[str], Optional[str]]:
         """Return receiver's error tag and error message if present."""
         etag = self.find1("error-app-tag")
         emsg = self.find1("error-message")
@@ -126,7 +126,7 @@ class ModuleParser(Parser):
     """Parse YANG modules."""
 
     unescape_map = {"n": "\n", "t": "\t", '"': '"',
-                    "\\": "\\"}  # type: Dict[str,str]
+                    "\\": "\\"}  # type: dict[str,str]
     """Dictionary for mapping escape sequences to characters."""
 
     def __init__(self: "ModuleParser", text: str, name: YangIdentifier = None, rev: str = None):
@@ -240,7 +240,7 @@ class ModuleParser(Parser):
         if not present:
             raise UnexpectedInput(self, "separator")
 
-    def keyword(self: "ModuleParser") -> Tuple[Optional[str], str]:
+    def keyword(self: "ModuleParser") -> tuple[Optional[str], str]:
         """Parse a YANG statement keyword.
 
         Raises:
@@ -374,7 +374,7 @@ class ModuleParser(Parser):
             }])
         self._arg = self.input[start:self.offset]
 
-    def substatements(self: "ModuleParser") -> List[Statement]:
+    def substatements(self: "ModuleParser") -> list[Statement]:
         """Parse substatements.
 
         Raises:

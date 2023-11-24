@@ -49,7 +49,7 @@ import decimal
 import numbers
 import xml.etree.ElementTree as ET
 import re
-from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Any, Optional, Union, TYPE_CHECKING
 
 from .constraint import Intervals, Pattern
 from .exceptions import (
@@ -227,7 +227,7 @@ class DataType:
         """Handle type restriction substatements."""
         pass
 
-    def _type_digest(self: "DataType", config: bool) -> Dict[str, Any]:
+    def _type_digest(self: "DataType", config: bool) -> dict[str, Any]:
         """Return receiver's type digest.
 
         Args:
@@ -242,31 +242,31 @@ class DataType:
 class EmptyType(DataType):
     """Class representing YANG "empty" type."""
 
-    def canonical_string(self: "EmptyType", val: Tuple[None]) -> Optional[str]:
+    def canonical_string(self: "EmptyType", val: tuple[None]) -> Optional[str]:
         return ""
 
-    def __contains__(self: "EmptyType", val: Tuple[None]) -> bool:
+    def __contains__(self: "EmptyType", val: tuple[None]) -> bool:
         if val == (None,):
             return True
         self._set_error_info()
         return False
 
-    def parse_value(self: "EmptyType", text: str) -> Optional[Tuple[None]]:
+    def parse_value(self: "EmptyType", text: str) -> Optional[tuple[None]]:
         if text == "":
             return (None,)
 
-    def from_raw(self: "EmptyType", raw: RawScalar) -> Optional[Tuple[None]]:
+    def from_raw(self: "EmptyType", raw: RawScalar) -> Optional[tuple[None]]:
         if raw == [None]:
             return (None,)
 
-    def to_raw(self: "EmptyType", val: Tuple[None]) -> List[None]:
+    def to_raw(self: "EmptyType", val: tuple[None]) -> list[None]:
         return [None]
 
-    def from_xml(self: "EmptyType", xml: ET.Element) -> Optional[Tuple[None]]:
+    def from_xml(self: "EmptyType", xml: ET.Element) -> Optional[tuple[None]]:
         if xml.text == None:
             return (None,)
 
-    def to_xml(self: "EmptyType", val: Tuple[None]) -> None:
+    def to_xml(self: "EmptyType", val: tuple[None]) -> None:
         return None
 
 
@@ -278,36 +278,36 @@ class BitsType(DataType):
         super().__init__(sctx, name)
         self.bit = {}
 
-    def sorted_bits(self: "BitsType") -> List[Tuple[str, int]]:
+    def sorted_bits(self: "BitsType") -> list[tuple[str, int]]:
         """Return list of bit items sorted by position."""
         return sorted(self.bit.items(), key=lambda x: x[1])
 
-    def from_raw(self: "BitsType", raw: RawScalar) -> Optional[Tuple[str]]:
+    def from_raw(self: "BitsType", raw: RawScalar) -> Optional[tuple[str]]:
         try:
             return tuple(raw.split())
         except AttributeError:
             return None
 
-    def from_xml(self: "BitsType", xml: ET.Element) -> Optional[Tuple[str]]:
+    def from_xml(self: "BitsType", xml: ET.Element) -> Optional[tuple[str]]:
         try:
             return tuple(xml.text.split())
         except AttributeError:
             return None
 
-    def __contains__(self: "BitsType", val: Tuple[str]) -> bool:
+    def __contains__(self: "BitsType", val: tuple[str]) -> bool:
         for b in val:
             if b not in self.bit:
                 self._set_error_info(error_message="unknown bit " + b)
                 return False
         return True
 
-    def to_raw(self: "BitsType", val: Tuple[str]) -> str:
+    def to_raw(self: "BitsType", val: tuple[str]) -> str:
         return self.canonical_string(val)
 
-    def to_xml(self: "BitsType", val: Tuple[str]) -> str:
+    def to_xml(self: "BitsType", val: tuple[str]) -> str:
         return self.canonical_string(val)
 
-    def as_int(self: "BitsType", val: Tuple[str]) -> int:
+    def as_int(self: "BitsType", val: tuple[str]) -> int:
         """Transform a "bits" value to an integer."""
         res = 0
         try:
@@ -317,7 +317,7 @@ class BitsType(DataType):
             return None
         return res
 
-    def canonical_string(self: "BitsType", val: Tuple[str]) -> Optional[str]:
+    def canonical_string(self: "BitsType", val: tuple[str]) -> Optional[str]:
         try:
             items = [(self.bit[b], b) for b in val]
         except KeyError:
@@ -351,7 +351,7 @@ class BitsType(DataType):
         for bit in set(self.bit) - new:
             del self.bit[bit]
 
-    def _type_digest(self: "BitsType", config: bool) -> Dict[str, Any]:
+    def _type_digest(self: "BitsType", config: bool) -> dict[str, Any]:
         res = super()._type_digest(config)
         bits = []
         i = 0
@@ -429,7 +429,7 @@ class LinearType(DataType):
             return False
         return True
 
-    def _type_digest(self: "LinearType", config: bool) -> Dict[str, Any]:
+    def _type_digest(self: "LinearType", config: bool) -> dict[str, Any]:
         res = super()._type_digest(config)
         if self.length:
             res["length"] = self.length.intervals
@@ -442,7 +442,7 @@ class StringType(LinearType):
     def __init__(self: "StringType", sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.patterns = []  # type: List[Pattern]
+        self.patterns = []  # type: list[Pattern]
 
     def _handle_restrictions(self: "StringType", stmt: Statement, sctx: SchemaContext) -> None:
         super()._handle_restrictions(stmt, sctx)
@@ -463,7 +463,7 @@ class StringType(LinearType):
                 return False
         return True
 
-    def _type_digest(self: "StringType", config: bool) -> Dict[str, Any]:
+    def _type_digest(self: "StringType", config: bool) -> dict[str, Any]:
         res = super()._type_digest(config)
         pats = [p.pattern for p in self.patterns if not p.invert_match]
         ipats = [p.pattern for p in self.patterns if p.invert_match]
@@ -513,9 +513,9 @@ class EnumerationType(DataType):
     def __init__(self: "EnumerationType", sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.enum = {}  # type: Dict[str, int]
+        self.enum = {}  # type: dict[str, int]
 
-    def sorted_enums(self: "EnumerationType") -> List[Tuple[str, int]]:
+    def sorted_enums(self: "EnumerationType") -> list[tuple[str, int]]:
         """Return list of enum items sorted by value."""
         return sorted(self.enum.items(), key=lambda x: x[1])
 
@@ -551,7 +551,7 @@ class EnumerationType(DataType):
         for en in set(self.enum) - new:
             del self.enum[en]
 
-    def _type_digest(self: "EnumerationType", config: bool) -> Dict[str, Any]:
+    def _type_digest(self: "EnumerationType", config: bool) -> dict[str, Any]:
         res = super()._type_digest(config)
         if config:
             res["enums"] = list(self.enum.keys())
@@ -609,7 +609,7 @@ class LeafrefType(LinkType):
     def from_yang(self: "LeafrefType", text: str) -> ScalarValue:
         return self.ref_type.from_yang(text)
 
-    def _deref(self: "LeafrefType", node: InstanceNode) -> List[InstanceNode]:
+    def _deref(self: "LeafrefType", node: InstanceNode) -> list[InstanceNode]:
         ns = self.path.evaluate(node)
         return [n for n in ns if str(n) == str(node)]
 
@@ -619,7 +619,7 @@ class LeafrefType(LinkType):
             raise InvalidLeafrefPath(tnode.qual_name)
         self.ref_type = ref.type
 
-    def _type_digest(self: "LeafrefType", config: bool) -> Dict[str, Any]:
+    def _type_digest(self: "LeafrefType", config: bool) -> dict[str, Any]:
         res = super()._type_digest(config)
         res["ref_type"] = self.ref_type._type_digest(config)
         return res
@@ -657,7 +657,7 @@ class InstanceIdentifierType(LinkType):
         return XPathParser(text, self.sctx).parse().as_instance_route()
 
     @staticmethod
-    def _deref(node: InstanceNode) -> List[InstanceNode]:
+    def _deref(node: InstanceNode) -> list[InstanceNode]:
         return [node.top().goto(node.value)]
 
 
@@ -667,7 +667,7 @@ class IdentityrefType(DataType):
     def __init__(self: "IdentityrefType", sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.bases = []  # type: List[QualName]
+        self.bases = []  # type: list[QualName]
 
     def from_raw(self: "IdentityrefType", raw: RawScalar) -> Optional[QualName]:
         try:
@@ -732,7 +732,7 @@ class IdentityrefType(DataType):
             self.bases.append(
                 sctx.schema_data.translate_pname(b.argument, sctx.text_mid))
 
-    def _type_digest(self: "IdentityrefType", config: bool) -> Dict[str, Any]:
+    def _type_digest(self: "IdentityrefType", config: bool) -> dict[str, Any]:
         res = super()._type_digest(config)
         if config:
             res["identities"] = list(
@@ -768,7 +768,7 @@ class NumericType(DataType):
                                        error_message="not in range")
             self.range.restrict_with(rstmt.argument, *rstmt.get_error_info())
 
-    def _type_digest(self: "NumericType", config: bool) -> Dict[str, Any]:
+    def _type_digest(self: "NumericType", config: bool) -> dict[str, Any]:
         res = super()._type_digest(config)
         if self.range:
             res["range"] = [[self.to_raw(r[0]), self.to_raw(r[-1])]
@@ -785,7 +785,7 @@ class Decimal64Type(NumericType):
         self._epsilon = decimal.Decimal(0)  # type: decimal.Decimal
 
     @property
-    def _range(self: "Decimal64Type") -> List[decimal.Decimal]:
+    def _range(self: "Decimal64Type") -> list[decimal.Decimal]:
         quot = decimal.Decimal(10**self.fraction_digits)
         lim = decimal.Decimal(9223372036854775808)
         return [-lim / quot, (lim - 1) / quot]
@@ -832,7 +832,7 @@ class Decimal64Type(NumericType):
             return False
         return super().__contains__(val)
 
-    def _type_digest(self: "Decimal64Type", config: bool) -> Dict[str, Any]:
+    def _type_digest(self: "Decimal64Type", config: bool) -> dict[str, Any]:
         res = super()._type_digest(config)
         res["fraction_digits"] = self.fraction_digits
         return res
@@ -994,7 +994,7 @@ class UnionType(DataType):
     def __init__(self: "UnionType", sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.types = []  # type: List[DataType]
+        self.types = []  # type: list[DataType]
 
     def to_raw(self: "UnionType", val: ScalarValue) -> RawScalar:
         for t in self.types:

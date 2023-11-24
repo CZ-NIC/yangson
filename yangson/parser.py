@@ -22,12 +22,12 @@ This module implements the following class:
 * Parser: Recursive-descent parser.
 """
 import re
-from typing import Callable, List, Dict, Optional, Pattern, Tuple
+from typing import Callable, Optional, Pattern
 from .exceptions import EndOfInput, UnexpectedInput
 from .typealiases import YangIdentifier
 
 # Local type aliases
-TransitionTable = List[Dict[str, Callable[[], int]]]
+TransitionTable = list[dict[str, Callable[[], int]]]
 """Transition table for a DFA."""
 
 
@@ -112,7 +112,7 @@ class Parser:
                 return state
             self.offset += 1
 
-    def line_column(self: "Parser") -> Tuple[int, int]:
+    def line_column(self: "Parser") -> tuple[int, int]:
         """Return line and column coordinates."""
         ln = self.input.count("\n", 0, self.offset)
         c = (self.offset if ln == 0 else
@@ -167,7 +167,7 @@ class Parser:
         except IndexError:
             raise EndOfInput(self)
 
-    def prefixed_name(self: "Parser") -> Tuple[YangIdentifier, Optional[YangIdentifier]]:
+    def prefixed_name(self: "Parser") -> tuple[YangIdentifier, Optional[YangIdentifier]]:
         """Parse identifier with an optional colon-separated prefix."""
         i1 = self.yang_identifier()
         try:

@@ -23,7 +23,7 @@ This module implements the following class:
 """
 import hashlib
 import json
-from typing import Optional, Tuple
+from typing import Optional
 import xml.etree.ElementTree as ET
 from .enumerations import ContentType
 from .exceptions import BadYangLibraryData
@@ -38,7 +38,7 @@ class DataModel:
     """Basic user-level entry point to Yangson library."""
 
     @classmethod
-    def from_file(cls, name: str, mod_path: Tuple[str] = (".",),
+    def from_file(cls, name: str, mod_path: tuple[str] = (".",),
                   description: str = None) -> "DataModel":
         """Initialize the data model from a file with YANG library data.
 
@@ -57,7 +57,7 @@ class DataModel:
             yltxt = infile.read()
         return cls(yltxt, mod_path, description)
 
-    def __init__(self: "DataModel", yltxt: str, mod_path: Tuple[str] = (".",),
+    def __init__(self: "DataModel", yltxt: str, mod_path: tuple[str] = (".",),
                  description: str = None):
         """Initialize the class instance.
 

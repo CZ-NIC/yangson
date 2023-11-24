@@ -22,7 +22,6 @@ import json
 import os
 import sys
 import pkg_resources
-from typing import List
 from yangson import DataModel
 from yangson.enumerations import ContentType, ValidationScope
 from yangson.exceptions import (

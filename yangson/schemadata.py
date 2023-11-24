@@ -25,7 +25,8 @@ This module implements the following classes:
 * SchemaData: Repository of YANG schema structures and methods.
 * FeatureExprParser: Parser for if-feature expressions.
 """
-from typing import Any, Dict, List, MutableSet, Tuple
+from collections.abc import MutableSet
+from typing import Any
 from .exceptions import (
     InvalidSchemaPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
     FeaturePrerequisiteError, InvalidFeatureExpression, ModuleNotFound,
@@ -74,7 +75,7 @@ class ModuleData:
         for submodules"""
         self.xml_namespace = None  # type: str
         """Content of the namespace definition of the module"""
-        self.prefix_map = {}  # type: Dict[YangIdentifier, ModuleId]
+        self.prefix_map = {}  # type: dict[YangIdentifier, ModuleId]
         """Map of prefixes to module identifiers."""
         self.statement = None  # type: Statement
         """Corresponding (sub)module statements."""
@@ -92,24 +93,24 @@ class SchemaData:
             mod_path: List of directories to search for YANG modules.
     """
 
-    def __init__(self: "SchemaData", yang_lib: Dict[str, Any], mod_path: List[str]) -> None:
+    def __init__(self: "SchemaData", yang_lib: dict[str, Any], mod_path: list[str]) -> None:
         """Initialize the schema structures."""
-        self.identity_adjs = {}  # type: Dict[QualName, IdentityAdjacency]
+        self.identity_adjs = {}  # type: dict[QualName, IdentityAdjacency]
         """Dictionary of identity bases."""
-        self.implement = {}  # type: Dict[YangIdentifier, RevisionDate]
+        self.implement = {}  # type: dict[YangIdentifier, RevisionDate]
         """Dictionary of implemented revisions."""
         self.module_search_path = mod_path
         """List of directories where to look for YANG modules."""
-        self.modules = {}  # type: Dict[ModuleId, ModuleData]
+        self.modules = {}  # type: dict[ModuleId, ModuleData]
         """Dictionary of module data."""
-        self.modules_by_name = {}  # type: Dict[str, ModuleData]
+        self.modules_by_name = {}  # type: dict[str, ModuleData]
         """Dictionary of module data by module name."""
         self.modules_by_ns = {}
-        self._module_sequence = []  # type: List[ModuleId]
+        self._module_sequence = []  # type: list[ModuleId]
         """List that defines the order of module processing."""
         self._from_yang_library(yang_lib)
 
-    def _from_yang_library(self: "SchemaData", yang_lib: Dict[str, Any]) -> None:
+    def _from_yang_library(self: "SchemaData", yang_lib: dict[str, Any]) -> None:
         """Set the schema structures from YANG library data.
 
         Args:
@@ -283,7 +284,7 @@ class SchemaData:
             raise UnknownPrefix(prefix, mid) from None
 
     def resolve_pname(self: "SchemaData", pname: PrefName,
-                      mid: ModuleId) -> Tuple[YangIdentifier, ModuleId]:
+                      mid: ModuleId) -> tuple[YangIdentifier, ModuleId]:
         """Return the name and module identifier in which the name is defined.
 
         Args:
@@ -410,7 +411,7 @@ class SchemaData:
         return res
 
     def get_definition(self: "SchemaData", stmt: Statement,
-                       sctx: SchemaContext) -> Tuple[Statement, SchemaContext]:
+                       sctx: SchemaContext) -> tuple[Statement, SchemaContext]:
         """Find the statement defining a grouping or derived type.
 
         Args:
@@ -469,7 +470,7 @@ class SchemaData:
             res |= self.derived_from(id)
         return res
 
-    def derived_from_all(self: "SchemaData", identities: List[QualName]) -> MutableSet[QualName]:
+    def derived_from_all(self: "SchemaData", identities: list[QualName]) -> MutableSet[QualName]:
         """Return list of identities transitively derived from all `identity`."""
         if not identities:
             return set()

@@ -28,7 +28,7 @@ from math import ceil, copysign, floor, isnan
 from elementpath import RegexError, translate_pattern
 from xml.sax.saxutils import quoteattr
 import re
-from typing import List, Optional, Tuple
+from typing import Optional
 from .schemadata import SchemaContext
 from .enumerations import Axis, MultiplicativeOp
 from .exceptions import InvalidArgument, XPathTypeError
@@ -184,13 +184,13 @@ class BinaryExpr(Expr):
     def _children_ast(self: "BinaryExpr", indent: int) -> str:
         return self.left.syntax_tree(indent) + self.right.syntax_tree(indent)
 
-    def _eval_ops(self: "BinaryExpr", xctx: XPathContext) -> Tuple[XPathValue, XPathValue]:
+    def _eval_ops(self: "BinaryExpr", xctx: XPathContext) -> tuple[XPathValue, XPathValue]:
         return (self.left._eval(xctx), self.right._eval(xctx))
 
-    def _eval_ops_float(self: "BinaryExpr", xctx: XPathContext) -> Tuple[float, float]:
+    def _eval_ops_float(self: "BinaryExpr", xctx: XPathContext) -> tuple[float, float]:
         return (self.left._eval_float(xctx), self.right._eval_float(xctx))
 
-    def _eval_ops_string(self: "BinaryExpr", xctx: XPathContext) -> Tuple[str, str]:
+    def _eval_ops_string(self: "BinaryExpr", xctx: XPathContext) -> tuple[str, str]:
         return (self.left._eval_string(xctx), self.right._eval_string(xctx))
 
     def _as_str(self: "BinaryExpr", op: str, spaces=True) -> str:
@@ -408,7 +408,7 @@ class PathExpr(BinaryExpr):
 
 class FilterExpr(Expr):
 
-    def __init__(self: "FilterExpr", primary: Expr, predicates: List[Expr]):
+    def __init__(self: "FilterExpr", primary: Expr, predicates: list[Expr]):
         self.primary = primary
         self.predicates = predicates
 
@@ -457,7 +457,7 @@ class Root(Expr):
 class Step(Expr):
 
     def __init__(self: "Step", axis: Axis, qname: QualName,
-                 predicates: List[Expr]):
+                 predicates: list[Expr]):
         self.axis = axis
         self.qname = qname
         self.predicates = predicates
@@ -554,7 +554,7 @@ class FuncCeiling(UnaryExpr):
 
 class FuncConcat(Expr):
 
-    def __init__(self: "FuncConcat", parts: List[Expr]):
+    def __init__(self: "FuncConcat", parts: list[Expr]):
         self.parts = parts
 
     def __str__(self: "FuncConcat") -> str:

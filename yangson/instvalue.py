@@ -24,7 +24,7 @@ This module implements the following classes:
 * ObjectValue: Cooked object value of an instance node.
 """
 from datetime import datetime
-from typing import Dict, List, Union
+from typing import Union
 from .typealiases import InstanceName, PrefName, ScalarValue
 
 # Type aliases
@@ -37,7 +37,7 @@ EntryValue = Union[ScalarValue, "ObjectValue"]
 InstanceKey = Union[InstanceName, int]
 """Index of an array entry or name of an object member."""
 
-MetadataObject = Dict[PrefName, ScalarValue]
+MetadataObject = dict[PrefName, ScalarValue]
 """Metadata object [RFC 7952]_."""
 
 
@@ -76,7 +76,7 @@ class StructuredValue:
 class ArrayValue(StructuredValue, list):
     """This class represents cooked array values."""
 
-    def __init__(self: "ArrayValue", val: List[EntryValue] = [], ts: datetime = None):
+    def __init__(self: "ArrayValue", val: list[EntryValue] = [], ts: datetime = None):
         StructuredValue.__init__(self, ts)
         list.__init__(self, val)
 
@@ -88,7 +88,7 @@ class ArrayValue(StructuredValue, list):
 class ObjectValue(StructuredValue, dict):
     """This class represents cooked object values."""
 
-    def __init__(self: "ObjectValue", val: Dict[InstanceName, Value] = {},
+    def __init__(self: "ObjectValue", val: dict[InstanceName, Value] = {},
                  ts: datetime = None):
         StructuredValue.__init__(self, ts)
         dict.__init__(self, val)

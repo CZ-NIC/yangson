@@ -16,7 +16,7 @@
 # with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """This module defines classes for schema patterns."""
-from typing import List, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from .enumerations import ContentType
 from .typealiases import InstanceName, _Singleton, YangIdentifier
 from .xpathast import Expr
@@ -53,7 +53,7 @@ class SchemaPattern:
         return
 
     def _mandatory_members(self: "SchemaPattern",
-                           ctype: ContentType) -> List[InstanceName]:
+                           ctype: ContentType) -> list[InstanceName]:
         return None
 
 
@@ -97,7 +97,7 @@ class EmptyConfig(SchemaPattern, metaclass=_Singleton):
         return "EmptyConfig"
 
     def _mandatory_members(self: "Member",
-                           ctype: ContentType) -> List[InstanceName]:
+                           ctype: ContentType) -> list[InstanceName]:
         if ctype.value & ContentType.nonconfig.value:
             return []
 
@@ -181,7 +181,7 @@ class ConditionalPattern(Conditional):
         return str(self.pattern)
 
     def _mandatory_members(self: "ConditionalPattern",
-                           ctype: ContentType) -> List[InstanceName]:
+                           ctype: ContentType) -> list[InstanceName]:
         if self._active(ctype):
             return self.pattern._mandatory_members(ctype)
 
@@ -216,7 +216,7 @@ class Member(Typeable, Conditional):
         return f"member '{self.name}'"
 
     def _mandatory_members(self: "Member",
-                           ctype: ContentType) -> List[InstanceName]:
+                           ctype: ContentType) -> list[InstanceName]:
         if self._active(ctype):
             return [self.name]
 
@@ -259,7 +259,7 @@ class Alternative(SchemaPattern):
         return f"{self.left!s} or {self.right!s}"
 
     def _mandatory_members(self: "Alternative",
-                           ctype: ContentType) -> List[InstanceName]:
+                           ctype: ContentType) -> list[InstanceName]:
         lm = self.left._mandatory_members(ctype)
         rm = self.right._mandatory_members(ctype)
         if lm is not None and rm is not None:
@@ -287,7 +287,7 @@ class ChoicePattern(Alternative, Typeable):
                 f"{self.right.tree(indent + 2)}")
 
     def _members(self: "ChoicePattern",
-                 ctype: ContentType) -> List[InstanceName]:
+                 ctype: ContentType) -> list[InstanceName]:
         return super()._members(ctype) if self._active(ctype) else []
 
 
@@ -333,7 +333,7 @@ class Pair(SchemaPattern):
         return str(self.left)
 
     def _mandatory_members(self: "Pair",
-                           ctype: ContentType) -> List[InstanceName]:
+                           ctype: ContentType) -> list[InstanceName]:
         if self.left._mandatory_members(ctype) is None:
             return self.right._mandatory_members(ctype)
         elif self.right._mandatory_members(ctype) is None:

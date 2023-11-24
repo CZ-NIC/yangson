@@ -40,9 +40,10 @@ This module implements the following classes:
 * AnydataNode: YANG anydata node.
 * AnyxmlNode: YANG anyxml node.
 """
+from collections.abc import MutableSet
 from datetime import datetime
 from itertools import product
-from typing import Any, Dict, List, MutableSet, Optional, Set, Tuple
+from typing import Any, Optional
 import xml.etree.ElementTree as ET
 from .constraint import Must
 from .datatype import (DataType, LinkType,
@@ -92,7 +93,7 @@ class SchemaNode:
         """Parent schema node."""
         self.description: Optional[str] = None
         """Description of the receiver."""
-        self.must: List[Must] = []
+        self.must: list[Must] = []
         """List of "must" expressions attached to the receiver."""
         self.when: Optional["Expr"] = None
         """Optional "when" expression that makes the receiver conditional."""
@@ -161,7 +162,7 @@ class SchemaNode:
         dp = self.data_parent()
         return (dp.data_path() if dp else "") + "/" + self.iname()
 
-    def state_roots(self: "SchemaNode") -> List[DataPath]:
+    def state_roots(self: "SchemaNode") -> list[DataPath]:
         """Return a list of data paths to descendant state data roots."""
         return [r.data_path() for r in self._state_roots()]
 
@@ -222,7 +223,7 @@ class SchemaNode:
     def _yang_class(self: "SchemaNode") -> str:
         return self.__class__.__name__[:-4].lower()
 
-    def _node_digest(self: "SchemaNode") -> Dict[str, Any]:
+    def _node_digest(self: "SchemaNode") -> dict[str, Any]:
         """Return dictionary of receiver's properties suitable for clients."""
         res = {"kind": self._yang_class()}
         if self.mandatory:
@@ -261,7 +262,7 @@ class SchemaNode:
         p, s, loc = iname.partition(":")
         return (loc, p) if s else (p, self.ns)
 
-    def _flatten(self: "SchemaNode") -> List["SchemaNode"]:
+    def _flatten(self: "SchemaNode") -> list["SchemaNode"]:
         return [self]
 
     def _handle_substatements(self: "SchemaNode", stmt: Statement,
@@ -440,13 +441,13 @@ class SchemaNode:
 class InternalNode(SchemaNode):
     """Abstract class for schema nodes that have children."""
 
-    _mandatory_children: Tuple[MutableSet[SchemaNode], MutableSet[SchemaNode]]
+    _mandatory_children: tuple[MutableSet[SchemaNode], MutableSet[SchemaNode]]
     """Two sets of mandatory children: item 0 = nonconfig, 1 = config."""
 
     def __init__(self: "InternalNode"):
         """Initialize the class instance."""
         super().__init__()
-        self.children: List[SchemaNode] = []
+        self.children: list[SchemaNode] = []
         self.schema_pattern: Optional[SchemaPattern] = None
         self._mandatory_children = (set(), set())
 
@@ -511,7 +512,7 @@ class InternalNode(SchemaNode):
             if res:
                 return res
 
-    def filter_children(self: "InternalNode", ctype: ContentType = None) -> List[SchemaNode]:
+    def filter_children(self: "InternalNode", ctype: ContentType = None) -> list[SchemaNode]:
         """Return receiver's children based on content type.
 
         Args:
@@ -523,7 +524,7 @@ class InternalNode(SchemaNode):
                 not isinstance(c, (RpcActionNode, NotificationNode)) and
                 c.content_type().value & ctype.value != 0]
 
-    def data_children(self: "InternalNode") -> List["DataNode"]:
+    def data_children(self: "InternalNode") -> list["DataNode"]:
         """Return the set of all data nodes directly under the receiver."""
         res = []
         for child in self.children:
@@ -621,7 +622,7 @@ class InternalNode(SchemaNode):
                 raise AnnotationTypeError(jptr, mem, an.type.error_message)
         return res
 
-    def _node_digest(self: "InternalNode") -> Dict[str, Any]:
+    def _node_digest(self: "InternalNode") -> dict[str, Any]:
         res = super()._node_digest()
         rc = res["children"] = {}
         for c in self.data_children():
@@ -645,7 +646,7 @@ class InternalNode(SchemaNode):
         node.parent = self
         self.children.append(node)
 
-    def _child_inst_names(self: "InternalNode") -> Set[InstanceName]:
+    def _child_inst_names(self: "InternalNode") -> set[InstanceName]:
         """Return the set of instance names under the receiver."""
         return frozenset([c.iname() for c in self.data_children()])
 
@@ -707,7 +708,7 @@ class InternalNode(SchemaNode):
                 inst = c._add_defaults(inst, ctype)
         return inst
 
-    def _state_roots(self: "InternalNode") -> List[SchemaNode]:
+    def _state_roots(self: "InternalNode") -> list[SchemaNode]:
         if self.content_type() == ContentType.nonconfig:
             return [self]
         res = []
@@ -882,7 +883,7 @@ class GroupNode(InternalNode):
     def _pattern_entry(self: "GroupNode") -> SchemaPattern:
         return super()._schema_pattern()
 
-    def _flatten(self: "GroupNode") -> List[SchemaNode]:
+    def _flatten(self: "GroupNode") -> list[SchemaNode]:
         res = []
         for c in self.children:
             res.extend(c._flatten())
@@ -895,7 +896,7 @@ class SchemaTreeNode(GroupNode):
     def __init__(self: "SchemaTreeNode", schemadata: SchemaData = None):
         """Initialize the class instance."""
         super().__init__()
-        self.annotations: Dict[QualName, Annotation] = {}
+        self.annotations: dict[QualName, Annotation] = {}
         self.schema_data = schemadata
         self._status = NodeStatus.current
 
@@ -934,8 +935,7 @@ class DataNode(SchemaNode):
         val = self.from_raw(rval, jptr = "/")
         return ObjectMember(self.iname(), {}, val, None, self, datetime.now())
 
-    def split_instance_route(self: "DataNode", route: InstanceRoute) -> Optional[Tuple[
-            InstanceRoute, InstanceRoute]]:
+    def split_instance_route(self: "DataNode", route: InstanceRoute) -> Optional[tuple[InstanceRoute, InstanceRoute]]:
         """Split `route` into the part up to receiver and the rest.
 
         Args:
@@ -1046,7 +1046,7 @@ class TerminalNode(SchemaNode):
         if action == "replace":
             self.type = DataType._resolve_type(stmt, sctx)
 
-    def _node_digest(self: "TerminalNode") -> Dict[str, Any]:
+    def _node_digest(self: "TerminalNode") -> dict[str, Any]:
         res = super()._node_digest()
         res["type"] = self.type._type_digest(self.config)
         df = self.default
@@ -1100,7 +1100,7 @@ class TerminalNode(SchemaNode):
     def _ascii_tree(self: "TerminalNode", indent: str, no_types: bool, val_count: bool) -> str:
         return ""
 
-    def _state_roots(self: "TerminalNode") -> List[SchemaNode]:
+    def _state_roots(self: "TerminalNode") -> list[SchemaNode]:
         return [] if self.content_type() == ContentType.config else [self]
 
 
@@ -1122,7 +1122,7 @@ class ContainerNode(DataNode, InternalNode):
         """Override the superclass property."""
         return bool(self._mandatory_children[1])
 
-    def _node_digest(self: "ContainerNode") -> Dict[str, Any]:
+    def _node_digest(self: "ContainerNode") -> dict[str, Any]:
         res = super()._node_digest()
         res["presence"] = self.presence
         return res
@@ -1331,11 +1331,11 @@ class ListNode(SequenceNode, InternalNode):
     def __init__(self: "ListNode"):
         """Initialize the class instance."""
         super().__init__()
-        self.keys: List[QualName] = []
+        self.keys: list[QualName] = []
         self._key_members = []
-        self.unique: List[List[LocationPath]] = []
+        self.unique: list[list[LocationPath]] = []
 
-    def _node_digest(self: "ListNode") -> Dict[str, Any]:
+    def _node_digest(self: "ListNode") -> dict[str, Any]:
         res = super()._node_digest()
         res["keys"] = self._key_members
         return res
@@ -1361,7 +1361,7 @@ class ListNode(SequenceNode, InternalNode):
                                     repr(kval[0] if len(kval) < 2 else kval))
             ukeys.add(kval)
 
-    def _check_unique(self: "ListNode", unique: List[LocationPath],
+    def _check_unique(self: "ListNode", unique: list[LocationPath],
                       inst: InstanceNode) -> None:
         allvals = set()
         for i in range(len(inst.value)):
@@ -1396,7 +1396,7 @@ class ListNode(SequenceNode, InternalNode):
                      for k in stmt.argument.split()]
 
     def _parse_unique(self: "ListNode", stmt: Statement,
-                     sctx: SchemaContext) -> List[LocationPath]:
+                     sctx: SchemaContext) -> list[LocationPath]:
         uspec = []
         for sid in stmt.argument.split():
             xpp = XPathParser(sid, sctx)
@@ -1728,7 +1728,7 @@ class RpcActionNode(SchemaTreeNode):
         self._add_child(OutputNode(sctx.default_ns))
         super()._handle_substatements(stmt, sctx)
 
-    def _flatten(self: "RpcActionNode") -> List[SchemaNode]:
+    def _flatten(self: "RpcActionNode") -> list[SchemaNode]:
         return [self]
 
     def _tree_line_prefix(self: "RpcActionNode") -> str:
@@ -1757,7 +1757,7 @@ class InputNode(InternalNode, DataNode):
         """Override the superclass method."""
         return self.ns + ":" + self.name
 
-    def _flatten(self: "InputNode") -> List[SchemaNode]:
+    def _flatten(self: "InputNode") -> list[SchemaNode]:
         return [self]
 
 
@@ -1775,7 +1775,7 @@ class OutputNode(InternalNode, DataNode):
         """Override the superclass method."""
         return self.ns + ":" + self.name
 
-    def _flatten(self: "OutputNode") -> List[SchemaNode]:
+    def _flatten(self: "OutputNode") -> list[SchemaNode]:
         return [self]
 
 
@@ -1788,7 +1788,7 @@ class NotificationNode(SchemaTreeNode):
         self.default_deny: DefaultDeny = DefaultDeny.none
         self._ctype = ContentType.nonconfig
 
-    def _flatten(self: "NotificationNode") -> List[SchemaNode]:
+    def _flatten(self: "NotificationNode") -> list[SchemaNode]:
         return [self]
 
     def _tree_line_prefix(self: "NotificationNode") -> str:

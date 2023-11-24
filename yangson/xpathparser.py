@@ -24,7 +24,7 @@ This module defines the following classes:
 The module also defines the following exceptions:
 
 """
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 from .schemadata import SchemaContext
 from .enumerations import Axis, MultiplicativeOp
 from .exceptions import EndOfInput, InvalidXPath, NotSupported, UnexpectedInput
@@ -215,7 +215,7 @@ class XPathParser(Parser):
         self.skip_ws()
         return FilterExpr(prim, self._predicates())
 
-    def _predicates(self: "XPathParser") -> List[Expr]:
+    def _predicates(self: "XPathParser") -> list[Expr]:
         res = []
         while self.test_string("["):
             self.skip_ws()
@@ -244,7 +244,7 @@ class XPathParser(Parser):
     def _step(self: "XPathParser") -> Step:
         return Step(*self._axis_qname(), self._predicates())
 
-    def _axis_qname(self: "XPathParser") -> Tuple[Axis, Union[QualName, bool, None]]:
+    def _axis_qname(self: "XPathParser") -> tuple[Axis, Union[QualName, bool, None]]:
         next = self.peek()
         if next == "*":
             self.adv_skip_ws()
@@ -324,7 +324,7 @@ class XPathParser(Parser):
     def _opt_arg(self: "XPathParser") -> Optional[Expr]:
         return None if self.peek() == ")" else self.parse()
 
-    def _two_args(self: "XPathParser") -> Tuple[Expr, Expr]:
+    def _two_args(self: "XPathParser") -> tuple[Expr, Expr]:
         fst = self.parse()
         self.char(",")
         self.skip_ws()

@@ -18,7 +18,7 @@
 """Type aliases for use with type hints [PEP484]_."""
 
 from decimal import Decimal
-from typing import Dict, List, Tuple, Union
+from typing import Union
 
 RevisionDate = str
 """RevisionDate in the format ``YYYY-MM-DD``, or empty string."""
@@ -41,16 +41,16 @@ JSONPointer = str
 ResourceIdentifier = str
 """RESTCONF resource identifier, see sec. `3.5.3`_ of [RFC8040]_."""
 
-ScalarValue = Union[int, Decimal, str, Tuple[None]]
+ScalarValue = Union[int, Decimal, str, tuple[None]]
 """Scalar value of an InstanceNode."""
 
-QualName = Tuple[YangIdentifier, YangIdentifier]
+QualName = tuple[YangIdentifier, YangIdentifier]
 """Qualified name, tuple of name and module name."""
 
 SchemaNodeId = str
 """Schema node identifier, see. sec. `6.5`_ in [RFC7950]_."""
 
-SchemaRoute = List[QualName]
+SchemaRoute = list[QualName]
 """Schema route, a list of qualified names of schema nodes."""
 
 SchemaPath = str
@@ -59,25 +59,25 @@ SchemaPath = str
 DataPath = str  # same syntax as SchemaPath but containing only data nodes
 """SchemaPath containing only names of data nodes."""
 
-ModuleId = Tuple[YangIdentifier, RevisionDate]
+ModuleId = tuple[YangIdentifier, RevisionDate]
 """Module identifier: (YangIdentifier, RevisionDate)."""
 
-RawScalar = Union[bool, int, str, List[None]]
+RawScalar = Union[bool, int, str, list[None]]
 """Raw scalar value as produced by JSON parser."""
 
-RawObject = Dict[InstanceName, "RawValue"]
+RawObject = dict[InstanceName, "RawValue"]
 """Raw object as returned by JSON parser."""
 
-RawMetadataObject = Dict[PrefName, RawScalar]
+RawMetadataObject = dict[PrefName, RawScalar]
 """Raw metadata object as returned by JSON parser."""
 
 RawEntry = Union[RawScalar, RawObject]
 """Raw entry of a leaf-list or list."""
 
-RawList = List[RawObject]
+RawList = list[RawObject]
 """List of raw objects."""
 
-RawLeafList = List[RawScalar]
+RawLeafList = list[RawScalar]
 """List of raw scalars."""
 
 RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
