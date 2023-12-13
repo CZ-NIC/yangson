@@ -6,6 +6,7 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
+   :includehidden:
 
    introduction
    concepts-terms
@@ -13,8 +14,8 @@ Contents:
    basic
    advanced
    support
-   cmdline
    examples
+   cmdline
    references
    glossary
 

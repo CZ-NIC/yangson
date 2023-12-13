@@ -74,6 +74,10 @@ __ https://rfc-editor.org/rfc/rfc8340.html
 
 __ https://rfc-editor.org/rfc/rfc8407.html
 
+.. [RFC8525] Bierman, A.; Bjorklund, M.; Schoenwaelder, J.; Watsen, K.; Wilton, R. *YANG Library*. `RFC 8525`__, IETF, 2019. 31 p. ISSN 2070-1721.
+
+__ https://rfc-editor.org/rfc/rfc8525.html
+
 .. [XPath] Clark, J.; DeRose S. *XML Path Language (XPath) Version
        1.0*. W3C Recommendation `REC-xpath-19991116`__, World Wide
        Web Consortium, 1999.

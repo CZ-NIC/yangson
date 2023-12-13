@@ -7,7 +7,7 @@ working with configuration and other data modelled with the YANG data
 modelling language. *Yangson* supports only the JSON data encoding as
 defined in [RFC7951]_.
 
-The *Yangson* package also provides a simple :ref:`man-page`.
+This documentation starts with a :ref:`tutorial <quick-start>` and then covers the entire public API of the library. :ref:`cmdline-tools` that are included in the *yangson* `package`_ or in the project `repository`_ can also serve as examples of how the library is typically used.
 
 Main Features
 =============
@@ -32,7 +32,7 @@ Main Features
 Installation
 ============
 
-The *Yangson* package is available from PyPI_ and can be installed
+The *yangson* `package`_ is available from PyPI_ and can be installed
 using the *pip* package manager as follows::
 
   python -m pip install yangson
@@ -40,7 +40,7 @@ using the *pip* package manager as follows::
 Naming of YANG Modules
 ======================
 
-In order be able to find and read the correct revision of each YANG
+In order be able to find the correct revision of each YANG
 module, *Yangson* requires that the names of disk files containing
 modules are of the form specified in [RFC7950]_, sec. `5.2`_:
 
@@ -83,6 +83,8 @@ command from the ``docs`` directory::
   $ make doctest
 
 .. _persistent data structure: https://en.wikipedia.org/wiki/Persistent_data_structure
+.. _package: https://pypi.org/project/yangson
+.. _repository: https://github.com/CZ-NIC/yangson
 .. _5.2: https://rfc-editor.org/rfc/rfc7950.html#section-5.2
 .. _PyPI: https://pypi.python.org
 .. _YIN Tools: https://github.com/llhotka/yin-tools
