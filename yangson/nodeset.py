@@ -1,4 +1,4 @@
-# Copyright © 2016, 2017 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2023 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #

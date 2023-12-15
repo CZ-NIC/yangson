@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Program name: hello2yanglib.xsl
 
-Copyright © 2016 by Ladislav Lhotka, CZ.NIC <lhotka@nic.cz>
+Copyright © 2016–2023 CZ.NIC, z. s. p. o.
 
 This stylesheet transforms a NETCONF hello message to YANG library.
 
