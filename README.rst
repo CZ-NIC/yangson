@@ -18,7 +18,7 @@
 Welcome to Yangson
 ******************
 
-:Author: Ladislav Lhotka <lhotka@nic.cz>
+:Author: Ladislav Lhotka <ladislav@lhotka.name>
 :Date: |date|
 
 *Yangson* is a Python 3 library for working with configuration and
