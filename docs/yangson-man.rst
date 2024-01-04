@@ -78,6 +78,10 @@ Operations
 
    See also :meth:`RootNode.store_xml`, :meth:`RootNode.store_json` and :meth:`RootNode.store_cbor`
 
+.. option:: -A, --output-ascii
+
+   Forces output to be ASCII.
+
 Options
 =======
 

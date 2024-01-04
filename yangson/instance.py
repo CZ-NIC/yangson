@@ -780,10 +780,10 @@ class RootNode(InstanceNode):
         """XPath - return the list of receiver's ancestors."""
         return []
 
-    def store_xml(self: "RootNode", file: IO, **kwargs):
-        """Store the tree into XML file (requires binary mode)"""
+    def store_xml(self: "RootNode", file: IO, encoding: str, **kwargs):
+        """Store the tree into XML file (requires binary mode for ASCII and text mode for Unicode)"""
         et = ET.ElementTree(self.to_xml(**kwargs))
-        et.write(file)
+        et.write(file, encoding)
 
     def store_json(self: "RootNode", file: IO, **kwargs):
         """Store the tree into JSON file (requires text mode)"""

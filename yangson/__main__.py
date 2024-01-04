@@ -37,7 +37,7 @@ def main(ylib: str = None, path: str = None,
          tree: bool = False, no_types: bool = False,
          digest: bool = False, instance_input: str = None,
          instance_format: str = "auto", instance_output: str = None,
-         instance_output_format: str = None,
+         instance_output_format: str = None, instance_output_ascii: bool = False
          ) -> int:
     """Entry-point for a validation script.
 
@@ -112,6 +112,9 @@ def main(ylib: str = None, path: str = None,
         grp.add_argument(
             "-T", "--translate", choices=["xml", "json", "cbor"],
             help="output file format")
+        grp.add_argument(
+            "-A", "--output-ascii", action="store_true",
+            help="output file is ASCII only (valid only for XML and JSON)")
 
         args = parser.parse_args()
         ylib: str = args.ylib
@@ -126,6 +129,7 @@ def main(ylib: str = None, path: str = None,
         instance_input_format: str = vars(args)["from"]
         instance_output: str = args.output
         instance_output_format: str = args.translate
+        instance_output_ascii: bool = args.output_ascii
 
     if (instance_output is None) != (instance_output_format is None):
         print("You have to specify both -O and -T to translate the instance")
@@ -134,6 +138,9 @@ def main(ylib: str = None, path: str = None,
     if instance_output is not None and instance_input is None:
         print("Translation without input (use -I)")
         return 1
+
+    if instance_output_format == "cbor" and instance_output_ascii:
+        print("CBOR is binary format, can't make it ASCII")
 
     try:
         with open(ylib, encoding="utf-8") as infile:
@@ -206,13 +213,18 @@ def main(ylib: str = None, path: str = None,
         return 0
 
     try:
-        store, mode = {
-                "xml": (i.store_xml, "w"),
-                "json": (i.store_json, "w"),
-                "cbor": (i.store_cbor, "wb"),
+        store, store_kwargs, open_kwargs = {
+                "xml": (i.store_xml,
+                        { "encoding": "us-ascii" if instance_output_ascii else "unicode" },
+                        { "mode": "wb" if instance_output_ascii else "w" } ),
+                "json": (i.store_json,
+                         {} if instance_output_ascii else { "ensure_ascii": False },
+                         { "mode": "w", "encoding": "ascii" if instance_output_ascii else "utf8" } ),
+                "cbor": (i.store_cbor, {}, { "mode": "wb"}),
                 }[instance_output_format]
-        with open(instance_output, mode) as outfile:
-            store(outfile)
+
+        with open(instance_output, **open_kwargs) as outfile:
+            store(outfile, **store_kwargs)
     except (PermissionError) as e:
         print("Instance data store failed:", str(e), file=sys.stderr)
         return 1
