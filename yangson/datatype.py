@@ -46,6 +46,7 @@ This module implements the following classes:
 import base64
 import binascii
 import decimal
+import ipaddress
 import numbers
 import xml.etree.ElementTree as ET
 import re
@@ -472,6 +473,41 @@ class StringType(LinearType):
         if ipats:
             res["neg_patterns"] = ipats
         return res
+
+
+class IPv6AddressType(StringType):
+    """Class representing YANG "inet:ipv6-address" type."""
+
+    def __contains__(self: "IPv6AddressType", val: ipaddress.IPv6Address) -> bool:
+        if isinstance(val, ipaddress.IPv6Address):
+            return True
+        self._set_error_info()
+        return False
+
+    def parse_value(self: "IPv6AddressType", text: str) -> Optional[ipaddress.IPv6Address]:
+        try:
+            return ipaddress.IPv6Address(text)
+        except ipaddress.AddressValueError:
+            pass
+
+    def from_raw(self: "IPv6AddressType", raw: RawScalar) -> Optional[ipaddress.IPv6Address]:
+        if isinstance(raw, str):
+            return self.parse_value(raw)
+        elif isinstance(raw, ipaddress.IPv6Address):
+            return raw
+
+    def from_xml(self: "IPv6AddressType", xml: ET.Element) -> Optional[ipaddress.IPv6Address]:
+        if isinstance(xml.text, str):
+            return self.parse_value(xml.text)
+
+    def to_raw(self: "IPv6AddressType", val: ipaddress.IPv6Address) -> str:
+        return self.canonical_string(val)
+
+    def to_xml(self: "IPv6AddressType", val: ipaddress.IPv6Address) -> str:
+        return self.canonical_string(val)
+
+    def canonical_string(self: "IPv6AddressType", val: ipaddress.IPv6Address) -> Optional[str]:
+        return str(val)
 
 
 class BinaryType(LinearType):
@@ -1058,6 +1094,7 @@ DataType.dtypes = {"binary": BinaryType,
                    "empty": EmptyType,
                    "enumeration": EnumerationType,
                    "identityref": IdentityrefType,
+                   "inet:ipv6-address": IPv6AddressType,
                    "instance-identifier": InstanceIdentifierType,
                    "int8": Int8Type,
                    "int16": Int16Type,

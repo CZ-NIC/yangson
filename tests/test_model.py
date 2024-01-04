@@ -1,6 +1,7 @@
 import json
 import pytest
 from decimal import Decimal
+from ipaddress import IPv6Address
 from yangson import DataModel
 from yangson.exceptions import (
     InvalidArgument, InvalidFeatureExpression, UnknownPrefix,
@@ -321,8 +322,10 @@ def test_types(data_model):
     assert "300.1.1.1" not in llb
     assert "127.0.1" not in llb
     assert llb.parse_value("1.2.3.4.5") is None
-    assert "2001:db8:0:2::1" in llb
-    assert "::1" in llb
+    assert "2001:db8:0:2::1" not in llb
+    assert IPv6Address("2001:db8:0:2::1") in llb
+    assert "::1" not in llb
+    assert IPv6Address("::1") in llb
     assert "2001::db8:0:2::1" not in llb
     ct = data_model.get_data_node("/test:contT")
     i8 = ct.get_child("int8", "test").type
@@ -706,7 +709,7 @@ def test_edits(data_model, instance):
     assert len(modla.value) == 1
     llb1 = instance["test:llistB"][1]
     modllb = llb1.update("2001:db8:0:2::1", raw=True).up()
-    assert modllb.value == ArrayValue(["::1", "2001:db8:0:2::1"])
+    assert modllb.value == ArrayValue([IPv6Address(a) for a in ("::1", "2001:db8:0:2::1")])
     with pytest.raises(RawTypeError):
         llb1.update("2001::2::1", raw=True)
 
