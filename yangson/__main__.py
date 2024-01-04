@@ -35,7 +35,10 @@ def main(ylib: str = None, path: str = None,
          scope: ValidationScope = ValidationScope.all,
          ctype: ContentType = ContentType.config, set_id: bool = False,
          tree: bool = False, no_types: bool = False,
-         digest: bool = False, validate: str = None) -> int:
+         digest: bool = False, instance_input: str = None,
+         instance_format: str = "auto", instance_output: str = None,
+         instance_output_format: str = None,
+         ) -> int:
     """Entry-point for a validation script.
 
     Args:
@@ -47,7 +50,8 @@ def main(ylib: str = None, path: str = None,
         tree: If `True`, print schema tree.
         no_types: If `True`, don't print types in schema tree.
         digest: If `True`, print schema digest.
-        validate: Name of file to validate against the schema.
+        instance_input: Name of file to load and validate against the schema.
+        instance_format: Format of the file to validate.
 
     Returns:
         Numeric return code (0=no error, 2=YANG error, 1=other)
@@ -77,19 +81,38 @@ def main(ylib: str = None, path: str = None,
         grp.add_argument(
             "-d", "--digest", action="store_true",
             help="print schema digest in JSON format")
-        grp.add_argument(
-            "-v", "--validate", metavar="INST",
-            help="name of the file with CBOR, JSON or XML encoded instance data")
-        parser.add_argument(
-            "-s", "--scope", choices=["syntax", "semantics", "all"],
-            default="all", help="validation scope (default: %(default)s)")
-        parser.add_argument(
-            "-c", "--ctype", type=str, choices=["config", "nonconfig", "all"],
-            default="config",
-            help="content type of the data instance (default: %(default)s)")
         parser.add_argument(
             "-n", "--no-types", action="store_true",
             help="suppress type info in tree output")
+        grp = parser.add_argument_group(
+            title="Validate and translate",
+            description="Validate instance data and (if output format provided)"
+                        "translate into another format")
+        egrp = grp.add_mutually_exclusive_group()
+        egrp.add_argument(
+            "-I", "--input",
+            help="name of the file with CBOR, JSON or XML encoded instance data; use - for stdin")
+        egrp.add_argument(
+            "-v", "--validate", metavar="INPUT",
+            help="name of the file with CBOR, JSON or XML encoded instance data; use - for stdin")
+        grp.add_argument(
+            "-F", "--from", choices=["xml", "json", "cbor", "auto"],
+            default="auto",
+            help="input file format (default: %(default)s)")
+        grp.add_argument(
+            "-s", "--scope", choices=["syntax", "semantics", "all"],
+            default="all", help="validation scope (default: %(default)s)")
+        grp.add_argument(
+            "-c", "--ctype", type=str, choices=["config", "nonconfig", "all"],
+            default="config",
+            help="content type of the data instance (default: %(default)s)")
+        grp.add_argument(
+            "-O", "--output",
+            help="where to write the output; use - for stdout")
+        grp.add_argument(
+            "-T", "--translate", choices=["xml", "json", "cbor"],
+            help="output file format")
+
         args = parser.parse_args()
         ylib: str = args.ylib
         path: Optional[str] = args.path
@@ -99,7 +122,19 @@ def main(ylib: str = None, path: str = None,
         tree: bool = args.tree
         no_types = args.no_types
         digest: bool = args.digest
-        validate: str = args.validate
+        instance_input: str = args.validate if args.validate is not None else vars(args)["input"]
+        instance_input_format: str = vars(args)["from"]
+        instance_output: str = args.output
+        instance_output_format: str = args.translate
+
+    if (instance_output is None) != (instance_output_format is None):
+        print("You have to specify both -O and -T to translate the instance")
+        return 1
+
+    if instance_output is not None and instance_input is None:
+        print("Translation without input (use -I)")
+        return 1
+
     try:
         with open(ylib, encoding="utf-8") as infile:
             yl = infile.read()
@@ -134,12 +169,17 @@ def main(ylib: str = None, path: str = None,
     if digest:
         print(dm.schema_digest())
         return 0
-    if not validate:
+    if not instance_input:
         return 0
 
     try:
-        with open(validate, "rb") as infile:
-            i = dm.load(infile)
+        with open(instance_input, "rb") as infile:
+            i = {
+                    "auto": dm.load,
+                    "xml": dm.load_xml,
+                    "json": dm.load_json,
+                    "cbor": dm.load_cbor,
+                    }[instance_input_format](infile)
     except (FileNotFoundError, PermissionError, InvalidFileFormat) as e:
         print("Instance data load failed:", str(e), file=sys.stderr)
         return 1
@@ -161,6 +201,22 @@ def main(ylib: str = None, path: str = None,
     except YangTypeError as e:
         print("Invalid type:", str(e), file=sys.stderr)
         return 3
+
+    if not instance_output:
+        return 0
+
+    try:
+        store, mode = {
+                "xml": (i.store_xml, "w"),
+                "json": (i.store_json, "w"),
+                "cbor": (i.store_cbor, "wb"),
+                }[instance_output_format]
+        with open(instance_output, mode) as outfile:
+            store(outfile)
+    except (PermissionError) as e:
+        print("Instance data store failed:", str(e), file=sys.stderr)
+        return 1
+
     return 0
 
 

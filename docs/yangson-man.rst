@@ -48,7 +48,7 @@ Operations
    Print the schema digest of the data model in JSON format. See
    also :meth:`.DataModel.schema_digest`.
 
-.. option:: -v <instance>, --validate <instance>
+.. option:: -v <instance>, --validate <instance>, -I <instance>, --input <instance>
 
    Validate an instance object against the data model. The *instance*
    argument is the name of a file containing a XML, JSON or CBOR encoded instance
@@ -57,7 +57,26 @@ Operations
    Validation can be controlled by means of :option:`--scope`
    and :option:`--ctype` options.
 
-   See also :meth:`.InstanceNode.validate`.
+   See also :meth:`.DataModel.load` :meth:`.InstanceNode.validate`
+
+.. option:: -F <format>, --from <format>
+
+   Explicitly selects input format for instance validation. Allowed choices are
+   ``xml``, ``json``, ``cbor`` and ``auto``.
+
+   See also :meth:`.DataModel.load`
+
+.. option:: -O <instance>, --output <instance>
+
+   Dump the instance object. The *instance* argument is the name of the output file.
+   This option must always go with ``-T`` and ``-I`` or ``-v``
+
+.. option:: -T <format>, --translate <format>
+
+   Selects output format for instance validation. Allowed choices are
+   ``xml``, ``json`` and ``cbor``.
+
+   See also :meth:`RootNode.store_xml`, :meth:`RootNode.store_json` and :meth:`RootNode.store_cbor`
 
 Options
 =======

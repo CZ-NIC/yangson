@@ -28,9 +28,10 @@ This module implements the following classes:
 * ResourceIdParser: Parser for RESTCONF resource identifiers.
 * InstanceIdParser: Parser for instance identifiers.
 """
+import cbor2
 from datetime import datetime
 import json
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, IO, Optional, TYPE_CHECKING, Union
 from urllib.parse import unquote
 import xml.etree.ElementTree as ET
 from .enumerations import ContentType, ValidationScope
@@ -779,6 +780,18 @@ class RootNode(InstanceNode):
         """XPath - return the list of receiver's ancestors."""
         return []
 
+    def store_xml(self: "RootNode", file: IO, **kwargs):
+        """Store the tree into XML file (requires binary mode)"""
+        et = ET.ElementTree(self.to_xml(**kwargs))
+        et.write(file)
+
+    def store_json(self: "RootNode", file: IO, **kwargs):
+        """Store the tree into JSON file (requires text mode)"""
+        json.dump(self.raw_value(), file, **kwargs)
+
+    def store_cbor(self: "RootNode", file: IO, **kwargs):
+        """Store the tree into CBOR file (requires binary mode)"""
+        cbor2.dump(self.raw_value(), file, **kwargs)
 
 class ObjectMember(InstanceNode):
     """This class represents an object member."""
