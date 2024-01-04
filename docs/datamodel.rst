@@ -222,8 +222,11 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
    .. method:: schema_digest() -> str
 
-      Generate digest of the data model schema. This information is
-      primarily intended to aid client applications.
+      Generate a digest of the data model schema. The digest is a
+      streamlined and compressed JSON representation of the data model
+      schema intended for use in restricted environments without a
+      full YANG processing stack such as client-side applications
+      running in a web browser.
 
       The returned string contains a structure of JSON objects that
       follows the data model hierarchy. Every JSON object also
