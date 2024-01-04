@@ -31,6 +31,7 @@ This module defines the following exceptions:
 * :exc:`InstanceValueError`: The instance value is incompatible with the called method.
 * :exc:`InvalidArgument`: Invalid argument of a statement.
 * :exc:`InvalidFeatureExpression`: Invalid if-feature expression.
+* :exc:`InvalidFileFormat`: Invalid format of an input data file.
 * :exc:`InvalidKeyValue`: Invalid list key or leaf-list value.
 * :exc:`InvalidLeafrefPath`: A leafref path is incorrect.
 * :exc:`InvalidSchemaPath`: Invalid schema path
@@ -455,4 +456,14 @@ class XPathTypeError(YangsonException):
         self.value = value
 
     def __str__(self: "XPathTypeError") -> str:
+        return self.value
+
+
+class InvalidFileFormat(YangsonException):
+    """The supplied file has invalid format."""
+
+    def __init__(self: "InvalidFileFormat", value: str):
+        self.value = value
+
+    def __str__(self: "InvalidFileFormat") -> str:
         return self.value

@@ -17,7 +17,7 @@ Description
 ===========
 
 :program:`yangson` is a tool for performing selected high-level
-operations with a YANG data model and JSON-encoded instance objects
+operations with a YANG data model and XML, JSON and CBOR encoded instance objects
 from the command line.
 
 *yang_library* is the name of a file containing data model
@@ -51,8 +51,8 @@ Operations
 .. option:: -v <instance>, --validate <instance>
 
    Validate an instance object against the data model. The *instance*
-   argument is the name of a file containing an instance
-   object in JSON representation.
+   argument is the name of a file containing a XML, JSON or CBOR encoded instance
+   object.
 
    Validation can be controlled by means of :option:`--scope`
    and :option:`--ctype` options.

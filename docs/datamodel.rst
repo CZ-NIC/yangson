@@ -141,6 +141,28 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> inst.value
          {'example-1:greeting': 'Hi!'}
 
+   .. method:: load_cbor(file: IO) -> RootNode
+
+      Create a root instance node by directly loading CBOR data from
+      the given file. Calls :meth:`from_raw` internally.
+
+   .. method:: load_json(file: IO) -> RootNode
+
+      Create a root instance node by directly loading JSON data from
+      the given file. Calls :meth:`from_raw` internally.
+
+   .. method:: load_xml(file: IO) -> RootNode
+
+      Create a root instance node by directly loading XML data from
+      the given file. Calls :meth:`from_xml` internally.
+
+   .. method:: load(file: IO) -> RootNode
+
+      Attempts some simple magic based on first non-whitespace character
+      of the input file to guess whether it is XML, JSON or CBOR.
+      Based on the guessed format, it then loads the file by
+      :meth:`load_cbor`, :meth:`load_json` or :meth:`load_xml`.
+
    .. method:: get_schema_node(path: SchemaPath) -> Optional[SchemaNode]
 
       Return the schema node addressed by *path*, or ``None`` if no

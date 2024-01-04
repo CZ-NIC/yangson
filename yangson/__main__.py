@@ -25,7 +25,8 @@ import pkg_resources
 from yangson import DataModel
 from yangson.enumerations import ContentType, ValidationScope
 from yangson.exceptions import (
-    BadYangLibraryData, FeaturePrerequisiteError, MultipleImplementedRevisions,
+    BadYangLibraryData, FeaturePrerequisiteError, InvalidFileFormat,
+    MultipleImplementedRevisions,
     ModuleNotFound, ModuleNotRegistered, RawMemberError, RawTypeError,
     SchemaError, SemanticError, YangTypeError)
 
@@ -78,7 +79,7 @@ def main(ylib: str = None, path: str = None,
             help="print schema digest in JSON format")
         grp.add_argument(
             "-v", "--validate", metavar="INST",
-            help="name of the file with JSON-encoded instance data")
+            help="name of the file with CBOR, JSON or XML encoded instance data")
         parser.add_argument(
             "-s", "--scope", choices=["syntax", "semantics", "all"],
             default="all", help="validation scope (default: %(default)s)")
@@ -135,21 +136,20 @@ def main(ylib: str = None, path: str = None,
         return 0
     if not validate:
         return 0
+
     try:
-        with open(validate, encoding="utf-8") as infile:
-            itxt = json.load(infile)
-    except (FileNotFoundError, PermissionError,
-            json.decoder.JSONDecodeError) as e:
-        print("Instance data:", str(e), file=sys.stderr)
+        with open(validate, "rb") as infile:
+            i = dm.load(infile)
+    except (FileNotFoundError, PermissionError, InvalidFileFormat) as e:
+        print("Instance data load failed:", str(e), file=sys.stderr)
         return 1
-    try:
-        i = dm.from_raw(itxt)
     except RawMemberError as e:
         print("Illegal object member:", str(e), file=sys.stderr)
         return 3
     except RawTypeError as e:
         print("Invalid type:", str(e), file=sys.stderr)
         return 3
+
     try:
         i.validate(scope, ctype)
     except SchemaError as e:

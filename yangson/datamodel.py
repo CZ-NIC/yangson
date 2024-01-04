@@ -21,12 +21,14 @@ This module implements the following class:
 
 * DataModel: Basic entry point to the YANG data model.
 """
+import cbor2
 import hashlib
+from io import BufferedReader
 import json
-from typing import Optional
+from typing import Optional, IO
 import xml.etree.ElementTree as ET
 from .enumerations import ContentType
-from .exceptions import BadYangLibraryData
+from .exceptions import BadYangLibraryData, InvalidFileFormat
 from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
                        RootNode)
 from .schemadata import SchemaData, SchemaContext
@@ -120,6 +122,81 @@ class DataModel:
         """
         cooked = self.schema.from_xml(root)
         return RootNode(cooked, self.schema, self.schema_data, cooked.timestamp)
+
+    def load_cbor(self: "DataModel", file: IO) -> RootNode:
+        """Create an instance node from CBOR in file-like object.
+
+        Args:
+            file: Binary file supporting .read(), containing a CBOR
+
+        Returns:
+            Root instance node.
+        """
+        return self.from_raw(cbor2.load(file))
+
+    def load_json(self: "DataModel", file: IO) -> RootNode:
+        """Create an instance node from JSON in file-like object.
+
+        Args:
+            file: Text file or binary file supporting .read(), containing a JSON
+
+        Returns:
+            Root instance node.
+        """
+        return self.from_raw(json.load(file))
+
+    def load_xml(self: "DataModel", file: IO) -> RootNode:
+        """Create an instance node from XML in file-like object.
+
+        Args:
+            file: Text file or binary file supporting .read(), containing a XML
+
+        Returns:
+            Root instance node.
+        """
+
+        xml = ET.ElementTree()
+        xml.parse(file)
+        return self.from_xml(xml.getroot())
+
+    def load(self: "DataModel", file: IO) -> RootNode:
+        """Create an instance node from CBOR, JSON or XML in file-like object. Format is autodetected.
+
+        Args:
+            file: Text file or binary file supporting .read(), containing CBOR, JSON or XML
+
+        Returns:
+            Root instance node.
+        """
+
+        bio = BufferedReader(file)
+        peeklen = 128
+
+        cbor_allowed = True
+        while True:
+            # Check the file beginning
+            data = bio.peek(peeklen)
+            if len(data) == 0:
+                raise InvalidFileFormat(f"File doesn't contain any meaningful data.")
+
+            if len(ds := data.lstrip()) > 0:
+                break
+
+            # Drop the leading whitespace allowed in JSON or XML
+            bio.seek(len(data), 1)
+            cbor_allowed = False
+
+        ds = data.lstrip()
+
+        if chr(ds[0]) == "<":
+            return self.load_xml(bio)
+        elif chr(ds[0]) == "{":
+            return self.load_json(bio)
+        elif cbor_allowed:
+            return self.load_cbor(bio)
+
+        raise InvalidFileFormat(f"Couldn't find any clue to guess the file format.")
+
 
     def get_schema_node(self: "DataModel", path: SchemaPath) -> Optional[SchemaNode]:
         """Return the schema node addressed by a schema path.

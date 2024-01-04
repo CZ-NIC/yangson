@@ -28,6 +28,58 @@ files = [
 dev = ["freezegun (>=1.0,<2.0)", "pytest (>=6.0)", "pytest-cov"]
 
 [[package]]
+name = "cbor2"
+version = "5.5.1"
+description = "CBOR (de)serializer with extensive tag support"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "cbor2-5.5.1-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:37ba4f719384bd4ea317e92a8763ea343e205f3112c8241778fd9dbc64ae1498"},
+    {file = "cbor2-5.5.1-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:425ae919120b9d05b4794b3e5faf6584fc47a9d61db059d4f00ce16ae93a3f63"},
+    {file = "cbor2-5.5.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5c511ff6356d6f4292ced856d5048a24ee61a85634816f29dadf1f089e8cb4f9"},
+    {file = "cbor2-5.5.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d6ab54a9282dd99a3a70d0f64706d3b3592e7920564a93101caa74dec322346c"},
+    {file = "cbor2-5.5.1-cp310-cp310-musllinux_1_1_aarch64.whl", hash = "sha256:39d94852dd61bda5b3d2bfe74e7b194a7199937d270f90099beec3e7584f0c9b"},
+    {file = "cbor2-5.5.1-cp310-cp310-musllinux_1_1_x86_64.whl", hash = "sha256:65532ba929beebe1c63317ad00c79d4936b60a5c29a3c329d2aa7df4e72ad907"},
+    {file = "cbor2-5.5.1-cp310-cp310-win_amd64.whl", hash = "sha256:1206180f66a9ad23e692cf457610c877f186ad303a1264b6c5335015b7bee83e"},
+    {file = "cbor2-5.5.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:42155a20be46312fad2ceb85a408e2d90da059c2d36a65e0b99abca57c5357fd"},
+    {file = "cbor2-5.5.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:6f3827ae14c009df9b37790f1da5cd1f9d64f7ffec472a49ebf865c0af6b77e9"},
+    {file = "cbor2-5.5.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4bfa417dbb8b4581ad3c2312469899518596551cfb0fe5bdaf8a6921cff69d7e"},
+    {file = "cbor2-5.5.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e3317e7dfb4f3180be90bcd853204558d89f119b624c2168153b53dea305e79d"},
+    {file = "cbor2-5.5.1-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:1a5770bdf4340de55679efe6c38fc6d64529fda547e7a85eb0217a82717a8235"},
+    {file = "cbor2-5.5.1-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:b5d53826ad0c92fcb004b2a475896610b51e0ca010f6c37d762aae44ab0807b2"},
+    {file = "cbor2-5.5.1-cp311-cp311-win_amd64.whl", hash = "sha256:dc77cac985f7f7a20f2d8b1957d1e79393d7df823f61c7c6173d3a0011c1d770"},
+    {file = "cbor2-5.5.1-cp312-cp312-macosx_10_9_x86_64.whl", hash = "sha256:9e45d5aa8e484b4bf57240d8e7949389f1c9d4073758abb30954386321b55c9d"},
+    {file = "cbor2-5.5.1-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:93b949a66bec40dd0ca87a6d026136fea2cf1660120f921199a47ac8027af253"},
+    {file = "cbor2-5.5.1-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:93d601ca92d917f769370a5e6c3ead62dca6451b2b603915e4fcf300083b9fcd"},
+    {file = "cbor2-5.5.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a11876abd50b9f70d114fcdbb0b5a3249ccd7d321465f0350028fd6d2317e114"},
+    {file = "cbor2-5.5.1-cp312-cp312-musllinux_1_1_aarch64.whl", hash = "sha256:fd77c558decdba2a2a7a463e6346d53781d2163bacf205f77b999f561ba4ac73"},
+    {file = "cbor2-5.5.1-cp312-cp312-musllinux_1_1_x86_64.whl", hash = "sha256:efb81920d80410b8e80a4a6a8b06ec9b766be0ae7f3029af8ae4b30914edcfa3"},
+    {file = "cbor2-5.5.1-cp312-cp312-win_amd64.whl", hash = "sha256:4bb35f3b1ebd4b7b37628f0cd5c839f3008dec669194a2a4a33d91bab7f8663b"},
+    {file = "cbor2-5.5.1-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:f41e4a439f642954ed728dc18915098b5f2ebec7029eaebe52c06c52b6a9a63a"},
+    {file = "cbor2-5.5.1-cp38-cp38-macosx_11_0_arm64.whl", hash = "sha256:4eae4d56314f22920a28bf7affefdfc918646877ce3b16220dc6cf38a584aa41"},
+    {file = "cbor2-5.5.1-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:559a0c1ec8dcedd6142b81727403e0f5a2e8f4c18e8bb3c548107ec39af4e9cb"},
+    {file = "cbor2-5.5.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:537da7bfee97ee44a11b300c034c18e674af6a5dc4718a6fba141037f099c7ec"},
+    {file = "cbor2-5.5.1-cp38-cp38-musllinux_1_1_aarch64.whl", hash = "sha256:5c99fd8bbc6bbf3bf4d6b2996594ae633b778b27b0531559487950762c4e1e3f"},
+    {file = "cbor2-5.5.1-cp38-cp38-musllinux_1_1_x86_64.whl", hash = "sha256:4ee46e6dbc8e2cf302a022fec513d57dba65e9d5ec495bcd1ad97a5dbdbab249"},
+    {file = "cbor2-5.5.1-cp38-cp38-win_amd64.whl", hash = "sha256:67e2be461320197495fff55f250b111d4125a0a2d02e6256e41f8598adc3ad3f"},
+    {file = "cbor2-5.5.1-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:4384a56afef0b908b61c8ea3cca3e257a316427ace3411308f51ee301b23adf9"},
+    {file = "cbor2-5.5.1-cp39-cp39-macosx_11_0_arm64.whl", hash = "sha256:c8cc64acc606b7f2a4b673a1d6cde5a9cb1860a6ce27b353e269c9535efbd62c"},
+    {file = "cbor2-5.5.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:50019fea3cb07fa9b2b53772a52b4243e87de232591570c4c272b3ebdb419493"},
+    {file = "cbor2-5.5.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a18be0af9241883bc67a036c1f33e3f9956d31337ccd412194bf759bc1095e03"},
+    {file = "cbor2-5.5.1-cp39-cp39-musllinux_1_1_aarch64.whl", hash = "sha256:60e7e0073291096605de27de3ce006148cf9a095199160439555f14f93d044d5"},
+    {file = "cbor2-5.5.1-cp39-cp39-musllinux_1_1_x86_64.whl", hash = "sha256:41f7501338228b27dac88c1197928cf8985f6fc775f59be89c6fdaddb4e69658"},
+    {file = "cbor2-5.5.1-cp39-cp39-win_amd64.whl", hash = "sha256:c85ab7697252af2240e939707c935ea18081ccb580d4b5b9a94b04148ab2c32b"},
+    {file = "cbor2-5.5.1-py3-none-any.whl", hash = "sha256:dca639c8ff81b9f0c92faf97324adfdbfb5c2a5bb97f249606c6f5b94c77cc0d"},
+    {file = "cbor2-5.5.1.tar.gz", hash = "sha256:f9e192f461a9f8f6082df28c035b006d153904213dc8640bed8a72d72bbc9475"},
+]
+
+[package.extras]
+benchmarks = ["pytest-benchmark (==4.0.0)"]
+doc = ["Sphinx (>=7)", "packaging", "sphinx-autodoc-typehints (>=1.2.0)", "sphinx-rtd-theme (>=1.3.0)", "typing-extensions"]
+test = ["coverage (>=7)", "hypothesis", "pytest"]
+
+[[package]]
 name = "certifi"
 version = "2023.11.17"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -849,4 +901,4 @@ yang-tools = ["pyang"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "7f5cb451eada9fd09242779ed8b6709ae01d88265b1f1c83efab25f8de83ba11"
+content-hash = "67a19d44c151dde3916527181febfdad2de2043ac458f50c4c7307cd76c769f1"

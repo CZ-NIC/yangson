@@ -8,6 +8,7 @@ readme = "README.rst"
 
 [tool.poetry.dependencies]
 python = "^3.9"
+cbor2 = "^5.5.0"
 elementpath = "^4.1.5"
 PyYAML = "^6.0.1"
 pyang = { version = "^2.6", optional = true }
