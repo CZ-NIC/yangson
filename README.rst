@@ -1,18 +1,15 @@
 .. |date| date::
 
-.. |v6| image:: https://img.shields.io/badge/python-3.6-blue.svg
-   :alt: Python 3.6
-
-.. |v7| image:: https://img.shields.io/badge/python-3.7-blue.svg
-   :alt: Python 3.7
-
-.. |v8| image:: https://img.shields.io/badge/python-3.8-blue.svg
-   :alt: Python 3.8
-
 .. |v9| image:: https://img.shields.io/badge/python-3.9-blue.svg
    :alt: Python 3.9
 
-|v6| |v7| |v8| |v9|
+.. |v10| image:: https://img.shields.io/badge/python-3.10-blue.svg
+   :alt: Python 3.10
+
+.. |v11| image:: https://img.shields.io/badge/python-3.11-blue.svg
+   :alt: Python 3.11
+
+|v9| |v10| |v11|
 
 ******************
 Welcome to Yangson
@@ -31,7 +28,7 @@ Installation
 
     python -m pip install yangson
 
-Note that *Yangson* requires Python 3.6 or higher.
+Note that *Yangson* requires Python 3.9 or higher.
 
 Development
 ===========

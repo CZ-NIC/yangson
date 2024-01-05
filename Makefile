@@ -1,5 +1,5 @@
 PROJECT = yangson
-VERSION = 1.4.19
+VERSION = 1.5.0
 .PHONY = tags deps install-deps test
 
 tags:
@@ -17,9 +17,4 @@ test:
 release:
 	git tag -a -s -m "Yangson release $(VERSION)" $(VERSION)
 	git push --follow-tags
-	rm -f dist/*
-	python setup.py sdist
-	python setup.py bdist_wheel
-
-upload:
-	twine upload dist/*
+	poetry build
