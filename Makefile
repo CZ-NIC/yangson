@@ -1,5 +1,5 @@
 PROJECT = yangson
-VERSION = 1.5.0
+VERSION := $(shell grep '^version' pyproject.toml | cut -d'"' -f2)
 .PHONY = tags deps install-deps test
 
 tags:

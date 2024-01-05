@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yangson"
-version = "1.4.19"
+version = "1.5.0"
 description = "Library for working with data modelled in YANG"
 authors = ["Ladislav Lhotka <ladislav@lhotka.name>"]
 license = "GNU Lesser General Public License v3 (LGPLv3)"
