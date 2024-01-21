@@ -598,7 +598,7 @@ class InternalNode(SchemaNode):
         if ch is None:
             raise RawMemberError(npath)
 
-        if rval and self.ns == ch.ns:
+        if rval is not None and self.ns == ch.ns:
             iname = ch.name
         else:
             iname = '{1}:{0}'.format(*ch.qual_name)
