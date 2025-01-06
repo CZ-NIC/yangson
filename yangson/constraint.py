@@ -1,4 +1,4 @@
-# Copyright © 2016–2023 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -52,18 +52,21 @@ class Constraint:
 class Intervals(Constraint):
     """Class representing a sequence of numeric intervals."""
 
+    @staticmethod
+    def default_parser(x: str) -> Optional[Number]:
+        """The default parser for numbers."""
+        try:
+            return int(x)
+        except ValueError:
+            return None
+
     def __init__(self: "Intervals", intervals: list[Interval],
                  parser: Callable[[str], Optional[Number]] = None,
                  error_tag: str = None, error_message: str = None):
         """Initialize the class instance."""
-        def _pint(x):                     # default parser
-            try:
-                return int(x)
-            except ValueError:
-                return None
         super().__init__(error_tag, error_message)
         self.intervals = intervals
-        self.parser = parser if parser else _pint
+        self.parser = parser if parser else Intervals.default_parser
 
     def __contains__(self: "Intervals", value: Number):
         """Return ``True`` if the receiver contains the value."""
