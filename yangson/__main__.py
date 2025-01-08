@@ -20,8 +20,9 @@
 import argparse
 import json
 import os
+import pickle
 import sys
-import pkg_resources
+import importlib.metadata
 from yangson import DataModel
 from yangson.enumerations import ContentType, ValidationScope
 from yangson.exceptions import (
@@ -30,7 +31,7 @@ from yangson.exceptions import (
     SchemaError, SemanticError, YangTypeError)
 
 
-def main(ylib: str = None, path: str = None,
+def main(infile: str = None, pickled: bool = False, path: str = None,
          scope: ValidationScope = ValidationScope.all,
          ctype: ContentType = ContentType.config, set_id: bool = False,
          tree: bool = False, no_types: bool = False,
@@ -38,8 +39,9 @@ def main(ylib: str = None, path: str = None,
     """Entry-point for a validation script.
 
     Args:
-        ylib: Name of the file with YANG library
-        path: Colon-separated list of directories to search  for YANG modules.
+        infile: Name of the input file with YANG library or pickled data model
+        pickled: Interpret the input file as a pickled data model object
+        path: Colon-separated list of directories to search  for YANG modules
         scope: Validation scope (syntax, semantics or all).
         ctype: Content type of the data instance (config, nonconfig or all)
         set_id: If `True`, print module set id.
@@ -51,34 +53,41 @@ def main(ylib: str = None, path: str = None,
     Returns:
         Numeric return code (0=no error, 2=YANG error, 1=other)
     """
-    if ylib is None:
+    if infile is None:
         parser = argparse.ArgumentParser(
             prog="yangson",
             description="Validate JSON data against a YANG data model.")
         parser.add_argument(
             "-V", "--version", action="version",
-            version=f"%(prog)s {pkg_resources.get_distribution('yangson').version}")
+            version=f"%(prog)s {importlib.metadata.version('yangson')}")
         parser.add_argument(
-            "ylib", metavar="YLIB",
-            help=("name of the file with description of the data model"
-                  " in JSON-encoded YANG library format [RFC 7895]"))
-        parser.add_argument(
+            "infile", metavar="INFILE",
+            help=("file name with JSON-encoded YANG library [RFC 7895]"
+                  " or pickled data model"))
+        igrp = parser.add_mutually_exclusive_group()
+        igrp.add_argument(
             "-p", "--path",
             help=("colon-separated list of directories to search"
                   " for YANG modules"))
-        grp = parser.add_mutually_exclusive_group()
-        grp.add_argument(
+        igrp.add_argument(
+            "-P", "--pickled", action="store_true",
+            help="interpret INFILE as pickled data model")
+        ogrp = parser.add_mutually_exclusive_group()
+        ogrp.add_argument(
             "-i", "--id", action="store_true",
             help="print module set id")
-        grp.add_argument(
+        ogrp.add_argument(
             "-t", "--tree", action="store_true",
             help="print schema tree as ASCII art")
-        grp.add_argument(
+        ogrp.add_argument(
             "-d", "--digest", action="store_true",
             help="print schema digest in JSON format")
-        grp.add_argument(
+        ogrp.add_argument(
+            "-D", "--dump", metavar="FILE",
+            help="dump the pickled data model to FILE")
+        ogrp.add_argument(
             "-v", "--validate", metavar="INST",
-            help="name of the file with JSON-encoded instance data")
+            help="name of file with JSON-encoded instance data")
         parser.add_argument(
             "-s", "--scope", choices=["syntax", "semantics", "all"],
             default="all", help="validation scope (default: %(default)s)")
@@ -90,40 +99,50 @@ def main(ylib: str = None, path: str = None,
             "-n", "--no-types", action="store_true",
             help="suppress type info in tree output")
         args = parser.parse_args()
-        ylib: str = args.ylib
+        infile: str = args.infile
         path: Optional[str] = args.path
+        pickled: bool = args.pickled
         scope = ValidationScope[args.scope]
         ctype = ContentType[args.ctype]
         set_id: bool = args.id
         tree: bool = args.tree
+        dump: str = args.dump
         no_types = args.no_types
         digest: bool = args.digest
         validate: str = args.validate
-    try:
-        with open(ylib, encoding="utf-8") as infile:
-            yl = infile.read()
-    except (FileNotFoundError, PermissionError,
-            json.decoder.JSONDecodeError) as e:
-        print("YANG library:", str(e), file=sys.stderr)
-        return 1
-    sp = path if path else os.environ.get("YANG_MODPATH", ".")
-    try:
-        dm = DataModel(yl, tuple(sp.split(":")))
-    except BadYangLibraryData as e:
-        print("Invalid YANG library:", str(e), file=sys.stderr)
-        return 2
-    except FeaturePrerequisiteError as e:
-        print("Unsupported pre-requisite feature:", str(e), file=sys.stderr)
-        return 2
-    except MultipleImplementedRevisions as e:
-        print("Multiple implemented revisions:", str(e), file=sys.stderr)
-        return 2
-    except ModuleNotFound as e:
-        print("Module not found:", str(e), file=sys.stderr)
-        return 2
-    except ModuleNotRegistered as e:
-        print("Module not registered:", str(e), file=sys.stderr)
-        return 2
+    if pickled:
+        try:
+            with open(infile, "rb") as pif:
+                dm = pickle.load(pif)
+        except (FileNotFoundError, pickle.UnpicklingError) as e:
+            print("Pickle file:", str(e), file=sys.stderr)
+            return 1
+    else:
+        try:
+            with open(infile, encoding="utf-8") as ylf:
+                yl = ylf.read()
+        except (FileNotFoundError, PermissionError, UnicodeDecodeError,
+                json.decoder.JSONDecodeError) as e:
+            print("YANG library:", str(e), file=sys.stderr)
+            return 1
+        sp = path if path else os.environ.get("YANG_MODPATH", ".")
+        try:
+            dm = DataModel(yl, tuple(sp.split(":")))
+        except BadYangLibraryData as e:
+            print("Invalid YANG library:", str(e), file=sys.stderr)
+            return 2
+        except FeaturePrerequisiteError as e:
+            print("Unsupported pre-requisite feature:", str(e), file=sys.stderr)
+            return 2
+        except MultipleImplementedRevisions as e:
+            print("Multiple implemented revisions:", str(e), file=sys.stderr)
+            return 2
+        except ModuleNotFound as e:
+            print("Module not found:", str(e), file=sys.stderr)
+            return 2
+        except ModuleNotRegistered as e:
+            print("Module not registered:", str(e), file=sys.stderr)
+            return 2
     if set_id:
         print(dm.module_set_id())
         return 0
@@ -133,12 +152,19 @@ def main(ylib: str = None, path: str = None,
     if digest:
         print(dm.schema_digest())
         return 0
+    if dump:
+        with open(dump, "wb") as pif:
+            try:
+                pickle.dump(dm, pif, pickle.HIGHEST_PROTOCOL)
+                return 0
+            except pickle.PicklingError as e:
+                print("Pickling failed:", str(e), file=sys.stderr)
     if not validate:
         return 0
     try:
-        with open(validate, encoding="utf-8") as infile:
-            itxt = json.load(infile)
-    except (FileNotFoundError, PermissionError,
+        with open(validate, encoding="utf-8") as instf:
+            itxt = json.load(instf)
+    except (FileNotFoundError, PermissionError, UnicodeDecodeError,
             json.decoder.JSONDecodeError) as e:
         print("Instance data:", str(e), file=sys.stderr)
         return 1

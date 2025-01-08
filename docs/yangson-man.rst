@@ -9,7 +9,7 @@ yangson
 Synopsis
 ========
 
-:program:`yangson` [<options>] [<operation>] <yang_library>
+:program:`yangson` [<options>] [<operation>] <in_file>
 
 :program:`yangson` -h
 
@@ -20,10 +20,17 @@ Description
 operations with a YANG data model and JSON-encoded instance objects
 from the command line.
 
-*yang_library* is the name of a file containing data model
-specification in JSON representation conforming to the original YANG
-library format of [RFC7895]_. If no *operation* is specified, the
-program just parses the data model and exits.
+*<in_file>* is the name of a file containing either
+
+* a data model specification in JSON representation conforming to the
+  original YANG library format of [RFC7895]_, or
+* (with the :option:`--pickled` option) a serialized data model object
+  generated using the Python `pickle
+  <https://docs.python.org/3/library/pickle.html>`_ module. See also
+  :option:`--dump` option below.
+
+If no *operation* is specified, the program just parses the data model
+and exits.
 
 Operations
 ==========
@@ -48,6 +55,10 @@ Operations
    Print the schema digest of the data model in JSON format. See
    also :meth:`.DataModel.schema_digest`.
 
+.. option:: -D <out_file>, --dump <out_file>
+
+   Dump the serialized (pickled) data model object to *<out_file>*.
+
 .. option:: -v <instance>, --validate <instance>
 
    Validate an instance object against the data model. The *instance*
@@ -62,13 +73,20 @@ Operations
 Options
 =======
 
+.. option:: -P, --pickled
+
+   This option indicates that *<in_file>* contents is to be interpreted
+   as a serialized (pickled) data model object. See also :option:`--dump`
+   option.
+
 .. option:: -p <module_path>, --path <module_path>
 
-   This option specifies directories to search for YANG modules.
-   The *module_path* argument is a colon-separated list of directory
-   names. By default, the value of the YANG_MODPATH environment
-   variable is used if this variable exists, otherwise the module path
-   contains only the current directory.
+   This option specifies a list of directories to search for YANG
+   modules. It is only applicable if the :option:`--pickled` option is
+   **not** used.  The *<module_path>* argument is a colon-separated list
+   of directory names. By default, the value of the YANG_MODPATH
+   environment variable is used if it is set, otherwise the
+   module path contains only the current directory.
 
    All YANG modules specified in YANG library need to be located in
    one of these directories, and their file names have to be in the
