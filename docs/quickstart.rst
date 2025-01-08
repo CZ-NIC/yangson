@@ -8,11 +8,17 @@ Quick Start
    os.chdir("../..")
 
 This section contains a series of hands-on examples that illustrate
-basic ways of using the *Yangson* library. The snippets below should
+basic ways of using the Yangson library. The snippets below should
 be enough to get a moderately experienced Python programmer going. The
 examples use the YANG data model and instance document
 from :ref:`sec-ex2`. Of course, the reader is encouraged to continue
 experimenting on his or her own.
+
+.. note::
+   Basic operations with YANG data models and instance data, such as validation,
+   can be performed easily from the command line using the Python script
+   ``yangson`` that is a part of Yangson distribution. See the
+   :ref:`manual page <yangson-man>` for details about its usage.
 
 Prerequisites
 =============
@@ -43,8 +49,18 @@ by reading YANG library data [RFC7895]_ from a file:
    'Data model ID: 9a9b7d2d28d4d78fa42e12348346990e3fb1c1b9'
 
 .. note::
-   Distribution directory *tools/python* contains the script *mkylib.py* that
-   can help with preparing YANG library data.
+
+   1. Distribution directory *tools/python* contains the script *mkylib.py* that
+      can help with preparing YANG library data.
+
+   2. YANG library format of [RFC7895]_ has been superseded by a new format
+      defined in [RFC8525]_. Yangson nonetheless continues using the old format
+      – it is fully sufficient for the given purposes, so there
+      are no upgrade plans. If you happen to have a data model specified
+      using the new YANG library format and want to use it with Yangson,
+      convert it to the old format using the
+      :ref:`convert8525 <convert8525-man>` utility that is also included in
+      Yangson distribution.
 
 This example also uses *deviations* (see sec. `5.6.3`_ in [RFC7950]_) specified in YANG module :ref:`example-2-dev <mod-ex2-dev>`:
 
