@@ -1,4 +1,4 @@
-# Copyright © 2016–2023 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -404,7 +404,8 @@ class InstanceNode:
                 return None
         return val
 
-    def validate(self: "InstanceNode", scope: ValidationScope = ValidationScope.all,
+    def validate(self: "InstanceNode",
+                 scope: ValidationScope = ValidationScope.all,
                  ctype: ContentType = ContentType.config) -> None:
         """Validate the receiver's value.
 

@@ -1,4 +1,4 @@
-# Copyright © 2016–2023 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -346,10 +346,10 @@ class SchemaNodeException(YangsonException):
 
 
 class NonexistentSchemaNode(SchemaNodeException):
-    """A schema node doesn't exist."""
+    """A schema node doesn't exist as a child of ``qn``."""
 
-    def __init__(self: "NonexistentSchemaNode", qn: QualName, name: YangIdentifier,
-                 ns: YangIdentifier = None):
+    def __init__(self: "NonexistentSchemaNode", qn: QualName,
+                 name: YangIdentifier, ns: YangIdentifier = None):
         super().__init__(qn)
         self.name = name
         self.ns = ns

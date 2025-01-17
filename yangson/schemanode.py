@@ -1,4 +1,4 @@
-# Copyright © 2016–2023 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -237,8 +237,8 @@ class SchemaNode:
         return (self.name if self.parent and self.ns == self.parent.ns
                  else f"{self.ns}:{self.name}")
 
-    def _validate(self: "SchemaNode", inst: InstanceNode, scope: ValidationScope,
-                  ctype: ContentType) -> None:
+    def _validate(self: "SchemaNode", inst: InstanceNode,
+                  scope: ValidationScope, ctype: ContentType) -> None:
         """Validate instance against the receiver.
 
         Args:
@@ -633,8 +633,8 @@ class InternalNode(SchemaNode):
             rc[c.iname()] = c._node_digest()
         return res
 
-    def _validate(self: "InternalNode", inst: InstanceNode, scope: ValidationScope,
-                  ctype: ContentType) -> None:
+    def _validate(self: "InternalNode", inst: InstanceNode,
+                  scope: ValidationScope, ctype: ContentType) -> None:
         """Extend the superclass method."""
         if scope.value & ValidationScope.syntax.value:   # schema
             self._check_schema_pattern(inst, ctype)
@@ -1310,7 +1310,8 @@ class SequenceNode(DataNode):
         """
         return super().from_raw(rval, jptr)
 
-    def entry_from_xml(self: "SequenceNode", rval: ET.Element, jptr: JSONPointer = "") -> EntryValue:
+    def entry_from_xml(self: "SequenceNode", rval: ET.Element,
+                       jptr: JSONPointer = "") -> EntryValue:
         """Transform a XML (leaf-)list entry into the cooked form.
 
         Args:
