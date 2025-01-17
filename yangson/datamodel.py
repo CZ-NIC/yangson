@@ -97,7 +97,8 @@ class DataModel:
         fnames = sorted(["@".join(m) for m in self.schema_data.modules])
         return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
 
-    def from_raw(self: "DataModel", robj: RawObject) -> RootNode:
+    def from_raw(self: "DataModel", robj: RawObject,
+                 subschema: str = None) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
@@ -106,8 +107,14 @@ class DataModel:
         Returns:
             Root instance node.
         """
-        cooked = self.schema.from_raw(robj)
-        return RootNode(cooked, self.schema, self.schema_data, cooked.timestamp)
+        if subschema:
+            p, s, loc = subschema.partition(":")
+            sname, sns = (loc, p) if s else (p, None)
+            schema = self.schema.get_child(sname, sns)
+        else:
+            schema = self.schema
+        cooked = schema.from_raw(robj)
+        return RootNode(cooked, schema, self.schema_data, cooked.timestamp)
 
     def from_xml(self: "DataModel", root: ET.Element) -> RootNode:
         """Create an instance node from a raw data tree.
