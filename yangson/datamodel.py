@@ -1,4 +1,4 @@
-# Copyright © 2016–2023 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -26,12 +26,13 @@ import json
 from typing import Optional
 import xml.etree.ElementTree as ET
 from .enumerations import ContentType
-from .exceptions import BadYangLibraryData
+from .exceptions import (BadYangLibraryData, InvalidArgument,
+                         NonexistentSchemaNode)
 from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
                        RootNode)
 from .schemadata import SchemaData, SchemaContext
 from .schemanode import DataNode, SchemaTreeNode, RawObject, SchemaNode
-from .typealiases import DataPath, SchemaPath
+from .typealiases import DataPath, PrefName, SchemaPath
 
 
 class DataModel:
@@ -97,31 +98,55 @@ class DataModel:
         fnames = sorted(["@".join(m) for m in self.schema_data.modules])
         return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
 
-    def from_raw(self: "DataModel", robj: RawObject) -> RootNode:
+    def from_raw(self: "DataModel", robj: RawObject,
+                 subschema: PrefName = None) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
-            robj: Dictionary representing a raw data tree.
+            robj: Dictionary representing a raw data tree
+            subschema: Identifier of a subschema (RPC or notification)
 
         Returns:
             Root instance node.
         """
-        cooked = self.schema.from_raw(robj)
-        return RootNode(cooked, self.schema, self.schema_data, cooked.timestamp)
+        if subschema:
+            p, s, loc = subschema.partition(":")
+            if not (p and s and loc):
+                raise InvalidArgument(subschema)
+            schema = self.schema.get_child(loc, p)
+            if schema is None:
+                raise NonexistentSchemaNode(self.schema.qual_name, loc, p)
+        else:
+            schema = self.schema
+        cooked = schema.from_raw(robj)
+        return RootNode(cooked, schema, self.schema_data, cooked.timestamp)
 
-    def from_xml(self: "DataModel", root: ET.Element) -> RootNode:
+    def from_xml(self: "DataModel", root: ET.Element,
+                 subschema: PrefName = None) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
             robj: Dictionary representing a raw data tree.
+            subschema: Identifier of a subschema (RPC or notification)
 
         Returns:
             Root instance node.
         """
-        cooked = self.schema.from_xml(root)
-        return RootNode(cooked, self.schema, self.schema_data, cooked.timestamp)
+        if subschema:
+            p, s, loc = subschema.partition(":")
+            if not s:
+                raise InvalidArgument(subschema)
+            schema = self.schema.get_child(loc, p)
+            if schema is None:
+                raise NonexistentSchemaNode(self.schema.qual_name, loc, p)
+        else:
+            schema = self.schema
+        cooked = schema.from_xml(root)
+        return RootNode(cooked, schema, self.schema_data,
+                        cooked.timestamp)
 
-    def get_schema_node(self: "DataModel", path: SchemaPath) -> Optional[SchemaNode]:
+    def get_schema_node(self: "DataModel",
+                        path: SchemaPath) -> Optional[SchemaNode]:
         """Return the schema node addressed by a schema path.
 
         Args:
