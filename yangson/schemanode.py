@@ -1753,6 +1753,11 @@ class InputNode(InternalNode, DataNode):
         self.name = "input"
         self.ns = ns
 
+    @property
+    def mandatory(self: "InputNode") -> bool:
+        """Override the superclass property."""
+        return False
+
     def iname(self: "InputNode") -> InstanceName:
         """Override the superclass method."""
         return self.ns + ":" + self.name
@@ -1770,6 +1775,11 @@ class OutputNode(InternalNode, DataNode):
         self._config = False
         self.name = "output"
         self.ns = ns
+
+    @property
+    def mandatory(self: "OutputNode") -> bool:
+        """Override the superclass property."""
+        return False
 
     def iname(self: "OutputNode") -> InstanceName:
         """Override the superclass method."""
