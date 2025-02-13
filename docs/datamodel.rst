@@ -118,7 +118,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> dm.module_set_id()
          'ae4bf1ddf85a67ab94a9ab71593cd1c78b7f231d'
 
-   .. method:: from_raw(robj: RawObject) -> RootNode
+   .. method:: from_raw(robj: RawObject, subschema: PrefName) -> RootNode
 
       Create a root instance node from a raw data tree contained in
       the *robj* argument. The latter will typically be a Python
@@ -128,10 +128,13 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       “cooked” form before it can be used in *Yangson*. For example,
       64-bit numbers have to be encoded as strings in JSON text (see
       sec. `6.1`_ of [RFC7951]_), whereas the cooked form is a Python
-      number.
+      number. See the documentation of :mod:`instvalue` module for
+      more details, and see also :term:`raw value`.
 
-      See the documentation of :mod:`instvalue` module for more
-      details, and see also :term:`raw value`.
+      The *subschema* argument may be used for creating instances of
+      RPC input and/or output and notifications. The value of this
+      argument is a :term:`prefixed name` (with an explicit prefix)
+      that identifies the selected subschema (RPC or notification).
 
       .. doctest::
 
