@@ -840,21 +840,11 @@ def test_xml_rpc(data_model):
     input_xml_stripped = strip_pretty(input_xml_pretty)
     output_xml_stripped = strip_pretty(output_xml_pretty)
 
-    # get the schema node for the RPC 
-    sn_rpc = data_model.get_schema_node("/testb:rpcA") # used by both tests
-    assert(type(sn_rpc) == RpcActionNode)
-
     #########
     # INPUT #
     #########
 
-    # convert raw object to an InstanceValue
-    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
-    input_inst_val = sn_rpc.from_raw(input_obj)
-    assert(str(input_inst_val) == str(input_obj))
-
-    # convert InstanceValue to an Instance (a RootNode)
-    input_inst = RootNode(input_inst_val, sn_rpc, data_model.schema_data, input_inst_val.timestamp)
+    input_inst = data_model.from_raw(input_obj, "testb:rpcA")
     input_inst.validate(ctype=ContentType.all)
     assert(input_inst.raw_value() == input_obj)
 
@@ -867,11 +857,7 @@ def test_xml_rpc(data_model):
     #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
     parser = XMLParser(input_xml_text)
     input_xml_et_obj2 = parser.root
-    input_inst_val2 = sn_rpc.from_xml(input_xml_et_obj2)
-    assert(input_inst_val2 == input_inst_val)
-
-    # convert InstanceValue back to an Instance (a RootNode)
-    input_inst2 = RootNode(input_inst_val2, sn_rpc, data_model.schema_data, input_inst_val2.timestamp)
+    input_inst2 = data_model.from_xml(input_xml_et_obj2, "testb:rpcA")
     input_inst2.validate(ctype=ContentType.all)
     assert(input_inst2.raw_value() == input_obj)
 
@@ -883,13 +869,7 @@ def test_xml_rpc(data_model):
     # OUTPUT #
     ##########
 
-    # convert raw object to an InstanceValue
-    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
-    output_inst_val = sn_rpc.from_raw(output_obj)
-    assert(str(output_inst_val) == str(output_obj))
-
-    # convert InstanceValue to an Instance (a RootNode)
-    output_inst = RootNode(output_inst_val, sn_rpc, data_model.schema_data, output_inst_val.timestamp)
+    output_inst = data_model.from_raw(output_obj, "testb:rpcA")
     output_inst.validate(ctype=ContentType.all)
     assert(output_inst.raw_value() == output_obj)
 
@@ -902,11 +882,7 @@ def test_xml_rpc(data_model):
     #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
     parser = XMLParser(output_xml_text)
     output_xml_et_obj2 = parser.root
-    output_inst_val2 = sn_rpc.from_xml(output_xml_et_obj2)
-    assert(output_inst_val2 == output_inst_val)
-
-    # convert InstanceValue back to an Instance (a RootNode)
-    output_inst2 = RootNode(output_inst_val2, sn_rpc, data_model.schema_data, output_inst_val2.timestamp)
+    output_inst2 = data_model.from_xml(output_xml_et_obj2, "testb:rpcA")
     output_inst2.validate(ctype=ContentType.all)
     assert(output_inst2.raw_value() == output_obj)
 
@@ -985,18 +961,12 @@ def test_xml_notification(data_model):
       Work in progress  (see Issue #78)
     '''
 
-    # get the schema node for the 'notiication' 
-    sn_notif = data_model.get_schema_node("/testb:noA")
-    assert(type(sn_notif) == NotificationNode)
-
     #########
     # NOTIF #  (most common?)
     #########
 
     notif_obj = {
-        "testb:noA" : {
-            "leafO" : True
-        }
+        "leafO" : True
     }
     notif_xml_pretty = """
         <noa xmlns="http://example.com/testb">
@@ -1006,10 +976,8 @@ def test_xml_notification(data_model):
     notif_xml_stripped = strip_pretty(notif_xml_pretty)
 
 
-    # convert raw object to an InstanceValue, an ObjectValue, not a RootNode as per DataModel.from_raw()
-    notif_inst_val = data_model.schema.from_raw(notif_obj) # , force_namespace=True)  #)
-
-    assert(str(notif_inst_val) == str(notif_obj))
+    notif_inst = data_model.from_raw(notif_obj, "testb:noA")
+    notif_inst.validate(ctype=ContentType.all)
 
 #    ###################
 #    # JSON - RESTCONF #  (per RFC 8040)
