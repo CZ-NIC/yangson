@@ -26,28 +26,32 @@ import importlib.metadata
 from yangson import DataModel
 from yangson.enumerations import ContentType, ValidationScope
 from yangson.exceptions import (
-    BadYangLibraryData, FeaturePrerequisiteError, MultipleImplementedRevisions,
-    ModuleNotFound, ModuleNotRegistered, RawMemberError, RawTypeError,
+    BadYangLibraryData, FeaturePrerequisiteError, InvalidArgument,
+    MultipleImplementedRevisions, ModuleNotFound, ModuleNotRegistered,
+    NonexistentSchemaNode, RawMemberError, RawTypeError,
     SchemaError, SemanticError, YangTypeError)
+from yangson.typealiases import PrefName
 
 
 def main(infile: str = None, pickled: bool = False, path: str = None,
          scope: ValidationScope = ValidationScope.all,
-         ctype: ContentType = ContentType.config, set_id: bool = False,
+         ctype: ContentType = ContentType.all, set_id: bool = False,
          tree: bool = False, no_types: bool = False,
-         digest: bool = False, validate: str = None) -> int:
-    """Entry-point for a validation script.
+         digest: bool = False, subschema: PrefName = None,
+         validate: str = None) -> int:
+    """Entry-point for the command-line utility.
 
     Args:
         infile: Name of the input file with YANG library or pickled data model
         pickled: Interpret the input file as a pickled data model object
         path: Colon-separated list of directories to search  for YANG modules
-        scope: Validation scope (syntax, semantics or all).
+        scope: Validation scope (syntax, semantics or all)
         ctype: Content type of the data instance (config, nonconfig or all)
-        set_id: If `True`, print module set id.
-        tree: If `True`, print schema tree.
-        no_types: If `True`, don't print types in schema tree.
-        digest: If `True`, print schema digest.
+        set_id: If `True`, print module set id
+        tree: If `True`, print schema tree
+        no_types: If `True`, don't print types in schema tree
+        digest: If `True`, print schema digest
+        subschema: Prefixed name of an RPC or notification subschema
         validate: Name of file to validate against the schema.
 
     Returns:
@@ -92,9 +96,12 @@ def main(infile: str = None, pickled: bool = False, path: str = None,
             "-s", "--scope", choices=["syntax", "semantics", "all"],
             default="all", help="validation scope (default: %(default)s)")
         parser.add_argument(
-            "-c", "--ctype", type=str, choices=["config", "nonconfig", "all"],
-            default="config",
+            "-c", "--ctype", choices=["config", "nonconfig", "all"],
+            default="all",
             help="content type of the data instance (default: %(default)s)")
+        parser.add_argument(
+            "-S", "--subschema",
+            help="prefixed name of an RPC or notification subschema")
         parser.add_argument(
             "-n", "--no-types", action="store_true",
             help="suppress type info in tree output")
@@ -109,6 +116,7 @@ def main(infile: str = None, pickled: bool = False, path: str = None,
         dump: str = args.dump
         no_types = args.no_types
         digest: bool = args.digest
+        subschema: PrefName = args.subschema
         validate: str = args.validate
     if pickled:
         try:
@@ -169,12 +177,19 @@ def main(infile: str = None, pickled: bool = False, path: str = None,
         print("Instance data:", str(e), file=sys.stderr)
         return 1
     try:
-        i = dm.from_raw(itxt)
+        i = dm.from_raw(itxt, subschema)
     except RawMemberError as e:
         print("Illegal object member:", str(e), file=sys.stderr)
         return 3
     except RawTypeError as e:
         print("Invalid type:", str(e), file=sys.stderr)
+        return 3
+    except InvalidArgument:
+        print("Invalid subschema id:", subschema, "(missing prefix?)",
+              file=sys.stderr)
+        return 3
+    except NonexistentSchemaNode:
+        print("Subschema", subschema, "not found", file=sys.stderr)
         return 3
     try:
         i.validate(scope, ctype)

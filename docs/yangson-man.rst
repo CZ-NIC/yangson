@@ -70,6 +70,20 @@ Operations
 
    See also :meth:`.InstanceNode.validate`.
 
+.. option:: -S <subschema>, --subschema <subschema>
+
+   Parse and validate the instance object against a subschema (RPC or
+   notification). The *subschema* argument is a :term:`prefixed name`
+   of the selected RPC or notification.
+
+   In this case, the instance object has be input and/or output
+   payload of the selected RPC enclosed in ``<modulename>:input``
+   or ``<modulename>:output``, or the notification payload.
+
+   Note that validation may fail if the RPC input/output or notification
+   payload contains XPath of leafref references to configuration or state
+   data outside the selected RPC or notification.
+
 Options
 =======
 
@@ -118,8 +132,8 @@ Options
    This option specifies the content type of the instance object, and
    is only relevant when used with the :option:`--validate` operation.
    The *content_type* arguments can be one of ``config``
-   (configuration data, default), ``nonconfig`` (non-configuration
-   data) and ``all`` (all data).  See
+   (configuration data), ``nonconfig`` (non-configuration
+   data) and ``all`` (all data, which is the default).  See
    also :meth:`.InstanceNode.validate`.
 
 .. option:: -n, --no_types
