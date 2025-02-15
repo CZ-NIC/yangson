@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yangson"
-version = "1.6.0"
+version = "1.6.1"
 description = "Library for working with data modelled in YANG"
 authors = ["Ladislav Lhotka <ladislav@lhotka.name>"]
 license = "GNU Lesser General Public License v3 (LGPLv3)"
@@ -11,7 +11,6 @@ python = "^3.9"
 elementpath = "^4.1.5"
 PyYAML = "^6.0.1"
 pyang = { version = "^2.6", optional = true }
-setuptools = ">=69.1.1,<71.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.2"
