@@ -16,7 +16,7 @@ from yangson.statement import ModuleParser
 
 ydir = sys.argv[1]
 """Name of the directory with YANG (sub)modules."""
-data_kws = ["augment", "container", "leaf", "leaf-list", "list", "rpc", "notification", "identity"]
+data_kws = ["augment", "container", "leaf", "leaf-list", "list", "rpc", "notification", "identity", "deviation"]
 """Keywords of statements that contribute nodes to the schema tree."""
 modmap = {}
 """Dictionary for collecting module data."""
