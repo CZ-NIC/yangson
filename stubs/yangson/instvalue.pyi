@@ -1,11 +1,11 @@
-from .typealiases import InstanceName as InstanceName, PrefName as PrefName, ScalarValue as ScalarValue
+from .typealiases import InstanceName, PrefName, ScalarValue
 from _typeshed import Incomplete
 from datetime import datetime
 from typing import Optional, Union
 
 Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
 EntryValue = Union[ScalarValue, "ObjectValue"]
-InstanceKey = InstanceName | int
+InstanceKey = Union[InstanceName, int]
 MetadataObject = dict[PrefName, ScalarValue]
 
 class StructuredValue:

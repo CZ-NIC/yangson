@@ -1,8 +1,8 @@
-from yangson import DataModel as DataModel
-from yangson.enumerations import ContentType as ContentType
-from yangson.exceptions import NonexistentInstance as NonexistentInstance, RawDataError as RawDataError, ValidationError as ValidationError
-from yangson.instance import ArrayEntry as ArrayEntry
-from yangson.typealiases import RawObject as RawObject
+from yangson import DataModel
+from yangson.enumerations import ContentType
+from yangson.exceptions import NonexistentInstance,  RawDataError, ValidationError
+from yangson.instance import ArrayEntry
+from yangson.typealiases import RawObject
 
 YL7895: str
 YL8525: str
@@ -24,7 +24,7 @@ class MainModuleData(ModuleData):
     submodule: dict[tuple[str, str], ModuleData]
     def __init__(self, rfc8525_entry: ArrayEntry, import_only: bool) -> None: ...
     def add_submodule(self, sub_entry: ArrayEntry) -> None: ...
-    def merge(self, other: ModuleData) -> None: ... # MainModuleData
+    def merge(self, other: ModuleData) -> None: ...
     def as_raw(self) -> RawObject: ...
 
 def main() -> int: ...

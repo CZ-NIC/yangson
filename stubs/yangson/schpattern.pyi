@@ -1,7 +1,7 @@
-from .enumerations import ContentType as ContentType
-from .instance import InstanceNode as InstanceNode
-from .typealiases import InstanceName as InstanceName, YangIdentifier as YangIdentifier, _Singleton
-from .xpathast import Expr as Expr
+from .enumerations import ContentType
+from .instance import InstanceNode
+from .typealiases import InstanceName, YangIdentifier, _Singleton
+from .xpathast import Expr
 from _typeshed import Incomplete
 
 class SchemaPattern:
@@ -47,7 +47,7 @@ class ConditionalPattern(Conditional):
 
 class Member(Typeable, Conditional):
     name: Incomplete
-    def __init__(self, name: InstanceName, ctype: ContentType, when: Expr | None) -> None: ...
+    def __init__(self, name: InstanceName, ctype: ContentType, when: Optional[Expr]) -> None: ...
     def nullable(self, ctype: ContentType) -> bool: ...
     def deriv(self, x: str, ctype: ContentType) -> SchemaPattern: ...
     def tree(self, indent: int = 0) -> str: ...

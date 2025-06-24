@@ -1,5 +1,6 @@
 from _typeshed import Incomplete
 from decimal import Decimal
+from typing import Union
 
 RevisionDate = str
 YangIdentifier = str
@@ -8,20 +9,20 @@ PrefName = str
 InstanceIdentifier = str
 JSONPointer = str
 ResourceIdentifier = str
-ScalarValue = int | Decimal | str | tuple[None]
+ScalarValue = Union[int, Decimal, str, tuple[None]]
 QualName = tuple[YangIdentifier, YangIdentifier]
 SchemaNodeId = str
 SchemaRoute = list[QualName]
 SchemaPath = str
 DataPath = str
 ModuleId = tuple[YangIdentifier, RevisionDate]
-RawScalar = bool | int | str | list[None]
+RawScalar = Union[bool, int, str, list[None]]
 RawObject: Incomplete
 RawMetadataObject = dict[PrefName, RawScalar]
-RawEntry = RawScalar | RawObject
+RawEntry = Union[RawScalar, RawObject]
 RawList = list[RawObject]
 RawLeafList = list[RawScalar]
-RawValue = RawScalar | RawObject | RawList | RawLeafList
+RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
 
 class _Singleton(type):
     def __call__(cls, *args, **kwargs): ... # type: ignore[no-untyped-def]

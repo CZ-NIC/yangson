@@ -1,6 +1,6 @@
-from .instance import InstanceNode as InstanceNode
-from .parser import Parser as Parser
-from .typealiases import InstanceName as InstanceName, JSONPointer as JSONPointer, ModuleId as ModuleId, PrefName as PrefName, QualName as QualName, ScalarValue as ScalarValue, YangIdentifier as YangIdentifier
+from .instance import InstanceNode
+from .parser import Parser
+from .typealiases import InstanceName, JSONPointer, ModuleId, PrefName, QualName, ScalarValue, YangIdentifier
 from _typeshed import Incomplete
 from typing import Optional
 

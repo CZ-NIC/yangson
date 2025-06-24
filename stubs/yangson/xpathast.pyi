@@ -1,10 +1,11 @@
-from .enumerations import Axis as Axis, MultiplicativeOp as MultiplicativeOp
-from .exceptions import InvalidArgument as InvalidArgument, XPathTypeError as XPathTypeError
-from .instance import EntryIndex as EntryIndex, EntryKeys as EntryKeys, EntryValue as EntryValue, InstanceNode as InstanceNode, InstanceRoute as InstanceRoute, MemberName as MemberName
-from .nodeset import NodeExpr as NodeExpr, NodeSet as NodeSet, XPathValue as XPathValue
-from .schemadata import SchemaContext as SchemaContext
-from .typealiases import QualName as QualName
+from .enumerations import Axis, MultiplicativeOp
+from .exceptions import InvalidArgument, XPathTypeError
+from .instance import EntryIndex, EntryKeys, EntryValue, InstanceNode, InstanceRoute, MemberName
+from .nodeset import NodeExpr, NodeSet, XPathValue
+from .schemadata import SchemaContext
+from .typealiases import QualName
 from _typeshed import Incomplete
+from typing import Optional
 
 class XPathContext:
     cnode: Incomplete
@@ -22,7 +23,7 @@ class Expr:
 
 class UnaryExpr(Expr):
     expr: Incomplete
-    def __init__(self, expr: Expr | None) -> None: ...
+    def __init__(self, expr: Optional[Expr]) -> None: ...
 
 class BinaryExpr(Expr):
     left: Incomplete
@@ -109,7 +110,7 @@ class FuncLast(Expr): ...
 
 class FuncName(UnaryExpr):
     local: Incomplete
-    def __init__(self, expr: Expr | None, local: bool) -> None: ...
+    def __init__(self, expr: Optional[Expr], local: bool) -> None: ...
 
 class FuncNormalizeSpace(UnaryExpr): ...
 class FuncNot(UnaryExpr): ...
@@ -123,7 +124,7 @@ class FuncStringLength(UnaryExpr): ...
 
 class FuncSubstring(BinaryExpr):
     length: Incomplete
-    def __init__(self, string: Expr, start: Expr, length: Expr | None) -> None: ...
+    def __init__(self, string: Expr, start: Expr, length: Optional[Expr]) -> None: ...
 
 class FuncSubstringAfter(BinaryExpr): ...
 class FuncSubstringBefore(BinaryExpr): ...

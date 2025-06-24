@@ -1,4 +1,4 @@
-from .instance import InstanceNode as InstanceNode
+from .instance import InstanceNode
 from _typeshed import Incomplete
 from typing import Callable, Union
 
