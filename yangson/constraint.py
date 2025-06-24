@@ -43,7 +43,7 @@ Interval = list[Number]
 class Constraint:
     """Abstract class representing annotated YANG constraints."""
 
-    def __init__(self: "Constraint", error_tag: Optional[str], error_message: Optional[str]):
+    def __init__(self: "Constraint", error_tag: Optional[str], error_message: Optional[str]) -> None:
         """Initialize the class instance."""
         self.error_tag = error_tag
         self.error_message = error_message
@@ -61,14 +61,14 @@ class Intervals(Constraint):
             return None
 
     def __init__(self: "Intervals", intervals: list[Interval],
-                 parser: Callable[[str], Optional[Number]] = None,
-                 error_tag: str = None, error_message: str = None):
+                 parser: Optional[Callable[[str], Optional[Number]]] = None,
+                 error_tag: Optional[str] = None, error_message: Optional[str] = None) -> None:
         """Initialize the class instance."""
         super().__init__(error_tag, error_message)
         self.intervals = intervals
         self.parser = parser if parser else Intervals.default_parser
 
-    def __contains__(self: "Intervals", value: Number):
+    def __contains__(self: "Intervals", value: Number) -> bool:
         """Return ``True`` if the receiver contains the value."""
         for r in self.intervals:
             if len(r) == 1:
@@ -83,8 +83,8 @@ class Intervals(Constraint):
         return " | ".join([f"{r[0]!s}..{r[-1]!s}" if len(r) > 1 else str(r[0])
                            for r in self.intervals])
 
-    def restrict_with(self: "Intervals", expr: str, error_tag: str = None,
-                      error_message: str = None) -> None:
+    def restrict_with(self: "Intervals", expr: str, error_tag: Optional[str] = None,
+                      error_message: Optional[str] = None) -> None:
         """Combine the receiver with new intervals.
 
         Args:
@@ -132,8 +132,8 @@ class Pattern(Constraint):
     """Class representing regular expression pattern."""
 
     def __init__(self: "Pattern", pattern: str, invert_match: bool = False,
-                 error_tag: str = None,
-                 error_message: str = None):
+                 error_tag: Optional[str] = None,
+                 error_message: Optional[str] = None) -> None:
         """Initialize the class instance."""
         super().__init__(error_tag,
                          error_message if error_message else f"pattern '{pattern}'")
@@ -150,8 +150,8 @@ class Pattern(Constraint):
 class Must(Constraint):
     """Class representing the constraint specified by a "must" statement."""
 
-    def __init__(self: "Must", expression: Expr, error_tag: str = None,
-                 error_message: str = None):
+    def __init__(self: "Must", expression: Expr, error_tag: Optional[str] = None,
+                 error_message: Optional[str] = None) -> None:
         """Initialize the class instance."""
         super().__init__(
             error_tag if error_tag else "must-violation", error_message)

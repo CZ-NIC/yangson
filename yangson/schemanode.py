@@ -74,7 +74,7 @@ from .instance import (ArrayEntry, EmptyList, InstanceNode,
 class Annotation:
     """Class for metadata annotations [RFC 7952]."""
 
-    def __init__(self: "Annotation", type: DataType, description: str = None):
+    def __init__(self: "Annotation", type: DataType, description: Optional[str] = None):
         """Initialize the class instance."""
         self.type = type
         self.description = description
@@ -564,7 +564,7 @@ class InternalNode(SchemaNode):
                 res[iname] = ch.from_raw(rval[qn], npath)
         return res
 
-    def from_xml(self: "InternalNode", rval: ET.Element, jptr: JSONPointer = "") -> ObjectValue:
+    def from_xml(self: "InternalNode", rval: ET.Element, jptr: JSONPointer = "", isroot: bool = False) -> ObjectValue:
         res = ObjectValue()
         if isinstance(self, RpcActionNode) and jptr == "":
             self._process_xmlobj_child(res, None, rval, jptr)
@@ -893,7 +893,7 @@ class GroupNode(InternalNode):
 class SchemaTreeNode(GroupNode):
     """Root node of a schema tree."""
 
-    def __init__(self: "SchemaTreeNode", schemadata: SchemaData = None):
+    def __init__(self: "SchemaTreeNode", schemadata: Optional[SchemaData] = None) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.annotations: dict[QualName, Annotation] = {}
@@ -1028,7 +1028,7 @@ class TerminalNode(SchemaNode):
                 else self.type.units)
 
     def from_raw(self: "TerminalNode", rval: RawScalar,
-                 jptr: JSONPointer = "") -> ScalarValue:
+                 jptr: JSONPointer = "", isroot: bool = False) -> ScalarValue:
         """Override the superclass method."""
         res = self.type.from_raw(rval)
         if res is None:
@@ -1258,7 +1258,7 @@ class SequenceNode(DataNode):
         return res
 
     def from_xml(self: "SequenceNode", rval: ET.Element, jptr: JSONPointer = "",
-                 tagname: str = None, isroot: bool = False) -> ArrayValue:
+                 isroot: bool = False, tagname: Optional[str] = None) -> ArrayValue:
         res = ArrayValue()
         idx = 0
         if isroot:

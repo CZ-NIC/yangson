@@ -40,7 +40,7 @@ class Statement:
     def __init__(self: "Statement",
                  kw: YangIdentifier,
                  arg: Optional[str],
-                 pref: YangIdentifier = None):
+                 pref: Optional[YangIdentifier] = None):
         """Initialize the class instance.
 
         Args:

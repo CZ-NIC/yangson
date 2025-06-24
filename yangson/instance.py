@@ -81,7 +81,7 @@ class LinkedList:
             res = cls(v, res)
         return res
 
-    def __init__(self: "LinkedList", head: Value, tail: "LinkedList"):
+    def __init__(self: "LinkedList", head: Value, tail: "LinkedList") -> None:
         """Initialize the class instance."""
         self.head = head
         """Head of the linked list."""
@@ -123,7 +123,7 @@ class LinkedList:
 class EmptyList(LinkedList, metaclass=_Singleton):
     """Singleton class representing the empty linked list."""
 
-    def __init__(self: "EmptyList"):
+    def __init__(self: "EmptyList") -> None:
         pass
 
     def __bool__(self: "EmptyList"):
@@ -142,7 +142,7 @@ class InstanceNode:
 
     def __init__(self: "InstanceNode", key: InstanceKey, value: Value,
                  parinst: Optional["InstanceNode"],
-                 schema_node: "DataNode", timestamp: datetime):
+                 schema_node: "DataNode", timestamp: datetime) -> None:
         """Initialize the class instance."""
         self._key = key
         self._path = None
@@ -420,7 +420,7 @@ class InstanceNode:
         """
         self.schema_node._validate(self, scope, ctype)
 
-    def add_defaults(self: "InstanceNode", ctype: ContentType = None, tag: bool = False) -> "InstanceNode":
+    def add_defaults(self: "InstanceNode", ctype: Optional[ContentType] = None, tag: bool = False) -> "InstanceNode":
         """Return the receiver with defaults added recursively to its value.
 
         Args:
@@ -530,7 +530,7 @@ class InstanceNode:
             return value
         return self.schema_node.type.to_raw(self.value)
 
-    def to_xml(self: "InstanceNode", filter: OutputFilter = OutputFilter(), elem: ET.Element = None):
+    def to_xml(self: "InstanceNode", filter: OutputFilter = OutputFilter(), elem: Optional[ET.Element] = None) -> ET.Element:
         """put receiver's value into a XML element"""
         has_default_ns = False
 
@@ -670,7 +670,7 @@ class InstanceNode:
         return list(self) if isinstance(self.value, ArrayValue) else [self]
 
     def _children(self: "InstanceNode", qname:
-                  Union[QualName, bool] = None) -> list["InstanceNode"]:
+                  Union[QualName, bool, None] = None) -> list["InstanceNode"]:
         """XPath - return the list of receiver's children."""
         sn = self.schema_node
         if not isinstance(sn, InternalNode):
@@ -699,7 +699,7 @@ class InstanceNode:
             res.extend(wd._member(mn)._node_set())
         return res
 
-    def _descendants(self: "InstanceNode", qname: Union[QualName, bool] = None,
+    def _descendants(self: "InstanceNode", qname: Union[QualName, bool, None] = None,
                      with_self: bool = False) -> list["InstanceNode"]:
         """XPath - return the list of receiver's descendants."""
         res = ([] if not with_self or (qname and self.qual_name != qname)
@@ -712,13 +712,13 @@ class InstanceNode:
 
     def _preceding_siblings(
             self: "InstanceNode",
-            qname: Union[QualName, bool] = None) -> list["InstanceNode"]:
+            qname: Union[QualName, bool, None] = None) -> list["InstanceNode"]:
         """XPath - return the list of receiver's preceding-siblings."""
         return []
 
     def _following_siblings(
             self: "InstanceNode",
-            qname: Union[QualName, bool] = None) -> list["InstanceNode"]:
+            qname: Union[QualName, bool, None] = None) -> list["InstanceNode"]:
         """XPath - return the list of receiver's following-siblings."""
         return []
 
@@ -736,7 +736,7 @@ class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
     def __init__(self: "RootNode", value: Value, schema_node: "DataNode",
-                 schema_data: "SchemaData", timestamp: datetime):
+                 schema_data: "SchemaData", timestamp: datetime) -> None:
         super().__init__("/", value, None, schema_node, timestamp)
         self.schema_data = schema_data
         if self.schema_node.schema_pattern is None:
@@ -757,7 +757,7 @@ class RootNode(InstanceNode):
 
     def to_xml(self: "RootNode", filter: OutputFilter = OutputFilter(),
                tag: str = "content-data",
-               urn: str = "urn:ietf:params:xml:ns:yang:ietf-yang-instance-data"):
+               urn: str = "urn:ietf:params:xml:ns:yang:ietf-yang-instance-data") -> ET.Element:
         """put receiver's value into a XML element"""
         element = ET.Element(tag)
         element.attrib['xmlns'] = urn
@@ -766,17 +766,17 @@ class RootNode(InstanceNode):
             return et[0]
         return et
 
-    def _copy(self: "RootNode", newval: Value, newts: datetime = None) -> InstanceNode:
+    def _copy(self: "RootNode", newval: Value, newts: Optional[datetime] = None) -> InstanceNode:
         return RootNode(
             newval, self.schema_node, self.schema_data, newts if newts else newval.timestamp)
 
     def _ancestors_or_self(
-            self: "RootNode", qname: Union[QualName, bool] = None) -> list["RootNode"]:
+            self: "RootNode", qname: Union[QualName, bool, None] = None) -> list["RootNode"]:
         """XPath - return the list of receiver's ancestors including itself."""
         return [self] if qname is None else []
 
     def _ancestors(
-            self: "RootNode", qname: Union[QualName, bool] = None) -> list["RootNode"]:
+            self: "RootNode", qname: Union[QualName, bool, None] = None) -> list["RootNode"]:
         """XPath - return the list of receiver's ancestors."""
         return []
 
@@ -787,7 +787,7 @@ class ObjectMember(InstanceNode):
     def __init__(self: "ObjectMember", key: InstanceName,
                  siblings: dict[InstanceName, Value],
                  value: Value, parinst: Optional[InstanceNode],
-                 schema_node: "DataNode", timestamp: datetime):
+                 schema_node: "DataNode", timestamp: datetime) -> None:
         super().__init__(key, value, parinst, schema_node, timestamp)
         self.siblings: dict[InstanceName, Value] = siblings
         """Sibling members within the parent object."""
@@ -859,7 +859,7 @@ class ObjectMember(InstanceNode):
         return res
 
     def _copy(self: "ObjectMember", newval: Value,
-              newts: datetime = None) -> "ObjectMember":
+              newts: Optional[datetime] = None) -> "ObjectMember":
         if newts:
             ts = newts
         elif isinstance(newval, StructuredValue):
@@ -894,7 +894,7 @@ class ArrayEntry(InstanceNode):
             self: "ArrayEntry", key: int, before: LinkedList,
             after: LinkedList, value: Value,
             parinst: Optional[InstanceNode],
-            schema_node: "DataNode", timestamp: datetime = None):
+            schema_node: "DataNode", timestamp: Optional[datetime] = None) -> None:
         super().__init__(key, value, parinst, schema_node, timestamp)
         self.before: LinkedList = before
         """Preceding entries of the parent array."""
@@ -1086,7 +1086,7 @@ class InstanceRoute(list):
 class MemberName:
     """Selectors of object members."""
 
-    def __init__(self: "MemberName", name: YangIdentifier, ns: Optional[YangIdentifier]):
+    def __init__(self: "MemberName", name: YangIdentifier, ns: Optional[YangIdentifier]) -> None:
         """Initialize the class instance.
 
         Args:
@@ -1147,7 +1147,7 @@ class ActionName(MemberName):
 class EntryIndex:
     """Numeric selectors for a list or leaf-list entry."""
 
-    def __init__(self: "EntryIndex", index: int):
+    def __init__(self: "EntryIndex", index: int) -> None:
         """Initialize the class instance.
 
         Args:
@@ -1187,7 +1187,7 @@ class EntryIndex:
 class EntryValue:
     """Value-based selectors of an array entry."""
 
-    def __init__(self: "EntryValue", value: str):
+    def __init__(self: "EntryValue", value: str) -> None:
         """Initialize the class instance.
 
         Args:
@@ -1240,7 +1240,7 @@ class EntryKeys:
 
     def __init__(
             self: "EntryKeys",
-            keys: dict[tuple[YangIdentifier, Optional[YangIdentifier]], str]):
+            keys: dict[tuple[YangIdentifier, Optional[YangIdentifier]], str]) -> None:
         """Initialize the class instance.
 
         Args:
@@ -1311,7 +1311,7 @@ class EntryKeys:
 class ResourceIdParser(Parser):
     """Parser for RESTCONF resource identifiers."""
 
-    def __init__(self: "ResourceIdParser", text: str, sn: "DataNode"):
+    def __init__(self: "ResourceIdParser", text: str, sn: "DataNode") -> None:
         """Extend the superclass method.
 
         Args:

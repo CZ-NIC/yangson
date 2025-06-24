@@ -67,7 +67,7 @@ This module defines the following exceptions:
 * :exc:`YangsonException`: Base class for all Yangson exceptions.
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
 """
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from .typealiases import (InstanceName, JSONPointer, ModuleId, PrefName,
                           QualName, ScalarValue, YangIdentifier)
 if TYPE_CHECKING:
@@ -81,14 +81,14 @@ class YangsonException(Exception):
 class AnnotationException(YangsonException):
     """Abstract class for exceptions related to metadata annotations."""
 
-    def __init__(self: "AnnotationException", path: JSONPointer):
+    def __init__(self: "AnnotationException", path: JSONPointer) -> None:
         self.path = path
 
 
 class MissingAnnotationTarget(AnnotationException):
     """Instance node that is being annotated doesn't exist."""
 
-    def __init__(self: "MissingAnnotationTarget", path: JSONPointer, iname: InstanceName):
+    def __init__(self: "MissingAnnotationTarget", path: JSONPointer, iname: InstanceName) -> None:
         super().__init__(path)
         self.iname = iname
 
@@ -99,7 +99,7 @@ class MissingAnnotationTarget(AnnotationException):
 class UndefinedAnnotation(AnnotationException):
     """Undefined annotation is used."""
 
-    def __init__(self: "UndefinedAnnotation", path: JSONPointer, aname: InstanceName):
+    def __init__(self: "UndefinedAnnotation", path: JSONPointer, aname: InstanceName) -> None:
         super().__init__(path)
         self.aname = aname
 
@@ -110,7 +110,7 @@ class UndefinedAnnotation(AnnotationException):
 class AnnotationTypeError(AnnotationException):
     """Type of annotation is incorrect."""
 
-    def __init__(self: "AnnotationTypeError", path: JSONPointer, aname: InstanceName, msg: str):
+    def __init__(self: "AnnotationTypeError", path: JSONPointer, aname: InstanceName, msg: str) -> None:
         super().__init__(path)
         self.aname = aname
         self.msg = msg
@@ -122,7 +122,7 @@ class AnnotationTypeError(AnnotationException):
 class InvalidArgument(YangsonException):
     """The argument of a statement is invalid."""
 
-    def __init__(self: "InvalidArgument", arg: str):
+    def __init__(self: "InvalidArgument", arg: str) -> None:
         self.argument = arg
 
     def __str__(self: "InvalidArgument"):
@@ -132,7 +132,7 @@ class InvalidArgument(YangsonException):
 class InvalidKeyValue(YangsonException):
     """List key or leaf-list value is invalid."""
 
-    def __init__(self: "InvalidKeyValue", value: ScalarValue):
+    def __init__(self: "InvalidKeyValue", value: ScalarValue) -> None:
         self.value = value
 
     def __str__(self: "InvalidKeyValue"):
@@ -143,7 +143,7 @@ class InstanceException(YangsonException):
     """Abstract class for exceptions related to operations on instance nodes."""
 
     def __init__(self: "InstanceException", instance: "InstanceNode",
-                 message: str):
+                 message: str) -> None:
         self.instance = instance
         self.message = message
 
@@ -167,7 +167,7 @@ class NonDataNode(InstanceException):
 class ParserException(YangsonException):
     """Base class for parser exceptions."""
 
-    def __init__(self: "ParserException", parser: "Parser"):
+    def __init__(self: "ParserException", parser: "Parser") -> None:
         self.parser = parser
 
     def __str__(self: "ParserException") -> str:
@@ -185,7 +185,7 @@ class EndOfInput(ParserException):
 class UnexpectedInput(ParserException):
     """Unexpected input."""
 
-    def __init__(self: "UnexpectedInput", parser: "Parser", expected: str = None):
+    def __init__(self: "UnexpectedInput", parser: "Parser", expected: Optional[str] = None) -> None:
         super().__init__(parser)
         self.expected = expected
 
@@ -206,7 +206,7 @@ class InvalidXPath(ParserException):
 class NotSupported(ParserException):
     """Exception to be raised for unimplemented XPath features."""
 
-    def __init__(self: "NotSupported", parser: "Parser", feature: str):
+    def __init__(self: "NotSupported", parser: "Parser", feature: str) -> None:
         super().__init__(parser)
         self.feature = feature
 
@@ -217,7 +217,7 @@ class NotSupported(ParserException):
 class MissingModule(YangsonException):
     """Abstract exception class – a module is missing."""
 
-    def __init__(self: "MissingModule", name: YangIdentifier, rev: str = ""):
+    def __init__(self: "MissingModule", name: YangIdentifier, rev: str = "") -> None:
         self.name = name
         self.rev = rev
 
@@ -230,7 +230,7 @@ class MissingModule(YangsonException):
 class MissingModuleNamespace(YangsonException):
     """Abstract exception class – a module is missing."""
 
-    def __init__(self: "MissingModuleNamespace", ns: str):
+    def __init__(self: "MissingModuleNamespace", ns: str) -> None:
         self.ns = ns
 
     def __str__(self: "MissingModuleNamespace") -> str:
@@ -240,7 +240,7 @@ class MissingModuleNamespace(YangsonException):
 class ModuleContentMismatch(YangsonException):
     """Abstract exception class – unexpected module name or revision."""
 
-    def __init__(self: "ModuleContentMismatch", found: YangIdentifier, expected: YangIdentifier):
+    def __init__(self: "ModuleContentMismatch", found: YangIdentifier, expected: YangIdentifier) -> None:
         self.found = found
         self.expected = expected
 
@@ -271,7 +271,7 @@ class ModuleNotImplemented(MissingModule):
 class BadYangLibraryData(YangsonException):
     """Broken YANG library data."""
 
-    def __init__(self: "BadYangLibraryData", message: str):
+    def __init__(self: "BadYangLibraryData", message: str) -> None:
         self.message = message
 
     def __str__(self: "BadYangLibraryData") -> str:
@@ -281,7 +281,7 @@ class BadYangLibraryData(YangsonException):
 class InvalidSchemaPath(YangsonException):
     """Invalid schema or data path."""
 
-    def __init__(self: "InvalidSchemaPath", path: str):
+    def __init__(self: "InvalidSchemaPath", path: str) -> None:
         self.path = path
 
     def __str__(self: "InvalidSchemaPath") -> str:
@@ -291,7 +291,7 @@ class InvalidSchemaPath(YangsonException):
 class UnknownPrefix(YangsonException):
     """Unknown namespace prefix."""
 
-    def __init__(self: "UnknownPrefix", prefix: YangIdentifier, mid: ModuleId):
+    def __init__(self: "UnknownPrefix", prefix: YangIdentifier, mid: ModuleId) -> None:
         self.prefix = prefix
         self.mid = mid
 
@@ -302,7 +302,7 @@ class UnknownPrefix(YangsonException):
 class ModuleNotImported(YangsonException):
     """Module is not imported."""
 
-    def __init__(self: "ModuleNotImported", mod: YangIdentifier, mid: ModuleId):
+    def __init__(self: "ModuleNotImported", mod: YangIdentifier, mid: ModuleId) -> None:
         self.mod = mod
         self.mid = mid
 
@@ -313,7 +313,7 @@ class ModuleNotImported(YangsonException):
 class FeaturePrerequisiteError(YangsonException):
     """Pre-requisite feature is not supported."""
 
-    def __init__(self: "FeaturePrerequisiteError", name: YangIdentifier, ns: YangIdentifier):
+    def __init__(self: "FeaturePrerequisiteError", name: YangIdentifier, ns: YangIdentifier) -> None:
         self.name = name
         self.ns = ns
 
@@ -324,7 +324,7 @@ class FeaturePrerequisiteError(YangsonException):
 class MultipleImplementedRevisions(YangsonException):
     """A module has multiple implemented revisions."""
 
-    def __init__(self: "MultipleImplementedRevisions", module: YangIdentifier):
+    def __init__(self: "MultipleImplementedRevisions", module: YangIdentifier) -> None:
         self.module = module
 
     def __str__(self: "MultipleImplementedRevisions") -> str:
@@ -338,7 +338,7 @@ class CyclicImports(YangsonException):
 class SchemaNodeException(YangsonException):
     """Abstract exception class for schema node errors."""
 
-    def __init__(self: "SchemaNodeException", qn: QualName):
+    def __init__(self: "SchemaNodeException", qn: QualName) -> None:
         self.qn = qn
 
     def __str__(self: "SchemaNodeException") -> str:
@@ -349,7 +349,7 @@ class NonexistentSchemaNode(SchemaNodeException):
     """A schema node doesn't exist as a child of ``qn``."""
 
     def __init__(self: "NonexistentSchemaNode", qn: QualName,
-                 name: YangIdentifier, ns: YangIdentifier = None):
+                 name: YangIdentifier, ns: Optional[YangIdentifier] = None) -> None:
         super().__init__(qn)
         self.name = name
         self.ns = ns
@@ -362,7 +362,7 @@ class NonexistentSchemaNode(SchemaNodeException):
 class BadSchemaNodeType(SchemaNodeException):
     """A schema node is of a wrong type."""
 
-    def __init__(self: "BadSchemaNodeType", qn: QualName, expected: str):
+    def __init__(self: "BadSchemaNodeType", qn: QualName, expected: str) -> None:
         super().__init__(qn)
         self.expected = expected
 
@@ -377,7 +377,7 @@ class InvalidLeafrefPath(SchemaNodeException):
 class RawDataError(YangsonException):
     """Abstract exception class for errors in raw data."""
 
-    def __init__(self: "RawDataError", path: JSONPointer):
+    def __init__(self: "RawDataError", path: JSONPointer) -> None:
         self.path = path
 
     def __str__(self: "RawDataError") -> JSONPointer:
@@ -391,7 +391,7 @@ class RawMemberError(RawDataError):
 class RawTypeError(RawDataError):
     """Raw value is of an incorrect type."""
 
-    def __init__(self: "RawTypeError", path: JSONPointer, expected: str):
+    def __init__(self: "RawTypeError", path: JSONPointer, expected: str) -> None:
         super().__init__(path)
         self.message = "expected " + expected
 
@@ -403,7 +403,7 @@ class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
 
     def __init__(self: "ValidationError", instance: "InstanceNode",
-                 tag: str, message: str = None):
+                 tag: str, message: Optional[str] = None) -> None:
         self.instance = instance
         self.tag = tag
         self.message = message
@@ -428,7 +428,7 @@ class YangTypeError(ValidationError):
 class StatementNotFound(YangsonException):
     """Required statement does not exist."""
 
-    def __init__(self: "StatementNotFound", parent: PrefName, kw: YangIdentifier):
+    def __init__(self: "StatementNotFound", parent: PrefName, kw: YangIdentifier) -> None:
         self.parent = parent
         self.keyword = kw
 
@@ -440,7 +440,7 @@ class StatementNotFound(YangsonException):
 class DefinitionNotFound(YangsonException):
     """Requested definition does not exist."""
 
-    def __init__(self: "DefinitionNotFound", kw: YangIdentifier, name: YangIdentifier):
+    def __init__(self: "DefinitionNotFound", kw: YangIdentifier, name: YangIdentifier) -> None:
         self.keyword = kw
         self.name = name
 
@@ -451,7 +451,7 @@ class DefinitionNotFound(YangsonException):
 class XPathTypeError(YangsonException):
     """The value of an XPath (sub)expression is of a wrong type."""
 
-    def __init__(self: "XPathTypeError", value: str):
+    def __init__(self: "XPathTypeError", value: str) -> None:
         self.value = value
 
     def __str__(self: "XPathTypeError") -> str:

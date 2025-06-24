@@ -40,7 +40,7 @@ class DataModel:
 
     @classmethod
     def from_file(cls, name: str, mod_path: tuple[str] = (".",),
-                  description: str = None) -> "DataModel":
+                  description: Optional[str] = None) -> "DataModel":
         """Initialize the data model from a file with YANG library data.
 
         Args:
@@ -59,7 +59,7 @@ class DataModel:
         return cls(yltxt, mod_path, description)
 
     def __init__(self: "DataModel", yltxt: str, mod_path: tuple[str] = (".",),
-                 description: str = None):
+                 description: Optional[str] = None) -> None:
         """Initialize the class instance.
 
         Args:
@@ -99,7 +99,7 @@ class DataModel:
         return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
 
     def from_raw(self: "DataModel", robj: RawObject,
-                 subschema: PrefName = None) -> RootNode:
+                 subschema: Optional[PrefName] = None) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
@@ -122,7 +122,7 @@ class DataModel:
         return RootNode(cooked, schema, self.schema_data, cooked.timestamp)
 
     def from_xml(self: "DataModel", root: ET.Element,
-                 subschema: PrefName = None) -> RootNode:
+                 subschema: Optional[PrefName] = None) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
@@ -193,7 +193,7 @@ class DataModel:
         """
         return self.schema._ascii_tree("", no_types, val_count)
 
-    def clear_val_counters(self: "DataModel"):
+    def clear_val_counters(self: "DataModel") -> None:
         """Clear validation counters in the entire schema tree."""
         self.schema.clear_val_counters()
 

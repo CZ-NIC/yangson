@@ -16,7 +16,7 @@
 # with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """XPath node-set"""
-from typing import Callable, Union
+from typing import Callable, Union, Any
 from numbers import Number
 from .instance import InstanceNode
 
@@ -25,7 +25,7 @@ from .instance import InstanceNode
 NodeExpr = Callable[[InstanceNode], "NodeSet"]
 XPathValue = Union["NodeSet", str, float, bool]
 
-def comparison(meth):
+def comparison(meth: Callable[[Any], bool]) -> Callable[[Any], bool]:
     def wrap(self, arg):
         if isinstance(arg, NodeSet):
             for n in arg:
@@ -38,7 +38,7 @@ def comparison(meth):
     return wrap
 
 
-class NodeSet(list):
+class NodeSet(list[XPathValue]):
 
     def union(self: "NodeSet", ns: "NodeSet") -> "NodeSet":
         paths = set([n.path for n in self])
