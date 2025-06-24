@@ -604,7 +604,7 @@ class InternalNode(SchemaNode):
             iname = '{1}:{0}'.format(*ch.qual_name)
         if isinstance(ch, SequenceNode):
             if iname not in res:
-                res[iname] = ch.from_xml(rval, npath, fqn)
+                res[iname] = ch.from_xml(rval, npath, tagname=fqn)
         else:
             res[iname] = ch.from_xml(xmlchild, npath)
 
