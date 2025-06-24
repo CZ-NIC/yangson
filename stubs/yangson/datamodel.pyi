@@ -5,7 +5,6 @@ from .instance import InstanceIdParser, InstanceRoute, ResourceIdParser, RootNod
 from .schemadata import SchemaContext, SchemaData
 from .schemanode import DataNode, SchemaNode, SchemaTreeNode
 from .typealiases import DataPath, PrefName, SchemaPath, RawObject
-from _typeshed import Incomplete
 from typing import Optional
 
 class DataModel:

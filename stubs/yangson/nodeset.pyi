@@ -1,5 +1,4 @@
 from .instance import InstanceNode
-from _typeshed import Incomplete
 from typing import Callable, Union
 
 NodeExpr = Callable[[InstanceNode], "NodeSet"]

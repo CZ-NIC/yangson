@@ -1,6 +1,6 @@
-from _typeshed import Incomplete
 from decimal import Decimal
 from typing import Union
+from .instance import InstanceNode
 
 RevisionDate = str
 YangIdentifier = str
@@ -17,7 +17,7 @@ SchemaPath = str
 DataPath = str
 ModuleId = tuple[YangIdentifier, RevisionDate]
 RawScalar = Union[bool, int, str, list[None]]
-RawObject: Incomplete
+RawObject = dict[InstanceNode, "RawValue"]
 RawMetadataObject = dict[PrefName, RawScalar]
 RawEntry = Union[RawScalar, RawObject]
 RawList = list[RawObject]

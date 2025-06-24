@@ -4,14 +4,13 @@ from .instance import EntryIndex, EntryKeys, EntryValue, InstanceNode, InstanceR
 from .nodeset import NodeExpr, NodeSet, XPathValue
 from .schemadata import SchemaContext
 from .typealiases import QualName
-from _typeshed import Incomplete
 from typing import Optional
 
 class XPathContext:
-    cnode: Incomplete
-    origin: Incomplete
-    position: Incomplete
-    size: Incomplete
+    cnode: InstanceNode
+    origin: InstanceNode
+    position: int
+    size: int
     def __init__(self, cnode: InstanceNode, origin: InstanceNode, position: int, size: int) -> None: ...
     def update_cnode(self, new_cnode: InstanceNode) -> XPathContext: ...
 
@@ -22,54 +21,54 @@ class Expr:
     def as_instance_route(self) -> InstanceRoute: ...
 
 class UnaryExpr(Expr):
-    expr: Incomplete
+    expr: Optional[Expr]
     def __init__(self, expr: Optional[Expr]) -> None: ...
 
 class BinaryExpr(Expr):
-    left: Incomplete
-    right: Incomplete
+    left: Expr
+    right: Expr
     def __init__(self, left: Expr, right: Expr) -> None: ...
 
 class OrExpr(BinaryExpr): ...
 class AndExpr(BinaryExpr): ...
 
 class EqualityExpr(BinaryExpr):
-    negate: Incomplete
+    negate: bool
     def __init__(self, left: Expr, right: Expr, negate: bool) -> None: ...
     def as_instance_route(self) -> InstanceRoute: ...
 
 class RelationalExpr(BinaryExpr):
-    less: Incomplete
-    equal: Incomplete
+    less: bool
+    equal: bool
     def __init__(self, left: Expr, right: Expr, less: bool, equal: bool) -> None: ...
 
 class AdditiveExpr(BinaryExpr):
-    plus: Incomplete
+    plus: bool
     def __init__(self, left: Expr, right: Expr, plus: bool) -> None: ...
 
 class MultiplicativeExpr(BinaryExpr):
-    operator: Incomplete
+    operator: MultiplicativeOp
     def __init__(self, left: Expr, right: Expr, operator: MultiplicativeOp) -> None: ...
 
 class UnaryMinusExpr(UnaryExpr):
-    negate: Incomplete
+    negate: bool
     def __init__(self, expr: Expr, negate: bool) -> None: ...
 
 class UnionExpr(BinaryExpr): ...
 
 class Literal(Expr):
-    value: Incomplete
+    value: str
     def __init__(self, value: str) -> None: ...
 
 class Number(Expr):
-    value: Incomplete
+    value: float
     def __init__(self, value: float) -> None: ...
 
 class PathExpr(BinaryExpr): ...
 
 class FilterExpr(Expr):
-    primary: Incomplete
-    predicates: Incomplete
+    primary: Expr
+    predicates: list[Expr]
     def __init__(self, primary: Expr, predicates: list[Expr]) -> None: ...
 
 class LocationPath(BinaryExpr):
@@ -79,9 +78,9 @@ class Root(Expr):
     def as_instance_route(self) -> InstanceRoute: ...
 
 class Step(Expr):
-    axis: Incomplete
-    qname: Incomplete
-    predicates: Incomplete
+    axis: Axis
+    qname: QualName
+    predicates: list[Expr]
     def __init__(self, axis: Axis, qname: QualName, predicates: list[Expr]) -> None: ...
     def as_instance_route(self) -> InstanceRoute: ...
 
@@ -90,7 +89,7 @@ class FuncBoolean(UnaryExpr): ...
 class FuncCeiling(UnaryExpr): ...
 
 class FuncConcat(Expr):
-    parts: Incomplete
+    parts: list[Expr]
     def __init__(self, parts: list[Expr]) -> None: ...
 
 class FuncContains(BinaryExpr): ...
@@ -99,8 +98,8 @@ class FuncCurrent(Expr): ...
 class FuncDeref(UnaryExpr): ...
 
 class FuncDerivedFrom(BinaryExpr):
-    or_self: Incomplete
-    sctx: Incomplete
+    or_self: bool
+    sctx: SchemaContext
     def __init__(self, left: Expr, right: Expr, or_self: bool, sctx: SchemaContext) -> None: ...
 
 class FuncEnumValue(UnaryExpr): ...
@@ -109,7 +108,7 @@ class FuncFloor(UnaryExpr): ...
 class FuncLast(Expr): ...
 
 class FuncName(UnaryExpr):
-    local: Incomplete
+    local: bool
     def __init__(self, expr: Optional[Expr], local: bool) -> None: ...
 
 class FuncNormalizeSpace(UnaryExpr): ...
@@ -123,7 +122,7 @@ class FuncString(UnaryExpr): ...
 class FuncStringLength(UnaryExpr): ...
 
 class FuncSubstring(BinaryExpr):
-    length: Incomplete
+    length: Optional[Expr]
     def __init__(self, string: Expr, start: Expr, length: Optional[Expr]) -> None: ...
 
 class FuncSubstringAfter(BinaryExpr): ...
@@ -131,7 +130,7 @@ class FuncSubstringBefore(BinaryExpr): ...
 class FuncSum(UnaryExpr): ...
 
 class FuncTranslate(BinaryExpr):
-    nchars: Incomplete
+    nchars: Expr
     def __init__(self, s1: Expr, s2: Expr, s3: Expr) -> None: ...
 
 class FuncTrue(Expr): ...

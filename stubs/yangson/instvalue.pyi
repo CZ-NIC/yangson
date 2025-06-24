@@ -1,5 +1,4 @@
 from .typealiases import InstanceName, PrefName, ScalarValue
-from _typeshed import Incomplete
 from datetime import datetime
 from typing import Optional, Union
 
@@ -9,7 +8,7 @@ InstanceKey = Union[InstanceName, int]
 MetadataObject = dict[PrefName, ScalarValue]
 
 class StructuredValue:
-    timestamp: Incomplete
+    timestamp: datetime
     def __init__(self, ts: datetime) -> None: ...
     def copy(self) -> StructuredValue: ...
     def __setitem__(self, key: InstanceKey, value: Value) -> None: ...

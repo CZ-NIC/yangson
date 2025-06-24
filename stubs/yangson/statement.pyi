@@ -1,15 +1,14 @@
 from .exceptions import EndOfInput, InvalidArgument, ModuleNameMismatch, ModuleRevisionMismatch, StatementNotFound, UnexpectedInput
 from .parser import Parser
 from .typealiases import YangIdentifier
-from _typeshed import Incomplete
 from typing import Optional
 
 class Statement:
-    prefix: Incomplete
-    keyword: Incomplete
-    argument: Incomplete
-    superstmt: Incomplete
-    substatements: Incomplete
+    prefix: Optional[YangIdentifier]
+    keyword: YangIdentifier
+    argument: Optional[str]
+    superstmt: Optional[Statement]
+    substatements: list[Statement]
     def __init__(self, kw: YangIdentifier, arg: Optional[str], pref: Optional[YangIdentifier] = None) -> None: ...
     def find1(self, kw: YangIdentifier, arg: Optional[str] = None, pref: Optional[YangIdentifier] = None, required: bool = False) -> Optional[Statement]: ...
     def find_all(self, kw: YangIdentifier, pref: Optional[YangIdentifier] = None) -> list['Statement']: ...
@@ -17,10 +16,9 @@ class Statement:
 
 class ModuleParser(Parser):
     unescape_map: dict[str, str]
-    name: Incomplete
-    rev: Incomplete
+    name: Optional[YangIdentifier]
+    rev: Optional[str]
     def __init__(self, text: str, name: Optional[YangIdentifier] = None, rev: Optional[str] = None) -> None: ...
-    offset: Incomplete
     def parse(self) -> Statement: ...
     @classmethod
     def unescape(cls, text: str) -> str: ...

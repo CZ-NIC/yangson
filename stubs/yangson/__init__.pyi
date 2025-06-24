@@ -1,1 +1,1 @@
-from .datamodel import DataModel as DataModel
+from .datamodel import DataModel

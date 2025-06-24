@@ -4,9 +4,8 @@ from .parser import Parser
 from .schemadata import SchemaContext
 from .typealiases import QualName
 from .xpathast import AdditiveExpr, AndExpr, EqualityExpr, Expr, FilterExpr, FuncBitIsSet, FuncBoolean, FuncCeiling, FuncConcat, FuncContains, FuncCount, FuncCurrent, FuncDeref, FuncDerivedFrom, FuncEnumValue, FuncFalse, FuncFloor, FuncLast, FuncName, FuncNormalizeSpace, FuncNot, FuncNumber, FuncPosition, FuncReMatch, FuncRound, FuncStartsWith, FuncString, FuncStringLength, FuncSubstring, FuncSubstringAfter, FuncSubstringBefore, FuncSum, FuncTranslate, FuncTrue, Literal, LocationPath, MultiplicativeExpr, Number, OrExpr, PathExpr, RelationalExpr, Root, Step, UnaryMinusExpr, UnionExpr
-from _typeshed import Incomplete
 
 class XPathParser(Parser):
-    sctx: Incomplete
+    sctx: SchemaContext
     def __init__(self, text: str, sctx: SchemaContext) -> None: ...
     def parse(self) -> Expr: ...

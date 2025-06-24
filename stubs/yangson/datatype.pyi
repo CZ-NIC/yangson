@@ -4,20 +4,20 @@ from .constraint import Intervals, Pattern
 from .exceptions import InvalidArgument, InvalidLeafrefPath, MissingModuleNamespace, ModuleNotRegistered, ParserException, UnknownPrefix
 from .instance import InstanceIdParser, InstanceNode, InstanceRoute
 from .schemadata import SchemaContext
-from .schemanode import TerminalNode
+from .schemanode import TerminalNode, DataNode
 from .statement import Statement
 from .typealiases import QualName, RawScalar, ScalarValue, YangIdentifier
 from .xpathparser import XPathParser
-from _typeshed import Incomplete
 from typing import Any, Optional
+import typing
 
 class DataType:
-    sctx: Incomplete
-    default: Incomplete
-    name: Incomplete
-    error_tag: Incomplete
-    error_message: Incomplete
-    units: Incomplete
+    sctx: SchemaContext
+    default: Optional[ScalarValue]
+    name: Optional[YangIdentifier]
+    error_tag: Optional[str]
+    error_message: Optional[str]
+    units: Optional[str]
     def __init__(self, sctx: SchemaContext, name: Optional[YangIdentifier]) -> None: ...
     def __contains__(self, val: ScalarValue) -> bool: ...
     def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]: ...
@@ -39,7 +39,7 @@ class EmptyType(DataType):
     def to_xml(self, val: ScalarValue) -> Optional[str]: ...
 
 class BitsType(DataType):
-    bit: Incomplete
+    bit: dict[YangIdentifier, int]
     def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None: ...
     def sorted_bits(self) -> list[tuple[str, int]]: ...
     def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]: ...
@@ -87,8 +87,8 @@ class LinkType(DataType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None: ...
 
 class LeafrefType(LinkType):
-    path: Incomplete
-    ref_type: Incomplete
+    path: Optional[DataNode]
+    ref_type: Optional[None]
     def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None: ...
     def canonical_string(self, val: ScalarValue) -> Optional[str]: ...
     def __contains__(self, val: ScalarValue) -> bool: ...
@@ -133,7 +133,7 @@ class Decimal64Type(NumericType):
     def __contains__(self, val: ScalarValue) -> bool: ...
 
 class IntegralType(NumericType):
-    octhex: Incomplete
+    octhex: typing.Pattern[str]
     def __contains__(self, val: ScalarValue) -> bool: ...
     def parse_value(self, text: str) -> Optional[int]: ...
     def from_raw(self, raw: RawScalar) -> Optional[int]: ...

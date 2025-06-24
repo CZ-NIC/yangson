@@ -1,16 +1,15 @@
 from .exceptions import EndOfInput, UnexpectedInput
 from .typealiases import YangIdentifier
-from _typeshed import Incomplete
 from typing import Callable, Pattern, Optional
 
 TransitionTable = list[dict[str, Callable[[], int]]]
 
 class Parser:
-    ident_re: Incomplete
-    ws_re: Incomplete
-    uint_re: Incomplete
-    ufloat_re: Incomplete
-    input: Incomplete
+    ident_re: Pattern[str]
+    ws_re: Pattern[str]
+    uint_re: Pattern[str]
+    ufloat_re: Pattern[str]
+    input: str
     offset: int
     def __init__(self, text: str) -> None: ...
     def adv_skip_ws(self) -> bool: ...

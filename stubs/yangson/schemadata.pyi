@@ -3,7 +3,6 @@ from .exceptions import BadYangLibraryData, CyclicImports, DefinitionNotFound, F
 from .parser import Parser
 from .statement import ModuleParser, Statement
 from .typealiases import ModuleId, PrefName, QualName, RevisionDate, SchemaNodeId, SchemaPath, SchemaRoute, YangIdentifier
-from _typeshed import Incomplete
 from collections.abc import MutableSet
 from typing import Any
 
@@ -13,15 +12,15 @@ class IdentityAdjacency:
     def __init__(self) -> None: ...
 
 class SchemaContext:
-    schema_data: Incomplete
-    default_ns: Incomplete
-    text_mid: Incomplete
+    schema_data: "SchemaData"
+    default_ns: YangIdentifier
+    text_mid: ModuleId
     def __init__(self, schema_data: SchemaData, default_ns: YangIdentifier, text_mid: ModuleId) -> None: ...
 
 class ModuleData:
     features: MutableSet[YangIdentifier]
     main_module: ModuleId
-    yang_id: Incomplete
+    yang_id: YangIdentifier
     xml_namespace: str
     prefix_map: dict[YangIdentifier, ModuleId]
     statement: Statement
@@ -32,10 +31,10 @@ class ModuleData:
 class SchemaData:
     identity_adjs: dict[QualName, IdentityAdjacency]
     implement: dict[YangIdentifier, RevisionDate]
-    module_search_path: Incomplete
+    module_search_path: list[str]
     modules: dict[ModuleId, ModuleData]
     modules_by_name: dict[str, ModuleData]
-    modules_by_ns: Incomplete
+    modules_by_ns: dict[str, ModuleData]
     def __init__(self, yang_lib: dict[str, Any], mod_path: list[str]) -> None: ...
     def namespace(self, mid: ModuleId) -> YangIdentifier: ...
     def last_revision(self, mod: YangIdentifier) -> ModuleId: ...
@@ -54,7 +53,7 @@ class SchemaData:
     def if_features(self, stmt: Statement, mid: ModuleId) -> bool: ...
 
 class FeatureExprParser(Parser):
-    mid: Incomplete
-    schema_data: Incomplete
+    mid: ModuleId
+    schema_data: SchemaData
     def __init__(self, text: str, schema_data: SchemaData, mid: ModuleId) -> None: ...
     def parse(self) -> bool: ...
