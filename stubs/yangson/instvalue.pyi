@@ -1,0 +1,29 @@
+from .typealiases import InstanceName as InstanceName, PrefName as PrefName, ScalarValue as ScalarValue
+from _typeshed import Incomplete
+from datetime import datetime
+from typing import Optional, Union
+
+Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
+EntryValue = Union[ScalarValue, "ObjectValue"]
+InstanceKey = InstanceName | int
+MetadataObject = dict[PrefName, ScalarValue]
+
+class StructuredValue:
+    timestamp: Incomplete
+    def __init__(self, ts: datetime) -> None: ...
+    def copy(self) -> StructuredValue: ...
+    def __setitem__(self, key: InstanceKey, value: Value) -> None: ...
+    def __eq__(self, val: object) -> bool: ...
+    def __hash__(self) -> int: ...
+
+class ArrayValue(StructuredValue, list[EntryValue]):
+    def __init__(self, val: list[EntryValue] = [], ts: Optional[datetime] = None) -> None: ...
+    def __hash__(self) -> int: ... # type: ignore[override]
+    def __setitem__(self, key: InstanceKey, value: Value) -> None: ... # type: ignore[override]
+    def copy(self) -> ArrayValue: ...
+
+class ObjectValue(StructuredValue, dict[InstanceName, Value]):
+    def __init__(self, val: dict[InstanceName, Value] = {}, ts: Optional[datetime] = None) -> None: ...
+    def __hash__(self) -> int: ... # type: ignore[override]
+    def copy(self) -> ObjectValue: ...
+

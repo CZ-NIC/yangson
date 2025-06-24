@@ -18,3 +18,6 @@ release:
 	git tag -a -s -m "Yangson release $(VERSION)" $(VERSION)
 	git push --follow-tags
 	poetry build
+
+type-check:
+	@poetry run mypy
