@@ -1007,7 +1007,7 @@ class ArrayEntry(InstanceNode):
         return ArrayEntry(self.index, self.before, self.after, newval,
                           self.parinst, self.schema_node, ts)
 
-    def _instance_route_entry(self: "ArrayEntry"):
+    def _instance_route_entry(self: "ArrayEntry") -> "EntryKeys":
         sn = self.schema_node
         if isinstance(sn, LeafListNode):
             return EntryValue(sn.type.canonical_string(self.value))
