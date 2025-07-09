@@ -18,7 +18,7 @@
 """Type aliases for use with type hints [PEP484]_."""
 
 from decimal import Decimal
-from typing import Union
+from typing import Any, ClassVar, Union
 
 RevisionDate = str
 """RevisionDate in the format ``YYYY-MM-DD``, or empty string."""
@@ -85,9 +85,10 @@ RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
 
 
 class _Singleton(type):
-    _instances = {}
+    _instances: ClassVar[dict["_Singleton", Any]] = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(_Singleton, cls).__call__(*args, **kwargs)
+            cls._instances[cls] = super(_Singleton, cls).__call__(
+                *args, **kwargs)
         return cls._instances[cls]
