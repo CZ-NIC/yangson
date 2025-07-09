@@ -44,7 +44,7 @@ class NodeStatus(Enum):
     obsolete = "o"
     """The definition is obsolete and SHOULD NOT be implemented."""
 
-    def __str__(self: "NodeStatus") -> str:
+    def __str__(self) -> str:
         """Return string representation of the definition status."""
         return self.name
 
@@ -95,7 +95,7 @@ class Axis(Enum):
     self = 10
     """Just the context node."""
 
-    def __str__(self: "Axis") -> str:
+    def __str__(self) -> str:
         """Return string representation of the axis."""
         return self.name.replace("_", "-")
 
@@ -110,6 +110,6 @@ class MultiplicativeOp(Enum):
     modulo = "mod"
     """Modulo operator (``mod``)."""
 
-    def __str__(self: "MultiplicativeOp") -> str:
+    def __str__(self) -> str:
         """Return string representation of the operation."""
         return self.value

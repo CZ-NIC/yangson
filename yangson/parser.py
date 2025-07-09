@@ -50,7 +50,7 @@ class Parser:
     ufloat_re = re.compile(fr"{_uint}(\.{_uint})?|\.{_uint}")
     """Regular expression for unsigned float."""
 
-    def __init__(self: "Parser", text: str):
+    def __init__(self, text: str):
         """Initialize the class instance.
 
         Args:
@@ -61,24 +61,24 @@ class Parser:
         self.offset = 0  # type: int
         """Current position in the input text."""
 
-    def __str__(self: "Parser") -> str:
+    def __str__(self) -> str:
         """Return string representation of the receiver's input text and state."""
         return self.input[:self.offset] + "§" + self.input[self.offset:]
 
-    def adv_skip_ws(self: "Parser") -> bool:
+    def adv_skip_ws(self) -> bool:
         """Advance offset and skip optional whitespace."""
         self.offset += 1
         return self.skip_ws()
 
-    def at_end(self: "Parser") -> bool:
+    def at_end(self) -> bool:
         """Return ``True`` if at end of input."""
         return self.offset >= len(self.input)
 
-    def at_last_char(self: "Parser") -> bool:
+    def at_last_char(self) -> bool:
         """Return ``True`` if at last character of input."""
         return self.offset == (len(self.input) - 1)
 
-    def char(self: "Parser", c: str) -> None:
+    def char(self, c: str) -> None:
         """Parse the specified character.
 
         Args:
@@ -93,7 +93,7 @@ class Parser:
         else:
             raise UnexpectedInput(self, f"char '{c}'")
 
-    def dfa(self: "Parser", ttab: TransitionTable, init: int = 0) -> int:
+    def dfa(self, ttab: TransitionTable, init: int = 0) -> int:
         """Run a DFA and return the final (negative) state.
 
         Args:
@@ -112,14 +112,14 @@ class Parser:
                 return state
             self.offset += 1
 
-    def line_column(self: "Parser") -> tuple[int, int]:
+    def line_column(self) -> tuple[int, int]:
         """Return line and column coordinates."""
         ln = self.input.count("\n", 0, self.offset)
         c = (self.offset if ln == 0 else
              self.offset - self.input.rfind("\n", 0, self.offset) - 1)
         return (ln + 1, c)
 
-    def match_regex(self: "Parser", regex: Pattern, required: bool = False,
+    def match_regex(self, regex: Pattern, required: bool = False,
                     meaning: str = "") -> str:
         """Parse input based on a regular expression .
 
@@ -138,7 +138,7 @@ class Parser:
         if required:
             raise UnexpectedInput(self, meaning)
 
-    def one_of(self: "Parser", chset: str) -> str:
+    def one_of(self, chset: str) -> str:
         """Parse one character form the specified set.
 
         Args:
@@ -156,7 +156,7 @@ class Parser:
             return res
         raise UnexpectedInput(self, "one of " + chset)
 
-    def peek(self: "Parser") -> str:
+    def peek(self) -> str:
         """Return the next character without advancing offset.
 
         Raises:
@@ -167,7 +167,7 @@ class Parser:
         except IndexError:
             raise EndOfInput(self)
 
-    def prefixed_name(self: "Parser") -> tuple[YangIdentifier, Optional[YangIdentifier]]:
+    def prefixed_name(self) -> tuple[YangIdentifier, Optional[YangIdentifier]]:
         """Parse identifier with an optional colon-separated prefix."""
         i1 = self.yang_identifier()
         try:
@@ -179,17 +179,17 @@ class Parser:
         self.offset += 1
         return (self.yang_identifier(), i1)
 
-    def remaining(self: "Parser") -> str:
+    def remaining(self) -> str:
         """Return the remaining part of the input string."""
         res = self.input[self.offset:]
         self.offset = len(self.input)
         return res
 
-    def skip_ws(self: "Parser") -> bool:
+    def skip_ws(self) -> bool:
         """Skip optional whitespace."""
         return len(self.match_regex(self.ws_re)) > 0
 
-    def test_string(self: "Parser", string: str) -> bool:
+    def test_string(self, string: str) -> bool:
         """If `string` comes next, return ``True`` and advance offset.
 
         Args:
@@ -200,15 +200,15 @@ class Parser:
             return True
         return False
 
-    def unsigned_integer(self: "Parser") -> int:
+    def unsigned_integer(self) -> int:
         """Parse and return an unsigned integer."""
         return int(self.match_regex(self.uint_re, True, "unsigned integer"))
 
-    def unsigned_float(self: "Parser") -> float:
+    def unsigned_float(self) -> float:
         """Parse and return unsigned floating-point number."""
         return float(self.match_regex(self.ufloat_re, True, "unsigned float"))
 
-    def up_to(self: "Parser", term: str) -> str:
+    def up_to(self, term: str) -> str:
         """Parse and return segment terminated by the first occurence of a string.
 
         Args:
@@ -224,7 +224,7 @@ class Parser:
         self.offset = end + 1
         return res
 
-    def yang_identifier(self: "Parser") -> YangIdentifier:
+    def yang_identifier(self) -> YangIdentifier:
         """Parse and return YANG identifier.
 
         Raises:

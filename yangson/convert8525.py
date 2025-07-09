@@ -100,7 +100,7 @@ class ModuleData:
     revision: str
     location: set[str]
 
-    def __init__(self: "ModuleData", rfc8525_entry: ArrayEntry):
+    def __init__(self, rfc8525_entry: ArrayEntry):
         """Initialize the receiver."""
         val = rfc8525_entry.value
         self.name = val["name"]
@@ -134,8 +134,7 @@ class MainModuleData(ModuleData):
     feature: set[str]
     submodule: dict[tuple[str, str], ModuleData]
 
-    def __init__(self: "MainModuleData", rfc8525_entry: ArrayEntry,
-                 import_only: bool) -> None:
+    def __init__(self, rfc8525_entry: ArrayEntry, import_only: bool):
         """Initialize the receiver."""
         super().__init__(rfc8525_entry)
         val = rfc8525_entry.value

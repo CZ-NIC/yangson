@@ -74,7 +74,7 @@ from .instance import (ArrayEntry, InstanceNode, InstanceRoute, MemberName,
 class Annotation:
     """Class for metadata annotations [RFC 7952]."""
 
-    def __init__(self: "Annotation", type: DataType, description: str = None):
+    def __init__(self, type: DataType, description: str = None):
         """Initialize the class instance."""
         self.type = type
         self.description = description
@@ -83,7 +83,7 @@ class Annotation:
 class SchemaNode:
     """Abstract class for all schema nodes."""
 
-    def __init__(self: "SchemaNode"):
+    def __init__(self):
         """Initialize the class instance."""
         self.name: Optional[YangIdentifier] = None
         """Name of the receiver."""
@@ -104,46 +104,46 @@ class SchemaNode:
         """Status of node definition."""
 
     @property
-    def qual_name(self: "SchemaNode") -> QualName:
+    def qual_name(self) -> QualName:
         """Qualified name of the receiver."""
         return (self.name, self.ns)
 
     @property
-    def config(self: "SchemaNode") -> bool:
+    def config(self) -> bool:
         """Does the receiver (also) represent configuration?"""
         return self.content_type().value & ContentType.config.value != 0
 
     @property
-    def mandatory(self: "SchemaNode") -> bool:
+    def mandatory(self) -> bool:
         """Is the receiver a mandatory node in the complete data tree?"""
         return False
 
     @property
-    def mandatory_config(self: "SchemaNode") -> bool:
+    def mandatory_config(self) -> bool:
         """Is the receiver mandatory node in a configuration?"""
         return self.mandatory and self.config
 
     @property
-    def status(self: "SchemaNode") -> NodeStatus:
+    def status(self) -> NodeStatus:
         """Return receiver's definition status."""
         return self._status if self._status else self.parent.status
 
-    def delete(self: "SchemaNode") -> None:
+    def delete(self) -> None:
         """Remove the receiver from the schema."""
         self.parent.children.remove(self)
 
-    def schema_root(self: "SchemaNode") -> "SchemaTreeNode":
+    def schema_root(self) -> "SchemaTreeNode":
         """Return the root node of the receiver's schema."""
         sn = self
         while sn.parent:
             sn = sn.parent
         return sn
 
-    def content_type(self: "SchemaNode") -> ContentType:
+    def content_type(self) -> ContentType:
         """Return receiver's content type."""
         return self._ctype if self._ctype else self.parent.content_type()
 
-    def data_parent(self: "SchemaNode") -> Optional["InternalNode"]:
+    def data_parent(self) -> Optional["InternalNode"]:
         """Return the closest ancestor data node."""
         parent = self.parent
         while parent:
@@ -151,22 +151,22 @@ class SchemaNode:
                 return parent
             parent = parent.parent
 
-    def iname(self: "SchemaNode") -> InstanceName:
+    def iname(self) -> InstanceName:
         """Return the instance name corresponding to the receiver."""
         dp = self.data_parent()
         return (self.name if dp and self.ns == dp.ns
                 else self.ns + ":" + self.name)
 
-    def data_path(self: "SchemaNode") -> DataPath:
+    def data_path(self) -> DataPath:
         """Return the receiver's data path."""
         dp = self.data_parent()
         return (dp.data_path() if dp else "") + "/" + self.iname()
 
-    def state_roots(self: "SchemaNode") -> list[DataPath]:
+    def state_roots(self) -> list[DataPath]:
         """Return a list of data paths to descendant state data roots."""
         return [r.data_path() for r in self._state_roots()]
 
-    def from_raw(self: "SchemaNode", rval: RawValue, jptr: JSONPointer = "") -> Value:
+    def from_raw(self, rval: RawValue, jptr: JSONPointer = "") -> Value:
         """Return instance value transformed from a raw value using receiver.
 
         Args:
@@ -180,7 +180,8 @@ class SchemaNode:
         """
         raise NotImplementedError
 
-    def from_xml(self: "SchemaNode", rval: ET.Element, jptr: JSONPointer = "", isroot: bool = False) -> Value:
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "",
+                 isroot: bool = False) -> Value:
         """Return instance value transformed from a raw value using receiver.
 
         Args:
@@ -194,12 +195,11 @@ class SchemaNode:
         """
         raise NotImplementedError
 
-    def clear_val_counters(self: "SchemaNode") -> None:
+    def clear_val_counters(self) -> None:
         """Clear receiver's validation counter."""
         self.val_count = 0
 
-    def _apply_deviate(self: "SchemaNode", stmt: Statement,
-                       sctx: SchemaContext) -> None:
+    def _apply_deviate(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Apply **deviate** statement to the receiver."""
         arg = stmt.argument
         if arg == "not-supported":
@@ -215,15 +215,15 @@ class SchemaNode:
                     raise error from None
                 method(subst, sctx, action=arg)
 
-    def _get_description(self: "SchemaNode", stmt: Statement):
+    def _get_description(self, stmt: Statement):
         dst = stmt.find1("description")
         if dst is not None:
             self.description = dst.argument
 
-    def _yang_class(self: "SchemaNode") -> str:
+    def _yang_class(self) -> str:
         return self.__class__.__name__[:-4].lower()
 
-    def _node_digest(self: "SchemaNode") -> dict[str, Any]:
+    def _node_digest(self) -> dict[str, Any]:
         """Return dictionary of receiver's properties suitable for clients."""
         res = {"kind": self._yang_class()}
         if self.mandatory:
@@ -232,13 +232,13 @@ class SchemaNode:
             res["description"] = self.description
         return res
 
-    def _tree_name(self: "SchemaNode") -> str:
+    def _tree_name(self) -> str:
         """Return the receiver's name to be displayed in ASCII tree."""
         return (self.name if self.parent and self.ns == self.parent.ns
                  else f"{self.ns}:{self.name}")
 
-    def _validate(self: "SchemaNode", inst: InstanceNode,
-                  scope: ValidationScope, ctype: ContentType) -> None:
+    def _validate(self, inst: InstanceNode, scope: ValidationScope,
+                  ctype: ContentType) -> None:
         """Validate instance against the receiver.
 
         Args:
@@ -256,16 +256,16 @@ class SchemaNode:
         """
         self.val_count += 1
 
-    def _iname2qname(self: "SchemaNode", iname: InstanceName) -> QualName:
+    def _iname2qname(self, iname: InstanceName) -> QualName:
         """Translate instance name to qualified name in the receiver's context.
         """
         p, s, loc = iname.partition(":")
         return (loc, p) if s else (p, self.ns)
 
-    def _flatten(self: "SchemaNode") -> list["SchemaNode"]:
+    def _flatten(self) -> list["SchemaNode"]:
         return [self]
 
-    def _handle_substatements(self: "SchemaNode", stmt: Statement,
+    def _handle_substatements(self, stmt: Statement,
                               sctx: SchemaContext) -> None:
         """Dispatch actions for substatements of `stmt`."""
         for s in stmt.substatements:
@@ -306,16 +306,14 @@ class SchemaNode:
             return self.schema_root()
         return None
 
-    def _noop(self: "SchemaNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _noop(self, stmt: Statement, sctx: SchemaContext) -> None:
         pass
 
-    def _config_stmt(self: "SchemaNode", stmt: Statement,
-                     sctx: SchemaContext) -> None:
+    def _config_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         if stmt.argument == "false":
             self._ctype = ContentType.nonconfig
 
-    def _status_stmt(self: "SchemaNode", stmt: Statement,
-                     sctx: SchemaContext) -> None:
+    def _status_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         if stmt.argument == "deprecated":
             nst = NodeStatus.deprecated
         elif stmt.argument == "obsolete":
@@ -325,26 +323,24 @@ class SchemaNode:
         if nst != self.parent.status:
             self._status = nst
 
-    def _deviate_config(self: "SchemaNode", stmt: Statement,
-                         sctx: SchemaContext, action: str) -> None:
+    def _deviate_config(self, stmt: Statement,
+                        sctx: SchemaContext, action: str) -> None:
         if action == "delete":
             self._ctype = None
         elif action in ("add", "replace"):
             self._config_stmt(stmt, sctx)
 
-    def _description_stmt(self: "SchemaNode", stmt: Statement,
-                          sctx: SchemaContext) -> None:
+    def _description_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.description = stmt.argument
 
-    def _must_stmt(self: "SchemaNode", stmt: Statement,
-                   sctx: SchemaContext) -> None:
+    def _must_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         xpp = XPathParser(stmt.argument, sctx)
         mex = xpp.parse()
         if not xpp.at_end():
             raise InvalidArgument(stmt.argument)
         self.must.append(Must(mex, *stmt.get_error_info()))
 
-    def _deviate_must(self: "SchemaNode", stmt: Statement,
+    def _deviate_must(self, stmt: Statement,
                       sctx: SchemaContext, action: str) -> None:
         if action in ("add", "replace"):
             if action == "replace":
@@ -357,42 +353,40 @@ class SchemaNode:
                     del self.must[i]
                     return
 
-    def _when_stmt(self: "SchemaNode", stmt: Statement,
-                   sctx: SchemaContext) -> None:
+    def _when_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         xpp = XPathParser(stmt.argument, sctx)
         wex = xpp.parse()
         if not xpp.at_end():
             raise InvalidArgument(stmt.argument)
         self.when = wex
 
-    def _mandatory_stmt(self: "SchemaNode", stmt,
-                        sctx: SchemaContext) -> None:
+    def _mandatory_stmt(self, stmt, sctx: SchemaContext) -> None:
         if stmt.argument == "true":
             self._mandatory = True
         elif stmt.argument == "false":
             self._mandatory = False
 
-    def _deviate_mandatory(self: "SchemaNode", stmt: Statement,
+    def _deviate_mandatory(self, stmt: Statement,
                          sctx: SchemaContext, action: str) -> None:
         if action == "delete":
             self._mandatory = False
         elif action in ("add", "replace"):
             self._mandatory_stmt(stmt, sctx)
 
-    def _post_process(self: "SchemaNode") -> None:
+    def _post_process(self) -> None:
         pass
 
-    def _is_identityref(self: "SchemaNode") -> bool:
+    def _is_identityref(self) -> bool:
         return False
 
-    def _tree_line(self: "SchemaNode", no_type: bool = False) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
         return f"{self._tree_line_prefix()} {self._tree_name()}"
 
-    def _tree_line_prefix(self: "SchemaNode") -> str:
+    def _tree_line_prefix(self) -> str:
         return self.status.value + "--"
 
-    def _nacm_default_deny_stmt(self: "SchemaNode", stmt: Statement,
+    def _nacm_default_deny_stmt(self, stmt: Statement,
                                 sctx: SchemaContext) -> None:
         """Set NACM default access."""
         if not hasattr(self, 'default_deny'):
@@ -444,7 +438,7 @@ class InternalNode(SchemaNode):
     _mandatory_children: tuple[MutableSet[SchemaNode], MutableSet[SchemaNode]]
     """Two sets of mandatory children: item 0 = nonconfig, 1 = config."""
 
-    def __init__(self: "InternalNode"):
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.children: list[SchemaNode] = []
@@ -452,12 +446,12 @@ class InternalNode(SchemaNode):
         self._mandatory_children = (set(), set())
 
     @property
-    def mandatory(self: "InternalNode") -> bool:
+    def mandatory(self) -> bool:
         """Override the superclass property."""
         return bool(self._mandatory_children[0] or
                     self._mandatory_children[1])
 
-    def get_child(self: "InternalNode", name: YangIdentifier,
+    def get_child(self, name: YangIdentifier,
                   ns: YangIdentifier = None) -> Optional[SchemaNode]:
         """Return receiver's schema child.
 
@@ -495,7 +489,7 @@ class InternalNode(SchemaNode):
                 return None
         return node
 
-    def get_data_child(self: "InternalNode", name: YangIdentifier,
+    def get_data_child(self, name: YangIdentifier,
                        ns: YangIdentifier = None) -> Optional["DataNode"]:
         """Return data node directly under the receiver."""
         ns = ns if ns else self.ns
@@ -512,7 +506,7 @@ class InternalNode(SchemaNode):
             if res:
                 return res
 
-    def filter_children(self: "InternalNode", ctype: ContentType = None) -> list[SchemaNode]:
+    def filter_children(self, ctype: ContentType = None) -> list[SchemaNode]:
         """Return receiver's children based on content type.
 
         Args:
@@ -524,7 +518,7 @@ class InternalNode(SchemaNode):
                 not isinstance(c, (RpcActionNode, NotificationNode)) and
                 c.content_type().value & ctype.value != 0]
 
-    def data_children(self: "InternalNode") -> list["DataNode"]:
+    def data_children(self) -> list["DataNode"]:
         """Return the set of all data nodes directly under the receiver."""
         res = []
         for child in self.children:
@@ -534,7 +528,7 @@ class InternalNode(SchemaNode):
                 res.extend(child.data_children())
         return res
 
-    def from_raw(self: "InternalNode", rval: RawObject, jptr: JSONPointer = "") -> ObjectValue:
+    def from_raw(self, rval: RawObject, jptr: JSONPointer = "") -> ObjectValue:
         """Override the superclass method."""
         if not isinstance(rval, dict):
             raise RawTypeError(jptr, "object")
@@ -564,7 +558,8 @@ class InternalNode(SchemaNode):
                 res[iname] = ch.from_raw(rval[qn], npath)
         return res
 
-    def from_xml(self: "InternalNode", rval: ET.Element, jptr: JSONPointer = "") -> ObjectValue:
+    def from_xml(self, rval: ET.Element,
+                 jptr: JSONPointer = "") -> ObjectValue:
         res = ObjectValue()
         if isinstance(self, RpcActionNode) and jptr == "":
             self._process_xmlobj_child(res, None, rval, jptr)
@@ -608,7 +603,7 @@ class InternalNode(SchemaNode):
         else:
             res[iname] = ch.from_xml(xmlchild, npath)
 
-    def _process_metadata(self: "InternalNode", rmo: RawMetadataObject,
+    def _process_metadata(self, rmo: RawMetadataObject,
                           jptr: JSONPointer) -> MetadataObject:
         res = {}
         ans = self.schema_root().annotations
@@ -622,7 +617,7 @@ class InternalNode(SchemaNode):
                 raise AnnotationTypeError(jptr, mem, an.type.error_message)
         return res
 
-    def _node_digest(self: "InternalNode") -> dict[str, Any]:
+    def _node_digest(self) -> dict[str, Any]:
         res = super()._node_digest()
         rc = res["children"] = {}
         for c in self.data_children():
@@ -633,7 +628,7 @@ class InternalNode(SchemaNode):
             rc[c.iname()] = c._node_digest()
         return res
 
-    def _validate(self: "InternalNode", inst: InstanceNode,
+    def _validate(self, inst: InstanceNode,
                   scope: ValidationScope, ctype: ContentType) -> None:
         """Extend the superclass method."""
         if scope.value & ValidationScope.syntax.value:   # schema
@@ -642,15 +637,15 @@ class InternalNode(SchemaNode):
             inst._member(m).validate(scope, ctype)
         super()._validate(inst, scope, ctype)
 
-    def _add_child(self: "InternalNode", node: SchemaNode) -> None:
+    def _add_child(self, node: SchemaNode) -> None:
         node.parent = self
         self.children.append(node)
 
-    def _child_inst_names(self: "InternalNode") -> set[InstanceName]:
+    def _child_inst_names(self) -> set[InstanceName]:
         """Return the set of instance names under the receiver."""
         return frozenset([c.iname() for c in self.data_children()])
 
-    def _check_schema_pattern(self: "InternalNode", inst: InstanceNode,
+    def _check_schema_pattern(self, inst: InstanceNode,
                               ctype: ContentType) -> None:
         p = self.schema_pattern
         p._eval_when(inst)
@@ -669,14 +664,14 @@ class InternalNode(SchemaNode):
                 inst, "missing-data",
                 "expected " + msg + ", ".join([repr(m) for m in mms]))
 
-    def _make_schema_patterns(self: "InternalNode") -> None:
+    def _make_schema_patterns(self) -> None:
         """Build schema pattern for the receiver and its data descendants."""
         self.schema_pattern = self._schema_pattern()
         for dc in self.data_children():
             if isinstance(dc, InternalNode):
                 dc._make_schema_patterns()
 
-    def _schema_pattern(self: "InternalNode") -> SchemaPattern:
+    def _schema_pattern(self) -> SchemaPattern:
         todo = [c for c in self.children if not (
             isinstance(c, (RpcActionNode, NotificationNode)) or
             c._status == NodeStatus.obsolete)]
@@ -687,19 +682,19 @@ class InternalNode(SchemaNode):
             prev = Pair(c._pattern_entry(), prev)
         return ConditionalPattern(prev, self.when) if self.when else prev
 
-    def _post_process(self: "InternalNode") -> None:
+    def _post_process(self) -> None:
         super()._post_process()
         for c in self.children:
             c._post_process()
 
-    def _add_mandatory_child(self: "InternalNode", node: SchemaNode) -> None:
+    def _add_mandatory_child(self, node: SchemaNode) -> None:
         """Add `node` to the set of mandatory children."""
         if node.mandatory_config:
             self._mandatory_children[1].add(node)
         else:
             self._mandatory_children[0].add(node)
 
-    def _add_defaults(self: "InternalNode", inst: InstanceNode, ctype: ContentType,
+    def _add_defaults(self, inst: InstanceNode, ctype: ContentType,
                       lazy: bool = False) -> InstanceNode:
         for c in self.filter_children(ctype):
             if isinstance(c, DataNode):
@@ -708,7 +703,7 @@ class InternalNode(SchemaNode):
                 inst = c._add_defaults(inst, ctype)
         return inst
 
-    def _state_roots(self: "InternalNode") -> list[SchemaNode]:
+    def _state_roots(self) -> list[SchemaNode]:
         if self.content_type() == ContentType.nonconfig:
             return [self]
         res = []
@@ -716,7 +711,7 @@ class InternalNode(SchemaNode):
             res.extend(c._state_roots())
         return res
 
-    def _handle_child(self: "InternalNode", node: SchemaNode, stmt: Statement,
+    def _handle_child(self, node: SchemaNode, stmt: Statement,
                       sctx: SchemaContext) -> None:
         """Add child node to the receiver and handle substatements."""
         if not sctx.schema_data.if_features(stmt, sctx.text_mid):
@@ -727,7 +722,7 @@ class InternalNode(SchemaNode):
         self._add_child(node)
         node._handle_substatements(stmt, sctx)
 
-    def _augment_stmt(self: "InternalNode", stmt: Statement,
+    def _augment_stmt(self, stmt: Statement,
                       sctx: SchemaContext) -> None:
         """Handle **augment** statement."""
         if not sctx.schema_data.if_features(stmt, sctx.text_mid):
@@ -742,7 +737,7 @@ class InternalNode(SchemaNode):
             target = gr
         target._handle_substatements(stmt, sctx)
 
-    def _deviation_stmt(self: "InternalNode", stmt: Statement,
+    def _deviation_stmt(self, stmt: Statement,
                         sctx: SchemaContext) -> None:
         """Handle **deviation** statement."""
         target = self.get_schema_descendant(
@@ -752,7 +747,7 @@ class InternalNode(SchemaNode):
         for dstmt in stmt.find_all("deviate"):
             target._apply_deviate(dstmt, sctx)
 
-    def _refine_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _refine_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle **refine** statement."""
         target = self.get_schema_descendant(
             sctx.schema_data.sni2route(stmt.argument, sctx))
@@ -763,7 +758,7 @@ class InternalNode(SchemaNode):
         else:
             target._handle_substatements(stmt, sctx)
 
-    def _uses_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _uses_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle uses statement."""
         if not sctx.schema_data.if_features(stmt, sctx.text_mid):
             return
@@ -785,11 +780,11 @@ class InternalNode(SchemaNode):
         for refst in stmt.find_all("refine"):
             sn._refine_stmt(refst, sctx)
 
-    def _container_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _container_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle container statement."""
         self._handle_child(ContainerNode(), stmt, sctx)
 
-    def _identity_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _identity_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle identity statement."""
         if not sctx.schema_data.if_features(stmt, sctx.text_mid):
             return
@@ -803,45 +798,45 @@ class InternalNode(SchemaNode):
             badj.derivs.add(id)
         sctx.schema_data.identity_adjs[id] = adj
 
-    def _list_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _list_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle list statement."""
         self._handle_child(ListNode(), stmt, sctx)
 
-    def _choice_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _choice_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle choice statement."""
         self._handle_child(ChoiceNode(), stmt, sctx)
 
-    def _case_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _case_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle case statement."""
         self._handle_child(CaseNode(), stmt, sctx)
 
-    def _leaf_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _leaf_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle leaf statement."""
         node = LeafNode()
         node.type = DataType._resolve_type(
             stmt.find1("type", required=True), sctx)
         self._handle_child(node, stmt, sctx)
 
-    def _leaf_list_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _leaf_list_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle leaf-list statement."""
         node = LeafListNode()
         node.type = DataType._resolve_type(
             stmt.find1("type", required=True), sctx)
         self._handle_child(node, stmt, sctx)
 
-    def _rpc_action_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _rpc_action_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle rpc or action statement."""
         self._handle_child(RpcActionNode(), stmt, sctx)
 
-    def _notification_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _notification_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle notification statement."""
         self._handle_child(NotificationNode(), stmt, sctx)
 
-    def _anydata_stmt(self: "InternalNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _anydata_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle anydata statement."""
         self._handle_child(AnydataNode(), stmt, sctx)
 
-    def _ascii_tree(self: "InternalNode", indent: str, no_types: bool, val_count: bool) -> str:
+    def _ascii_tree(self, indent: str, no_types: bool, val_count: bool) -> str:
         """Return the receiver's subtree as ASCII art."""
         def suffix(sn):
             return f" {{{sn.val_count}}}\n" if val_count and isinstance(
@@ -859,7 +854,7 @@ class InternalNode(SchemaNode):
         return (res + indent + cs[-1]._tree_line(no_types) + suffix(cs[-1]) +
                 cs[-1]._ascii_tree(indent + "   ", no_types, val_count))
 
-    def clear_val_counters(self: "InternalNode") -> None:
+    def clear_val_counters(self) -> None:
         """Clear validation counters in the receiver and its subtree."""
         super().clear_val_counters()
         for c in self.children:
@@ -869,7 +864,7 @@ class InternalNode(SchemaNode):
 class GroupNode(InternalNode):
     """Anonymous group of schema nodes."""
 
-    def _handle_child(self: "GroupNode", node: SchemaNode, stmt: Statement,
+    def _handle_child(self, node: SchemaNode, stmt: Statement,
                       sctx: SchemaContext) -> None:
         if not isinstance(
                 self.parent, ChoiceNode) or isinstance(node, CaseNode):
@@ -881,10 +876,10 @@ class GroupNode(InternalNode):
             self._add_child(cn)
             cn._handle_child(node, stmt, sctx)
 
-    def _pattern_entry(self: "GroupNode") -> SchemaPattern:
+    def _pattern_entry(self) -> SchemaPattern:
         return super()._schema_pattern()
 
-    def _flatten(self: "GroupNode") -> list[SchemaNode]:
+    def _flatten(self) -> list[SchemaNode]:
         res = []
         for c in self.children:
             res.extend(c._flatten())
@@ -894,22 +889,22 @@ class GroupNode(InternalNode):
 class SchemaTreeNode(GroupNode):
     """Root node of a schema tree."""
 
-    def __init__(self: "SchemaTreeNode", schemadata: SchemaData = None):
+    def __init__(self, schemadata: SchemaData = None):
         """Initialize the class instance."""
         super().__init__()
         self.annotations: dict[QualName, Annotation] = {}
         self.schema_data = schemadata
         self._status = NodeStatus.current
 
-    def iname(self: "SchemaTreeNode") -> InstanceName:
+    def iname(self) -> InstanceName:
         """Override the superclass method."""
         return ""
 
-    def data_parent(self: "SchemaTreeNode") -> None:
+    def data_parent(self) -> None:
         """Override the superclass method."""
         return None
 
-    def _annotation_stmt(self: "SchemaTreeNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _annotation_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle annotation statement."""
         if not sctx.schema_data.if_features(stmt, sctx.text_mid):
             return
@@ -922,12 +917,12 @@ class SchemaTreeNode(GroupNode):
 class DataNode(SchemaNode):
     """Abstract superclass for all data nodes."""
 
-    def __init__(self: "DataNode"):
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.default_deny: DefaultDeny = DefaultDeny.none
 
-    def orphan_instance(self: "DataNode", rval: RawValue) -> "ObjectMember":
+    def orphan_instance(self, rval: RawValue) -> "ObjectMember":
         """Return an isolated instance of the receiver.
 
         Args:
@@ -936,7 +931,7 @@ class DataNode(SchemaNode):
         val = self.from_raw(rval, jptr = "/")
         return ObjectMember(self.iname(), {}, val, None, self, datetime.now())
 
-    def split_instance_route(self: "DataNode", route: InstanceRoute) -> Optional[tuple[InstanceRoute, InstanceRoute]]:
+    def split_instance_route(self, route: InstanceRoute) -> Optional[tuple[InstanceRoute, InstanceRoute]]:
         """Split `route` into the part up to receiver and the rest.
 
         Args:
@@ -971,14 +966,14 @@ class DataNode(SchemaNode):
             if i >= len(route):
                 return None
 
-    def _validate(self: "DataNode", inst: InstanceNode, scope: ValidationScope,
+    def _validate(self, inst: InstanceNode, scope: ValidationScope,
                   ctype: ContentType) -> None:
         """Extend the superclass method."""
         if scope.value & ValidationScope.semantics.value:
             self._check_must(inst)        # must expressions
         super()._validate(inst, scope, ctype)
 
-    def _default_instance(self: "DataNode", pnode: InstanceNode, ctype: ContentType,
+    def _default_instance(self, pnode: InstanceNode, ctype: ContentType,
                           lazy: bool = False) -> InstanceNode:
         iname = self.iname()
         if iname in pnode.value:
@@ -990,17 +985,17 @@ class DataNode(SchemaNode):
                 return wd.up()
         return pnode
 
-    def _check_must(self: "DataNode", inst: InstanceNode) -> None:
+    def _check_must(self, inst: InstanceNode) -> None:
         for m in self.must:
             if not m.expression.evaluate(inst):
                 raise SemanticError(inst, m.error_tag, m.error_message)
 
-    def _pattern_entry(self: "DataNode") -> SchemaPattern:
+    def _pattern_entry(self) -> SchemaPattern:
         m = Member(self.iname(), self.content_type(), self.when)
         return m if (self.mandatory and self._status !=
                      NodeStatus.deprecated) else SchemaPattern.optional(m)
 
-    def _tree_line_prefix(self: "DataNode") -> str:
+    def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + (
             "ro" if self.content_type() == ContentType.nonconfig else "rw")
 
@@ -1008,14 +1003,14 @@ class DataNode(SchemaNode):
 class TerminalNode(SchemaNode):
     """Abstract superclass for terminal nodes in the schema tree."""
 
-    def __init__(self: "TerminalNode"):
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.type: DataType = None
         self._default: Optional[Value] = None
         self._units: Optional[str] = None
 
-    def content_type(self: "TerminalNode") -> ContentType:
+    def content_type(self) -> ContentType:
         """Override superclass method."""
         if self._ctype:
             return self._ctype
@@ -1023,12 +1018,12 @@ class TerminalNode(SchemaNode):
                 ContentType.nonconfig)
 
     @property
-    def units(self: "TerminalNode") -> Optional[str]:
+    def units(self) -> Optional[str]:
         """Units of the receiver's value, if specified."""
         return (self._units if self._units is not None
                 else self.type.units)
 
-    def from_raw(self: "TerminalNode", rval: RawScalar,
+    def from_raw(self, rval: RawScalar,
                  jptr: JSONPointer = "") -> ScalarValue:
         """Override the superclass method."""
         res = self.type.from_raw(rval)
@@ -1036,18 +1031,18 @@ class TerminalNode(SchemaNode):
             raise RawTypeError(jptr, self.type.yang_type() + " value")
         return res
 
-    def from_xml(self: "TerminalNode", rval: ET.Element, jptr: JSONPointer = "") -> Value:
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
         res = self.type.from_xml(rval)
         if res is None:
             raise RawTypeError(jptr, self.type.yang_type() + " value")
         return res
 
-    def _deviate_type(self: "TerminalNode", stmt: Statement,
+    def _deviate_type(self, stmt: Statement,
                          sctx: SchemaContext, action: str) -> None:
         if action == "replace":
             self.type = DataType._resolve_type(stmt, sctx)
 
-    def _node_digest(self: "TerminalNode") -> dict[str, Any]:
+    def _node_digest(self) -> dict[str, Any]:
         res = super()._node_digest()
         res["type"] = self.type._type_digest(self.config)
         df = self.default
@@ -1057,18 +1052,17 @@ class TerminalNode(SchemaNode):
             res["units"] = self.units
         return res
 
-    def _units_stmt(self: "TerminalNode", stmt: Statement,
-                      sctx: SchemaContext) -> None:
+    def _units_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self._units = stmt.argument
 
-    def _deviate_units(self: "TerminalNode", stmt: Statement,
+    def _deviate_units(self, stmt: Statement,
                        sctx: SchemaContext, action: str) -> None:
         if action == "delete":
             self._units = None
         elif action in ("add", "replace"):
             self._units_stmt(stmt, sctx)
 
-    def _validate(self: "TerminalNode", inst: InstanceNode,
+    def _validate(self, inst: InstanceNode,
                   scope: ValidationScope, ctype: ContentType) -> None:
         """Extend the superclass method."""
         if (scope.value & ValidationScope.syntax.value and
@@ -1086,66 +1080,66 @@ class TerminalNode(SchemaNode):
                 raise SemanticError(inst, "instance-required")
         super()._validate(inst, scope, ctype)
 
-    def _default_value(self: "TerminalNode", inst: InstanceNode, ctype: ContentType,
+    def _default_value(self, inst: InstanceNode, ctype: ContentType,
                        lazy: bool) -> InstanceNode:
         inst.value = self.default
         return inst
 
-    def _post_process(self: "TerminalNode") -> None:
+    def _post_process(self) -> None:
         super()._post_process()
         self.type._post_process(self)
 
-    def _is_identityref(self: "TerminalNode") -> bool:
+    def _is_identityref(self) -> bool:
         return isinstance(self.type, IdentityrefType)
 
-    def _ascii_tree(self: "TerminalNode", indent: str, no_types: bool, val_count: bool) -> str:
+    def _ascii_tree(self, indent: str, no_types: bool, val_count: bool) -> str:
         return ""
 
-    def _state_roots(self: "TerminalNode") -> list[SchemaNode]:
+    def _state_roots(self) -> list[SchemaNode]:
         return [] if self.content_type() == ContentType.config else [self]
 
 
 class ContainerNode(DataNode, InternalNode):
     """Container node."""
 
-    def __init__(self: "ContainerNode"):
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.presence: bool = False
 
     @property
-    def mandatory(self: "ContainerNode") -> bool:
+    def mandatory(self) -> bool:
         """Extend the superclass property."""
         return not self.presence and super().mandatory
 
     @property
-    def mandatory_config(self: "InternalNode") -> bool:
+    def mandatory_config(self) -> bool:
         """Override the superclass property."""
         return bool(self._mandatory_children[1])
 
-    def _node_digest(self: "ContainerNode") -> dict[str, Any]:
+    def _node_digest(self) -> dict[str, Any]:
         res = super()._node_digest()
         res["presence"] = self.presence
         return res
 
-    def _add_mandatory_child(self: "ContainerNode", node: SchemaNode):
+    def _add_mandatory_child(self, node: SchemaNode):
         propagate = not (self.presence or self.mandatory)
         super()._add_mandatory_child(node)
         if propagate:
             self.parent._add_mandatory_child(self)
 
-    def _default_instance(self: "ContainerNode", pnode: InstanceNode, ctype: ContentType,
+    def _default_instance(self, pnode: InstanceNode, ctype: ContentType,
                           lazy: bool = False) -> InstanceNode:
         if self.presence:
             return pnode
         return super()._default_instance(pnode, ctype, lazy)
 
-    def _default_value(self: "ContainerNode", inst: InstanceNode, ctype: ContentType,
+    def _default_value(self, inst: InstanceNode, ctype: ContentType,
                        lazy: bool) -> Optional[InstanceNode]:
         inst.value = ObjectValue()
         return inst if lazy else self._add_defaults(inst, ctype)
 
-    def _pattern_entry(self: "ContainerNode") -> SchemaPattern:
+    def _pattern_entry(self) -> SchemaPattern:
         m = Member(self.iname(), self.content_type(), self.when)
         if self._status == NodeStatus.deprecated:
             return SchemaPattern.optional(m)
@@ -1155,10 +1149,10 @@ class ContainerNode(DataNode, InternalNode):
         else:
             return SchemaPattern.optional(m)
 
-    def _presence_stmt(self: "ContainerNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _presence_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.presence = True
 
-    def _tree_line(self: "ContainerNode", no_type: bool = False) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
         return super()._tree_line() + ("!" if self.presence else "")
 
@@ -1166,7 +1160,7 @@ class ContainerNode(DataNode, InternalNode):
 class SequenceNode(DataNode):
     """Abstract class for data nodes that represent a sequence."""
 
-    def __init__(self: "SequenceNode"):
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.min_elements: int = 0
@@ -1174,11 +1168,11 @@ class SequenceNode(DataNode):
         self.user_ordered: bool = False
 
     @property
-    def mandatory(self: "SequenceNode") -> bool:
+    def mandatory(self) -> bool:
         """Override the superclass property."""
         return self.min_elements > 0
 
-    def _validate(self: "SequenceNode", inst: InstanceNode,
+    def _validate(self, inst: InstanceNode,
                   scope: ValidationScope,
                   ctype: ContentType) -> None:
         """Extend the superclass method."""
@@ -1191,30 +1185,30 @@ class SequenceNode(DataNode):
             for e in inst:
                 super()._validate(e, scope, ctype)
 
-    def _check_cardinality(self: "SequenceNode", inst: InstanceNode) -> None:
+    def _check_cardinality(self, inst: InstanceNode) -> None:
         if len(inst.value) < self.min_elements:
             raise SemanticError(inst, "too-few-elements")
         if (self.max_elements is not None and
                 len(inst.value) > self.max_elements):
             raise SemanticError(inst, "too-many-elements")
 
-    def _post_process(self: "SequenceNode") -> None:
+    def _post_process(self) -> None:
         super()._post_process()
         if self.min_elements > 0:
             self.parent._add_mandatory_child(self)
 
-    def _min_elements_stmt(self: "SequenceNode", stmt: Statement,
+    def _min_elements_stmt(self, stmt: Statement,
                            sctx: SchemaContext) -> None:
         self.min_elements = int(stmt.argument)
 
-    def _deviate_min_elements(self: "SequenceNode", stmt: Statement,
+    def _deviate_min_elements(self, stmt: Statement,
                               sctx: SchemaContext, action: str) -> None:
         if action == "delete":
             self.min_elements = 0
         elif action in ("add", "replace"):
             self._min_elements_stmt(stmt, sctx)
 
-    def _max_elements_stmt(self: "SequenceNode", stmt: Statement,
+    def _max_elements_stmt(self, stmt: Statement,
                            sctx: SchemaContext) -> None:
         arg = stmt.argument
         if arg == "unbounded":
@@ -1222,22 +1216,22 @@ class SequenceNode(DataNode):
         else:
             self.max_elements = int(arg)
 
-    def _deviate_max_elements(self: "SequenceNode", stmt: Statement,
+    def _deviate_max_elements(self, stmt: Statement,
                               sctx: SchemaContext, action: str) -> None:
         if action == "delete":
             self.max_elements = None
         elif action in ("add", "replace"):
             self._max_elements_stmt(stmt, sctx)
 
-    def _ordered_by_stmt(self: "SequenceNode", stmt: Statement,
+    def _ordered_by_stmt(self, stmt: Statement,
                          sctx: SchemaContext) -> None:
         self.user_ordered = stmt.argument == "user"
 
-    def _tree_line(self: "SequenceNode", no_type: bool = False) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Extend the superclass method."""
         return super()._tree_line() + ("#" if self.user_ordered else "*")
 
-    def from_raw(self: "SequenceNode", rval: RawList,
+    def from_raw(self, rval: RawList,
                  jptr: JSONPointer = "") -> ArrayValue:
         """Override the superclass method."""
         if not isinstance(rval, list):
@@ -1258,7 +1252,7 @@ class SequenceNode(DataNode):
             idx = idx + 1
         return res
 
-    def from_xml(self: "SequenceNode", rval: ET.Element, jptr: JSONPointer = "",
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "",
                  tagname: str = None, isroot: bool = False) -> ArrayValue:
         res = ArrayValue()
         idx = 0
@@ -1296,7 +1290,7 @@ class SequenceNode(DataNode):
             child = None
         return child
 
-    def entry_from_raw(self: "SequenceNode", rval: RawEntry,
+    def entry_from_raw(self, rval: RawEntry,
                        jptr: JSONPointer = "") -> EntryValue:
         """Transform a raw (leaf-)list entry into the cooked form.
 
@@ -1311,7 +1305,7 @@ class SequenceNode(DataNode):
         """
         return super().from_raw(rval, jptr)
 
-    def entry_from_xml(self: "SequenceNode", rval: ET.Element,
+    def entry_from_xml(self, rval: ET.Element,
                        jptr: JSONPointer = "") -> EntryValue:
         """Transform a XML (leaf-)list entry into the cooked form.
 
@@ -1330,26 +1324,26 @@ class SequenceNode(DataNode):
 class ListNode(SequenceNode, InternalNode):
     """List node."""
 
-    def __init__(self: "ListNode"):
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.keys: list[QualName] = []
         self._key_members = []
         self.unique: list[list[LocationPath]] = []
 
-    def _node_digest(self: "ListNode") -> dict[str, Any]:
+    def _node_digest(self) -> dict[str, Any]:
         res = super()._node_digest()
         res["keys"] = self._key_members
         return res
 
-    def _check_list_props(self: "ListNode", inst: InstanceNode) -> None:
+    def _check_list_props(self, inst: InstanceNode) -> None:
         """Check uniqueness of keys and "unique" properties, if applicable."""
         if self.keys:
             self._check_keys(inst)
         for u in self.unique:
             self._check_unique(u, inst)
 
-    def _check_keys(self: "ListNode", inst: InstanceNode) -> None:
+    def _check_keys(self, inst: InstanceNode) -> None:
         ukeys = set()
         for i in range(len(inst.value)):
             en = inst.value[i]
@@ -1363,7 +1357,7 @@ class ListNode(SequenceNode, InternalNode):
                                     repr(kval[0] if len(kval) < 2 else kval))
             ukeys.add(kval)
 
-    def _check_unique(self: "ListNode", unique: list[LocationPath],
+    def _check_unique(self, unique: list[LocationPath],
                       inst: InstanceNode) -> None:
         allvals = set()
         for i in range(len(inst.value)):
@@ -1379,11 +1373,11 @@ class ListNode(SequenceNode, InternalNode):
             else:
                 allvals |= tups
 
-    def _default_instance(self: "ListNode", pnode: InstanceNode, ctype: ContentType,
+    def _default_instance(self, pnode: InstanceNode, ctype: ContentType,
                           lazy: bool = False) -> InstanceNode:
         return pnode
 
-    def _post_process(self: "ListNode") -> None:
+    def _post_process(self) -> None:
         super()._post_process()
         for k in self.keys:
             kn = self.get_data_child(*k)
@@ -1392,12 +1386,12 @@ class ListNode(SequenceNode, InternalNode):
                 kn._mandatory = True
                 self._add_mandatory_child(kn)
 
-    def _key_stmt(self: "ListNode", stmt: Statement,
+    def _key_stmt(self, stmt: Statement,
                   sctx: SchemaContext) -> None:
         self.keys = [sctx.schema_data.translate_node_id(k, sctx)
                      for k in stmt.argument.split()]
 
-    def _parse_unique(self: "ListNode", stmt: Statement,
+    def _parse_unique(self, stmt: Statement,
                      sctx: SchemaContext) -> list[LocationPath]:
         uspec = []
         for sid in stmt.argument.split():
@@ -1408,11 +1402,11 @@ class ListNode(SequenceNode, InternalNode):
             uspec.append(uex)
         return uspec
 
-    def _unique_stmt(self: "ListNode", stmt: Statement,
+    def _unique_stmt(self, stmt: Statement,
                      sctx: SchemaContext) -> None:
         self.unique.append(self._parse_unique(stmt, sctx))
 
-    def _deviate_unique(self: "ListNode", stmt: Statement,
+    def _deviate_unique(self, stmt: Statement,
                         sctx: SchemaContext, action: str) -> None:
         if action in ("add", "replace"):
             if action == "replace":
@@ -1425,13 +1419,13 @@ class ListNode(SequenceNode, InternalNode):
                     del self.unique[i]
                     return
 
-    def _tree_line(self: "ListNode", no_type: bool = False) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
         keys = (" [" + " ".join([k[0] for k in self.keys]) + "]"
                 if self.keys else "")
         return super()._tree_line() + keys
 
-    def orphan_entry(self: "ListNode", rval: RawObject) -> "ArrayEntry":
+    def orphan_entry(self, rval: RawObject) -> "ArrayEntry":
         """Return an isolated entry of the receiver.
 
         Args:
@@ -1445,18 +1439,18 @@ class ListNode(SequenceNode, InternalNode):
 class ChoiceNode(InternalNode):
     """Choice node."""
 
-    def __init__(self: "ChoiceNode"):
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.default_case: QualName = None
         self._mandatory: bool = False
 
     @property
-    def mandatory(self: "ChoiceNode") -> bool:
+    def mandatory(self) -> bool:
         """Override the superclass property."""
         return self._mandatory
 
-    def _add_defaults(self: "ChoiceNode", inst: InstanceNode,
+    def _add_defaults(self, inst: InstanceNode,
                       ctype: ContentType) -> InstanceNode:
         if self.when and not self.when.evaluate(inst):
             return inst
@@ -1473,15 +1467,14 @@ class ChoiceNode(InternalNode):
         else:
             return inst
 
-    def _active_case(self: "ChoiceNode",
-                     value: ObjectValue) -> Optional["CaseNode"]:
+    def _active_case(self, value: ObjectValue) -> Optional["CaseNode"]:
         """Return receiver's case that's active in an instance node value."""
         for c in self.children:
             for cc in c.data_children():
                 if cc.iname() in value:
                     return c
 
-    def _pattern_entry(self: "ChoiceNode") -> SchemaPattern:
+    def _pattern_entry(self) -> SchemaPattern:
         if not self.children:
             return Empty()
         prev = self.children[0]._schema_pattern()
@@ -1492,16 +1485,16 @@ class ChoiceNode(InternalNode):
             prev = SchemaPattern.optional(prev)
         return ConditionalPattern(prev, self.when) if self.when else prev
 
-    def _post_process(self: "ChoiceNode") -> None:
+    def _post_process(self) -> None:
         super()._post_process()
         if self.mandatory:
             self.parent._add_mandatory_child(self)
 
-    def _tree_line_prefix(self: "ChoiceNode") -> str:
+    def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + (
             "ro" if self.content_type() == ContentType.nonconfig else "rw")
 
-    def _handle_child(self: "ChoiceNode", node: SchemaNode, stmt: Statement,
+    def _handle_child(self, node: SchemaNode, stmt: Statement,
                       sctx: SchemaContext) -> None:
         if isinstance(node, CaseNode):
             super()._handle_child(node, stmt, sctx)
@@ -1512,19 +1505,18 @@ class ChoiceNode(InternalNode):
             self._add_child(cn)
             cn._handle_child(node, stmt, sctx)
 
-    def _default_stmt(self: "ChoiceNode", stmt: Statement,
-                      sctx: SchemaContext) -> None:
+    def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self.default_case = sctx.schema_data.translate_node_id(
             stmt.argument, sctx)
 
-    def _deviate_default(self: "ChoiceNode", stmt: Statement,
+    def _deviate_default(self, stmt: Statement,
                          sctx: SchemaContext, action: str) -> None:
         if action == "delete":
             self.default_case = None
         elif action in ("add", "replace"):
             self._default_stmt(stmt, sctx)
 
-    def _tree_line(self: "ChoiceNode", no_type: bool = False) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
         return f"{self._tree_line_prefix()} ({self._tree_name()})" \
             f"{'' if self._mandatory else '?'}"
@@ -1533,10 +1525,10 @@ class ChoiceNode(InternalNode):
 class CaseNode(InternalNode):
     """Case node."""
 
-    def _pattern_entry(self: "CaseNode") -> SchemaPattern:
+    def _pattern_entry(self) -> SchemaPattern:
         return super()._schema_pattern()
 
-    def _tree_line(self: "CaseNode", no_type: bool = False) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         """Return the receiver's contribution to tree diagram."""
         return f"{self._tree_line_prefix()}:({self._tree_name()})"
 
@@ -1544,18 +1536,18 @@ class CaseNode(InternalNode):
 class LeafNode(DataNode, TerminalNode):
     """Leaf node."""
 
-    def __init__(self: "LeafNode"):
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self._mandatory: bool = False
 
     @property
-    def mandatory(self: "LeafNode") -> bool:
+    def mandatory(self) -> bool:
         """Override the superclass property."""
         return self._mandatory
 
     @property
-    def default(self: "LeafNode") -> Optional[ScalarValue]:
+    def default(self) -> Optional[ScalarValue]:
         """Default value of the receiver, if any."""
         if self.mandatory:
             return None
@@ -1563,22 +1555,21 @@ class LeafNode(DataNode, TerminalNode):
             return self._default
         return self.type.default
 
-    def _post_process(self: "LeafNode") -> None:
+    def _post_process(self) -> None:
         super()._post_process()
         if self._mandatory:
             self.parent._add_mandatory_child(self)
         elif self._default is not None:
             self._default = self.type.from_yang(self._default)
 
-    def _tree_line(self: "LeafNode", no_type: bool = False) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         res = super()._tree_line() + ("" if self._mandatory else "?")
         return res if no_type else f"{res} <{self.type}>"
 
-    def _default_stmt(self: "LeafNode", stmt: Statement,
-                      sctx: SchemaContext) -> None:
+    def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         self._default = stmt.argument
 
-    def _deviate_default(self: "LeafNode", stmt: Statement,
+    def _deviate_default(self, stmt: Statement,
                          sctx: SchemaContext, action: str) -> None:
         if action == "delete":
             self._default = None
@@ -1590,7 +1581,7 @@ class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
 
     @property
-    def default(self: "LeafListNode") -> Optional[ScalarValue]:
+    def default(self) -> Optional[ScalarValue]:
         """Default value of the receiver, if any."""
         if self.mandatory:
             return None
@@ -1599,22 +1590,21 @@ class LeafListNode(SequenceNode, TerminalNode):
         return (None if self.type.default is None
                 else ArrayValue([self.type.default]))
 
-    def _yang_class(self: "LeafListNode") -> str:
+    def _yang_class(self) -> str:
         return "leaf-list"
 
-    def _check_list_props(self: "LeafListNode", inst: InstanceNode) -> None:
+    def _check_list_props(self, inst: InstanceNode) -> None:
         if (self.content_type() == ContentType.config and
                 len(set(inst.value)) < len(inst.value)):
             raise SemanticError(inst, "repeated-leaf-list-value")
 
-    def _default_stmt(self: "LeafListNode",
-                      stmt: Statement, sctx: SchemaContext) -> None:
+    def _default_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         if self._default is None:
             self._default = [stmt.argument]
         else:
             self._default.append(stmt.argument)
 
-    def _deviate_default(self: "LeafListNode", stmt: Statement,
+    def _deviate_default(self, stmt: Statement,
                          sctx: SchemaContext, action: str) -> None:
         if action in ("add", "replace"):
             if action == "replace":
@@ -1627,13 +1617,13 @@ class LeafListNode(SequenceNode, TerminalNode):
                     del self._default[i]
                     return
 
-    def _post_process(self: "LeafListNode") -> None:
+    def _post_process(self) -> None:
         super()._post_process()
         if self._default is not None:
             self._default = ArrayValue(
                 [self.type.from_yang(v) for v in self._default])
 
-    def _tree_line(self: "LeafListNode", no_type: bool = False) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         res = super()._tree_line()
         return res if no_type else f"{res} <{self.type}>"
 
@@ -1641,21 +1631,21 @@ class LeafListNode(SequenceNode, TerminalNode):
 class AnyContentNode(DataNode):
     """Abstract class for anydata or anyxml nodes."""
 
-    def __init__(self: "AnyContentNode"):
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self._mandatory: bool = False
 
-    def content_type(self: "AnyContentNode") -> ContentType:
+    def content_type(self) -> ContentType:
         """Override superclass method."""
         return TerminalNode.content_type(self)
 
     @property
-    def mandatory(self: "AnyContentNode") -> bool:
+    def mandatory(self) -> bool:
         """Override the superclass property."""
         return self._mandatory
 
-    def from_raw(self: "AnyContentNode", rval: RawValue, jptr: JSONPointer = "") -> Value:
+    def from_raw(self, rval: RawValue, jptr: JSONPointer = "") -> Value:
         """Override the superclass method."""
         def convert(val):
             if isinstance(val, list):
@@ -1667,7 +1657,7 @@ class AnyContentNode(DataNode):
             return res
         return convert(rval)
 
-    def to_raw(self: "AnyContentNode", value: Value) -> RawValue:
+    def to_raw(self, value: Value) -> RawValue:
         """Convert the value again to plain Python stuff."""
         def convert(val):
             if isinstance(val, ArrayValue):
@@ -1679,20 +1669,20 @@ class AnyContentNode(DataNode):
             return res
         return convert(value)
 
-    def from_xml(self: "AnyContentNode", rval: ET.Element, jptr: JSONPointer = "") -> Value:
+    def from_xml(self, rval: ET.Element, jptr: JSONPointer = "") -> Value:
         super().from_xml(rval, jptr)
 
-    def _default_instance(self: "AnyContentNode", pnode: InstanceNode, ctype: ContentType,
+    def _default_instance(self, pnode: InstanceNode, ctype: ContentType,
                           lazy: bool = False) -> InstanceNode:
         return pnode
 
-    def _tree_line(self: "AnyContentNode", no_type: bool = False) -> str:
+    def _tree_line(self, no_type: bool = False) -> str:
         return super()._tree_line() + ("" if self._mandatory else "?")
 
-    def _ascii_tree(self: "AnyContentNode", indent: str, no_types: bool, val_count: bool) -> str:
+    def _ascii_tree(self, indent: str, no_types: bool, val_count: bool) -> str:
         return ""
 
-    def _post_process(self: "AnyContentNode") -> None:
+    def _post_process(self) -> None:
         if self._mandatory:
             self.parent._add_mandatory_child(self)
 
@@ -1710,37 +1700,37 @@ class AnyxmlNode(AnyContentNode):
 class RpcActionNode(SchemaTreeNode):
     """RPC or action node."""
 
-    def __init__(self: "RpcActionNode"):
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.default_deny: DefaultDeny = DefaultDeny.none
         self._ctype = ContentType.nonconfig
 
-    def iname(self: "SchemaTreeNode") -> InstanceName:
+    def iname(self) -> InstanceName:
         """Override the superclass method."""
         return super(GroupNode, self).iname()
 
-    def data_parent(self: "SchemaTreeNode") -> None:
+    def data_parent(self) -> None:
         """Override the superclass method."""
         return self.parent
 
-    def _handle_substatements(self: "RpcActionNode", stmt: Statement,
+    def _handle_substatements(self, stmt: Statement,
                               sctx: SchemaContext) -> None:
         self._add_child(InputNode(sctx.default_ns))
         self._add_child(OutputNode(sctx.default_ns))
         super()._handle_substatements(stmt, sctx)
 
-    def _flatten(self: "RpcActionNode") -> list[SchemaNode]:
+    def _flatten(self) -> list[SchemaNode]:
         return [self]
 
-    def _tree_line_prefix(self: "RpcActionNode") -> str:
+    def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "-x"
 
-    def _input_stmt(self: "RpcActionNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _input_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle RPC or action input statement."""
         self.get_child("input")._handle_substatements(stmt, sctx)
 
-    def _output_stmt(self: "RpcActionNode", stmt: Statement, sctx: SchemaContext) -> None:
+    def _output_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle RPC or action output statement."""
         self.get_child("output")._handle_substatements(stmt, sctx)
 
@@ -1748,7 +1738,7 @@ class RpcActionNode(SchemaTreeNode):
 class InputNode(InternalNode, DataNode):
     """RPC or action input node."""
 
-    def __init__(self: "InputNode", ns):
+    def __init__(self, ns):
         """Initialize the class instance."""
         super().__init__()
         self._config = False
@@ -1756,22 +1746,22 @@ class InputNode(InternalNode, DataNode):
         self.ns = ns
 
     @property
-    def mandatory(self: "InputNode") -> bool:
+    def mandatory(self) -> bool:
         """Override the superclass property."""
         return False
 
-    def iname(self: "InputNode") -> InstanceName:
+    def iname(self) -> InstanceName:
         """Override the superclass method."""
         return self.ns + ":" + self.name
 
-    def _flatten(self: "InputNode") -> list[SchemaNode]:
+    def _flatten(self) -> list[SchemaNode]:
         return [self]
 
 
 class OutputNode(InternalNode, DataNode):
     """RPC or action output node."""
 
-    def __init__(self: "OutputNode", ns):
+    def __init__(self, ns):
         """Initialize the class instance."""
         super().__init__()
         self._config = False
@@ -1779,29 +1769,29 @@ class OutputNode(InternalNode, DataNode):
         self.ns = ns
 
     @property
-    def mandatory(self: "OutputNode") -> bool:
+    def mandatory(self) -> bool:
         """Override the superclass property."""
         return False
 
-    def iname(self: "OutputNode") -> InstanceName:
+    def iname(self) -> InstanceName:
         """Override the superclass method."""
         return self.ns + ":" + self.name
 
-    def _flatten(self: "OutputNode") -> list[SchemaNode]:
+    def _flatten(self) -> list[SchemaNode]:
         return [self]
 
 
 class NotificationNode(SchemaTreeNode):
     """Notification node."""
 
-    def __init__(self: "NotificationNode"):
+    def __init__(self):
         """Initialize the class instance."""
         super().__init__()
         self.default_deny: DefaultDeny = DefaultDeny.none
         self._ctype = ContentType.nonconfig
 
-    def _flatten(self: "NotificationNode") -> list[SchemaNode]:
+    def _flatten(self) -> list[SchemaNode]:
         return [self]
 
-    def _tree_line_prefix(self: "NotificationNode") -> str:
+    def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + "-n"
