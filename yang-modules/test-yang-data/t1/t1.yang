@@ -1,0 +1,109 @@
+module t1 {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/t1";
+
+  prefix "t";
+
+  import ietf-restconf {
+    prefix "rc";
+    revision-date "2017-01-26";
+  }
+
+  import defs {
+    prefix "d";
+  }
+
+  import a {
+    // make identity definitions in a visible inside formatted yang-data
+    prefix "a";
+  }
+
+  include t1-sub;
+
+  revision 2025-07-01;
+
+  feature enabled;
+  feature disabled;
+
+  identity type-t1 {
+    base d:ident-base;
+  }
+
+  rc:yang-data formatted {
+    container main {
+      config true; // ignored
+      if-feature enabled; // ignored
+
+      leaf id-reference {
+        type identityref {
+          base d:ident-base;
+        }
+      }
+    }
+  }
+
+  rc:yang-data second {
+    uses grp;
+  }
+
+  grouping grp {
+    container indirect {
+      config false; // ignored
+      if-feature disabled; // ignored
+
+      leaf target {
+        type int32;
+      }
+
+      leaf referenced {
+        type instance-identifier {
+          require-instance false;
+        }
+      }
+    }
+  }
+
+  container conf {
+    config true;
+
+    rc:yang-data ignored {
+      container cont {}
+    }
+
+    leaf config {
+      type string;
+    }
+  }
+
+  container state {
+    config false;
+
+    rc:yang-data ignored { // ignored
+      container data {
+        leaf node {
+          type empty;
+        }
+      }
+    }
+
+    leaf state {
+      type string;
+    }
+  }
+
+  rc:yang-data req-inst {
+    container box {
+      leaf value {
+        type int32;
+      }
+
+      leaf ref {
+        type instance-identifier {
+          require-instance true;
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,73 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "0",
+    "module": [
+      {
+        "name": "ietf-restconf",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-restconf",
+        "revision": "2017-01-26",
+        "conformance-type": "import"
+      },
+      {
+        "name": "ietf-inet-types",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
+        "revision": "2013-07-15",
+        "conformance-type": "import"
+      },
+      {
+        "name": "t3-1",
+        "namespace": "http://example.com/t3-1",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "t3-2",
+        "namespace": "http://example.com/t3-2",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "t3-3",
+        "namespace": "http://example.com/t3-3",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "t3-4",
+        "namespace": "http://example.com/t3-4",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "t3-5",
+        "namespace": "http://example.com/t3-5",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "t3-6",
+        "namespace": "http://example.com/t3-6",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "t3-7",
+        "namespace": "http://example.com/t3-7",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "t3-8",
+        "namespace": "http://example.com/t3-8",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "t3-9",
+        "namespace": "http://example.com/t3-9",
+        "revision": "",
+        "conformance-type": "implement"
+      }
+    ]
+  }
+}

@@ -143,7 +143,7 @@ def xml_safe_data_model(data_model):
        ALL OF THESE ISSUES SHOULD BE FIXED!
     '''
 
-    # ensure we don't disturb the original 
+    # ensure we don't disturb the original
     data_model2 = copy.deepcopy(data_model)
 
     # Make /test:contA/anydA be "mandatory false" because
@@ -209,7 +209,7 @@ def xml_safe_data(data):
        ALL OF THESE ISSUES SHOULD BE FIXED!
     '''
 
-    # ensure we don't disturb the original 
+    # ensure we don't disturb the original
     data2 = copy.deepcopy(data)
 
     # remove /test:contA/anydA, since XML code doesn't support 'anydata' (or 'anyxml')
@@ -781,7 +781,7 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
     """
     expected_xml_stripped = strip_pretty(expected_xml_pretty)
 
-    # convert raw object to an InstanceValue 
+    # convert raw object to an InstanceValue
     inst = xml_safe_data_model.from_raw(xml_safe_data)
     assert(type(inst) == RootNode)
     assert(inst.raw_value() == xml_safe_data)

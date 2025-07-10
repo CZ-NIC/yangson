@@ -1,0 +1,42 @@
+module t3-5 {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/t3-5";
+
+  prefix "t";
+
+  import ietf-restconf {
+    prefix "rc";
+    revision-date "2017-01-26";
+  }
+
+  import ietf-inet-types {
+    prefix "inet";
+    revision-date "2013-07-15";
+  }
+
+  revision 2025-07-01;
+
+  rc:yang-data data {
+    container main {
+      leaf a {
+        type empty;
+      }
+
+      uses target;
+    }
+
+    // "grouping" statement is illegal as a substatement for ietf-restconf:yang-data statement
+    grouping target {
+      leaf address {
+        type inet:ip-address;
+        description "Target IP address.";
+      }
+      leaf port {
+        type inet:port-number;
+        description "Target port number.";
+      }
+    }
+  }
+}

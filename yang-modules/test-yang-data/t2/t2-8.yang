@@ -1,0 +1,24 @@
+module t2-8 {
+
+  yang-version "1.1";
+
+  import ietf-restconf {
+    prefix "rc";
+    revision-date 2017-01-26;
+  }
+
+  prefix "t";
+
+  revision 2025-07-01;
+
+  rc:yang-data ydata {
+    container data {
+      leaf ref {
+        type leafref {
+          // above toplevel /
+          path "../../../data";
+        }
+      }
+    }
+  }
+}

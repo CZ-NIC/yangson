@@ -31,7 +31,7 @@ from .exceptions import (BadYangLibraryData, InvalidArgument,
 from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
                        RootNode)
 from .schemadata import SchemaData, SchemaContext
-from .schemanode import DataNode, SchemaTreeNode, RawObject, SchemaNode
+from .schemanode import DataNode, SchemaTreeNode, RawObject, SchemaNode, YangData
 from .typealiases import DataPath, PrefName, SchemaPath
 
 
@@ -85,6 +85,7 @@ class DataModel:
         self.schema._ctype = ContentType.all
         self._build_schema()
         self._build_imported_idents()
+        self._restrict_yang_data_idents()
         self.schema.description = description if description else (
             "Data model ID: " +
             self.yang_library["ietf-yang-library:modules-state"]
@@ -243,3 +244,12 @@ class DataModel:
                 sctx = SchemaContext(
                     self.schema_data, self.schema_data.namespace(mid), mid)
                 self.schema._identity_stmt(ident, sctx)
+
+    def _restrict_yang_data_idents(self: "DataModel") -> None:
+        for c in self.schema.children:
+            if isinstance(c, YangData):
+                mod_seq = []
+                mod_set = {self.schema_data.modules_by_name[c.ns].main_module} | self.schema_data.modules_by_name[c.ns].submodules
+                SchemaData._find_module_import_sequence(self.schema_data, mod_set, mod_seq)
+                c.context.identity_adjs = {qn: ident for (qn, ident) in self.schema_data.identity_adjs.items()
+                                           if qn[1] in mod_seq}

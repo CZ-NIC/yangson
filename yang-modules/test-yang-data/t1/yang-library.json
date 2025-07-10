@@ -1,0 +1,50 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "0",
+    "module": [
+      {
+        "name": "t1",
+        "namespace": "http://example.com/t1",
+        "revision": "",
+        "feature": ["enabled"],
+        "submodule": [
+          {
+            "name": "t1-sub",
+            "revision": ""
+          }
+        ],
+        "conformance-type": "implement"
+      },
+      {
+        "name": "defs",
+        "namespace": "http://example.com/defs",
+        "revision": "",
+        "conformance-type": "import"
+      },
+      {
+        "name": "a",
+        "namespace": "http://example.com/a",
+        "revision": "",
+        "conformance-type": "import"
+      },
+      {
+        "name": "trans",
+        "namespace": "http://example.com/a",
+        "revision": "",
+        "conformance-type": "import"
+      },
+      {
+        "name": "b",
+        "namespace": "http://example.com/b",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-restconf",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-restconf",
+        "revision": "2017-01-26",
+        "conformance-type": "import"
+      }
+    ]
+  }
+}

@@ -1,0 +1,35 @@
+module t2-5 {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/t2-5";
+
+  prefix "t";
+
+  import ietf-restconf {
+    prefix "rc";
+    revision-date 2017-01-26;
+  }
+
+  revision 2025-07-01;
+
+  rc:yang-data ydata {
+    container data {
+      leaf ref {
+        type leafref {
+          // xpath contains node ydat2 that is not part of a schema
+          path "../../ydata2/data/leafA";
+          //path "/ydata2/data/leafA";
+        }
+      }
+    }
+  }
+
+  rc:yang-data ydata2 {
+    container data {
+      leaf leafA {
+        type int32;
+      }
+    }
+  }
+}

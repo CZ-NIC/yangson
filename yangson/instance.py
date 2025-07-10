@@ -1082,6 +1082,15 @@ class InstanceRoute(list):
         """Return the hash value of the receiver."""
         return self.__str__().__hash__()
 
+    def as_schema_route(self: "InstanceRoute") -> SchemaRoute:
+        """Get a SchemaNode from InstanceRoute.
+        This transformation removes all key values and leaf-list/list indices."""
+        sch_route = []
+        for mem_key in self:
+            if isinstance(mem_key, EntryKeys):
+                continue
+            sch_route.append(mem_key.as_qual_name())
+        return sch_route
 
 class MemberName:
     """Selectors of object members."""
@@ -1129,6 +1138,9 @@ class MemberName:
         """
         return inst[self.iname()]
 
+    def as_qual_name(self: "MemberName") -> QualName:
+        """Get a QualName from MemberName."""
+        return (self.name, self.namespace)
 
 class ActionName(MemberName):
     """Name of an action (can appear in RESTCONF resource IDs)."""

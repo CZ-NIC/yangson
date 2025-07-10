@@ -1,0 +1,22 @@
+module b {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/b";
+
+  prefix "b";
+
+  import defs {
+    prefix "d";
+  }
+
+  revision 2025-07-01;
+
+  identity b-derived {
+    base d:ident-base;
+  }
+
+  leaf inaccessible {
+    type string;
+  }
+}

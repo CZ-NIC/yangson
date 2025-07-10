@@ -24,6 +24,7 @@ class is intended to be public:
 * Expr: XPath 1.0 expression with YANG 1.1 extensions.
 """
 import decimal
+from typing import TYPE_CHECKING
 from math import ceil, copysign, floor, isnan
 from elementpath import RegexError, translate_pattern
 from xml.sax.saxutils import quoteattr
@@ -35,8 +36,10 @@ from .exceptions import InvalidArgument, XPathTypeError
 from .instance import (EntryIndex, EntryKeys, EntryValue, InstanceNode,
                        InstanceRoute, MemberName)
 from .nodeset import NodeExpr, NodeSet, XPathValue
-from .typealiases import QualName
+from .typealiases import QualName, SchemaRoute
 
+if TYPE_CHECKING:
+    from .schemanode import SchemaNode
 
 class XPathContext:
 
@@ -116,6 +119,17 @@ class Expr:
         """Convert receiver to an InstanceRoute."""
         raise NotImplementedError
 
+    def as_schema_route(self: "Expr", node: "SchemaNode") -> Optional[SchemaRoute]:
+        """Convert receiver to a SchemaRoute.
+
+        Args:
+            node: Current schema node as base for relative paths.
+
+        Returns:
+            ``None`` if the XPath expression is invalid in the schema.
+        """
+        raise NotImplementedError
+
     def _properties_str(self: "Expr") -> str:
         return ""
 
@@ -149,6 +163,19 @@ class Expr:
             ns = res
         return ns
 
+    def check(self: "Expr", ctx_root: "SchemaNode") -> bool:
+        """Test if the XPath expression does not reference nodes outside given context.
+        This function is useful when checking ietf-restconf:yang-data XPath exprs.
+
+        Args:
+            ctx_root: XPath context root node.
+
+        Returns:
+            ``True`` if the references don't use nodes outside the given context.
+
+        """
+        return True
+
 
 class UnaryExpr(Expr):
     """Abstract superclass for unary expressions."""
@@ -165,6 +192,9 @@ class UnaryExpr(Expr):
 
     def _children_ast(self: "UnaryExpr", indent: int) -> str:
         return self.expr.syntax_tree(indent) if self.expr else ""
+
+    def check(self: "Expr", ctx_root: "SchemaNode") -> bool:
+        return self.expr.check(ctx_root)
 
 
 class BinaryExpr(Expr):
@@ -203,6 +233,9 @@ class BinaryExpr(Expr):
         sop = f" {op} " if spaces else op
         return f"{lft}{sop}{rt}"
 
+    def check(self: Expr, ctx_root: "SchemaNode") -> bool:
+        return self.left.check(ctx_root) and self.right.check(ctx_root)
+
 
 class OrExpr(BinaryExpr):
 
@@ -239,6 +272,7 @@ class EqualityExpr(BinaryExpr):
 
     def as_instance_route(self: "EqualityExpr") -> InstanceRoute:
         step = self.left
+        # TODO: fix return
 
     def _properties_str(self: "EqualityExpr") -> str:
         return "!=" if self.negate else "="
@@ -439,6 +473,26 @@ class LocationPath(BinaryExpr):
         return InstanceRoute(self.left.as_instance_route() +
                              self.right.as_instance_route())
 
+    def as_schema_route(self: "Expr", node: Optional["SchemaNode"] = None) -> Optional[SchemaRoute]:
+        """Get a SchemaRoute from XPath expression receiver.
+
+        Args:
+            node: Starting schema node to use.
+
+        Returns:
+            ``None`` if the XPath expression has error, either access of SchemaTreeNode parent
+            or path with nonexistent child."""
+        node = self._location_node(node)
+        if node:
+            return node.as_schema_route()
+
+    def _location_node(self: "Expr", node: "SchemaNode") -> Optional["SchemaNode"]:
+        """Find relative XPath expression base node."""
+        ln = self.left._location_node(node)
+        return self.right._location_node(ln) if ln is not None else None
+
+    def check(self: Expr, node: "SchemaNode") -> bool:
+        return self.as_schema_route(node) is not None
 
 class Root(Expr):
 
@@ -453,9 +507,25 @@ class Root(Expr):
     def as_instance_route(self: "Root") -> InstanceRoute:
         return InstanceRoute([])
 
+    def as_schema_route(self: "Expr", node: "SchemaNode") -> Optional[SchemaRoute]:
+        """Get a SchemaRoute from XPath expression receiver.
+
+        Args:
+            node: Starting schema node to use.
+
+        Returns:
+            ``None`` if the XPath expression has error, either access of SchemaTreeNode parent
+            or path with nonexistent child."""
+        return []
+
+    def _location_node(self: "Expr", node: "SchemaNode") -> "SchemaNode":
+        """Find relative XPath expression base node."""
+        if node._y_data_struct is not None:
+            return node._y_data_struct
+        else:
+            return node.schema_root()
 
 class Step(Expr):
-
     def __init__(self: "Step", axis: Axis, qname: QualName,
                  predicates: list[Expr]):
         self.axis = axis
@@ -491,6 +561,40 @@ class Step(Expr):
             ks = { p.left.qname: p.right.value for p in self.predicates }
             espec = EntryKeys(ks)
         return InstanceRoute([m, espec])
+
+    def as_schema_route(self: "Expr", node: "SchemaNode") -> Optional[SchemaRoute]:
+        """Get a SchemaRoute from XPath expression receiver.
+
+        Args:
+            node: Starting schema node to use.
+
+        Returns:
+            ``None`` if the XPath expression has error, either access of SchemaTreeNode parent
+            or path with nonexistent child."""
+        node = self._location_node(node)
+        if node:
+            return node.as_schema_route()
+
+    def _location_node(self: "Expr", node: "SchemaNode") -> Optional["SchemaNode"]:
+        """Find relative XPath expression base node."""
+        if self.qname is not None and self.axis == Axis.child:
+            # if not isinstance(node, InternalNode):
+            if not hasattr(node, "children"):
+                return None
+
+            for child in node.children:
+                if child.qual_name == self.qname:
+                    return child
+            return None
+        elif self.axis == Axis.self:
+            return node
+        elif self.axis == Axis.parent:
+            #if isinstance(node, YangData):
+            if node._y_data_struct is not None:
+                return None
+            return node.parent
+        else:
+            assert False
 
     def _properties_str(self: "Step") -> str:
         return f"{self.axis.name} {self.qname}"

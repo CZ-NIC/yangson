@@ -1,0 +1,65 @@
+module t3-9 {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/t3-9";
+
+  prefix "t";
+
+  import ietf-restconf {
+    prefix "rc";
+    revision-date "2017-01-26";
+  }
+
+  revision 2025-07-01;
+
+  rc:yang-data data {
+    // "deviation" statement is illegal substatement for ietf-restconf:yang-data
+    deviation "/updated/complex" {
+      deviate not-supported;
+    }
+
+    deviation "/updated/admin" {
+      deviate add {
+        default "admin";
+      }
+    }
+
+    deviation "updated/users" {
+      deviate replace {
+        max-elements 10;
+      }
+    }
+
+    deviation "/updated/to_be_deleted" {
+      deviate delete;
+    }
+  }
+
+  container updated {
+    container complex {
+      leaf a {
+        type int32;
+      }
+
+      leaf b {
+        type int32;
+      }
+    }
+
+    container to_be_deleted {
+      leaf c {
+        type empty;
+      }
+    }
+
+    leaf admin {
+      type string;
+    }
+
+    leaf-list users {
+      type string;
+      max-elements 5;
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "0",
+    "module": [
+      {
+        "name": "ietf-restconf",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-restconf",
+        "revision": "2017-01-26",
+        "conformance-type": "implement"
+      }
+    ]
+  }
+}

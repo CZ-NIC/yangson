@@ -1,0 +1,31 @@
+module t3-7 {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/t3-7";
+
+  prefix "t";
+
+  import ietf-restconf {
+    prefix "rc";
+    revision-date "2017-01-26";
+  }
+
+  revision 2025-07-01;
+
+  rc:yang-data data {
+    // "rpc" statement is illegal as a substatement of ietf-restconf:yang-data statement
+    rpc activate-software-image {
+      input {
+        leaf image-name {
+          type string;
+        }
+      }
+      output {
+        leaf status {
+          type string;
+        }
+      }
+    }
+  }
+}

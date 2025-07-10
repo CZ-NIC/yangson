@@ -1,0 +1,44 @@
+module example {
+  yang-version "1.1";
+  namespace "http://example.com";
+  prefix "e";
+
+  import ietf-restconf {
+    prefix "rc";
+    revision-date "2017-01-26";
+  }
+
+  container toplevel {
+    // the whole rc:yang-data statement should be ignored
+    rc:yang-data sublevel {
+      container proto-msg {
+        leaf data { type empty; }
+      }
+    }
+  }
+
+  rc:yang-data correct {
+    container main {
+      leaf key {
+        // the "config" statements inside rc:yang-data are ignored
+        config false;
+        type string;
+      }
+
+      leaf value {
+        // also ignored "config" statement
+        config true;
+        type int32;
+      }
+    }
+  }
+
+  feature optional-feature;
+
+  rc:yang-data quiet-data {
+    container quiet {
+      // no message at all, expect to print warning as it should be ignored
+      if-feature optional-feature;
+    }
+  }
+}

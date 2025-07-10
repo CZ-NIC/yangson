@@ -1,0 +1,27 @@
+module a {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/a";
+
+  prefix "a";
+
+  import defs {
+    prefix "d";
+  }
+
+  import trans {
+    prefix "tr";
+  }
+
+  revision 2025-07-01;
+
+  identity a-unbound;
+  identity a-derived {
+    base d:ident-base;
+  }
+
+  identity a-tr-derived {
+    base tr:tr-derived;
+  }
+}

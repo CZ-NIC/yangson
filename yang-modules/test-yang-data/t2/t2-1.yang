@@ -1,0 +1,26 @@
+module t2-1 {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/t2-1";
+
+  prefix "t";
+
+  import ietf-restconf {
+    prefix "rc";
+    revision-date 2017-01-26;
+  }
+
+  revision 2025-07-01;
+
+  rc:yang-data ydata {
+    // two definitions of toplevel containers for yang-data
+    container data {
+      when false;
+    }
+
+    container data2 {
+      when true;
+    }
+  }
+}

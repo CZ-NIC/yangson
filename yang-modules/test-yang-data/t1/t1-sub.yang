@@ -1,0 +1,27 @@
+submodule t1-sub {
+
+  yang-version "1.1";
+
+  belongs-to "t1" {
+    prefix "t";
+  }
+
+  import ietf-restconf {
+    prefix "rc";
+    revision-date 2017-01-26;
+  }
+
+  revision 2025-07-01;
+
+  rc:yang-data ydata {
+    container data {
+      leaf a {
+        type int32;
+      }
+    }
+  }
+
+  identity ts-derived {
+    base t:type-t1;
+  }
+}

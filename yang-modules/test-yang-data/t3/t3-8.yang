@@ -1,0 +1,56 @@
+module t3-8 {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/t3-8";
+
+  prefix "t";
+
+  import ietf-restconf {
+    prefix "rc";
+    revision-date "2017-01-26";
+  }
+
+  revision 2025-07-01;
+
+  rc:yang-data data {
+    // "notification" statement is illegal as a substatement of ietf-restconf:yang-data statement
+    notification link-failure {
+      description
+        "A link failure has been detected.";
+      leaf if-name {
+        type leafref {
+          path "/interface/name";
+        }
+      }
+      leaf if-admin-status {
+        type admin-status;
+      }
+      leaf if-oper-status {
+        type oper-status;
+      }
+    }
+
+    container interface {
+      leaf-list name {
+        type string;
+      }
+    }
+  }
+
+  typedef admin-status {
+    type enumeration {
+      enum up;
+      enum down;
+    }
+  }
+
+  typedef oper-status {
+    type enumeration {
+      enum down;
+      enum up;
+      enum starting;
+      enum stop;
+    }
+  }
+}

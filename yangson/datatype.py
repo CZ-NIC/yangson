@@ -61,7 +61,7 @@ from .statement import Statement
 from .typealiases import QualName, RawScalar, ScalarValue, YangIdentifier
 from .xpathparser import XPathParser
 if TYPE_CHECKING:
-    from .schemanode import TerminalNode
+    from .schemanode import TerminalNode, SchemaNode
 
 
 class DataType:
@@ -84,6 +84,8 @@ class DataType:
         If the result is ``False``, set also `error_tag` and `error_message`
         properties.
         """
+        # FIXME: Note that type annotation for val is not correct, one of possibilities is InstanceRoute
+        # which is basicaly a list[Union[MemberName, EntryKeys]]
         return True
 
     def __str__(self: "DataType") -> str:
@@ -628,8 +630,18 @@ class LeafrefType(LinkType):
 class InstanceIdentifierType(LinkType):
     """Class representing YANG "instance-identifier" type."""
 
+    def __init__(self: "InstanceIdentifierType", sctx: SchemaContext, name: Optional[YangIdentifier]) -> None:
+        super().__init__(sctx, name)
+        self.root = None # type: SchemaNode
+        """XPath document root schema node."""
+
     def __str__(self: "InstanceIdentifierType") -> str:
         return "instance-identifier"
+
+    def __contains__(self: "InstanceIdentifierType", val: ScalarValue) -> bool:
+        # TODO: route = cast(InstanceRoute, val) [related to FIXME above]
+        node = self.root.get_schema_descendant(val.as_schema_route())
+        return node is not None
 
     def yang_type(self: "InstanceIdentifierType") -> YangIdentifier:
         """Override the superclass method."""
@@ -659,6 +671,12 @@ class InstanceIdentifierType(LinkType):
     @staticmethod
     def _deref(node: InstanceNode) -> list[InstanceNode]:
         return [node.top().goto(node.value)]
+
+    def _post_process(self: "InstanceIdentifierType", tnode: "TerminalNode") -> None:
+        if tnode._y_data_struct:
+            self.root = tnode._y_data_struct
+        else:
+            self.root = tnode.schema_root()
 
 
 class IdentityrefType(DataType):

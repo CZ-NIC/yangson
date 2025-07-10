@@ -1,0 +1,32 @@
+module t3-3 {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/t3-3";
+
+  prefix "t";
+
+  import ietf-restconf {
+    prefix "rc";
+    revision-date "2017-01-26";
+  }
+
+  revision 2025-07-01;
+
+  rc:yang-data data {
+    container main {
+      leaf a {
+        type empty;
+      }
+    }
+
+    // "identity" statement is illegal as a substatement of ietf-restconf:yang-data statement
+    identity some-ident;
+
+    identity new-ident {
+      base base-ident;
+    }
+  }
+
+  identity base-ident;  // OK
+}

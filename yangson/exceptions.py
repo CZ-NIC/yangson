@@ -30,6 +30,7 @@ This module defines the following exceptions:
   on instance nodes.
 * :exc:`InstanceValueError`: The instance value is incompatible with the called method.
 * :exc:`InvalidArgument`: Invalid argument of a statement.
+* :exc:`InvalidStatement`: Invalid statement.
 * :exc:`InvalidFeatureExpression`: Invalid if-feature expression.
 * :exc:`InvalidKeyValue`: Invalid list key or leaf-list value.
 * :exc:`InvalidLeafrefPath`: A leafref path is incorrect.
@@ -127,6 +128,10 @@ class InvalidArgument(YangsonException):
 
     def __str__(self: "InvalidArgument"):
         return self.argument
+
+
+class InvalidStatement(YangsonException):
+    """The statement is invalid in given context."""
 
 
 class InvalidKeyValue(YangsonException):

@@ -1,0 +1,18 @@
+module trans {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/trans";
+
+  prefix "tr";
+
+  import defs {
+    prefix "d";
+  }
+
+  revision 2025-07-01;
+
+  identity tr-derived {
+    base d:ident-base;
+  }
+}

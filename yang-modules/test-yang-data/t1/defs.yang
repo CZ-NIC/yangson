@@ -1,0 +1,15 @@
+module defs {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/defs";
+
+  prefix "defs";
+
+  revision 2025-07-01;
+
+  identity ident-base;
+  identity type-a {
+    base ident-base;
+  }
+}
