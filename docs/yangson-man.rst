@@ -145,8 +145,8 @@ Environment Variables
 =====================
 
 YANG_MODPATH
-   A colon-separated list of directories that is used as the default module path,
-   see the :option:`--path` option.
+   A colon-separated list of directories that is used as the default module
+   path, see the :option:`--path` option.
 
 Exit Status
 ===========

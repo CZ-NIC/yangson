@@ -41,7 +41,7 @@ Options
    Build the output YANG library from the specified schema. The
    *schema* argument is the key of a ``schema`` list entry in the
    input YANG library. This option has no default and is mutually
-   exclusive with the :option:``--datastore`` option.
+   exclusive with the :option:`--datastore` option.
 
 .. option:: -p <module_path>, --path <module_path>
 
@@ -63,8 +63,8 @@ Environment Variables
 =====================
 
 YANG_MODPATH
-   A colon-separated list of directories that is used as the default module path,
-   see the :option:`--path` option.
+   A colon-separated list of directories that is used as the default module
+   path, see the :option:`--path` option.
 
 Exit Status
 ===========
