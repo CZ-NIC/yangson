@@ -62,8 +62,9 @@ class Intervals(Constraint):
             return None
 
     def __init__(self, intervals: list[Interval],
-                 parser: Callable[[str], Optional[Number]] = None,
-                 error_tag: str = None, error_message: str = None):
+                 parser: Optional[Callable[[str], Optional[Number]]] = None,
+                 error_tag: Optional[str] = None,
+                 error_message: Optional[str] = None):
         """Initialize the class instance."""
         super().__init__(error_tag, error_message)
         self.intervals = intervals
@@ -84,8 +85,8 @@ class Intervals(Constraint):
         return " | ".join([f"{r[0]!s}..{r[-1]!s}" if len(r) > 1 else str(r[0])
                            for r in self.intervals])
 
-    def restrict_with(self, expr: str, error_tag: str = None,
-                      error_message: str = None) -> None:
+    def restrict_with(self, expr: str, error_tag: Optional[str] = None,
+                      error_message: Optional[str] = None) -> None:
         """Combine the receiver with new intervals.
 
         Args:
@@ -133,7 +134,8 @@ class Pattern(Constraint):
     """Class representing regular expression pattern."""
 
     def __init__(self, pattern: str, invert_match: bool = False,
-                 error_tag: str = None, error_message: str = None):
+                 error_tag: Optional[str] = None,
+                 error_message: Optional[str] = None):
         """Initialize the class instance."""
         super().__init__(
             error_tag,
@@ -151,8 +153,8 @@ class Pattern(Constraint):
 class Must(Constraint):
     """Class representing the constraint specified by a "must" statement."""
 
-    def __init__(self, expression: Expr, error_tag: str = None,
-                 error_message: str = None):
+    def __init__(self, expression: Expr, error_tag: Optional[str] = None,
+                 error_message: Optional[str] = None):
         """Initialize the class instance."""
         super().__init__(
             error_tag if error_tag else "must-violation", error_message)
