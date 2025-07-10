@@ -107,6 +107,7 @@ class SchemaData:
         """Dictionary of module data by module name."""
         self.modules_by_ns = {}
         self._module_sequence = []  # type: list[ModuleId]
+        self._import_module_sequence = [] # type: list[ModuleId]
         """List that defines the order of module processing."""
         self._from_yang_library(yang_lib)
 
@@ -186,8 +187,7 @@ class SchemaData:
                 return res
         raise ModuleNotFound(name, rev)
 
-    def _process_imports(self: "SchemaData") -> None:
-        impl = set(self.implement.items())
+    def _find_module_import_sequence(self: "SchemaData", impl: MutableSet[ModuleId], module_seq: list[ModuleId]) -> None:
         if len(impl) == 0:
             return
         deps = {mid: set() for mid in impl}
@@ -214,14 +214,21 @@ class SchemaData:
             raise CyclicImports()
         while free:
             nid = free.pop()
-            self._module_sequence.append(nid)
-            self._module_sequence.extend(self.modules[nid].submodules)
+            module_seq.append(nid)
+            module_seq.extend(self.modules[nid].submodules)
             for mid in impby[nid]:
                 deps[mid].remove(nid)
                 if len(deps[mid]) == 0:
                     free.append(mid)
         if [mid for mid in deps if len(deps[mid]) > 0]:
             raise CyclicImports()
+
+    def _process_imports(self: "SchemaData") -> None:
+        impl = set(self.implement.items())
+        self._find_module_import_sequence(impl, self._module_sequence)
+
+        impo = set(self.modules.keys())
+        self._find_module_import_sequence(impo, self._import_module_sequence)
 
     def _check_feature_dependences(self: "SchemaData"):
         """Verify feature dependences."""
