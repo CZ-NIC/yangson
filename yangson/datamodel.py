@@ -39,8 +39,8 @@ class DataModel:
     """Basic user-level entry point to Yangson library."""
 
     @classmethod
-    def from_file(cls, name: str, mod_path: tuple[str] = (".",),
-                  description: str = None) -> "DataModel":
+    def from_file(cls, name: str, mod_path: tuple[str, ...] = (".",),
+                  description: Optional[str] = None) -> "DataModel":
         """Initialize the data model from a file with YANG library data.
 
         Args:
@@ -58,8 +58,8 @@ class DataModel:
             yltxt = infile.read()
         return cls(yltxt, mod_path, description)
 
-    def __init__(self, yltxt: str, mod_path: tuple[str] = (".",),
-                 description: str = None):
+    def __init__(self, yltxt: str, mod_path: tuple[str, ...] = (".",),
+                 description: Optional[str] = None):
         """Initialize the class instance.
 
         Args:

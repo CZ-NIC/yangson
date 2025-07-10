@@ -23,6 +23,7 @@ import os
 import pickle
 import sys
 import importlib.metadata
+from typing import Optional
 from yangson import DataModel
 from yangson.enumerations import ContentType, ValidationScope
 from yangson.exceptions import (
@@ -33,12 +34,14 @@ from yangson.exceptions import (
 from yangson.typealiases import PrefName
 
 
-def main(infile: str = None, pickled: bool = False, path: str = None,
+def main(infile: Optional[str] = None, pickled: bool = False,
+         path: Optional[str] = None,
          scope: ValidationScope = ValidationScope.all,
          ctype: ContentType = ContentType.all, set_id: bool = False,
          tree: bool = False, no_types: bool = False,
-         digest: bool = False, subschema: PrefName = None,
-         validate: str = None) -> int:
+         digest: bool = False, dump: Optional[str] = None,
+         subschema: Optional[PrefName] = None,
+         validate: Optional[str] = None) -> int:
     """Entry-point for the command-line utility.
 
     Args:
@@ -51,6 +54,7 @@ def main(infile: str = None, pickled: bool = False, path: str = None,
         tree: If `True`, print schema tree
         no_types: If `True`, don't print types in schema tree
         digest: If `True`, print schema digest
+        dump: Dump pickled data model to the file given as argument
         subschema: Prefixed name of an RPC or notification subschema
         validate: Name of file to validate against the schema.
 
@@ -89,7 +93,7 @@ def main(infile: str = None, pickled: bool = False, path: str = None,
             help="print schema digest in JSON format")
         ogrp.add_argument(
             "-D", "--dump", metavar="FILE",
-            help="dump the pickled data model to FILE")
+            help="dump pickled data model to FILE")
         ogrp.add_argument(
             "-v", "--validate", metavar="INST",
             help="name of file with JSON-encoded instance data")
@@ -107,18 +111,18 @@ def main(infile: str = None, pickled: bool = False, path: str = None,
             "-n", "--no-types", action="store_true",
             help="suppress type info in tree output")
         args = parser.parse_args()
-        infile: str = args.infile
-        path: Optional[str] = args.path
-        pickled: bool = args.pickled
+        infile = args.infile
+        path = args.path
+        pickled = args.pickled
         scope = ValidationScope[args.scope]
         ctype = ContentType[args.ctype]
-        set_id: bool = args.id
-        tree: bool = args.tree
-        dump: str = args.dump
+        set_id = args.id
+        tree = args.tree
+        dump = args.dump
         no_types = args.no_types
-        digest: bool = args.digest
-        subschema: PrefName = args.subschema
-        validate: str = args.validate
+        digest = args.digest
+        subschema = args.subschema
+        validate = args.validate
     if pickled:
         try:
             with open(infile, "rb") as pif:
