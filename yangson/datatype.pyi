@@ -4,7 +4,7 @@ from .constraint import Intervals, Pattern
 from .exceptions import InvalidArgument, InvalidLeafrefPath, MissingModuleNamespace, ModuleNotRegistered, ParserException, UnknownPrefix
 from .instance import InstanceIdParser, InstanceNode, InstanceRoute
 from .schemadata import SchemaContext
-from .schemanode import TerminalNode, DataNode
+from .schemanode import TerminalNode, DataNode, SchemaNode
 from .statement import Statement
 from .typealiases import QualName, RawScalar, ScalarValue, YangIdentifier
 from .xpathparser import XPathParser
@@ -100,6 +100,7 @@ class LeafrefType(LinkType):
     def from_yang(self, text: str) -> ScalarValue: ...
 
 class InstanceIdentifierType(LinkType):
+    root: Optional[SchemaNode]
     def yang_type(self) -> YangIdentifier: ...
     def from_raw(self, raw: RawScalar) -> Optional[ScalarValue]: ...
     def from_xml(self, xml: ET.Element) -> Optional[ScalarValue]: ...

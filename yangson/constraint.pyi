@@ -1,6 +1,7 @@
 import decimal
 from .exceptions import InvalidArgument
 from .xpathast import Expr
+from .schemanode import SchemaNode
 from typing import Callable, Optional, Union
 import typing
 
@@ -30,3 +31,4 @@ class Pattern(Constraint):
 class Must(Constraint):
     expression: Expr
     def __init__(self, expression: Expr, error_tag: Optional[str] = None, error_message: Optional[str] = None) -> None: ...
+    def check(self, ctx_root: SchemaNode) -> bool: ...

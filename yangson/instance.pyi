@@ -5,7 +5,7 @@ from .instvalue import ArrayValue, InstanceKey, ObjectValue, Value
 from .parser import Parser
 from .schemadata import SchemaData
 from .schemanode import DataNode
-from .typealiases import InstanceName, JSONPointer, QualName, ScalarValue, RawValue, YangIdentifier, _Singleton
+from .typealiases import InstanceName, JSONPointer, QualName, ScalarValue, RawValue, YangIdentifier, _Singleton, SchemaRoute
 from datetime import datetime
 from typing import Any, TypeVar, Generic, Iterator, Union, Optional, NoReturn
 
@@ -99,6 +99,7 @@ class ArrayEntry(InstanceNode):
 
 class InstanceRoute(list[Union[MemberName, EntryKeys]]):
     def __hash__(self) -> int: ... # type: ignore[override]
+    def as_schema_route(self) -> SchemaRoute: ...
 
 class MemberName:
     name: YangIdentifier
@@ -108,6 +109,7 @@ class MemberName:
     def iname(self) -> str: ...
     def peek_step(self, val: ObjectValue, sn: DataNode) -> tuple[Optional[Value], DataNode]: ...
     def goto_step(self, inst: InstanceNode) -> InstanceNode: ...
+    def as_qual_name(self) -> QualName: ...
 
 class ActionName(MemberName):
     def peek_step(self, val: ObjectValue, sn: DataNode) -> tuple[None, DataNode]: ...

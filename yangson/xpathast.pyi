@@ -3,7 +3,8 @@ from .exceptions import InvalidArgument, XPathTypeError
 from .instance import EntryIndex, EntryKeys, EntryValue, InstanceNode, InstanceRoute, MemberName
 from .nodeset import NodeExpr, NodeSet, XPathValue
 from .schemadata import SchemaContext
-from .typealiases import QualName
+from .schemanode import SchemaNode
+from .typealiases import QualName, SchemaRoute
 from typing import Optional
 
 class XPathContext:
@@ -19,6 +20,8 @@ class Expr:
     def evaluate(self, node: InstanceNode) -> XPathValue: ...
     def syntax_tree(self, indent: int = 0) -> str: ...
     def as_instance_route(self) -> InstanceRoute: ...
+    def as_schema_route(self) -> SchemaRoute: ...
+    def check(self, ctx_root: SchemaNode) -> bool: ...
 
 class UnaryExpr(Expr):
     expr: Optional[Expr]
