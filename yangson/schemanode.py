@@ -55,7 +55,7 @@ from .exceptions import (
     AnnotationTypeError, InvalidXPath, InvalidLeafrefPath,
     MissingAnnotationTarget, MissingModuleNamespace, RawMemberError,
     RawTypeError, SchemaError, SemanticError, UndefinedAnnotation,
-    InvalidStatement, YangsonException, YangTypeError)
+    InvalidStatement, YangsonException, YangTypeError, InvalidArgument)
 from .instvalue import (
     ArrayValue, EntryValue, MetadataObject, ObjectValue, Value)
 from .schemadata import IdentityAdjacency, SchemaContext, SchemaData
@@ -1028,6 +1028,14 @@ class YangData(GroupNode):
 
         set_ctype(self)
         self.children[0]._post_process()
+
+        stn = self.parent
+        for c in stn.children:
+            if isinstance(c, YangData) and c.children[0].name == self.children[0].name:
+                raise InvalidArgument("ietf-restconf:yang-data container names collide.")
+
+            elif c.name == self.children[0].name:
+                raise InvalidArgument("ietf-restconf:yang-data container and toplevel container names collide.")
 
     def _schema_pattern(self: "YangData") -> SchemaPattern:
         return self._pattern_entry()
