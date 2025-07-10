@@ -44,8 +44,8 @@ class IdentityAdjacency:
     """Adjacency data for an identity."""
 
     def __init__(self):
-        self.bases = set()  # type: MutableSet[QualName]
-        self.derivs = set()  # type: MutableSet[QualName]
+        self.bases: MutableSet[QualName] = set()
+        self.derivs: MutableSet[QualName] = set()
 
 
 class SchemaContext:
@@ -64,24 +64,24 @@ class SchemaContext:
 class ModuleData:
     """Data related to a YANG module or submodule."""
 
-    def __init__(self, main_module: YangIdentifier, yang_id: YangIdentifier):
+    def __init__(self, main_module: ModuleId, yang_id: ModuleId):
         """Initialize the class instance."""
-        self.features = set()  # type: MutableSet[YangIdentifier]
-        """Set of supported features."""
-        self.main_module = main_module  # type: ModuleId
+        self.main_module = main_module
         """Main module of the receiver."""
-        self.yang_id = yang_id # type ModuleId
+        self.yang_id = yang_id
         """Identifier of the Module, different from main_module
         for submodules"""
-        self.xml_namespace = None  # type: str
+        self.features: MutableSet[YangIdentifier] = set()
+        """Set of supported features."""
+        self.xml_namespace: Optional[str] = None
         """Content of the namespace definition of the module"""
-        self.prefix_map = {}  # type: dict[YangIdentifier, ModuleId]
+        self.prefix_map: dict[YangIdentifier, ModuleId] = {}
         """Map of prefixes to module identifiers."""
-        self.statement = None  # type: Statement
+        self.statement: Optional[Statement] = None
         """Corresponding (sub)module statements."""
-        self.path = None  # type: str
+        self.path: Optional[str] = None
         """Path to the yang file this module was initialized from"""
-        self.submodules = set()  # type: MutableSet[ModuleId]
+        self.submodules: MutableSet[ModuleId] = set()
         """Set of submodules."""
 
 
@@ -95,18 +95,18 @@ class SchemaData:
 
     def __init__(self, yang_lib: dict[str, Any], mod_path: list[str]):
         """Initialize the schema structures."""
-        self.identity_adjs = {}  # type: dict[QualName, IdentityAdjacency]
+        self.identity_adjs: dict[QualName, IdentityAdjacency] = {}
         """Dictionary of identity bases."""
-        self.implement = {}  # type: dict[YangIdentifier, RevisionDate]
+        self.implement: dict[YangIdentifier, RevisionDate] = {}
         """Dictionary of implemented revisions."""
         self.module_search_path = mod_path
         """List of directories where to look for YANG modules."""
-        self.modules = {}  # type: dict[ModuleId, ModuleData]
+        self.modules: dict[ModuleId, ModuleData] = {}
         """Dictionary of module data."""
-        self.modules_by_name = {}  # type: dict[str, ModuleData]
+        self.modules_by_name: dict[str, ModuleData] = {}
         """Dictionary of module data by module name."""
-        self.modules_by_ns = {}
-        self._module_sequence = []  # type: list[ModuleId]
+        self.modules_by_ns: dict[str, ModuleData] = {}
+        self._module_sequence: list[ModuleId] = []
         """List that defines the order of module processing."""
         self._from_yang_library(yang_lib)
 

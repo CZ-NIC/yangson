@@ -119,7 +119,7 @@ class Conditional(SchemaPattern):
     def __init__(self, when: Expr):
         """Initialize the class instance."""
         self.when = when
-        self._val_when = None  # type: bool
+        self._val_when: Optional[bool] = None
 
     def empty(self) -> bool:
         """Override the superclass method."""
@@ -264,7 +264,7 @@ class ChoicePattern(Alternative, Typeable):
     def __init__(self, p: SchemaPattern, q: SchemaPattern,
                  name: YangIdentifier):
         super().__init__(p, q)
-        self.ctype = ContentType.all  # type: ContentType
+        self.ctype: ContentType = ContentType.all
         self.name = name
 
     def nullable(self, ctype: ContentType):

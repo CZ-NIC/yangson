@@ -417,7 +417,7 @@ class LinearType(DataType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.length = None  # type: Optional[Intervals]
+        self.length: Optional[Intervals] = None
 
     def _handle_restrictions(self, stmt: Statement,
                              sctx: SchemaContext) -> None:
@@ -447,7 +447,7 @@ class StringType(LinearType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.patterns = []  # type: list[Pattern]
+        self.patterns: list[Pattern] = []
 
     def _handle_restrictions(self, stmt: Statement,
                              sctx: SchemaContext) -> None:
@@ -519,7 +519,7 @@ class EnumerationType(DataType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.enum = {}  # type: dict[str, int]
+        self.enum: dict[str, int] = {}
 
     def sorted_enums(self) -> list[tuple[str, int]]:
         """Return list of enum items sorted by value."""
@@ -572,7 +572,7 @@ class LinkType(DataType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.require_instance = True  # type: bool
+        self.require_instance: bool = True
 
     def _handle_restrictions(self, stmt: Statement,
                              sctx: SchemaContext) -> None:
@@ -676,7 +676,7 @@ class IdentityrefType(DataType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.bases = []  # type: list[QualName]
+        self.bases: list[QualName] = []
 
     def from_raw(self, raw: RawScalar) -> Optional[QualName]:
         try:
@@ -754,7 +754,7 @@ class NumericType(DataType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.range = None  # type: Optional[Intervals]
+        self.range: Optional[Intervals] = None
 
     def __contains__(self, val: Union[int, decimal.Decimal]) -> bool:
         if self.range is None:
@@ -791,7 +791,7 @@ class Decimal64Type(NumericType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self._epsilon = decimal.Decimal(0)  # type: decimal.Decimal
+        self._epsilon = decimal.Decimal(0)
 
     @property
     def _range(self) -> list[decimal.Decimal]:
@@ -1003,7 +1003,7 @@ class UnionType(DataType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.types = []  # type: list[DataType]
+        self.types: list[DataType] = []
 
     def to_raw(self, val: ScalarValue) -> RawScalar:
         for t in self.types:

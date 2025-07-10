@@ -58,7 +58,7 @@ class Parser:
         """
         self.input = text
         """Input text for the parser."""
-        self.offset = 0  # type: int
+        self.offset = 0
         """Current position in the input text."""
 
     def __str__(self) -> str:

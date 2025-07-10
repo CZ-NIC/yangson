@@ -22,7 +22,7 @@ This module implements the following classes:
 * ModuleParser: Recursive-descent parser for YANG modules.
 * Statement: YANG statements.
 """
-from typing import Optional
+from typing import Final, Optional
 from .exceptions import (
     EndOfInput, StatementNotFound, UnexpectedInput, InvalidArgument,
     ModuleNameMismatch, ModuleRevisionMismatch)
@@ -123,8 +123,8 @@ class Statement:
 class ModuleParser(Parser):
     """Parse YANG modules."""
 
-    unescape_map = {"n": "\n", "t": "\t", '"': '"',
-                    "\\": "\\"}  # type: dict[str,str]
+    unescape_map: Final[dict[str,str]] = {"n": "\n", "t": "\t", '"': '"',
+                    "\\": "\\"}
     """Dictionary for mapping escape sequences to characters."""
 
     def __init__(self, text: str, name: YangIdentifier = None, rev: str = None):
@@ -264,7 +264,7 @@ class ModuleParser(Parser):
         next = self.peek()
         if next == ";":
             arg = None
-            sub = False  # type: bool
+            sub = False
         elif next == "{":
             arg = None
             sub = True
