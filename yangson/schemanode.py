@@ -1031,6 +1031,9 @@ class YangData(GroupNode):
 
         stn = self.parent
         for c in stn.children:
+            if c == self:
+                continue
+
             if isinstance(c, YangData) and c.children[0].name == self.children[0].name:
                 raise InvalidArgument("ietf-restconf:yang-data container names collide.")
 
