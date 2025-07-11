@@ -20,4 +20,4 @@ release:
 	poetry build
 
 type-check:
-	@poetry run mypy
+	@mypy
