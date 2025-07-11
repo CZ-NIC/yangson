@@ -582,17 +582,14 @@ class Step(Expr):
             if not hasattr(node, "children"):
                 return None
 
-            for child in node.children:
-                if child.qual_name == self.qname:
-                    return child
-            return None
+            return node.get_child(self.qname[0], self.qname[1])
         elif self.axis == Axis.self:
             return node
         elif self.axis == Axis.parent:
             #if isinstance(node, YangData):
             if node._y_data_struct is not None:
                 return None
-            return node.parent
+            return node.data_parent()
         else:
             assert False
 
