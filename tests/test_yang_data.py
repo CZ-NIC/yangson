@@ -155,7 +155,6 @@ def test_t2():
     # the first element is 'ietf-restconf'; add to make module set referentially complete
     yang_lib_data["ietf-yang-library:modules-state"]["module"] = [all_mods[0], None]
 
-    breakpoint()
     errs = [InvalidStatement, InvalidXPath, InvalidXPath, InvalidXPath, InvalidLeafrefPath, InvalidLeafrefPath, InvalidLeafrefPath, InvalidLeafrefPath]
 
     # all modules t2-1 ... t2-7 should fail to load
