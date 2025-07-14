@@ -23,6 +23,7 @@ import os
 import pickle
 import sys
 import importlib.metadata
+from typing import Optional
 from yangson import DataModel
 from yangson.enumerations import ContentType, ValidationScope
 from yangson.exceptions import (
