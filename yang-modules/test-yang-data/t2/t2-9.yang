@@ -1,0 +1,29 @@
+module t2-9 {
+
+  yang-version "1.1";
+
+  namespace "http://example.com/t2-9";
+
+  prefix "t";
+
+  import ietf-restconf {
+    prefix "rc";
+    revision 2017-01-26;
+  }
+
+  revision 2025-07-01;
+
+  rc:yang-data ydata {
+    container data {
+      leaf leafA {
+        type int32;
+      }
+    }
+  }
+
+  augment "/ydata/data" {
+    leaf leafB {
+      type int32;
+    }
+  }
+}

@@ -55,6 +55,12 @@
         "namespace": "http://example.com/t2-8",
         "revision": "",
         "conformance-type": "implement"
+      },
+      {
+        "name": "t2-9",
+        "namespace": "http://example.com/t2-9",
+        "revision": "",
+        "conformance-type": "implement"
       }
     ]
   }

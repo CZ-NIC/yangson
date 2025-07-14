@@ -5,7 +5,7 @@ import pytest
 import json
 from yangson import DataModel
 from yangson.exceptions import (InvalidStatement, InvalidXPath, YangTypeError, SemanticError,
-                                InvalidLeafrefPath)
+                                InvalidLeafrefPath, InvalidArgument)
 
 def test_t1():
     model = DataModel.from_file(
@@ -155,7 +155,8 @@ def test_t2():
     # the first element is 'ietf-restconf'; add to make module set referentially complete
     yang_lib_data["ietf-yang-library:modules-state"]["module"] = [all_mods[0], None]
 
-    errs = [InvalidStatement, InvalidXPath, InvalidXPath, InvalidXPath, InvalidLeafrefPath, InvalidLeafrefPath, InvalidLeafrefPath, InvalidLeafrefPath]
+    errs = [InvalidStatement, InvalidXPath, InvalidXPath, InvalidXPath, InvalidLeafrefPath,
+            InvalidLeafrefPath, InvalidLeafrefPath, InvalidLeafrefPath, InvalidArgument]
 
     # all modules t2-1 ... t2-7 should fail to load
     # because the YANG modules are loaded in the same order in which they appear
