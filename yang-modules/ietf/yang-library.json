@@ -9,12 +9,6 @@
         "conformance-type": "implement"
       },
       {
-        "name": "ietf-yang-library",
-        "revision": "2019-01-04",
-        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-library",
-        "conformance-type": "implement"
-      },
-      {
         "name": "ietf-inet-types",
         "revision": "2010-09-24",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
