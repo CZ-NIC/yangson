@@ -782,6 +782,10 @@ class InternalNode(SchemaNode):
             sctx.schema_data.sni2route(stmt.argument, sctx))
         if target is None:      # silently ignore missing target
             return
+        if isinstance(target._y_data_struct, YangData):
+            raise InvalidArgument("It is invalid to use 'augment' statement on ietf-restconf:yang-data.")
+        if isinstance(target._y_data_struct, Structure):
+            raise InvalidArgument("It is invalid to use 'augment' statement on ietf-yang-structure-ext:structure.")
         if stmt.find1("when"):
             gr = GroupNode()
             target._add_child(gr)
@@ -1154,7 +1158,19 @@ class SchemaTreeNode(GroupNode):
     def _sx_augment_structure_stmt(self: "SchemaTreeNode", stmt: Statement, sctx: SchemaContext) -> None:
         """Handle the ietf-yang-structure-ext:augment-structure statement."""
         #raise NotImplementedError
-        pass
+        if not sctx.schema_data.if_features(stmt, sctx.text_mid):
+            return
+        target = self.get_schema_descendant(
+                sctx.schema_data.sni2route(stmt.argument, sctx))
+        if target is None:      # silently ignore missing target
+            return
+        if not isinstance(target._y_data_struct, Structure):
+            raise InvalidArgument("It is invalid to use 'augment-structure' statement on non ietf-yang-structure-ext:structure.")
+        if stmt.find1("when"):
+            gr = GroupNode()
+            target._add_child(gr)
+            target = grp
+        target._handle_substatements(stmt, sctx)
 
 
 class DataNode(SchemaNode):
@@ -1425,6 +1441,11 @@ class Structure(DataNode, InternalNode):
     # TODO strict substatement parsing
     # test and fix optinoality of list key stmt
     # TODO from_raw, from_xml
+    def __init__(self: "Structure", sctx: Optional[SchemaContext] = None) -> None:
+        super().__init__()
+        self._ctype = ContentType.all
+        self.context = sctx
+        self._y_data_struct = self
 
     def data_parent(self: "Structure") -> Optional["InternalNode"]:
         return None
