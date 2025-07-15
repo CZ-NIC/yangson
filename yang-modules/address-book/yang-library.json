@@ -1,0 +1,31 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "0",
+    "module": [
+      {
+        "name": "ietf-yang-structure-ext",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-structure-ext",
+        "revision": "2020-06-17",
+        "conformance-type": "import"
+      },
+      {
+        "name": "example-module",
+        "namespace": "urn:example:example-module",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "example-module-aug",
+        "namespace": "urn:example:example-module-aug",
+        "revision": "",
+        "conformance-type": "implement"
+      },
+      {
+        "name": "like-yang-instance",
+        "namespace": "urn:example:like-yang-instance",
+        "revision": "",
+        "conformance-type": "implement"
+      }
+    ]
+  }
+}

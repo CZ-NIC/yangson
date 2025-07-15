@@ -120,6 +120,7 @@ x--rw test:contT
 |  x--rw uint32? <uint32>
 |  x--rw uint64? <uint64>
 |  x--rw uint8? <uint8>
++--rw like-yang-instance:content-data?
 +--rw test:leafX? <port-number(uint16)>
 +---n testb:noA
 |  +--ro leafO? <boolean>
@@ -238,8 +239,8 @@ def rpc_raw_output(data_model):
     return json.loads(data)
 
 def test_schema_data(data_model):
-    assert len(data_model.schema_data.implement) == 2
-    assert data_model.module_set_id() == "db63c52c6639c5596356bacee142380928ca3ac1"
+    assert len(data_model.schema_data.implement) == 3
+    assert data_model.module_set_id() == "b21bc22ec60502657fecdeff0e69ec89ca8728f8"
     tid = data_model.schema_data.last_revision("test")
     stid = data_model.schema_data.last_revision("subtest")
     tbid = data_model.schema_data.last_revision("testb")
@@ -745,7 +746,7 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
 
     # the known-good XML, in "pretty" form for easier review
     expected_xml_pretty = """
-      <content-data xmlns="urn:ietf:params:xml:ns:yang:ietf-yang-instance-data">
+      <content-data xmlns="urn:example:like-yang-instance">
         <llistB xmlns="http://example.com/test">::1</llistB>
         <llistB xmlns="http://example.com/test">127.0.0.1</llistB>
         <leafX xmlns="http://example.com/test">53531</leafX>
@@ -788,7 +789,7 @@ def test_xml_config(xml_safe_data_model, xml_safe_data):
     inst.validate(ctype=ContentType.all)
 
     # convert InstanceValue to an XML-encoded string
-    xml_obj = inst.to_xml()
+    xml_obj = inst.to_xml(urn="urn:example:like-yang-instance")
     xml_text = ET.tostring(xml_obj).decode("utf-8")
     assert(xml_text == expected_xml_stripped)
 

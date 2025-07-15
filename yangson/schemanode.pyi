@@ -66,7 +66,8 @@ class InternalNode(SchemaNode):
 
 class GroupNode(InternalNode): ...
 
-class YangData(GroupNode): ...
+class YangData(GroupNode):
+    def __init__(self, sctx: Optional[SchemaNode] = None) -> None: ...
 
 class SchemaTreeNode(GroupNode):
     annotations: dict[QualName, Annotation]
@@ -97,6 +98,9 @@ class ContainerNode(DataNode, InternalNode):
     def mandatory(self) -> bool: ...
     @property
     def mandatory_config(self) -> bool: ...
+
+class Structure(DataNode, InternalNode):
+    def __init__(self, sctx: Optional[SchemaContext] = None) -> None: ...
 
 class SequenceNode(DataNode):
     min_elements: int

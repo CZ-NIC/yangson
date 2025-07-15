@@ -1,6 +1,6 @@
 {
   "ietf-yang-library:modules-state": {
-    "module-set-id": "db63c52c6639c5596356bacee142380928ca3ac1",
+    "module-set-id": "adb433a3580c07a769d7eed8463ffe73222b9517",
     "module": [
       {
         "name": "testb",
@@ -49,6 +49,12 @@
         "revision": "2013-07-15",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
         "conformance-type": "import"
+      },
+      {
+        "name": "like-yang-instance",
+        "revision": "",
+        "namespace": "urn:example:like-yang-instance",
+        "conformance-type": "implement"
       }
     ]
   }

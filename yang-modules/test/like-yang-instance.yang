@@ -1,0 +1,21 @@
+module like-yang-instance {
+
+  yang-version "1.1";
+ 
+  namespace "urn:example:like-yang-instance";
+
+  prefix "lyi";
+
+  description
+    "Simplified version of ietf-yang-instance-data module already
+     used by test for XML format.
+
+     For more details around ietf-yang-instance-data see reference.";
+
+  reference
+    "RFC 9195: A File Format for YANG Instance Data";
+
+  anydata content-data {
+    mandatory false;
+  }
+}
