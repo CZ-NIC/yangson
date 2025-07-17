@@ -33,6 +33,7 @@ from yangson.enumerations import ContentType
 from yangson.exceptions import (
     NonexistentInstance, ValidationError, RawDataError)
 from yangson.instance import ArrayEntry
+from yangson.instvalue import ObjectValue
 from yangson.typealiases import RawObject
 
 YL7895 = """
@@ -99,23 +100,19 @@ YL8525 = """
 
 
 class ModuleData:
-    name: str
-    revision: str
-    location: set[str]
 
-    def __init__(self, rfc8525_entry: ArrayEntry):
+    def __init__(self, val: ObjectValue):
         """Initialize the receiver."""
-        val = rfc8525_entry.value
-        self.name = val["name"]
-        self.revision = val.get("revision", "")
-        self.location = set([loc.strip() for loc in
+        self.name: str = val["name"]
+        self.revision: str = val.get("revision", "")
+        self.location: set[str] = set([loc.strip() for loc in
                              val.get("location", [])])
 
     def key(self) -> tuple[str, str]:
         """Return the receiver's key (module name & revision)."""
         return (self.name, self.revision)
 
-    def merge(self, other: "ModuleData") -> None:
+    def merge(self, other: Self) -> None:
         """Merge the receiver with another instance."""
         self.location |= other.location
 
@@ -131,26 +128,20 @@ class ModuleData:
 
 
 class MainModuleData(ModuleData):
-    namespace: str
-    import_only: bool
-    deviation: set[str]
-    feature: set[str]
-    submodule: dict[tuple[str, str], ModuleData]
 
-    def __init__(self, rfc8525_entry: ArrayEntry, import_only: bool):
+    def __init__(self, val: ObjectValue, import_only: bool):
         """Initialize the receiver."""
-        super().__init__(rfc8525_entry)
-        val = rfc8525_entry.value
+        super().__init__(val)
         self.import_only = import_only
-        self.namespace = val["namespace"].strip()
-        self.submodule = {}
+        self.namespace: str = val["namespace"].strip()
+        self.submodule: dict[tuple[str, str], ModuleData] = {}
         if "submodule" in val:
-            for s in rfc8525_entry["submodule"]:
+            for s in val["submodule"]:
                 self.add_submodule(s)
-        self.feature = set(val.get("feature", []))
-        self.deviation = set()
+        self.feature: set[str] = set(val.get("feature", []))
+        self.deviation: set[tuple[str, str]] = set()
         if "deviation" in val:
-            for dev in rfc8525_entry["deviation"]:
+            for dev in val["deviation"]:
                 dmod = dev._deref()[0]
                 try:
                     rev = dmod.sibling("revision").value
@@ -158,7 +149,7 @@ class MainModuleData(ModuleData):
                     rev = ""
                 self.deviation.add((dmod.value, rev))
 
-    def add_submodule(self, sub_entry: ArrayEntry):
+    def add_submodule(self, sub_entry: ObjectValue):
         """Add or merge submodule defined in an RFC 8525 submodule entry."""
         smod = ModuleData(sub_entry)
         key = smod.key()
@@ -167,7 +158,7 @@ class MainModuleData(ModuleData):
         else:
             self.submodule[key] = smod
 
-    def merge(self, other: "MainModuleData") -> None:
+    def merge(self, other: Self) -> None:
         """Extend the superclass method."""
         super().merge(other)
         self.deviation |= other.deviation
@@ -257,7 +248,7 @@ def main() -> int:
         msentry = top["module-set"].look_up(name=ms.value)
         if "module" in msentry:
             for yam in msentry["module"]:
-                ment = MainModuleData(yam, import_only = False)
+                ment = MainModuleData(yam.value, import_only = False)
                 modrev = ment.key()
                 if modrev in modules:
                     modules[modrev].merge(ment)
@@ -265,7 +256,7 @@ def main() -> int:
                     modules[modrev] = ment
         if "import-only-module" in msentry:
             for yam in msentry["import-only-module"]:
-                ment = MainModuleData(yam, import_only = True)
+                ment = MainModuleData(yam.value, import_only = True)
                 modrev = ment.key()
                 if modrev in modules:
                     modules[modrev].merge(ment)
@@ -276,8 +267,8 @@ def main() -> int:
         { "ietf-yang-library:modules-state":
           { "module-set-id": top["content-id"].value }})
     rtop = res["ietf-yang-library:modules-state"]
-    res = rtop.put_member("module",
-                    [modules[m].as_raw() for m in modules], raw = True).up().up()
+    res = rtop.put_member(
+        "module", [modules[m].as_raw() for m in modules], raw = True).up().up()
     res.validate(ctype=ContentType.nonconfig)
     try:
         outf = open(args.output, mode="w") if args.output else sys.stdout
