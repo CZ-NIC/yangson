@@ -17,6 +17,7 @@
 
 """Type aliases for use with type hints [PEP484]_."""
 
+from collections.abc import MutableMapping
 from decimal import Decimal
 from typing import Any, ClassVar, Union
 
@@ -65,10 +66,10 @@ ModuleId = tuple[YangIdentifier, RevisionDate]
 RawScalar = Union[bool, int, str, list[None]]
 """Raw scalar value as produced by JSON parser."""
 
-RawObject = dict[InstanceName, "RawValue"]
+RawObject = MutableMapping[InstanceName, "RawValue"]
 """Raw object as returned by JSON parser."""
 
-RawMetadataObject = dict[PrefName, RawScalar]
+RawMetadataObject = MutableMapping[PrefName, RawScalar]
 """Raw metadata object as returned by JSON parser."""
 
 RawEntry = Union[RawScalar, RawObject]
@@ -85,7 +86,7 @@ RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
 
 
 class _Singleton(type):
-    _instances: ClassVar[dict["_Singleton", Any]] = {}
+    _instances: ClassVar[MutableMapping["_Singleton", Any]] = {}
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:

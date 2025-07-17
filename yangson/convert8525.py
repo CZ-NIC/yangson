@@ -22,9 +22,12 @@ library data to the old RFC 7895 format that is used by Yangson.
 """
 
 import argparse
+from collections.abc import MutableMapping
 import json
 import os
 import sys
+from typing import cast, Optional
+from typing_extensions import Self
 from yangson import DataModel
 from yangson.enumerations import ContentType
 from yangson.exceptions import (
