@@ -280,6 +280,7 @@ def main() -> int:
         print(e, file=sys.stderr)
         return 3
     json.dump(res.raw_value(), outf, indent=2)
+    outf.write("\n")
     outf.close()
     return 0
 
