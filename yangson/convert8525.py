@@ -200,7 +200,7 @@ def main() -> int:
     parser.add_argument(
         "ylib", metavar="YLIB",
         help=("name of the input file containing JSON-encoded"
-                "YANG library data conforming to the RFC 8525 schema"))
+                " YANG library data conforming to the RFC 8525 schema"))
     parser.add_argument(
         "-o", "--output", metavar="OUTFILE",
         help="Direct output to OUTFILE instead of standard output")
