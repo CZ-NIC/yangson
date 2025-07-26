@@ -1,8 +1,8 @@
 .. _yangson-man:
 
--------
-yangson
--------
+-------------------
+yangson manual page
+-------------------
 
 .. program:: yangson
 

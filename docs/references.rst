@@ -69,6 +69,13 @@ __ https://rfc-editor.org/rfc/rfc8072.html
 
 __ https://rfc-editor.org/rfc/rfc8340.html
 
+.. [RFC8342] Bjorklund, M.; Bjorklund, M.; Schoenwaelder, J.; Shafer,
+       P.; Watsen, K.; Wilton, R. *Network Management Datastore
+       Architecture (NMDA)*. `RFC 8342`__, IETF, 2018. 44 p. ISSN
+       2070-1721.
+
+__ https://rfc-editor.org/rfc/rfc8342.html
+
 .. [RFC8407] Bierman, A. *Guidelines for Authors and Reviewers of YANG
        Data Model Documents*. `RFC 8407`__, IETF, 2018. 63 p. ISSN 2070-1721.
 

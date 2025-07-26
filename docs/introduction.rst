@@ -12,7 +12,7 @@ This documentation starts with a :ref:`tutorial <quick-start>` and then covers t
 Main Features
 =============
 
-* Support for YANG version 1.1 [RFC7950]_ and YANG library [RFC7895]_.
+* Support for YANG version 1.1 [RFC7950]_ and YANG library [RFC7895]_\ [#f1]_.
 
 * Instance data are internally represented as a `persistent data
   structure`_. This makes the code thread-safe, and also allows for
@@ -81,6 +81,18 @@ obtain a summary of the results per Python module, use the following
 command from the ``docs`` directory::
 
   $ make doctest
+
+.. rubric:: Footnotes
+
+.. [#f1] [RFC7895]_ was obsoleted by [RFC8525]_ that introduced a new
+         format of YANG library supporting the Network Management
+         Datastore Architecture [RFC8342]_. As Yangson currently
+         cannot use multiple data model schemas simultaneously,
+         upgrading to the new YANG library format would just add
+         complexity with no clear benefits. In order to aid users who
+         already work with the new YANG library format, the
+         :ref:`convert8525-tool` tool can be used for converting it to
+         the old format compatible with Yangson.
 
 .. _persistent data structure: https://en.wikipedia.org/wiki/Persistent_data_structure
 .. _package: https://pypi.org/project/yangson

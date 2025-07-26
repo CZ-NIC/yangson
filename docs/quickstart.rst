@@ -15,10 +15,9 @@ from :ref:`sec-ex2`. Of course, the reader is encouraged to continue
 experimenting on his or her own.
 
 .. note::
-   Basic operations with YANG data models and instance data, such as validation,
-   can be performed easily from the command line using the Python script
-   ``yangson`` that is a part of Yangson distribution. See the
-   :ref:`manual page <yangson-man>` for details about its usage.
+   Basic operations with YANG data models and instance data, such as
+   validation, can be performed easily from the command line using the
+   :ref:`yangson-tool` tool that is a part of Yangson distribution.
 
 Prerequisites
 =============
@@ -50,17 +49,8 @@ by reading YANG library data [RFC7895]_ from a file:
 
 .. note::
 
-   1. Distribution directory *tools/python* contains the script *mkylib.py* that
-      can help with preparing YANG library data.
-
-   2. YANG library format of [RFC7895]_ has been superseded by a new format
-      defined in [RFC8525]_. Yangson nonetheless continues using the old format
-      – it is fully sufficient for the given purposes, so there
-      are no upgrade plans. If you happen to have a data model specified
-      using the new YANG library format and want to use it with Yangson,
-      convert it to the old format using the
-      :ref:`convert8525 <convert8525-man>` utility that is also included in
-      Yangson distribution.
+   Distribution directory *tools/python* contains the script
+   *mkylib.py* that can help with preparing YANG library data.
 
 This example also uses *deviations* (see sec. `5.6.3`_ in [RFC7950]_) specified in YANG module :ref:`example-2-dev <mod-ex2-dev>`:
 
