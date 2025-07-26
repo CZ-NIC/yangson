@@ -1,0 +1,63 @@
+{
+  "ietf-yang-library:yang-library": {
+    "module-set": [
+      {
+        "name": "config-modules",
+        "module": [
+          {
+            "name": "example-3-a",
+            "revision": "2017-08-01",
+            "namespace": "http://example.com/example-3/a",
+            "submodule": [
+              {
+                "name": "example-3-suba",
+                "revision": "2017-08-01"
+              }
+            ],
+            "feature": [
+              "fea1",
+              "fea2"
+            ]
+          },
+          {
+            "name": "example-3-b",
+            "revision": "2016-08-22",
+            "namespace": "http://example.com/example-3/b"
+          }
+        ],
+        "import-only-module": [
+          {
+            "name": "ietf-inet-types",
+            "revision": "2010-09-24",
+            "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types"
+          },
+          {
+            "name": "ietf-yang-types",
+            "revision": "2013-07-15",
+            "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types"
+          },
+          {
+            "name": "ietf-inet-types",
+            "revision": "2013-07-15",
+            "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types"
+          }
+        ]
+      }
+    ],
+    "schema": [
+      {
+        "name": "config-schema",
+        "module-set": [
+          "config-modules"
+        ]
+      }
+    ],
+    "datastore": [
+      {
+        "name": "ietf-datastores:running",
+        "schema": "config-schema"
+      }
+    ],
+    "content-id": "5798f6c8acd78ccb1171cb36d34fb95ca797c769"
+  }
+}
