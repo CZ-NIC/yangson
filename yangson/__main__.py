@@ -63,6 +63,7 @@ def main(infile: str = None, pickled: bool = False, path: str = None,
             description="Validate JSON data against a YANG data model.")
         parser.add_argument(
             "-V", "--version", action="version",
+            help="show the Yangson library version number and exit",
             version=f"%(prog)s {importlib.metadata.version('yangson')}")
         parser.add_argument(
             "infile", metavar="INFILE",
