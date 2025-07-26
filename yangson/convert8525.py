@@ -183,10 +183,13 @@ class MainModuleData(ModuleData):
             res["submodule"] = [self.submodule[s].as_raw()
                                 for s in self.submodule]
         if self.feature:
-            res["feature"] = list(self.feature)
+            resf = list(self.feature)
+            resf.sort()
+            res["feature"] = resf
         if self.deviation:
-            res["deviation"] = [{ "name": n, "revision": r }
-                                for (n,r) in self.deviation]
+            resd = [{ "name": n, "revision": r } for (n,r) in self.deviation]
+            resd.sort()
+            res["deviation"] = resd
         return res
 
 
