@@ -6,7 +6,7 @@ dynamic = ["version"]
 readme = "README.rst"
 authors = [{name = "Ladislav Lhotka", email = "ladislav@lhotka.name"}]
 requires-python = '>=3.9,<4.0'
-dependencies = ['elementpath (>=4.1.5,<5.0.0)', 'PyYAML (>=6.0.1,<7.0.0)']
+dependencies = ['elementpath (>=4.1.5,<5.0.0)', 'PyYAML (>=6.0.1,<7.0.0)', "sphinxcontrib-shtest (>=0.5.0,<0.6.0)"]
 
 [project.scripts]
 yangson = "yangson.__main__:main"
