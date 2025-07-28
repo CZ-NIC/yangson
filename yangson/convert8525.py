@@ -105,16 +105,12 @@ class ModuleData:
         """Initialize the receiver."""
         self.name: str = val["name"]
         self.revision: str = val.get("revision", "")
-        self.location: set[str] = set([loc.strip() for loc in
-                             val.get("location", [])])
+        self.location: list[str] = [
+            loc.strip() for loc in val.get("location", [])]
 
     def key(self) -> tuple[str, str]:
         """Return the receiver's key (module name & revision)."""
         return (self.name, self.revision)
-
-    def merge(self, other: Self) -> None:
-        """Merge the receiver with another instance."""
-        self.location |= other.location
 
     def as_raw(self) -> RawObject:
         """Return the receiver represented as an RFC 7895 entry."""
@@ -138,8 +134,8 @@ class MainModuleData(ModuleData):
         if "submodule" in val:
             for s in val["submodule"]:
                 self.add_submodule(s)
-        self.feature: set[str] = set(val.get("feature", []))
-        self.deviation: set[tuple[str, str]] = set()
+        self.feature: list[str] = val.get("feature", [])
+        self.deviation: list[tuple[str, str]] = []
         if "deviation" in val:
             for dev in val["deviation"]:
                 dmod = dev._deref()[0]
@@ -147,25 +143,12 @@ class MainModuleData(ModuleData):
                     rev = dmod.sibling("revision").value
                 except NonexistentInstance:
                     rev = ""
-                self.deviation.add((dmod.value, rev))
+                self.deviation.append((dmod.value, rev))
 
     def add_submodule(self, sub_entry: ObjectValue):
-        """Add or merge submodule defined in an RFC 8525 submodule entry."""
+        """Add submodule defined in an RFC 8525 submodule entry."""
         smod = ModuleData(sub_entry)
-        key = smod.key()
-        if key in self.submodule:
-            self.submodule[key].merge(smod)
-        else:
-            self.submodule[key] = smod
-
-    def merge(self, other: Self) -> None:
-        """Extend the superclass method."""
-        super().merge(other)
-        self.deviation |= other.deviation
-        self.feature |= other.feature
-        self.import_only = self.import_only or other.import_only
-        for sm in other.submodule:
-            self.add_submodule(sm)
+        self.submodule[smod.key()] = smod
 
     def as_raw(self) -> RawObject:
         """Extend the superclass method."""
@@ -176,13 +159,10 @@ class MainModuleData(ModuleData):
             res["submodule"] = [self.submodule[s].as_raw()
                                 for s in self.submodule]
         if self.feature:
-            resf = list(self.feature)
-            resf.sort()
-            res["feature"] = resf
+            res["feature"] = self.feature
         if self.deviation:
-            resd = [{ "name": n, "revision": r } for (n,r) in self.deviation]
-            resd.sort()
-            res["deviation"] = resd
+            res["deviation"] = [
+                { "name": n, "revision": r } for (n,r) in self.deviation]
         return res
 
 
@@ -249,19 +229,11 @@ def main() -> int:
         if "module" in msentry:
             for yam in msentry["module"]:
                 ment = MainModuleData(yam.value, import_only = False)
-                modrev = ment.key()
-                if modrev in modules:
-                    modules[modrev].merge(ment)
-                else:
-                    modules[modrev] = ment
+                modules[ment.key()] = ment
         if "import-only-module" in msentry:
             for yam in msentry["import-only-module"]:
                 ment = MainModuleData(yam.value, import_only = True)
-                modrev = ment.key()
-                if modrev in modules:
-                    modules[modrev].merge(ment)
-                else:
-                    modules[modrev] = ment
+                modules[ment.key()] = ment
     dm7895 = DataModel(YL7895, sp.split(":"))
     res = dm7895.from_raw(
         { "ietf-yang-library:modules-state":
