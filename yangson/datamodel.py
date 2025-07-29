@@ -21,9 +21,10 @@ This module implements the following class:
 
 * DataModel: Basic entry point to the YANG data model.
 """
+from collections.abc import Sequence
 import hashlib
 import json
-from typing import Optional
+from typing import cast, Optional
 import xml.etree.ElementTree as ET
 from .enumerations import ContentType
 from .exceptions import (BadYangLibraryData, InvalidArgument,
@@ -39,7 +40,7 @@ class DataModel:
     """Basic user-level entry point to Yangson library."""
 
     @classmethod
-    def from_file(cls, name: str, mod_path: tuple[str, ...] = (".",),
+    def from_file(cls, name: str, mod_path: Sequence[str] = (".",),
                   description: Optional[str] = None) -> "DataModel":
         """Initialize the data model from a file with YANG library data.
 
@@ -58,7 +59,7 @@ class DataModel:
             yltxt = infile.read()
         return cls(yltxt, mod_path, description)
 
-    def __init__(self, yltxt: str, mod_path: tuple[str, ...] = (".",),
+    def __init__(self, yltxt: str, mod_path: Sequence[str] = (".",),
                  description: Optional[str] = None):
         """Initialize the class instance.
 
