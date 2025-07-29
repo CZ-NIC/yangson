@@ -329,17 +329,37 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
            **keys: Dict[InstanceName, ScalarValue]) -> ArrayEntry
 
       Return an instance node corresponding to the receiver's entry
-      with specified keys. The receiver must be a YANG list.
+      with specified values of *keys*.  The receiver must be an
+      :class:`~.instvalue.ArrayValue` corresponding to a YANG list.
 
-      The keys are passed to this method as a sequence of Python `keyword
-      arguments`_ in the form ``key=value`` where ``key`` is the :term:`instance
-      name` of a key, and ``value`` is the corresponding key value.
+      The keys are passed to this method as a sequence of Python
+      `keyword arguments`_ in the form ``key=value`` where ``key`` is
+      the :term:`instance name` of a key, and ``value`` is the
+      corresponding key value.
 
       .. doctest::
 
          >>> foo8 = foo.look_up(number=8)
          >>> foo8.json_pointer()
          '/example-2:bag/foo/3'
+
+      The keys are typically YANG list keys, but they can in fact be
+      any member leaves. This method can thus also be used on
+      non-config lists that have no keys. For example:
+
+      .. doctest::
+
+         >>> foo.look_up(prime=True)['number'].value
+         3
+
+      The first list entry that satisfies the look-up criteria is returned.
+
+      .. note::
+
+         Default values of leaves are always ignored by the look-up
+         procedure. Therefore, if you need to take defaults into
+         account, populate the receiver first with default values by
+         using the :meth:`add_defaults` method.
 
       Keyword arguments won't work for keys with namespace-qualified
       names such as ``yangmod:index``. In this case, the keys and
@@ -360,27 +380,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> foo.look_up(True, number='8').json_pointer()
          '/example-2:bag/foo/3'
 
-      Whilst this method is mainly intended for use with YANG list
-      keys (as the *number* leaf in the example above) but, with a bit
-      of caution, it can be used with any child nodes of the receiver:
-
-      .. doctest::
-
-         >>> foo.look_up(prime=True)['number'].value
-         3
-
-      The first list entry that satisfies the look-up criteria is returned.
-
-      .. note::
-
-         Default values of leaves are always ignored by the look-up
-         procedure. Therefore, if you need to take defaults into
-         account, populate the receiver first with default values by
-         using the :meth:`add_defaults` method.
-
-      This method raises :exc:`~.InstanceValueError` if the receiver is
-      not a YANG list, and :exc:`~.NonexistentInstance` if no entry with
-      matching keys exists.
+      This method raises :exc:`~.InstanceValueError` if the receiver
+      is not an instance of a YANG list, and
+      :exc:`~.NonexistentInstance` if no entry with matching keys
+      exists.
 
    .. method:: up() -> InstanceNode
 

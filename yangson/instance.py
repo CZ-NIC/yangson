@@ -222,6 +222,39 @@ class InstanceNode:
             raise NonexistentInstance(self, f"item '{key}'") from None
         return self._copy(newval)
 
+    def look_up(self, raw: bool = False, /,
+                **keys: dict[InstanceName, ScalarValue]) -> "ArrayEntry":
+        """Return the list entry with matching keys.
+
+        Args:
+            keys: Keys and values specified as keyword arguments.
+            raw: Flag to be set if the key value(s) are raw.
+
+        Raises:
+            InstanceValueError: If the receiver's value is not a YANG list.
+            NonexistentInstance: If no entry with matching keys exists.
+        """
+        if not isinstance(self.schema_node, ListNode):
+            raise InstanceValueError(self, "lookup on non-list")
+        if raw:
+             for k in keys:
+                ksn = self._member_schema_node(k)
+                keys[k] = ksn.from_raw(keys[k], self.json_pointer())
+        for i in range(len(self.value)):
+            en = self.value[i]
+            flag = True
+            for k in keys:
+                try:
+                    if en[k] != keys[k]:
+                        flag = False
+                        break
+                except KeyError:
+                    flag = False
+                    break
+            if flag:
+                return self._entry(i)
+        raise NonexistentInstance(self, "entry lookup failed")
+
     def up(self) -> "InstanceNode":
         """Return an instance node corresponding to the receiver's parent.
 
@@ -750,39 +783,6 @@ class ObjectMember(InstanceNode):
                                 ssn, self.timestamp)
         except KeyError:
             raise NonexistentInstance(self, f"member '{name}'") from None
-
-    def look_up(self, raw: bool = False, /,
-                **keys: dict[InstanceName, ScalarValue]) -> "ArrayEntry":
-        """Return the entry with matching keys.
-
-        Args:
-            keys: Keys and values specified as keyword arguments.
-            raw: Flag to be set if the key value(s) are raw.
-
-        Raises:
-            InstanceValueError: If the receiver's value is not a YANG list.
-            NonexistentInstance: If no entry with matching keys exists.
-        """
-        if not isinstance(self.schema_node, ListNode):
-            raise InstanceValueError(self, "lookup on non-list")
-        if raw:
-             for k in keys:
-                ksn = self._member_schema_node(k)
-                keys[k] = ksn.from_raw(keys[k], self.json_pointer())
-        for i in range(len(self.value)):
-            en = self.value[i]
-            flag = True
-            for k in keys:
-                try:
-                    if en[k] != keys[k]:
-                        flag = False
-                        break
-                except KeyError:
-                    flag = False
-                    break
-            if flag:
-                return self._entry(i)
-        raise NonexistentInstance(self, "entry lookup failed")
 
     def _zip(self) -> ObjectValue:
         """Zip the receiver into an object and return it."""
