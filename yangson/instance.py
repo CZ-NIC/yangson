@@ -43,8 +43,8 @@ from .exceptions import (BadSchemaNodeType, EndOfInput, InstanceException,
 from .instvalue import (ArrayValue, InstanceKey, ObjectValue, Value,
                         ScalarValue, StructuredValue)
 from .parser import Parser
-from .typealiases import (InstanceName, JSONPointer, QualName, RawValue,
-                          SchemaRoute, _Singleton, YangIdentifier)
+from .typealiases import (InstanceName, JSONPointer, QualName, RawScalar,
+                          RawValue, SchemaRoute, _Singleton, YangIdentifier)
 if TYPE_CHECKING:
     from .schemadata import SchemaData
 
@@ -179,12 +179,12 @@ class InstanceNode:
         """
         return isinstance(self.schema_node, InternalNode)
 
-    def put_member(self, name: InstanceName, value: Value,
+    def put_member(self, name: InstanceName, value: Union[RawValue, Value],
                    raw: bool = False) -> "InstanceNode":
         """Return receiver's member with a new value.
 
         If the member is permitted by the schema but doesn't exist, it
-        is created.
+        will be created.
 
         Args:
             name: Instance name of the member.
@@ -223,7 +223,7 @@ class InstanceNode:
         return self._copy(newval)
 
     def look_up(self, raw: bool = False, /,
-                **keys: dict[InstanceName, ScalarValue]) -> "ArrayEntry":
+                **keys: Union[RawScalar, ScalarValue]) -> "ArrayEntry":
         """Return the list entry with matching keys.
 
         Args:
@@ -264,7 +264,7 @@ class InstanceNode:
         ts = max(self.timestamp, self.parinst.timestamp)
         return self.parinst._copy(self._zip(), ts)
 
-    def top(self) -> "InstanceNode":
+    def top(self) -> "RootNode":
         """Return an instance node corresponding to the root of the data tree."""
         inst = self
         while inst.parinst:
