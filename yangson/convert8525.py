@@ -27,12 +27,10 @@ import json
 import os
 import sys
 from typing import cast, Optional
-from typing_extensions import Self
 from yangson import DataModel
 from yangson.enumerations import ContentType
 from yangson.exceptions import (
     NonexistentInstance, ValidationError, RawDataError)
-from yangson.instance import ArrayEntry
 from yangson.instvalue import ObjectValue
 from yangson.typealiases import RawObject
 
@@ -114,7 +112,7 @@ class ModuleData:
 
     def as_raw(self) -> RawObject:
         """Return the receiver represented as an RFC 7895 entry."""
-        res = {
+        res: MutableMapping = {
             "name": self.name,
             "revision": self.revision
         }
@@ -152,7 +150,7 @@ class MainModuleData(ModuleData):
 
     def as_raw(self) -> RawObject:
         """Extend the superclass method."""
-        res = super().as_raw()
+        res: MutableMapping = super().as_raw()
         res["conformance-type"] = "import" if self.import_only else "implement"
         res["namespace"] = self.namespace
         if self.submodule:
@@ -212,8 +210,8 @@ def main() -> int:
     top = inst["ietf-yang-library:yang-library"]
     if schema is None:
         try:
-            schema = top["datastore"].look_up(
-                name=(datastore, "ietf-datastores"))["schema"].value
+            schema = cast(str, top["datastore"].look_up(
+                name=(datastore, "ietf-datastores"))["schema"].value)
         except NonexistentInstance:
             print(f"No such datastore: 'ietf-datastores:{datastore}'",
                   file=sys.stderr)
@@ -237,10 +235,10 @@ def main() -> int:
     dm7895 = DataModel(YL7895, sp.split(":"))
     res = dm7895.from_raw(
         { "ietf-yang-library:modules-state":
-          { "module-set-id": top["content-id"].value }})
+          { "module-set-id": cast(str, top["content-id"].value) }})
     rtop = res["ietf-yang-library:modules-state"]
     res = rtop.put_member(
-        "module", [modules[m].as_raw() for m in modules], raw = True).up().up()
+        "module", [modules[m].as_raw() for m in modules], raw = True).top()
     res.validate(ctype=ContentType.nonconfig)
     try:
         outf = open(args.output, mode="w") if args.output else sys.stdout
