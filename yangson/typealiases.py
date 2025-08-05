@@ -42,8 +42,9 @@ JSONPointer = str
 ResourceIdentifier = str
 """RESTCONF resource identifier, see sec. `3.5.3`_ of [RFC8040]_."""
 
-ScalarValue = Union[int, Decimal, str, tuple[None]]
-"""Scalar value of an InstanceNode."""
+ScalarValue = Union[bool, bytes, Decimal, int, str, tuple[None],
+                    tuple[str, ...]]
+"""Cooked scalar value of an InstanceNode."""
 
 QualName = tuple[YangIdentifier, YangIdentifier]
 """Qualified name, tuple of name and module name."""
