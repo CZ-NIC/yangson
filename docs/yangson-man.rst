@@ -35,6 +35,15 @@ and exits.
 Operations
 ==========
 
+.. option:: -d, --digest
+
+   Print the schema digest of the data model in JSON format. See
+   also :meth:`.DataModel.schema_digest`.
+
+.. option:: -D <out_file>, --dump <out_file>
+
+   Dump the serialized (pickled) data model object to *<out_file>*.
+
 .. option:: -h, --help
 
    Show an overview of the command syntax and exit.
@@ -50,15 +59,6 @@ Operations
    Print the schema tree of the complete data model as ASCII art. See
    also :meth:`.DataModel.ascii_tree`.
 
-.. option:: -d, --digest
-
-   Print the schema digest of the data model in JSON format. See
-   also :meth:`.DataModel.schema_digest`.
-
-.. option:: -D <out_file>, --dump <out_file>
-
-   Dump the serialized (pickled) data model object to *<out_file>*.
-
 .. option:: -v <instance>, --validate <instance>
 
    Validate an instance object against the data model. The *instance*
@@ -70,28 +70,22 @@ Operations
 
    See also :meth:`.InstanceNode.validate`.
 
-.. option:: -S <subschema>, --subschema <subschema>
-
-   Parse and validate the instance object against a subschema (RPC or
-   notification). The *subschema* argument is a :term:`prefixed name`
-   of the selected RPC or notification.
-
-   In this case, the instance object has be input and/or output
-   payload of the selected RPC enclosed in ``<modulename>:input``
-   or ``<modulename>:output``, or the notification payload.
-
-   Note that validation may fail if the RPC input/output or notification
-   payload contains XPath of leafref references to configuration or state
-   data outside the selected RPC or notification.
-
 Options
 =======
 
-.. option:: -P, --pickled
+.. option:: -c <content_type>, --ctype <content_type>
 
-   This option indicates that *<in_file>* contents is to be interpreted
-   as a serialized (pickled) data model object. See also :option:`--dump`
-   option.
+   This option specifies the content type of the instance object, and
+   is only relevant when used with the :option:`--validate` operation.
+   The *content_type* arguments can be one of ``config``
+   (configuration data), ``nonconfig`` (non-configuration
+   data) and ``all`` (all data, which is the default).  See
+   also :meth:`.InstanceNode.validate`.
+
+.. option:: -n, --no_types
+
+   This option is used to suppress data type information in ASCII tree output.
+   It is relevant only for the :option:`--tree` operation.
 
 .. option:: -p <module_path>, --path <module_path>
 
@@ -110,6 +104,12 @@ Options
 
       module-or-submodule-name ['@' revision-date] '.yang'
 
+.. option:: -P, --pickled
+
+   This option indicates that *<in_file>* contents is to be interpreted
+   as a serialized (pickled) data model object. See also :option:`--dump`
+   option.
+
 .. option:: -s <validation_scope>, --scope <validation_scope>
 
    This option specifies validation scope, and is only relevant when
@@ -127,19 +127,19 @@ Options
 
    The default value is ``all``. See also :meth:`.InstanceNode.validate`.
 
-.. option:: -c <content_type>, --ctype <content_type>
+.. option:: -S <subschema>, --subschema <subschema>
 
-   This option specifies the content type of the instance object, and
-   is only relevant when used with the :option:`--validate` operation.
-   The *content_type* arguments can be one of ``config``
-   (configuration data), ``nonconfig`` (non-configuration
-   data) and ``all`` (all data, which is the default).  See
-   also :meth:`.InstanceNode.validate`.
+   Parse and validate the instance object against a subschema (RPC or
+   notification). The *subschema* argument is a :term:`prefixed name`
+   of the selected RPC or notification.
 
-.. option:: -n, --no_types
+   In this case, the instance object has to be input and/or output
+   payload of the selected RPC enclosed in ``<modulename>:input``
+   or ``<modulename>:output``, or the notification payload.
 
-   This option is used to suppress data type information in ASCII tree output.
-   It is relevant only for the :option:`--tree` operation.
+   Note that validation may fail if the RPC input/output or notification
+   payload contains XPath of leafref references to configuration or state
+   data outside the selected RPC or notification.
 
 Environment Variables
 =====================
