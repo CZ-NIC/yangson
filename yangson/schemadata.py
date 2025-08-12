@@ -26,7 +26,7 @@ This module implements the following classes:
 * FeatureExprParser: Parser for if-feature expressions.
 """
 from collections.abc import MutableSet
-from typing import Any
+from typing import Any, Sequence
 from .exceptions import (
     InvalidSchemaPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
     FeaturePrerequisiteError, InvalidFeatureExpression, ModuleNotFound,
@@ -93,7 +93,7 @@ class SchemaData:
             mod_path: List of directories to search for YANG modules.
     """
 
-    def __init__(self, yang_lib: dict[str, Any], mod_path: list[str]):
+    def __init__(self, yang_lib: dict[str, Any], mod_path: Sequence[str]):
         """Initialize the schema structures."""
         self.identity_adjs: dict[QualName, IdentityAdjacency] = {}
         """Dictionary of identity bases."""

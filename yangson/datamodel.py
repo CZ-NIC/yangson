@@ -27,12 +27,14 @@ import json
 from typing import cast, Optional
 import xml.etree.ElementTree as ET
 from .enumerations import ContentType
-from .exceptions import (BadYangLibraryData, InvalidArgument,
-                         NonexistentSchemaNode)
+from .exceptions import (BadYangLibraryData, BadSchemaNodeType,
+                         InvalidArgument, NonexistentSchemaNode)
 from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
                        RootNode)
+from .instvalue import ObjectValue
 from .schemadata import SchemaData, SchemaContext
-from .schemanode import DataNode, SchemaTreeNode, RawObject, SchemaNode
+from .schemanode import (DataNode, InternalNode, NotificationNode, RawObject,
+                         RpcActionNode, SchemaNode, SchemaTreeNode)
 from .typealiases import DataPath, PrefName, SchemaPath
 
 
@@ -100,7 +102,7 @@ class DataModel:
         return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
 
     def from_raw(self, robj: RawObject,
-                 subschema: PrefName = None) -> RootNode:
+                 subschema: Optional[PrefName] = None) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
@@ -114,16 +116,21 @@ class DataModel:
             p, s, loc = subschema.partition(":")
             if not (p and s and loc):
                 raise InvalidArgument(subschema)
-            schema = self.schema.get_child(loc, p)
-            if schema is None:
+            subsn  = self.schema.get_child(loc, p)
+            if subsn is None:
                 raise NonexistentSchemaNode(self.schema.qual_name, loc, p)
+            if isinstance(subsn, SchemaTreeNode):
+                schema = subsn
+            else:
+                raise BadSchemaNodeType(subsn.qual_name,
+                                        "notification or rpc")
         else:
             schema = self.schema
-        cooked = schema.from_raw(robj)
+        cooked = cast(ObjectValue, schema.from_raw(robj))
         return RootNode(cooked, schema, self.schema_data, cooked.timestamp)
 
     def from_xml(self, root: ET.Element,
-                 subschema: PrefName = None) -> RootNode:
+                 subschema: Optional[PrefName] = None) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
@@ -135,14 +142,16 @@ class DataModel:
         """
         if subschema:
             p, s, loc = subschema.partition(":")
-            if not s:
+            if not (p and s and loc):
                 raise InvalidArgument(subschema)
-            schema = self.schema.get_child(loc, p)
-            if schema is None:
+            subsn  = self.schema.get_child(loc, p)
+            if subsn is None:
                 raise NonexistentSchemaNode(self.schema.qual_name, loc, p)
+            if isinstance(subsn, SchemaTreeNode):
+                schema = subsn
         else:
             schema = self.schema
-        cooked = schema.from_xml(root)
+        cooked = cast(ObjectValue, schema.from_xml(root))
         return RootNode(cooked, schema, self.schema_data,
                         cooked.timestamp)
 
@@ -174,12 +183,14 @@ class DataModel:
             InvalidSchemaPath: If the schema path is invalid.
         """
         addr = self.schema_data.path2route(path)
-        node = self.schema
+        node: InternalNode = self.schema
         for p in addr:
-            node = node.get_data_child(*p)
-            if node is None:
+            child = node.get_data_child(*p)
+            if child is None:
                 return None
-        return node
+            if isinstance(child, InternalNode):
+                node = child
+        return child
 
     def ascii_tree(self, no_types: bool = False,
                    val_count: bool = False) -> str:

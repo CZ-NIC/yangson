@@ -700,7 +700,7 @@ class InstanceNode:
 class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
-    def __init__(self, value: Value, schema_node: "DataNode",
+    def __init__(self, value: Value, schema_node: "SchemaTreeNode",
                  schema_data: "SchemaData", timestamp: datetime):
         super().__init__("/", value, None, schema_node, timestamp)
         self.schema_data = schema_data
@@ -1248,7 +1248,7 @@ class EntryKeys:
 class ResourceIdParser(Parser):
     """Parser for RESTCONF resource identifiers."""
 
-    def __init__(self, text: str, sn: "DataNode"):
+    def __init__(self, text: str, sn: "SchemaTreeNode"):
         """Extend the superclass method.
 
         Args:
@@ -1373,6 +1373,7 @@ from .schemanode import (       # NOQA
             AnyContentNode, AnydataNode, CaseNode,
             ChoiceNode, DataNode, InputNode,
             InternalNode, LeafNode, LeafListNode, ListNode, NotificationNode,
-            OutputNode, RpcActionNode, SequenceNode, TerminalNode)
+            OutputNode, RpcActionNode, SequenceNode, SchemaTreeNode,
+            TerminalNode)
 from .datatype import (
             IdentityrefType)
