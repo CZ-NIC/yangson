@@ -68,6 +68,8 @@ class ModuleData:
         """Initialize the class instance."""
         self.features = set()  # type: MutableSet[YangIdentifier]
         """Set of supported features."""
+        self.all_features = set()  # type: MutableSet[YangIdentifier]
+        """Set of all features."""
         self.main_module = main_module  # type: ModuleId
         """Main module of the receiver."""
         self.yang_id = yang_id # type ModuleId
@@ -144,6 +146,8 @@ class SchemaData:
                 mdata.statement = mod
                 if "feature" in item:
                     mdata.features.update(item["feature"])
+                for ftr in mdata.statement.find_all("feature"):
+                    mdata.all_features.add(ftr.argument)
                 locpref = mod.find1("prefix", required=True).argument
                 mdata.prefix_map[locpref] = mid
                 if "submodule" in item:
