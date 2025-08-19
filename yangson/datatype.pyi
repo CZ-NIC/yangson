@@ -7,6 +7,7 @@ from .schemadata import SchemaContext
 from .schemanode import TerminalNode, DataNode, SchemaNode
 from .statement import Statement
 from .typealiases import QualName, RawScalar, ScalarValue, YangIdentifier
+from .xpathast import Expr
 from .xpathparser import XPathParser
 from typing import Any, Optional
 import typing
@@ -87,7 +88,7 @@ class LinkType(DataType):
     def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None: ...
 
 class LeafrefType(LinkType):
-    path: Optional[DataNode]
+    path: Optional[Expr]
     ref_type: Optional[None]
     def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None: ...
     def canonical_string(self, val: ScalarValue) -> Optional[str]: ...
