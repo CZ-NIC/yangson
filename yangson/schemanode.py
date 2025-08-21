@@ -46,8 +46,7 @@ from itertools import product
 from typing import Any, Optional
 import xml.etree.ElementTree as ET
 from .constraint import Must
-from .datatype import (DataType, LinkType,
-                       RawScalar, IdentityrefType)
+from .datatype import DataType, LinkType, IdentityrefType
 from .enumerations import (Axis, ContentType, DefaultDeny,
                            NodeStatus, ValidationScope)
 from .exceptions import (
@@ -62,7 +61,7 @@ from .schpattern import (ChoicePattern, ConditionalPattern, Empty, Member,
                          NotAllowed, Pair, SchemaPattern)
 from .statement import Statement
 from .typealiases import (DataPath, InstanceName, JSONPointer, QualName,
-                          RawEntry, RawList, RawObject, RawValue,
+                          RawEntry, RawList, RawObject, RawScalar, RawValue,
                           RawMetadataObject, ScalarValue, SchemaRoute,
                           YangIdentifier)
 from .xpathast import Expr, LocationPath, Step, Root
