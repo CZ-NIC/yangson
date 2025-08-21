@@ -67,7 +67,7 @@ This module defines the following exceptions:
 * :exc:`YangsonException`: Base class for all Yangson exceptions.
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
 """
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from .typealiases import (InstanceName, JSONPointer, ModuleId, PrefName,
                           QualName, ScalarValue, YangIdentifier)
 if TYPE_CHECKING:
@@ -185,7 +185,7 @@ class EndOfInput(ParserException):
 class UnexpectedInput(ParserException):
     """Unexpected input."""
 
-    def __init__(self, parser: "Parser", expected: str = None):
+    def __init__(self, parser: "Parser", expected: Optional[str] = None):
         super().__init__(parser)
         self.expected = expected
 
@@ -348,8 +348,8 @@ class SchemaNodeException(YangsonException):
 class NonexistentSchemaNode(SchemaNodeException):
     """A schema node doesn't exist as a child of ``qn``."""
 
-    def __init__(self, qn: QualName,
-                 name: YangIdentifier, ns: YangIdentifier = None):
+    def __init__(self, qn: QualName, name: YangIdentifier,
+                 ns: Optional[YangIdentifier] = None):
         super().__init__(qn)
         self.name = name
         self.ns = ns
@@ -402,8 +402,8 @@ class RawTypeError(RawDataError):
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
 
-    def __init__(self, instance: "InstanceNode",
-                 tag: str, message: str = None):
+    def __init__(self, instance: "InstanceNode", tag: str,
+                 message: Optional[str] = None):
         self.instance = instance
         self.tag = tag
         self.message = message
