@@ -21,6 +21,8 @@ from collections.abc import MutableMapping
 from decimal import Decimal
 from typing import Any, ClassVar, TypeVar, Union
 
+from .instroute import InstanceRoute
+
 RevisionDate = str
 """RevisionDate in the format ``YYYY-MM-DD``, or empty string."""
 
@@ -42,7 +44,7 @@ JSONPointer = str
 ResourceIdentifier = str
 """RESTCONF resource identifier, see sec. `3.5.3`_ of [RFC8040]_."""
 
-ScalarValue = Union[bool, bytes, Decimal, int, str, tuple[None],
+ScalarValue = Union[bool, bytes, Decimal, int, InstanceRoute, str, tuple[None],
                     tuple[str, ...]]
 """Cooked scalar value of an InstanceNode."""
 
