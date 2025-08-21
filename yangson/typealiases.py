@@ -15,11 +15,11 @@
 # You should have received a copy of the GNU Lesser General Public License
 # along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
-"""Type aliases for use with type hints [PEP484]_."""
+"""Type aliases and variables for use with type hints [PEP484]_."""
 
 from collections.abc import MutableMapping
 from decimal import Decimal
-from typing import Any, ClassVar, Union
+from typing import Any, ClassVar, TypeVar, Union
 
 RevisionDate = str
 """RevisionDate in the format ``YYYY-MM-DD``, or empty string."""
@@ -85,6 +85,13 @@ RawLeafList = list[RawScalar]
 
 RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
 """Raw value of any type."""
+
+# Type variables for use in generic classes
+S = TypeVar("S", bound=ScalarValue)
+RS = TypeVar("RS", bound=RawScalar)
+L = TypeVar("L", bound=Union[bytes, str])
+N = TypeVar("N", bound=Union[Decimal, int])
+RN = TypeVar("RN", bound=Union[int, str])
 
 
 class _Singleton(type):
