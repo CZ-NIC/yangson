@@ -55,6 +55,9 @@ from .exceptions import (
     MissingAnnotationTarget, MissingModuleNamespace, RawMemberError,
     RawTypeError, SchemaError, SemanticError, UndefinedAnnotation,
     YangsonException, YangTypeError)
+from .instance import (ArrayEntry, EmptyList, InstanceNode,
+                       MemberName, ObjectMember)
+from .instroute import InstanceRoute
 from .instvalue import (
     ArrayValue, EntryValue, MetadataObject, ObjectValue, Value)
 from .schemadata import IdentityAdjacency, SchemaContext, SchemaData
@@ -67,8 +70,6 @@ from .typealiases import (DataPath, InstanceName, JSONPointer, QualName,
                           YangIdentifier)
 from .xpathast import Expr, LocationPath, Step, Root
 from .xpathparser import XPathParser
-from .instance import (ArrayEntry, InstanceNode, InstanceRoute, MemberName,
-                       ObjectMember)
 
 
 class Annotation:
@@ -279,9 +280,8 @@ class SchemaNode:
             method = getattr(self, mname)
             method(s, sctx)
 
-    def _follow_leafref(
-            self: "SchemaNode", xpath: Expr,
-            init: "TerminalNode") -> Optional["DataNode"]:
+    def _follow_leafref(self: "SchemaNode", xpath: Expr,
+                        init: "TerminalNode") -> Optional["LeafNode"]:
         """Return the data node referred to by a leafref path.
 
         Args:

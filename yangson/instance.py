@@ -40,6 +40,7 @@ from .exceptions import (BadSchemaNodeType, EndOfInput, InstanceException,
                          MissingModuleNamespace,
                          NonexistentInstance, NonDataNode,
                          NonexistentSchemaNode, UnexpectedInput)
+from .instroute import InstanceRoute
 from .instvalue import (ArrayValue, InstanceKey, ObjectValue, Value,
                         ScalarValue, StructuredValue)
 from .parser import Parser
@@ -49,8 +50,8 @@ if TYPE_CHECKING:
     from .schemadata import SchemaData
 
 __all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
-           "InstanceIdParser", "ResourceIdParser", "InstanceRoute",
-           "InstanceException", "InstanceValueError", "NonexistentInstance"]
+           "InstanceIdParser", "ResourceIdParser", "InstanceException",
+           "InstanceValueError", "NonexistentInstance"]
 
 
 class OutputFilter:
@@ -166,13 +167,13 @@ class InstanceNode:
 
     def instance_route(self) -> "InstanceRoute":
         """Return :class:`InstanceRoute` of the receiver."""
-        res = InstanceRoute()
+        res = []
         inst = self
         while inst.parinst:
             res.append(inst._instance_route_entry())
             inst = inst.parinst
         res.reverse()
-        return res
+        return InstanceRoute(res)
 
     def is_internal(self) -> bool:
         """Return ``True`` if the receiver is an instance of an internal node.
@@ -1016,21 +1017,6 @@ class ArrayEntry(InstanceNode):
         return [self.up().up()]
 
 
-class InstanceRoute(list):
-    """This class represents a route into an instance value."""
-
-    def __str__(self) -> str:
-        """Return instance-id as the string representation of the receiver."""
-        if self:
-            return "".join([str(c) for c in self])
-        else:
-            return "/"
-
-    def __hash__(self) -> int:
-        """Return the hash value of the receiver."""
-        return self.__str__().__hash__()
-
-
 class MemberName:
     """Selectors of object members."""
 
@@ -1044,7 +1030,7 @@ class MemberName:
         self.name = name
         self.namespace = ns
 
-    def __eq__(self, other: "MemberName") -> bool:
+    def __eq__(self, other: object) -> bool:
         return self.name == other.name and self.namespace == other.namespace
 
     def __str__(self) -> str:
@@ -1103,7 +1089,7 @@ class EntryIndex:
         """
         self.index = index
 
-    def __eq__(self, other: "EntryIndex") -> bool:
+    def __eq__(self, other: object) -> bool:
         return self.index == other.index
 
     def __str__(self) -> str:
@@ -1147,7 +1133,7 @@ class EntryValue:
         """Return a string representation of the receiver (i-i segment)."""
         return f"[.={json.dumps(self.value)}]"
 
-    def __eq__(self, other: "EntryValue") -> bool:
+    def __eq__(self, other: object) -> bool:
         return self.value == other.value
 
     def parse_value(self, sn: "DataNode") -> ScalarValue:
@@ -1205,7 +1191,7 @@ class EntryKeys:
             res.append(f"[{kn}={json.dumps(self.keys[k])}]")
         return "".join(res)
 
-    def __eq__(self, other: "EntryKeys") -> bool:
+    def __eq__(self, other: object) -> bool:
         return self.keys == other.keys
 
     def parse_keys(self, sn: "DataNode") -> dict[InstanceName, ScalarValue]:
@@ -1270,13 +1256,13 @@ class ResourceIdParser(Parser):
 
     def parse(self) -> InstanceRoute:
         """Parse resource identifier."""
-        res = InstanceRoute()
+        res = []
         if self.at_end():
-            return res
+            return InstanceRoute(res)
         if self.peek() == "/":
             self.offset += 1
         if self.at_end():
-            return res
+            return InstanceRoute(res)
         sn = self.schema_node
         while True:
             name, ns = self.prefixed_name()
@@ -1286,16 +1272,16 @@ class ResourceIdParser(Parser):
                     if (isinstance(cn, RpcActionNode) and cn.name == name and
                             (ns is None or cn.ns == ns)):
                         res.append(ActionName(name, ns))
-                        return res
+                        return InstanceRoute(res)
                 raise NonexistentSchemaNode(sn.qual_name, name, ns)
             res.append(MemberName(name, ns))
             if self.at_end():
-                return res
+                return InstanceRoute(res)
             if isinstance(cn, SequenceNode):
                 self.char("=")
                 res.append(self._key_values(cn))
                 if self.at_end():
-                    return res
+                    return InstanceRoute(res)
             else:
                 self.char("/")
             sn = cn
@@ -1329,16 +1315,16 @@ class InstanceIdParser(Parser):
 
     def parse(self) -> InstanceRoute:
         """Parse instance identifier."""
-        res = InstanceRoute()
+        res = []
         if self.input == "/":
-            return res
+            return InstanceRoute(res)
         while True:
             self.char("/")
             res.append(MemberName(*self.prefixed_name()))
             try:
                 next = self.peek()
             except EndOfInput:
-                return res
+                return InstanceRoute(res)
             if next == "[":
                 self.offset += 1
                 self.skip_ws()
@@ -1356,7 +1342,7 @@ class InstanceIdParser(Parser):
                 else:
                     res.append(self._key_predicates())
                 if self.at_end():
-                    return res
+                    return InstanceRoute(res)
 
     def _get_value(self) -> str:
         self.skip_ws()

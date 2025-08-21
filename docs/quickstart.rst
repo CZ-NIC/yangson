@@ -138,14 +138,14 @@ Moving Around and Editing the Data Tree
 
 We can move around the instance data tree, either step by step or
 directly to any location by using
-an :class:`~.instance.InstanceRoute`. One way to obtain the latter is
+an :class:`~.instroute.InstanceRoute`. One way to obtain the latter is
 to parse it from a RESTCONF :term:`resource identifier`:
 
 .. doctest::
 
    >>> irt = dm.parse_resource_id('/example-2:bag/foo=3/in-words')
    >>> type(irt)
-   <class 'yangson.instance.InstanceRoute'>
+   <class 'yangson.instroute.InstanceRoute'>
 
 No we can go straight to the desired spot, see that we are really
 there, and inspect the value of that instance:

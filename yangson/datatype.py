@@ -517,7 +517,7 @@ class BinaryType(LinearType[bytes]):
     def canonical_string(self, val: bytes) -> Optional[str]:
         try:
             return base64.b64encode(val).decode("ascii")
-        except:
+        except TypeError:
             return None
 
 
