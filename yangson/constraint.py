@@ -26,18 +26,12 @@ This module implements the following classes:
 """
 import decimal
 import re
-from typing import Callable, Optional, Union
+from typing import Callable, Generic, Optional, Union
 from elementpath import RegexError, translate_pattern
 
 from .exceptions import InvalidArgument
+from .typealiases import N
 from .xpathast import Expr
-
-# Type aliases
-Number = Union[int, decimal.Decimal]
-"""Union of numeric classes appearing in interval constraints."""
-
-Interval = list[Number]
-"""Numeric interval consisting either of one number or a pair of bounds."""
 
 
 class Constraint:
@@ -50,19 +44,19 @@ class Constraint:
         self.error_message = error_message
 
 
-class Intervals(Constraint):
+class Intervals(Constraint, Generic[N]):
     """Class representing a sequence of numeric intervals."""
 
     @staticmethod
-    def default_parser(x: str) -> Optional[Number]:
+    def default_parser(x: str) -> Optional[N]:
         """The default parser for numbers."""
         try:
             return int(x)
         except ValueError:
             return None
 
-    def __init__(self, intervals: list[Interval],
-                 parser: Optional[Callable[[str], Optional[Number]]] = None,
+    def __init__(self, intervals: list[list[N]],
+                 parser: Optional[Callable[[str], Optional[N]]] = None,
                  error_tag: Optional[str] = None,
                  error_message: Optional[str] = None):
         """Initialize the class instance."""
@@ -70,7 +64,7 @@ class Intervals(Constraint):
         self.intervals = intervals
         self.parser = parser if parser else Intervals.default_parser
 
-    def __contains__(self, value: Number):
+    def __contains__(self, value: N):
         """Return ``True`` if the receiver contains the value."""
         for r in self.intervals:
             if len(r) == 1:
@@ -97,13 +91,13 @@ class Intervals(Constraint):
         Raises:
             InvalidArgument: If parsing of `expr` fails.
         """
-        def parse(x: str) -> Number:
+        def parse(x: str) -> N:
             res = self.parser(x)
             if res is None:
                 raise InvalidArgument(expr)
             return res
 
-        def simpl(rng: list[Number]) -> list[Number]:
+        def simpl(rng: list[N]) -> list[N]:
             return ([rng[0]] if rng[0] == rng[1] else rng)
 
         def to_num(xs): return [parse(x) for x in xs]
