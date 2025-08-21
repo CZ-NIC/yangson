@@ -55,13 +55,15 @@ from typing import (Any, cast, ClassVar, Generic, Optional, Type,
 from .constraint import Intervals, Pattern
 from .exceptions import (
     InvalidArgument, ParserException, ModuleNotRegistered, UnknownPrefix,
-    InvalidLeafrefPath, MissingModuleNamespace)
+    InvalidLeafrefPath, MissingModuleNamespace, XPathTypeError)
 from .schemadata import SchemaContext
-from .instance import InstanceNode, InstanceIdParser, InstanceRoute
+from .instance import InstanceNode, InstanceIdParser
+from .instroute import InstanceRoute
+from .nodeset import NodeSet
 from .statement import Statement
 from .typealiases import (InstanceIdentifier, L, N, RN, QualName, RawScalar,
                           RS, S, ScalarValue, YangIdentifier)
-from .xpathparser import XPathParser
+from .xpathparser import Expr, XPathParser
 if TYPE_CHECKING:
     from .schemanode import TerminalNode
 
@@ -108,22 +110,23 @@ class DataType(ABC, Generic[S, RS]):
 
         """
 
+    @abstractmethod
     def from_xml(self, xml: ET.Element) -> Optional[S]:
         """Return a cooked value of the received XML type.
 
         Args:
             xml: Text of the XML node
         """
-        return xml.text if isinstance(xml.text, str) else None
 
+    @abstractmethod
     def to_raw(self, val: S) -> Optional[RS]:
         """Return a raw value ready to be serialized in JSON."""
-        return val if val in self else None
 
     def to_xml(self, val: S) -> Optional[str]:
         """Return XML text value ready to be serialized in XML."""
         return str(val) if val in self else None
 
+    @abstractmethod
     def parse_value(self, text: str) -> Optional[S]:
         """Parse value of the receiver's type.
 
@@ -139,7 +142,6 @@ class DataType(ABC, Generic[S, RS]):
             A value of the receiver's type or ``None`` if parsing fails.
 
         """
-        return self.from_raw(text)
 
     def canonical_string(self, val: S) -> Optional[str]:
         """Return canonical form of a value."""
@@ -180,7 +182,7 @@ class DataType(ABC, Generic[S, RS]):
 
     @classmethod
     def _resolve_type(cls, stmt: Statement, sctx: SchemaContext) -> "DataType":
-        typ = stmt.argument
+        typ = cast(str, stmt.argument)
         if typ in cls.dtypes:
             res = cls.dtypes[typ](sctx, None)
             res._handle_properties(stmt, sctx)
@@ -197,7 +199,7 @@ class DataType(ABC, Generic[S, RS]):
         sc = sctx
         while True:
             tdef, sc = sctx.schema_data.get_definition(ts, sc)
-            ts = tdef.find1("type", required=True)
+            ts = cast(Statement, tdef.find1("type", required=True))
             tchain.append((tdef, ts, sc))
             if ts.argument in cls.dtypes:
                 break
@@ -215,9 +217,10 @@ class DataType(ABC, Generic[S, RS]):
                 res.units = ust.argument
             dfst = tdef.find1("default")
             if dfst:
-                res.default = res.from_yang(dfst.argument)
+                dval = cast(str, dfst.argument)
+                res.default = res.from_yang(dval)
                 if res.default is None:
-                    raise InvalidArgument(dfst.argument)
+                    raise InvalidArgument(dval)
         res._handle_restrictions(stmt, sctx)
         return res
 
@@ -255,8 +258,7 @@ class EmptyType(DataType[tuple[None], list[None]]):
         return ""
 
     def parse_value(self, text: str) -> Optional[tuple[None]]:
-        if text == "":
-            return (None,)
+        return (None,) if text == "" else None
 
     def from_raw(self, raw: list[None]) -> Optional[tuple[None]]:
         return (None,) if raw == [None] else None
@@ -296,9 +298,12 @@ class BitsType(DataType[tuple[str, ...], str]):
         except AttributeError:
             return None
 
+    def parse_value(self, text: str) -> Optional[tuple[str, ...]]:
+        return self.from_raw(text)
+
     def from_xml(self, xml: ET.Element) -> Optional[tuple[str, ...]]:
         try:
-            return tuple(xml.text.split())
+            return tuple(cast(str, xml.text).split())
         except AttributeError:
             return None
 
@@ -308,7 +313,7 @@ class BitsType(DataType[tuple[str, ...], str]):
     def to_xml(self, val: tuple[str, ...]) -> Optional[str]:
         return self.canonical_string(val)
 
-    def as_int(self, val: tuple[str, ...]) -> int:
+    def as_int(self, val: tuple[str, ...]) -> Optional[int]:
         """Transform a "bits" value to an integer."""
         res = 0
         try:
@@ -333,10 +338,10 @@ class BitsType(DataType[tuple[str, ...], str]):
         for bst in stmt.find_all("bit"):
             if not sctx.schema_data.if_features(bst, sctx.text_mid):
                 continue
-            label = bst.argument
+            label = cast(str, bst.argument)
             pst = bst.find1("position")
             if pst:
-                pos = int(pst.argument)
+                pos = int(cast(str, pst.argument))
                 self.bit[label] = pos
                 if pos > nextpos:
                     nextpos = pos
@@ -356,7 +361,7 @@ class BitsType(DataType[tuple[str, ...], str]):
 
     def _type_digest(self, config: bool) -> dict[str, Any]:
         res = super()._type_digest(config)
-        bits = []
+        bits: list[Optional[str]] = []
         i = 0
         for b in self.sorted_bits():
             while i < b[1]:
@@ -385,7 +390,10 @@ class BooleanType(DataType[bool, bool]):
         Args:
             xml: Text of the XML node
         """
-        return self.parse_value(xml.text)
+        return self.parse_value(cast(str, xml.text))
+
+    def to_raw(self, val: bool) -> Optional[bool]:
+        return val if val in self else None
 
     def parse_value(self, text: str) -> Optional[bool]:
         """Parse boolean value.
@@ -434,7 +442,8 @@ class LinearType(DataType[L, str]):
             if self.length is None:
                 self.length = Intervals[int](
                     [[0, 4294967295]], error_message="invalid length")
-            self.length.restrict_with(lstmt.argument, *lstmt.get_error_info())
+            self.length.restrict_with(
+                cast(str, lstmt.argument), *lstmt.get_error_info())
 
     def _type_digest(self, config: bool) -> dict[str, Any]:
         res = super()._type_digest(config)
@@ -459,12 +468,22 @@ class StringType(LinearType[str]):
             return False
         for p in self.patterns:
             if (p.regex.match(val) is not None) == p.invert_match:
-                self._set_error_info(p.error_tag, p.error_message + ': ' + val)
+                self._set_error_info(
+                    p.error_tag, cast(str, p.error_message) + ': ' + val)
                 return False
         return True
 
     def from_raw(self, raw: str) -> Optional[str]:
         return raw if isinstance(raw, str) else None
+
+    def from_xml(self, xml: ET.Element) -> Optional[str]:
+        return self.from_raw(cast(str, xml.text))
+
+    def to_raw(self, val: str) -> Optional[str]:
+        return val if val in self else None
+
+    def parse_value(self, text: str) -> Optional[str]:
+        return self.from_raw(text)
 
     def _handle_restrictions(self, stmt: Statement,
                              sctx: SchemaContext) -> None:
@@ -472,7 +491,7 @@ class StringType(LinearType[str]):
         for pst in stmt.find_all("pattern"):
             invm = pst.find1("modifier", "invert-match") is not None
             self.patterns.append(Pattern(
-                pst.argument, invm, *pst.get_error_info()))
+                cast(str, pst.argument), invm, *pst.get_error_info()))
 
     def _type_digest(self, config: bool) -> dict[str, Any]:
         res = super()._type_digest(config)
@@ -494,17 +513,20 @@ class BinaryType(LinearType[bytes]):
             return False
         return super().__contains__(val)
 
-    def from_raw(self, raw: RawScalar) -> Optional[bytes]:
+    def from_raw(self, raw: str) -> Optional[bytes]:
         """Override superclass method."""
         try:
             return base64.b64decode(raw, validate=True)
         except (TypeError, binascii.Error):
             return None
 
+    def parse_value(self, text: str) -> Optional[bytes]:
+        return self.from_raw(text)
+
     def from_xml(self, xml: ET.Element) -> Optional[bytes]:
         """Override superclass method."""
         try:
-            return base64.b64decode(xml.text, validate=True)
+            return base64.b64decode(cast(str, xml.text), validate=True)
         except TypeError:
             return None
 
@@ -538,6 +560,15 @@ class EnumerationType(DataType[str, str]):
     def from_raw(self, raw: str) -> Optional[str]:
         return raw if isinstance(raw, str) else None
 
+    def from_xml(self, xml: ET.Element) -> Optional[str]:
+        return self.from_raw(cast(str, xml.text))
+
+    def to_raw(self, val: str) -> Optional[str]:
+        return val if val in self else None
+
+    def parse_value(self, text: str) -> Optional[str]:
+        return self.from_raw(text)
+
     def sorted_enums(self) -> list[tuple[str, int]]:
         """Return list of enum items sorted by value."""
         return sorted(self.enum.items(), key=lambda x: x[1])
@@ -549,10 +580,10 @@ class EnumerationType(DataType[str, str]):
         for est in stmt.find_all("enum"):
             if not sctx.schema_data.if_features(est, sctx.text_mid):
                 continue
-            label = est.argument
+            label = cast(str, est.argument)
             vst = est.find1("value")
             if vst:
-                val = int(vst.argument)
+                val = int(cast(str, vst.argument))
                 self.enum[label] = val
                 if val > nextval:
                     nextval = val
@@ -594,19 +625,20 @@ class LinkType(DataType[S, RS]):
 class LeafrefType(LinkType[ScalarValue, RawScalar]):
     """Class representing YANG "leafref" type."""
 
+    path: Expr
+    ref_type: DataType
+
     def __init__(self, sctx: SchemaContext, name: YangIdentifier):
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self.path = None
-        self.ref_type = None
 
     def __contains__(self, val: ScalarValue) -> bool:
         return val in self.ref_type
 
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         super()._handle_properties(stmt, sctx)
-        self.path = XPathParser(
-            stmt.find1("path", required=True).argument, sctx).parse()
+        pathst = cast(Statement, stmt.find1("path", required=True))
+        self.path = XPathParser(cast(str, pathst.argument), sctx).parse()
 
     def canonical_string(self, val: ScalarValue) -> Optional[str]:
         return self.ref_type.canonical_string(val)
@@ -620,7 +652,7 @@ class LeafrefType(LinkType[ScalarValue, RawScalar]):
     def to_raw(self, val: ScalarValue) -> Optional[RawScalar]:
         return self.ref_type.to_raw(val)
 
-    def to_xml(self, val: ScalarValue) -> Optional[RawScalar]:
+    def to_xml(self, val: ScalarValue) -> Optional[str]:
         return self.ref_type.to_xml(val)
 
     def parse_value(self, text: str) -> Optional[ScalarValue]:
@@ -631,7 +663,9 @@ class LeafrefType(LinkType[ScalarValue, RawScalar]):
 
     def _deref(self, node: InstanceNode) -> list[InstanceNode]:
         ns = self.path.evaluate(node)
-        return [n for n in ns if str(n) == str(node)]
+        if isinstance(ns, NodeSet):
+            return [n for n in ns if str(n) == str(node)]
+        raise XPathTypeError(str(ns))
 
     def _post_process(self, tnode: "TerminalNode") -> None:
         ref = tnode._follow_leafref(self.path, tnode)
@@ -651,7 +685,7 @@ class InstanceIdentifierType(LinkType[InstanceRoute, InstanceIdentifier]):
     def __str__(self):
         return "instance-identifier"
 
-    def __contains__(self, val: InstanceIdentifier) -> bool:
+    def __contains__(self, val: InstanceRoute) -> bool:
         return isinstance(val, InstanceRoute)
 
     def yang_type(self) -> YangIdentifier:
@@ -663,6 +697,9 @@ class InstanceIdentifierType(LinkType[InstanceRoute, InstanceIdentifier]):
             return InstanceIdParser(raw).parse()
         except ParserException:
             return None
+
+    def parse_value(self, text: str) -> Optional[InstanceRoute]:
+        return self.from_raw(text)
 
     def from_xml(self, xml: ET.Element) -> Optional[InstanceRoute]:
         return self.from_raw(cast(InstanceIdentifier, xml.text))
@@ -707,6 +744,9 @@ class IdentityrefType(DataType[QualName, YangIdentifier]):
         except AttributeError:
             return None
         return (i2, i1) if s else (i1, self.sctx.default_ns)
+
+    def parse_value(self, text: str) -> Optional[QualName]:
+        return self.from_raw(text)
 
     def from_xml(self, xml: ET.Element) -> Optional[QualName]:
         try:
@@ -845,6 +885,9 @@ class Decimal64Type(NumericType[decimal.Decimal, str]):
         except decimal.InvalidOperation:
             return None
 
+    def parse_value(self, text: str) -> Optional[decimal.Decimal]:
+        return self.from_raw(text)
+
     def from_xml(self, xml: ET.Element) -> Optional[decimal.Decimal]:
         try:
             return (decimal.Decimal(xml.text).quantize(self._epsilon)
@@ -922,10 +965,18 @@ class Int8Type(IntegralType[int]):
     _range = [-128, 127]
 
 
+    def to_raw(self, val: int) -> Optional[int]:
+        return val if val in self else None
+
+
 class Int16Type(IntegralType[int]):
     """Class representing YANG "int16" type."""
 
     _range = [-32768, 32767]
+
+
+    def to_raw(self, val: int) -> Optional[int]:
+        return val if val in self else None
 
 
 class Int32Type(IntegralType[int]):
@@ -933,6 +984,9 @@ class Int32Type(IntegralType[int]):
 
     _range = [-2147483648, 2147483647]
 
+
+    def to_raw(self, val: int) -> Optional[int]:
+        return val if val in self else None
 
 class Int64Type(IntegralType[str]):
     """Class representing YANG "int64" type."""
@@ -973,17 +1027,26 @@ class Uint8Type(IntegralType[int]):
 
     _range = [0, 255]
 
+    def to_raw(self, val: int) -> Optional[int]:
+        return val if val in self else None
+
 
 class Uint16Type(IntegralType[int]):
     """Class representing YANG "uint16" type."""
 
     _range = [0, 65535]
 
+    def to_raw(self, val: int) -> Optional[int]:
+        return val if val in self else None
+
 
 class Uint32Type(IntegralType[int]):
     """Class representing YANG "uint32" type."""
 
     _range = [0, 4294967295]
+
+    def to_raw(self, val: int) -> Optional[int]:
+        return val if val in self else None
 
 
 class Uint64Type(IntegralType[str]):
