@@ -37,7 +37,7 @@ class InstanceRouteItem(Protocol):
         """Return True if the receiver is equal to other."""
 
     def __str__(self) -> str:
-        """Return string representation of the receiver."""
+        """Return string representation of the receiver (i-i segment)."""
 
     def peek_step(self, val: "ObjectValue",
                   sn: "DataNode") -> tuple[Optional["Value"], "DataNode"]:
@@ -49,7 +49,7 @@ class InstanceRouteItem(Protocol):
             sn:  Schema node corresponding to the current position.
         """
 
-    def goto_step(self, inst: "InstanceNode") -> "InstanceNode":
+    def goto_step(self, inst: "InstanceNode") -> Optional["InstanceNode"]:
         """Return instance node addressed by the receiver.
 
         Args:
