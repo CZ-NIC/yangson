@@ -1018,7 +1018,10 @@ class ArrayEntry(InstanceNode):
 
 
 class MemberName:
-    """Selectors of object members."""
+    """Selectors of object members.
+
+    This class implements the InstanceRouteItem protocol.
+    """
 
     def __init__(self, name: YangIdentifier, ns: Optional[YangIdentifier]):
         """Initialize the class instance.
@@ -1034,7 +1037,6 @@ class MemberName:
         return self.name == other.name and self.namespace == other.namespace
 
     def __str__(self) -> str:
-        """Return a string representation of the receiver (i-i segment)."""
         return "/" + self.iname()
 
     def iname(self) -> str:
@@ -1042,13 +1044,7 @@ class MemberName:
         return f"{self.namespace}:{self.name}" if self.namespace else self.name
 
     def peek_step(self, val: ObjectValue,
-                  sn: "DataNode") -> tuple[Value, "DataNode"]:
-        """Return member value addressed by the receiver + its schema node.
-
-        Args:
-            val: Current value (object).
-            sn:  Current schema node.
-        """
+                  sn: "DataNode") -> tuple[Optional[Value], "DataNode"]:
         cn = sn.get_data_child(self.name, self.namespace)
         try:
             return (val[cn.iname()], cn)
@@ -1056,16 +1052,14 @@ class MemberName:
             return (None, cn)
 
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
-        """Return member instance addressed by the receiver.
-
-        Args:
-            inst: Current instance.
-        """
         return inst[self.iname()]
 
 
 class ActionName(MemberName):
-    """Name of an action (can appear in RESTCONF resource IDs)."""
+    """Name of an action (can appear in RESTCONF resource IDs).
+
+    This class implements the InstanceRouteItem protocol.
+    """
 
     def peek_step(self, val: ObjectValue,
                   sn: "DataNode") -> tuple[None, "DataNode"]:
@@ -1079,7 +1073,10 @@ class ActionName(MemberName):
 
 
 class EntryIndex:
-    """Numeric selectors for a list or leaf-list entry."""
+    """Numeric selectors for a list or leaf-list entry.
+
+    This class implements the InstanceRouteItem protocol.
+    """
 
     def __init__(self, index: int):
         """Initialize the class instance.
@@ -1093,33 +1090,24 @@ class EntryIndex:
         return self.index == other.index
 
     def __str__(self) -> str:
-        """Return a string representation of the receiver (i-i segment)."""
         return f"[{self.index + 1}]"
 
-    def peek_step(self, val: ArrayValue,
+    def peek_step(self, val: ObjectValue,
                   sn: "DataNode") -> tuple[Optional[Value], "DataNode"]:
-        """Return entry value addressed by the receiver + its schema node.
-
-        Args:
-            val: Current value (array).
-            sn:  Current schema node.
-        """
         try:
             return val[self.index], sn
         except (IndexError, KeyError, TypeError):
             return None, sn
 
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
-        """Return entry instance addressed by the receiver.
-
-        Args:
-            inst: Current instance.
-        """
         return inst[self.index]
 
 
 class EntryValue:
-    """Value-based selectors of an array entry."""
+    """Value-based selectors of an array entry.
+
+    This class implements the InstanceRouteItem protocol.
+    """
 
     def __init__(self, value: str):
         """Initialize the class instance.
@@ -1130,7 +1118,6 @@ class EntryValue:
         self.value = value
 
     def __str__(self) -> str:
-        """Return a string representation of the receiver (i-i segment)."""
         return f"[.={json.dumps(self.value)}]"
 
     def __eq__(self, other: object) -> bool:
@@ -1143,25 +1130,14 @@ class EntryValue:
             raise InvalidKeyValue(self.value)
         return res
 
-    def peek_step(self, val: ArrayValue,
+    def peek_step(self, val: ObjectValue,
                   sn: "DataNode") -> tuple[Value, "DataNode"]:
-        """Return entry value addressed by the receiver + its schema node.
-
-        Args:
-            val: Current value (array).
-            sn:  Current schema node.
-        """
         try:
             return (val[val.index(self.parse_value(sn))], sn)
         except ValueError:
             return None, sn
 
     def goto_step(self, inst: InstanceNode) -> InstanceNode:
-        """Return member instance of `inst` addressed by the receiver.
-
-        Args:
-            inst: Current instance.
-        """
         try:
             return inst._entry(
                 inst.value.index(self.parse_value(inst.schema_node)))
@@ -1171,7 +1147,10 @@ class EntryValue:
 
 
 class EntryKeys:
-    """Key-based selectors for a list entry."""
+    """Key-based selectors for a list entry.
+
+    This class implements the InstanceRouteItem protocol.
+    """
 
     def __init__(
             self: "EntryKeys",
@@ -1184,7 +1163,6 @@ class EntryKeys:
         self.keys = keys
 
     def __str__(self) -> str:
-        """Return a string representation of the receiver (i-i segment)."""
         res = []
         for k in self.keys:
             kn = f"{k[1]}:{k[0]}" if k[1] else k[0]
@@ -1211,8 +1189,8 @@ class EntryKeys:
             res[knod.iname()] = kval
         return res
 
-    def peek_step(self, val: ArrayValue,
-                  sn: "DataNode") -> tuple[ObjectValue, "DataNode"]:
+    def peek_step(self, val: ObjectValue,
+                  sn: "DataNode") -> tuple[Optional[ObjectValue], "DataNode"]:
         """Return the entry addressed by the receiver + its schema node.
 
         Args:
