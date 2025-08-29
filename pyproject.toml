@@ -13,7 +13,7 @@ yangson = "yangson.__main__:main"
 convert8525 = "yangson.convert8525:main"
 
 [project.optional-dependencies]
-yang-tools = ["pyang @ git+https://github.com/mbj4668/pyang.git"]
+yang-tools = ["pyang>=2.7.1,<3.0"]
 
 [tool.poetry]
 version = "1.6.3"
