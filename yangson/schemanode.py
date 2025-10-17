@@ -40,6 +40,7 @@ This module implements the following classes:
 * AnydataNode: YANG anydata node.
 * AnyxmlNode: YANG anyxml node.
 """
+from collections import deque
 from collections.abc import MutableSet
 from datetime import datetime
 from itertools import product
@@ -66,8 +67,8 @@ from .typealiases import (DataPath, InstanceName, JSONPointer, QualName,
                           YangIdentifier)
 from .xpathast import Expr, LocationPath, Step, Root
 from .xpathparser import XPathParser
-from .instance import (ArrayEntry, EmptyList, InstanceNode,
-                       InstanceRoute, MemberName, ObjectMember)
+from .instance import (ArrayEntry, InstanceNode, InstanceRoute, MemberName,
+                       ObjectMember)
 
 
 class Annotation:
@@ -1436,7 +1437,7 @@ class ListNode(SequenceNode, InternalNode):
             rval: Raw object to be used for the returned entry.
         """
         val = self.entry_from_raw(rval, jptr = "/")
-        return ArrayEntry(0, EmptyList(), EmptyList(), val, None, self,
+        return ArrayEntry(0, deque(), deque(), val, None, self,
                           val.timestamp)
 
 

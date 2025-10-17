@@ -28,6 +28,7 @@ This module implements the following classes:
 * ResourceIdParser: Parser for RESTCONF resource identifiers.
 * InstanceIdParser: Parser for instance identifiers.
 """
+from collections import deque
 from datetime import datetime
 import json
 from typing import Any, Optional, TYPE_CHECKING, Union
@@ -64,76 +65,6 @@ class OutputFilter:
 
     def end_element(self: "OutputFilter", parent: "InstanceNode", node: "InstanceNode", attributes: dict)->bool:
         return True
-
-
-class LinkedList:
-    """Persistent linked list of instance values."""
-
-    @classmethod
-    def from_list(cls, vals: list[Value] = [], reverse: bool = False) -> "LinkedList":
-        """Create an instance from a standard list.
-
-        Args:
-            vals: Python list of instance values.
-        """
-        res = EmptyList()
-        for v in (vals if reverse else vals[::-1]):
-            res = cls(v, res)
-        return res
-
-    def __init__(self: "LinkedList", head: Value, tail: "LinkedList"):
-        """Initialize the class instance."""
-        self.head = head
-        """Head of the linked list."""
-        self.tail = tail
-        """Tail of the linked list."""
-
-    def __bool__(self: "LinkedList"):
-        """Return receiver's boolean value."""
-        return True
-
-    def __iter__(self: "LinkedList"):
-        """Iterate over receiver's entries."""
-        cdr = self
-        while True:
-            try:
-                n, cdr = cdr.pop()
-            except IndexError:
-                return
-            yield n
-
-    def cons(self: "LinkedList", val: Value) -> "LinkedList":
-        """Prepend a value to the receiver in the persistent way.
-
-        Args:
-            val: Instance value.
-
-        Returns: A new linked list.
-        """
-        return LinkedList(val, self)
-
-    def pop(self: "LinkedList") -> tuple[Value, "LinkedList"]:
-        """Deconstruct the receiver.
-
-        Returns: A tuple with receiver's head and tail, respectively.
-        """
-        return (self.head, self.tail)
-
-
-class EmptyList(LinkedList, metaclass=_Singleton):
-    """Singleton class representing the empty linked list."""
-
-    def __init__(self: "EmptyList"):
-        pass
-
-    def __bool__(self: "EmptyList"):
-        return False
-
-    def __getitem__(self: "EmptyList", key):
-        raise IndexError
-
-    def pop(self: "EmptyList") -> None:
-        raise IndexError
 
 
 class InstanceNode:
@@ -639,10 +570,9 @@ class InstanceNode:
         val = self.value
         try:
             i = len(val) + index if index < 0 else index
-            return ArrayEntry(i, LinkedList.from_list(val[:i], reverse=True),
-                              LinkedList.from_list(val[i + 1:]),
-                              val[index], self, self.schema_node,
-                              val.timestamp)
+            return ArrayEntry(i, deque(reversed(val[:i])),
+                              deque(val[i + 1:]), val[index], self,
+                              self.schema_node, val.timestamp)
         except (IndexError, TypeError):
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
@@ -891,14 +821,14 @@ class ArrayEntry(InstanceNode):
     """This class represents an array entry."""
 
     def __init__(
-            self: "ArrayEntry", key: int, before: LinkedList,
-            after: LinkedList, value: Value,
+            self: "ArrayEntry", key: int, before: deque,
+            after: deque, value: Value,
             parinst: Optional[InstanceNode],
             schema_node: "DataNode", timestamp: datetime = None):
         super().__init__(key, value, parinst, schema_node, timestamp)
-        self.before: LinkedList = before
+        self.before = before
         """Preceding entries of the parent array."""
-        self.after: LinkedList = after
+        self.after = after
         """Following entries of the parent array."""
 
     @property
@@ -932,12 +862,14 @@ class ArrayEntry(InstanceNode):
                 parent array.
         """
         try:
-            newval, nbef = self.before.pop()
+            nbef = self.before.copy()
+            newval = nbef.popleft()
         except IndexError:
             raise NonexistentInstance(self, "previous of first") from None
-        return ArrayEntry(
-            self.index - 1, nbef, self.after.cons(self.value), newval,
-            self.parinst, self.schema_node, self.timestamp)
+        naft = self.after.copy()
+        naft.appendleft(self.value)
+        return ArrayEntry(self.index - 1, nbef, naft, newval, self.parinst,
+                          self.schema_node, self.timestamp)
 
     def next(self: "ArrayEntry") -> "ArrayEntry":
         """Return an instance node corresponding to the next entry.
@@ -947,12 +879,14 @@ class ArrayEntry(InstanceNode):
                 parent array.
         """
         try:
-            newval, naft = self.after.pop()
+            naft = self.after.copy()
+            newval = naft.popleft()
         except IndexError:
             raise NonexistentInstance(self, "next of last") from None
-        return ArrayEntry(
-            self.index + 1, self.before.cons(self.value), naft, newval,
-            self.parinst, self.schema_node, self.timestamp)
+        nbef = self.before.copy()
+        nbef.appendleft(self.value)
+        return ArrayEntry(self.index + 1, nbef, naft, newval, self.parinst,
+                          self.schema_node, self.timestamp)
 
     def insert_before(self: "ArrayEntry", value: Union[RawValue, Value],
                       raw: bool = False) -> "ArrayEntry":
@@ -965,7 +899,9 @@ class ArrayEntry(InstanceNode):
         Returns:
             An instance node of the new inserted entry.
         """
-        return ArrayEntry(self.index, self.before, self.after.cons(self.value),
+        naft = self.after.copy()
+        naft.appendleft(self.value)
+        return ArrayEntry(self.index, self.before, naft,
                           self._cook_value(value, raw), self.parinst,
                           self.schema_node, datetime.now())
 
@@ -980,9 +916,11 @@ class ArrayEntry(InstanceNode):
         Returns:
             An instance node of the newly inserted entry.
         """
-        return ArrayEntry(self.index, self.before.cons(self.value), self.after,
-                          self._cook_value(value, raw), self.parinst,
-                          self.schema_node, datetime.now())
+        nbef = self.before.copy()
+        nbef.appendleft(self.value)
+        return ArrayEntry(
+            self.index, nbef, self.after, self._cook_value(value, raw),
+            self.parinst, self.schema_node, datetime.now())
 
     def _cook_value(self: "ArrayEntry", value: Union[RawValue, Value], raw: bool) -> Value:
         return super(SequenceNode, self.schema_node).from_raw(
