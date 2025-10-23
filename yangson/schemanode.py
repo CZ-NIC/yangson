@@ -898,7 +898,7 @@ class SchemaTreeNode(GroupNode):
 
     def iname(self) -> InstanceName:
         """Override the superclass method."""
-        return ""
+        return "/"
 
     def data_parent(self) -> None:
         """Override the superclass method."""
