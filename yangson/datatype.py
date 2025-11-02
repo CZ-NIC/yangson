@@ -78,7 +78,7 @@ class DataType:
         self.error_message = None
         self.units = None
 
-    def __contains__(self: "DataType", val: ScalarValue) -> bool:
+    def __contains__(self: "DataType", val: Union[ScalarValue, InstanceRoute]) -> bool:
         """Return ``True`` if the receiver type contains `val`.
 
         If the result is ``False``, set also `error_tag` and `error_message`
@@ -590,7 +590,7 @@ class LeafrefType(LinkType):
     def canonical_string(self: "LeafrefType", val: ScalarValue) -> Optional[str]:
         return self.ref_type.canonical_string(val)
 
-    def __contains__(self: "LeafrefType", val: ScalarValue) -> bool:
+    def __contains__(self: "LeafrefType", val: Union[ScalarValue, InstanceRoute]) -> bool:
         return val in self.ref_type
 
     def from_raw(self: "LeafrefType", raw: RawScalar) -> Optional[ScalarValue]:
@@ -638,7 +638,7 @@ class InstanceIdentifierType(LinkType):
     def __str__(self: "InstanceIdentifierType") -> str:
         return "instance-identifier"
 
-    def __contains__(self: "InstanceIdentifierType", val: ScalarValue) -> bool:
+    def __contains__(self: "InstanceIdentifierType", val: InstanceRoute) -> bool:
         # TODO: route = cast(InstanceRoute, val) [related to FIXME above]
         node = self.root.get_schema_descendant(val.as_schema_route())
         return node is not None
@@ -1051,7 +1051,7 @@ class UnionType(DataType):
                 return val
         return None
 
-    def __contains__(self: "UnionType", val: Any) -> bool:
+    def __contains__(self: "UnionType", val: Union[ScalarValue, InstanceRoute]) -> bool:
         for t in self.types:
             try:
                 if val in t:
