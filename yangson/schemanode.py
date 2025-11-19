@@ -844,7 +844,8 @@ class InternalNode(SchemaNode):
     def _ascii_tree(self: "InternalNode", indent: str, no_types: bool, val_count: bool) -> str:
         """Return the receiver's subtree as ASCII art."""
         def suffix(sn):
-            return f" {{{sn.val_count}}}\n" if val_count else "\n"
+            return f" {{{sn.val_count}}}\n" if val_count and isinstance(
+                sn, (SchemaTreeNode, DataNode)) else "\n"
         if not self.children:
             return ""
         cs = []
