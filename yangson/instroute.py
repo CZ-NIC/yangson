@@ -27,7 +27,7 @@ from typing import Optional, Protocol, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .instance import InstanceNode
-    from .instvalue import ObjectValue, Value
+    from .instvalue import StructuredValue, Value
     from .schemanode import DataNode
 
 
@@ -40,7 +40,7 @@ class InstanceRouteItem(Protocol):
     def __str__(self) -> str:
         """Return string representation of the receiver (i-i segment)."""
 
-    def peek_step(self, val: "ObjectValue",
+    def peek_step(self, val: "StructuredValue",
                   sn: "DataNode") -> tuple[Optional["Value"], "DataNode"]:
         """Return value addressed by the receiver relative to the current
         position together with its schema node.
@@ -50,7 +50,7 @@ class InstanceRouteItem(Protocol):
             sn:  Schema node corresponding to the current position.
         """
 
-    def goto_step(self, inst: "InstanceNode") -> Optional["InstanceNode"]:
+    def goto_step(self, inst: "InstanceNode") -> "InstanceNode":
         """Return instance node addressed by the receiver.
 
         Args:
