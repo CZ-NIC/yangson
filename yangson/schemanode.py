@@ -694,7 +694,7 @@ class InternalNode(SchemaNode):
         else:
             self._mandatory_children[0].add(node)
 
-    def _add_defaults(self, inst: InstanceNode, ctype: ContentType,
+    def _add_defaults(self, inst: InstanceNode, ctype: Optional[ContentType],
                       lazy: bool = False) -> InstanceNode:
         for c in self.filter_children(ctype):
             if isinstance(c, DataNode):
@@ -1451,7 +1451,7 @@ class ChoiceNode(InternalNode):
         return self._mandatory
 
     def _add_defaults(self, inst: InstanceNode,
-                      ctype: ContentType) -> InstanceNode:
+                      ctype: Optional[ContentType]) -> InstanceNode:
         if self.when and not self.when.evaluate(inst):
             return inst
         ac = self._active_case(inst.value)
