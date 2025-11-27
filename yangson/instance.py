@@ -385,7 +385,7 @@ class InstanceNode:
         """
         self.schema_node._validate(self, scope, ctype)
 
-    def add_defaults(self, ctype: ContentType = None,
+    def add_defaults(self, ctype: Optional[ContentType] = None,
                      tag: bool = False) -> "InstanceNode":
         """Return the receiver with defaults added recursively to its value.
 
@@ -1077,7 +1077,7 @@ class ActionName(MemberName):
         cn = sn.get_child(self.name, self.namespace)
         return (None, cn)
 
-    def goto_step(self, inst: InstanceNode) -> None:
+    def goto_step(self, inst: InstanceNode) -> InstanceNode:
         """Raise an exception because there is no action instance."""
         raise NonDataNode(inst, "action " + self.iname())
 
