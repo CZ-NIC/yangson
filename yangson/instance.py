@@ -31,7 +31,7 @@ This module implements the following classes:
 from collections import deque
 from datetime import datetime
 import json
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Mapping, Optional, TYPE_CHECKING, Union
 from urllib.parse import unquote
 import xml.etree.ElementTree as ET
 from .enumerations import ContentType, ValidationScope
@@ -55,19 +55,19 @@ __all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
 
 class OutputFilter:
     def begin_member(self, parent: "InstanceNode", node: "InstanceNode",
-                     attributes: dict) -> bool:
+                     attributes: Mapping) -> bool:
         return True
 
     def end_member(self, parent: "InstanceNode", node: "InstanceNode",
-                   attributes: dict) -> bool:
+                   attributes: Mapping) -> bool:
         return True
 
     def begin_element(self, parent: "InstanceNode", node: "InstanceNode",
-                      attributes: dict) -> bool:
+                      attributes: Mapping) -> bool:
         return True
 
     def end_element(self, parent: "InstanceNode", node: "InstanceNode",
-                    attributes: dict) -> bool:
+                    attributes: Mapping) -> bool:
         return True
 
 
