@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -12,8 +12,8 @@
 # A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Yangson.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """Simple recursive-descent parser.
 
@@ -62,7 +62,8 @@ class Parser:
         """Current position in the input text."""
 
     def __str__(self) -> str:
-        """Return string representation of the receiver's input text and state."""
+        """Return string representation of the receiver's input text and state.
+        """
         return self.input[:self.offset] + "§" + self.input[self.offset:]
 
     def adv_skip_ws(self) -> bool:
@@ -209,7 +210,8 @@ class Parser:
         return float(self.match_regex(self.ufloat_re, True, "unsigned float"))
 
     def up_to(self, term: str) -> str:
-        """Parse and return segment terminated by the first occurence of a string.
+        """Parse and return segment terminated by the first occurence
+        of a string.
 
         Args:
             term: Terminating string.

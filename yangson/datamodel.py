@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -12,8 +12,8 @@
 # A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Yangson.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """Basic access to the Yangson library.
 
@@ -33,8 +33,8 @@ from .instance import (InstanceRoute, InstanceIdParser, ResourceIdParser,
                        RootNode)
 from .instvalue import ObjectValue
 from .schemadata import SchemaData, SchemaContext
-from .schemanode import (DataNode, InternalNode, NotificationNode, RawObject,
-                         RpcActionNode, SchemaNode, SchemaTreeNode)
+from .schemanode import (DataNode, InternalNode, RawObject, SchemaNode,
+                         SchemaTreeNode)
 from .typealiases import DataPath, PrefName, SchemaPath
 
 
@@ -116,7 +116,7 @@ class DataModel:
             p, s, loc = subschema.partition(":")
             if not (p and s and loc):
                 raise InvalidArgument(subschema)
-            subsn  = self.schema.get_child(loc, p)
+            subsn = self.schema.get_child(loc, p)
             if subsn is None:
                 raise NonexistentSchemaNode(self.schema.qual_name, loc, p)
             if isinstance(subsn, SchemaTreeNode):
@@ -144,7 +144,7 @@ class DataModel:
             p, s, loc = subschema.partition(":")
             if not (p and s and loc):
                 raise InvalidArgument(subschema)
-            subsn  = self.schema.get_child(loc, p)
+            subsn = self.schema.get_child(loc, p)
             if subsn is None:
                 raise NonexistentSchemaNode(self.schema.qual_name, loc, p)
             if isinstance(subsn, SchemaTreeNode):

@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -12,8 +12,8 @@
 # A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Yangson.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """This module defines the entry point for a validation script."""
 
@@ -145,7 +145,8 @@ def main(infile: Optional[str] = None, pickled: bool = False,
             print("Invalid YANG library:", str(e), file=sys.stderr)
             return 2
         except FeaturePrerequisiteError as e:
-            print("Unsupported pre-requisite feature:", str(e), file=sys.stderr)
+            print("Unsupported pre-requisite feature:", str(e),
+                  file=sys.stderr)
             return 2
         except MultipleImplementedRevisions as e:
             print("Multiple implemented revisions:", str(e), file=sys.stderr)

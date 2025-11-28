@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -235,7 +235,7 @@ class SchemaNode:
     def _tree_name(self) -> str:
         """Return the receiver's name to be displayed in ASCII tree."""
         return (self.name if self.parent and self.ns == self.parent.ns
-                 else f"{self.ns}:{self.name}")
+                else f"{self.ns}:{self.name}")
 
     def _validate(self, inst: InstanceNode, scope: ValidationScope,
                   ctype: ContentType) -> None:
@@ -270,8 +270,8 @@ class SchemaNode:
         """Dispatch actions for substatements of `stmt`."""
         for s in stmt.substatements:
             if s.prefix:
-                key = (
-                    sctx.schema_data.modules[sctx.text_mid].prefix_map[s.prefix][0]
+                key = (sctx.schema_data.modules[
+                    sctx.text_mid].prefix_map[s.prefix][0]
                     + ":" + s.keyword)
             else:
                 key = s.keyword
@@ -280,7 +280,8 @@ class SchemaNode:
             method(s, sctx)
 
     def _follow_leafref(
-            self: "SchemaNode", xpath: Expr, init: "TerminalNode") -> Optional["DataNode"]:
+            self: "SchemaNode", xpath: Expr,
+            init: "TerminalNode") -> Optional["DataNode"]:
         """Return the data node referred to by a leafref path.
 
         Args:
@@ -367,7 +368,7 @@ class SchemaNode:
             self._mandatory = False
 
     def _deviate_mandatory(self, stmt: Statement,
-                         sctx: SchemaContext, action: str) -> None:
+                           sctx: SchemaContext, action: str) -> None:
         if action == "delete":
             self._mandatory = False
         elif action in ("add", "replace"):
@@ -789,7 +790,8 @@ class InternalNode(SchemaNode):
         if not sctx.schema_data.if_features(stmt, sctx.text_mid):
             return
         id = (stmt.argument, sctx.schema_data.namespace(sctx.text_mid))
-        adj = sctx.schema_data.identity_adjs.setdefault(id, IdentityAdjacency())
+        adj = sctx.schema_data.identity_adjs.setdefault(
+            id, IdentityAdjacency())
         for bst in stmt.find_all("base"):
             bid = sctx.schema_data.translate_pname(bst.argument, sctx.text_mid)
             adj.bases.add(bid)
@@ -928,10 +930,11 @@ class DataNode(SchemaNode):
         Args:
             rval: Raw value to be used for the returned instance.
         """
-        val = self.from_raw(rval, jptr = "/")
+        val = self.from_raw(rval, jptr="/")
         return ObjectMember(self.iname(), {}, val, None, self, datetime.now())
 
-    def split_instance_route(self, route: InstanceRoute) -> Optional[tuple[InstanceRoute, InstanceRoute]]:
+    def split_instance_route(self, route: InstanceRoute) -> Optional[
+            tuple[InstanceRoute, InstanceRoute]]:
         """Split `route` into the part up to receiver and the rest.
 
         Args:
@@ -1038,7 +1041,7 @@ class TerminalNode(SchemaNode):
         return res
 
     def _deviate_type(self, stmt: Statement,
-                         sctx: SchemaContext, action: str) -> None:
+                      sctx: SchemaContext, action: str) -> None:
         if action == "replace":
             self.type = DataType._resolve_type(stmt, sctx)
 
@@ -1261,7 +1264,8 @@ class SequenceNode(DataNode):
         else:
             for xmlchild in rval:
                 if isinstance(self, ListNode):
-                    keys = [str(xmlchild.findtext(k[0], default='<missing>')) for k in self.keys]
+                    keys = [str(xmlchild.findtext(
+                        k[0], default='<missing>')) for k in self.keys]
                     element = "=" + ",".join(keys)
                 else:
                     element = "/" + str(idx)
@@ -1392,7 +1396,7 @@ class ListNode(SequenceNode, InternalNode):
                      for k in stmt.argument.split()]
 
     def _parse_unique(self, stmt: Statement,
-                     sctx: SchemaContext) -> list[LocationPath]:
+                      sctx: SchemaContext) -> list[LocationPath]:
         uspec = []
         for sid in stmt.argument.split():
             xpp = XPathParser(sid, sctx)
@@ -1431,7 +1435,7 @@ class ListNode(SequenceNode, InternalNode):
         Args:
             rval: Raw object to be used for the returned entry.
         """
-        val = self.entry_from_raw(rval, jptr = "/")
+        val = self.entry_from_raw(rval, jptr="/")
         return ArrayEntry(0, deque(), deque(), val, None, self,
                           val.timestamp)
 

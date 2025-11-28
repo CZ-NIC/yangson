@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -12,8 +12,8 @@
 # A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Yangson.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """
 Essential YANG schema structures and methods.
@@ -26,7 +26,7 @@ This module implements the following classes:
 * FeatureExprParser: Parser for if-feature expressions.
 """
 from collections.abc import MutableSet
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 from .exceptions import (
     InvalidSchemaPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
     FeaturePrerequisiteError, InvalidFeatureExpression, ModuleNotFound,
@@ -35,9 +35,8 @@ from .exceptions import (
 from .parser import Parser
 from .statement import ModuleParser, Statement
 from .typealiases import (ModuleId, PrefName, QualName, RevisionDate,
-                          SchemaNodeId, SchemaPath, SchemaRoute, YangIdentifier)
-if False:                       # fake import for type aliases
-    from .datatype import DataType
+                          SchemaNodeId, SchemaPath, SchemaRoute,
+                          YangIdentifier)
 
 
 class IdentityAdjacency:
@@ -264,7 +263,8 @@ class SchemaData:
             raise ModuleNotRegistered(mod)
         return sorted(revs, key=lambda x: x[1])[-1]
 
-    def prefix2ns(self, prefix: YangIdentifier, mid: ModuleId) -> YangIdentifier:
+    def prefix2ns(
+            self, prefix: YangIdentifier, mid: ModuleId) -> YangIdentifier:
         """Return the namespace corresponding to a prefix.
 
         Args:
@@ -473,7 +473,8 @@ class SchemaData:
 
     def derived_from_all(self,
                          identities: list[QualName]) -> MutableSet[QualName]:
-        """Return list of identities transitively derived from all `identity`."""
+        """Return list of identities transitively derived from all `identity`.
+        """
         if not identities:
             return set()
         res = self.derived_from(identities[0])

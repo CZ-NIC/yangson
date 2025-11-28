@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -12,8 +12,8 @@
 # A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Yangson.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """XPath node-set"""
 from typing import Callable, Union
@@ -24,6 +24,7 @@ from .instance import InstanceNode
 
 NodeExpr = Callable[[InstanceNode], "NodeSet"]
 XPathValue = Union["NodeSet", str, float, bool]
+
 
 def comparison(meth):
     def wrap(self, arg):
@@ -45,8 +46,8 @@ class NodeSet(list):
         return self.__class__(self + [n for n in ns if n.path not in paths])
 
     def bind(self, trans: NodeExpr) -> "NodeSet":
-        return self.__class__({m.path: m for n in self
-                                for m in trans(n)}.values())
+        return self.__class__(
+            {m.path: m for n in self for m in trans(n)}.values())
 
     def __float__(self) -> float:
         return (float(self[0].value) if self else float("nan"))

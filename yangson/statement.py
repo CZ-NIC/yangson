@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -12,8 +12,8 @@
 # A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Yangson.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """YANG statements and a parser for YANG modules.
 
@@ -117,17 +117,19 @@ class Statement:
         """Return receiver's error tag and error message if present."""
         etag = self.find1("error-app-tag")
         emsg = self.find1("error-message")
-        return (etag.argument if etag else None, emsg.argument if emsg else None)
+        return (etag.argument if etag else None,
+                emsg.argument if emsg else None)
 
 
 class ModuleParser(Parser):
     """Parse YANG modules."""
 
-    unescape_map: Final[dict[str,str]] = {"n": "\n", "t": "\t", '"': '"',
-                    "\\": "\\"}
+    unescape_map: Final[dict[str, str]] = {"n": "\n", "t": "\t", '"': '"',
+                                           "\\": "\\"}
     """Dictionary for mapping escape sequences to characters."""
 
-    def __init__(self, text: str, name: YangIdentifier = None, rev: str = None):
+    def __init__(self, text: str, name: YangIdentifier = None,
+                 rev: str = None):
         """Initialize the parser instance.
 
         Args:
@@ -146,8 +148,10 @@ class ModuleParser(Parser):
 
         Raises:
             EndOfInput: If past the end of input.
-            ModuleNameMismatch: If parsed module name doesn't match `self.name`.
-            ModuleRevisionMismatch: If parsed revision date doesn't match `self.rev`.
+            ModuleNameMismatch: If parsed module name doesn't match
+                `self.name`.
+            ModuleRevisionMismatch: If parsed revision date doesn't match
+                `self.rev`.
             UnexpectedInput: If top-level statement isn't ``(sub)module``.
         """
         self.opt_separator()

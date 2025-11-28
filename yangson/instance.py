@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -12,8 +12,8 @@
 # A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Yangson.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """Instance data represented as a persistent structure.
 
@@ -44,7 +44,7 @@ from .instvalue import (ArrayValue, InstanceKey, ObjectValue, Value,
                         ScalarValue, StructuredValue)
 from .parser import Parser
 from .typealiases import (InstanceName, JSONPointer, QualName, RawScalar,
-                          RawValue, SchemaRoute, _Singleton, YangIdentifier)
+                          RawValue, SchemaRoute, YangIdentifier)
 if TYPE_CHECKING:
     from .schemadata import SchemaData
 
@@ -157,8 +157,8 @@ class InstanceNode:
             return ita()
         if isinstance(self.value, ObjectValue):
             return iter(self._member_names())
-        raise InstanceValueError(self,
-            "{} is a scalar instance".format(str(type(self.value))))
+        raise InstanceValueError(
+            self, "{} is a scalar instance".format(str(type(self.value))))
 
     def json_pointer(self) -> JSONPointer:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
@@ -200,7 +200,8 @@ class InstanceNode:
             raise InstanceValueError(self, "member of non-object")
         csn = self._member_schema_node(name)
         newval = self.value.copy()
-        newval[name] = csn.from_raw(value, self.json_pointer()) if raw else value
+        newval[name] = (csn.from_raw(value, self.json_pointer()) if raw
+                        else value)
         return self._copy(newval)._member(name)
 
     def delete_item(self, key: InstanceKey) -> "InstanceNode":
@@ -237,7 +238,7 @@ class InstanceNode:
         if not isinstance(self.schema_node, ListNode):
             raise InstanceValueError(self, "lookup on non-list")
         if raw:
-             for k in keys:
+            for k in keys:
                 ksn = self._member_schema_node(k)
                 keys[k] = ksn.from_raw(keys[k], self.json_pointer())
         for i in range(len(self.value)):
@@ -265,7 +266,8 @@ class InstanceNode:
         return self.parinst._copy(self._zip(), ts)
 
     def top(self) -> "RootNode":
-        """Return an instance node corresponding to the root of the data tree."""
+        """Return an instance node corresponding to the root of the data tree.
+        """
         inst = self
         while inst.parinst:
             inst = inst.up()
@@ -287,7 +289,7 @@ class InstanceNode:
         return self._copy(newval)
 
     def merge(self, value: Union[RawValue, Value],
-               raw: bool = False) -> "InstanceNode":
+              raw: bool = False) -> "InstanceNode":
         """Merge receiver's value with another value.
 
         Args:
@@ -298,7 +300,7 @@ class InstanceNode:
             Copy of the receiver with the merged value.
         """
         if (isinstance(self.schema_node, (LeafNode, AnydataNode)) or
-            not self.value):
+                not self.value):
             return self.update(value, raw)
         newval = self.schema_node.from_raw(
             value, self.json_pointer()) if raw else value
@@ -332,7 +334,7 @@ class InstanceNode:
                 inst = inst[k].merge(value[k]).up()
             else:
                 rest.append(k)
-        inst.value.update({k : value[k] for k in rest})
+        inst.value.update({k: value[k] for k in rest})
         return inst
 
     def goto(self, iroute: "InstanceRoute") -> "InstanceNode":
@@ -447,7 +449,8 @@ class InstanceNode:
                 # handled when processing the level higher or no metadata
                 continue
 
-            if m[0] != '@' and isinstance(self.value[m], ObjectValue) and '@' in self.value[m]:
+            if (m[0] != '@' and isinstance(self.value[m], ObjectValue)
+                    and '@' in self.value[m]):
                 attr[m] = self.value[m]['@']
             elif m[0] == '@':
                 attr[m[1:]] = self.value[m]
@@ -489,7 +492,8 @@ class InstanceNode:
                 if add1:
                     member_value = en.raw_value(filter)
                 add2 = filter.end_element(self, en, e_attr)
-                if add1 and add2 and member_value is not None and member_value != {}:
+                if (add1 and add2 and member_value is not None
+                        and member_value != {}):
                     if e_attr:
                         member_value['@'] = e_attr
                     value.append(member_value)
@@ -534,10 +538,10 @@ class InstanceNode:
                             if add1:
                                 child = ET.Element(sn.name)
                                 if not dp or dp.ns != sn.ns:
-                                    module = self.schema_data.modules_by_name.get(sn.ns)
+                                    module = self.schema_data.modules_by_name.get(sn.ns)  # NOQA
                                     if not module:
                                         raise MissingModuleNamespace(sn.ns)
-                                    child.attrib['xmlns'] = module.xml_namespace
+                                    child.attrib['xmlns'] = module.xml_namespace  # NOQA
                                 en.to_xml(filter, child)
                             add2 = filter.end_element(m, en, e_attr)
                             if add1 and add2:
@@ -548,7 +552,7 @@ class InstanceNode:
                         child = ET.Element(sn.name)
                         if not dp or dp.ns != sn.ns or isinstance(
                                 m.schema_node, (InputNode, OutputNode)):
-                            module = self.schema_data.modules_by_name.get(sn.ns)
+                            module = self.schema_data.modules_by_name.get(sn.ns)  # NOQA
                             if not module:
                                 raise MissingModuleNamespace(sn.ns)
                             child.attrib['xmlns'] = module.xml_namespace
@@ -573,17 +577,20 @@ class InstanceNode:
             sn = self.schema_node
             if isinstance(sn, TerminalNode):
                 if isinstance(sn.type, IdentityrefType):
-                    module = self.schema_data.modules_by_name.get(self.value[1])
+                    module = self.schema_data.modules_by_name.get(
+                        self.value[1])
                     if not module:
                         raise MissingModuleNamespace(sn.ns)
-                    element.attrib['xmlns:'+self.value[1]] = module.xml_namespace
+                    element.attrib[
+                        'xmlns:'+self.value[1]] = module.xml_namespace
                 element.text = sn.type.to_xml(self.value)
 
         if elem is not None:
             return element
         else:
             if has_default_ns:
-                element.attrib['xmlns:wd'] = 'urn:ietf:params:xml:ns:netconf:default:1.0'
+                element.attrib[
+                    'xmlns:wd'] = 'urn:ietf:params:xml:ns:netconf:default:1.0'
             return element
 
     def _member_names(self) -> list[InstanceName]:
@@ -720,9 +727,10 @@ class RootNode(InstanceNode):
         """
         raise NonexistentInstance(self, "up of top")
 
-    def to_xml(self, filter: OutputFilter = OutputFilter(),
-               tag: str = "content-data",
-               urn: str = "urn:ietf:params:xml:ns:yang:ietf-yang-instance-data"):
+    def to_xml(
+            self, filter: OutputFilter = OutputFilter(),
+            tag: str = "content-data",
+            urn: str = "urn:ietf:params:xml:ns:yang:ietf-yang-instance-data"):
         """put receiver's value into a XML element"""
         element = ET.Element(tag)
         element.attrib['xmlns'] = urn
@@ -732,16 +740,18 @@ class RootNode(InstanceNode):
         return et
 
     def _copy(self, newval: Value, newts: datetime = None) -> InstanceNode:
-        return RootNode( newval, self.schema_node, self.schema_data,
-                         newts if newts else newval.timestamp)
+        return RootNode(newval, self.schema_node, self.schema_data,
+                        newts if newts else newval.timestamp)
 
     def _ancestors_or_self(
-            self: "RootNode", qname: Union[QualName, bool] = None) -> list["RootNode"]:
+            self: "RootNode",
+            qname: Union[QualName, bool] = None) -> list["RootNode"]:
         """XPath - return the list of receiver's ancestors including itself."""
         return [self] if qname is None else []
 
     def _ancestors(
-            self: "RootNode", qname: Union[QualName, bool] = None) -> list["RootNode"]:
+            self: "RootNode",
+            qname: Union[QualName, bool] = None) -> list["RootNode"]:
         """XPath - return the list of receiver's ancestors."""
         return []
 
@@ -1170,7 +1180,8 @@ class EntryValue:
             return inst._entry(
                 inst.value.index(self.parse_value(inst.schema_node)))
         except ValueError:
-            raise NonexistentInstance(inst, f"entry '{self.value!s}'") from None
+            raise NonexistentInstance(
+                inst, f"entry '{self.value!s}'") from None
 
 
 class EntryKeys:
@@ -1375,5 +1386,5 @@ from .schemanode import (       # NOQA
             InternalNode, LeafNode, LeafListNode, ListNode, NotificationNode,
             OutputNode, RpcActionNode, SequenceNode, SchemaTreeNode,
             TerminalNode)
-from .datatype import (
+from .datatype import (         # NOQA
             IdentityrefType)

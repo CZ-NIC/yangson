@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -238,7 +238,7 @@ class EqualityExpr(BinaryExpr):
         return self._as_str("!=" if self.negate else "=")
 
     def as_instance_route(self) -> InstanceRoute:
-        step = self.left
+        return self.left.as_instance_route()
 
     def _properties_str(self) -> str:
         return "!=" if self.negate else "="
@@ -479,14 +479,15 @@ class Step(Expr):
 
     def as_instance_route(self) -> InstanceRoute:
         m = MemberName(*self.qname)
-        if not(self.predicates): return InstanceRoute([m])
+        if not self.predicates:
+            return InstanceRoute([m])
         p0 = self.predicates[0]
         if isinstance(p0, Number):  # entry index
             espec = EntryIndex(int(p0.value))
         elif p0.left.axis == Axis.self:  # leaf-list value
             espec = EntryValue(p0.right.value)
         else:                   # list keys
-            ks = { p.left.qname: p.right.value for p in self.predicates }
+            ks = {p.left.qname: p.right.value for p in self.predicates}
             espec = EntryKeys(ks)
         return InstanceRoute([m, espec])
 
@@ -710,7 +711,7 @@ class FuncNormalizeSpace(UnaryExpr):
 class FuncNot(UnaryExpr):
 
     def _eval(self, xctx: XPathContext) -> bool:
-        return not(self.expr._eval(xctx))
+        return not self.expr._eval(xctx)
 
 
 class FuncNumber(UnaryExpr):
@@ -845,7 +846,8 @@ class FuncTranslate(BinaryExpr):
         self.nchars = s3
 
     def __str__(self) -> str:
-        return f"{self._xfunc_name()}({self.left}, {self.right}, {self.nchars})"
+        return (
+            f"{self._xfunc_name()}({self.left}, {self.right}, {self.nchars})")
 
     def _children_ast(self, indent: int) -> str:
         return super()._children_ast(indent) + self.nchars.syntax_tree(indent)

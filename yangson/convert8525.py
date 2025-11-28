@@ -1,4 +1,4 @@
-# Copyright © 2016-2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016-2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -160,7 +160,7 @@ class MainModuleData(ModuleData):
             res["feature"] = self.feature
         if self.deviation:
             res["deviation"] = [
-                { "name": n, "revision": r } for (n,r) in self.deviation]
+                {"name": n, "revision": r} for (n, r) in self.deviation]
         return res
 
 
@@ -174,7 +174,7 @@ def main() -> int:
     parser.add_argument(
         "ylib", metavar="YLIB",
         help=("name of the input file containing JSON-encoded"
-                " YANG library data conforming to the RFC 8525 schema"))
+              " YANG library data conforming to the RFC 8525 schema"))
     parser.add_argument(
         "-o", "--output", metavar="OUTFILE",
         help="Direct output to OUTFILE instead of standard output")
@@ -205,7 +205,7 @@ def main() -> int:
         inst.validate(ctype=ContentType.nonconfig)
     except (FileNotFoundError, PermissionError, json.decoder.JSONDecodeError,
             RawDataError, ValidationError) as e:
-        print ("Invalid input data:", str(e), file=sys.stderr)
+        print("Invalid input data:", str(e), file=sys.stderr)
         return 1
     top = inst["ietf-yang-library:yang-library"]
     if schema is None:
@@ -226,22 +226,22 @@ def main() -> int:
         msentry = top["module-set"].look_up(name=ms.value)
         if "module" in msentry:
             for yam in msentry["module"]:
-                ment = MainModuleData(yam.value, import_only = False)
+                ment = MainModuleData(yam.value, import_only=False)
                 modules[ment.key()] = ment
         if "import-only-module" in msentry:
             for yam in msentry["import-only-module"]:
-                ment = MainModuleData(yam.value, import_only = True)
+                ment = MainModuleData(yam.value, import_only=True)
                 modules[ment.key()] = ment
     dm7895 = DataModel(YL7895, sp.split(":"))
     res = dm7895.from_raw(
-        { "ietf-yang-library:modules-state":
-          { "module-set-id": cast(str, top["content-id"].value) }})
+        {"ietf-yang-library:modules-state":
+         {"module-set-id": cast(str, top["content-id"].value)}})
     rtop = res["ietf-yang-library:modules-state"]
     res = rtop.put_member(
-        "module", [modules[m].as_raw() for m in modules], raw = True).top()
+        "module", [modules[m].as_raw() for m in modules], raw=True).top()
     res.validate(ctype=ContentType.nonconfig)
     try:
-        outf = open(args.output, mode="w") if args.output else sys.stdout
+        outf = open(fn7895, mode="w") if args.output else sys.stdout
     except FileNotFoundError as e:
         print(e, file=sys.stderr)
         return 3

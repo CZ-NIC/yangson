@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -12,8 +12,8 @@
 # A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Yangson.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """Classes representing YANG data types.
 
@@ -46,7 +46,6 @@ This module implements the following classes:
 import base64
 import binascii
 import decimal
-import numbers
 import xml.etree.ElementTree as ET
 import re
 from typing import Any, Optional, Union, TYPE_CHECKING
@@ -265,7 +264,7 @@ class EmptyType(DataType):
         return [None]
 
     def from_xml(self, xml: ET.Element) -> Optional[tuple[None]]:
-        if xml.text == None:
+        if xml.text is None:
             return (None,)
 
     def to_xml(self, val: tuple[None]) -> None:
@@ -430,7 +429,8 @@ class LinearType(DataType):
 
     def __contains__(self, val: Union[str, bytes]) -> bool:
         if self.length and len(val) not in self.length:
-            self._set_error_info(self.length.error_tag, self.length.error_message)
+            self._set_error_info(
+                self.length.error_tag, self.length.error_message)
             return False
         return True
 

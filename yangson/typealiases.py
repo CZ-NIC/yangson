@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -12,8 +12,8 @@
 # A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Yangson.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """Type aliases for use with type hints [PEP484]_."""
 
@@ -56,7 +56,8 @@ SchemaRoute = list[QualName]
 """Schema route, a list of qualified names of schema nodes."""
 
 SchemaPath = str
-"""Schema path similar to instance identifier containing names of schema nodes."""
+"""Schema path similar to instance identifier containing names of schema nodes.
+"""
 
 DataPath = str  # same syntax as SchemaPath but containing only data nodes
 """SchemaPath containing only names of data nodes."""

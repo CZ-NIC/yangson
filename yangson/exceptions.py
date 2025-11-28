@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -19,7 +19,8 @@
 
 This module defines the following exceptions:
 
-* :exc:`AnnotationException`: Base class for exceptions related to metadata annotations.
+* :exc:`AnnotationException`: Base class for exceptions related to metadata
+  annotations.
 * :exc:`BadSchemaNodeType`: A schema node is of a wrong type.
 * :exc:`BadYangLibraryData`: Invalid YANG library data.
 * :exc:`CyclicImports`: Imports of YANG modules form a cycle.
@@ -28,23 +29,29 @@ This module defines the following exceptions:
 * :exc:`FeaturePrerequisiteError`: Pre-requisite feature isn't supported.
 * :exc:`InstanceException`: Base class for exceptions related to operations
   on instance nodes.
-* :exc:`InstanceValueError`: The instance value is incompatible with the called method.
+* :exc:`InstanceValueError`: The instance value is incompatible with the
+  called method.
 * :exc:`InvalidArgument`: Invalid argument of a statement.
 * :exc:`InvalidFeatureExpression`: Invalid if-feature expression.
 * :exc:`InvalidKeyValue`: Invalid list key or leaf-list value.
 * :exc:`InvalidLeafrefPath`: A leafref path is incorrect.
 * :exc:`InvalidSchemaPath`: Invalid schema path
 * :exc:`InvalidXPath`: An XPath expression is invalid.
-* :exc:`MissingAnnotationTarget`: Instance node that is being annotated doesn't exist.
+* :exc:`MissingAnnotationTarget`: Instance node that is being annotated
+  doesn't exist.
 * :exc:`MissingModule`: Abstract exception class – a module is missing.
-* :exc:`ModuleContentMismatch`: Abstract exception class – unexpected module name or revision.
+* :exc:`ModuleContentMismatch`: Abstract exception class – unexpected module
+  name or revision.
 * :exc:`ModuleNameMismatch`: The module name doesn't match the expected name.
 * :exc:`ModuleNotFound`: A module not found.
-* :exc:`ModuleRevisionMismatch`: The module revision doesn't match the expected revision.
+* :exc:`ModuleRevisionMismatch`: The module revision doesn't match the expected
+  revision.
 * :exc:`ModuleNotImplemented`: A module is not implemented in the data model.
 * :exc:`ModuleNotImported`: A module is not imported.
-* :exc:`ModuleNotRegistered`: An imported module is not registered in YANG library.
-* :exc:`MultipleImplementedRevisions`: A module has multiple implemented revisions.
+* :exc:`ModuleNotRegistered`: An imported module is not registered in YANG
+  library.
+* :exc:`MultipleImplementedRevisions`: A module has multiple implemented
+  revisions.
 * :exc:`NonexistentInstance`: Attempt to access an instance node that doesn't
   exist.
 * :exc:`NonDataNode`: Attempt to access an instance of non-data node
@@ -62,7 +69,8 @@ This module defines the following exceptions:
 * :exc:`UndefinedAnnotation`: Undefined annotation is used.
 * :exc:`UnexpectedInput`: Unexpected input.
 * :exc:`UnknownPrefix`: Unknown namespace prefix.
-* :exc:`ValidationError`: Abstract exception class for instance validation errors.
+* :exc:`ValidationError`: Abstract exception class for instance validation
+  errors.
 * :exc:`XPathTypeError`: A subexpression is of a wrong type.
 * :exc:`YangsonException`: Base class for all Yangson exceptions.
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
@@ -73,6 +81,7 @@ from .typealiases import (InstanceName, JSONPointer, ModuleId, PrefName,
 if TYPE_CHECKING:
     from .parser import Parser
     from .instance import InstanceNode
+
 
 class YangsonException(Exception):
     """Base class for all Yangson exceptions."""
@@ -140,7 +149,8 @@ class InvalidKeyValue(YangsonException):
 
 
 class InstanceException(YangsonException):
-    """Abstract class for exceptions related to operations on instance nodes."""
+    """Abstract class for exceptions related to operations on instance nodes.
+    """
 
     def __init__(self, instance: "InstanceNode",
                  message: str):
@@ -160,8 +170,8 @@ class NonexistentInstance(InstanceException):
 
 
 class NonDataNode(InstanceException):
-    """Attempt to access an instance of non-data node (rpc/action/notification).
-    """
+    """Attempt to access an instance of non-data node
+    (rpc/action/notification)."""
 
 
 class ParserException(YangsonException):
@@ -355,7 +365,8 @@ class NonexistentSchemaNode(SchemaNodeException):
         self.ns = ns
 
     def __str__(self) -> str:
-        prefix = "" if self.ns is None or self.ns == self.qn[1] else self.ns + ":"
+        prefix = ("" if self.ns is None or self.ns == self.qn[1]
+                  else self.ns + ":")
         return f"{prefix}{self.name} under {super().__str__()}"
 
 
