@@ -24,9 +24,8 @@ This module implements the following classes:
 * Pattern: Class representing regular expression pattern.
 * Must: Class representing the constraint specified by a "must" statement.
 """
-import decimal
 import re
-from typing import Callable, Generic, Optional, Union
+from typing import Callable, Generic, Optional
 from elementpath import RegexError, translate_pattern
 
 from .exceptions import InvalidArgument

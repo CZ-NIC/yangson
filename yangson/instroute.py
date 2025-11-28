@@ -1,4 +1,4 @@
-# Copyright © 2016–2025 CZ.NIC, z. s. p. o.
+# Copyright © 2016–2026 CZ.NIC, z. s. p. o.
 #
 # This file is part of Yangson.
 #
@@ -12,8 +12,8 @@
 # A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 # details.
 #
-# You should have received a copy of the GNU Lesser General Public License along
-# with Yangson.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public License
+# along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """A route into an instance value that is also used as the cooked value
 of the instance-identifier type.
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from .instance import InstanceNode
     from .instvalue import ObjectValue, Value
     from .schemanode import DataNode
+
 
 class InstanceRouteItem(Protocol):
     """This protocol class defines a required API for instance route items."""
@@ -55,7 +56,7 @@ class InstanceRouteItem(Protocol):
         Args:
             inst: Current instance node.
         """
-    
+
 
 class InstanceRoute(tuple[InstanceRouteItem, ...]):
     """This class represents a route into an instance value."""

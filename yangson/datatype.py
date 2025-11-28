@@ -50,7 +50,7 @@ import decimal
 import xml.etree.ElementTree as ET
 import re
 from typing import (Any, cast, ClassVar, Generic, Optional, Type,
-                    TYPE_CHECKING, TypeVar, Union)
+                    TYPE_CHECKING)
 
 from .constraint import Intervals, Pattern
 from .exceptions import (
@@ -267,7 +267,7 @@ class EmptyType(DataType[tuple[None], list[None]]):
         return [None]
 
     def from_xml(self, xml: ET.Element) -> Optional[tuple[None]]:
-        return (None,) if xml.text == None else None
+        return (None,) if xml.text is None else None
 
     def to_xml(self, val: tuple[None]) -> None:
         return None
@@ -964,7 +964,6 @@ class Int8Type(IntegralType[int]):
 
     _range = [-128, 127]
 
-
     def to_raw(self, val: int) -> Optional[int]:
         return val if val in self else None
 
@@ -973,7 +972,6 @@ class Int16Type(IntegralType[int]):
     """Class representing YANG "int16" type."""
 
     _range = [-32768, 32767]
-
 
     def to_raw(self, val: int) -> Optional[int]:
         return val if val in self else None
@@ -984,9 +982,9 @@ class Int32Type(IntegralType[int]):
 
     _range = [-2147483648, 2147483647]
 
-
     def to_raw(self, val: int) -> Optional[int]:
         return val if val in self else None
+
 
 class Int64Type(IntegralType[str]):
     """Class representing YANG "int64" type."""

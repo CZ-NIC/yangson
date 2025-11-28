@@ -55,8 +55,7 @@ from .exceptions import (
     MissingAnnotationTarget, MissingModuleNamespace, RawMemberError,
     RawTypeError, SchemaError, SemanticError, UndefinedAnnotation,
     YangsonException, YangTypeError)
-from .instance import (ArrayEntry, EmptyList, InstanceNode,
-                       MemberName, ObjectMember)
+from .instance import (ArrayEntry, InstanceNode, MemberName, ObjectMember)
 from .instroute import InstanceRoute
 from .instvalue import (
     ArrayValue, EntryValue, MetadataObject, ObjectValue, Value)
