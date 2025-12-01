@@ -24,8 +24,12 @@ This module implements the following classes:
 * RootNode: Root of the data tree.
 * ObjectMember: Instance node that is an object member.
 * ArrayEntry: Instance node that is an array entry.
-* InstanceRoute: Route into an instance value.
 * ResourceIdParser: Parser for RESTCONF resource identifiers.
+* MemberName: Instance route selector for an object member.
+* ActionName: Instance route selector for an action.
+* EntryIndex: Instance route selector for index-based access to array entries.
+* EntryValue: Instance route selector for value-based access to array entries.
+* EntryKeys: Instance route selector for keys-based access to array entries.
 * InstanceIdParser: Parser for instance identifiers.
 """
 from collections import deque

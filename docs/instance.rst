@@ -23,7 +23,6 @@ The *instance* module implements the following classes:
 * :class:`RootNode`: Root of the data tree.
 * :class:`ObjectMember`: Instance node that is an object member.
 * :class:`ArrayEntry`: Instance node that is an array entry.
-* :class:`InstanceRoute`: Route into an instance value.
 
 Doctest__ snippets for this module use the data model and instance
 document from :ref:`sec-ex2`.
@@ -756,25 +755,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> foo5 = foo4.insert_after({'number': '5', 'in-words': 'five'}, raw=True)
          >>> [en['number'] for en in foo5.up().value]
          [6, 3, 7, 4, 5, 8]
-
-.. autoclass:: InstanceRoute
-   :show-inheritance:
-
-   Instances of this class can be conveniently created by using one of
-   the methods :meth:`~.DataModel.parse_resource_id` and
-   :meth:`~.DataModel.parse_instance_id` in the :class:`~.datamodel.DataModel`
-   class.
-
-   .. rubric:: Public Methods
-
-   .. automethod:: __str__
-
-      .. doctest::
-
-         >>> str(irt)
-         '/example-2:bag/foo[number="3"]/in-words'
-         >>> str(irt2)
-         '/example-2:bag/baz'
 
 .. _keyword arguments: https://docs.python.org/3/tutorial/controlflow.html#keyword-arguments
 .. _4: https://rfc-editor.org/rfc/rfc7951.html#section-4

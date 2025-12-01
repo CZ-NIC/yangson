@@ -8,6 +8,7 @@ Supporting Modules
    enumerations
    exceptions
    constraint
+   instroute
    parser
    statement
    xpath

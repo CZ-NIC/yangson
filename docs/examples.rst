@@ -48,8 +48,8 @@ File: ``examples/ex1/example-data.json``
 Example 2
 =========
 
-This example is used in the documentation of the :mod:`.instance`
-module, and also in :ref:`quick-start`.
+This example is used in the documentation of the :mod:`.instance` and
+:mod:`.instroute` modules, and also in :ref:`quick-start`.
 
 .. rubric:: Schema Tree
 
