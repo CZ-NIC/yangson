@@ -2,7 +2,7 @@
 [![Release](https://img.shields.io/github/release/CZ-NIC/yangson.svg)](https://github.com/CZ-NIC/yangson/releases/latest)
 [![License](https://img.shields.io/github/license/CZ-NIC/yangson)](COPYING.LESSER)
 ![Commits](https://img.shields.io/github/commit-activity/y/CZ-NIC/yangson?label=commits)
-![Downloads](https://img.shields.io/github/downloads/CZ-NIC/yangson/total)
+[![PyPI downloads](https://img.shields.io/pypi/dm/yangson?label=PyPI%20downloads)](https://pypi.org/project/yangson)
 
 # Welcome to Yangson
 
