@@ -62,7 +62,7 @@ class DataModel:
         return cls(yltxt, mod_path, description)
 
     def __init__(self, yltxt: str, mod_path: Sequence[str] = (".",),
-                 description: Optional[str] = None):
+                 description: Optional[str] = None) -> None:
         """Initialize the class instance.
 
         Args:

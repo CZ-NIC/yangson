@@ -44,7 +44,7 @@ from .xpathast import (
 class XPathParser(Parser):
     """Parser for XPath expressions."""
 
-    def __init__(self, text: str, sctx: SchemaContext):
+    def __init__(self, text: str, sctx: SchemaContext) -> None:
         """Initialize the parser instance.
 
         Args:

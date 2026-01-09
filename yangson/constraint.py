@@ -37,7 +37,7 @@ class Constraint:
     """Abstract class representing annotated YANG constraints."""
 
     def __init__(self, error_tag: Optional[str],
-                 error_message: Optional[str]):
+                 error_message: Optional[str]) -> None:
         """Initialize the class instance."""
         self.error_tag = error_tag
         self.error_message = error_message
@@ -57,7 +57,7 @@ class Intervals(Constraint, Generic[N]):
     def __init__(self, intervals: list[list[N]],
                  parser: Optional[Callable[[str], Optional[N]]] = None,
                  error_tag: Optional[str] = None,
-                 error_message: Optional[str] = None):
+                 error_message: Optional[str] = None) -> None:
         """Initialize the class instance."""
         super().__init__(error_tag, error_message)
         self.intervals = intervals
@@ -128,7 +128,7 @@ class Pattern(Constraint):
 
     def __init__(self, pattern: str, invert_match: bool = False,
                  error_tag: Optional[str] = None,
-                 error_message: Optional[str] = None):
+                 error_message: Optional[str] = None) -> None:
         """Initialize the class instance."""
         super().__init__(
             error_tag,
@@ -147,7 +147,7 @@ class Must(Constraint):
     """Class representing the constraint specified by a "must" statement."""
 
     def __init__(self, expression: Expr, error_tag: Optional[str] = None,
-                 error_message: Optional[str] = None):
+                 error_message: Optional[str] = None) -> None:
         """Initialize the class instance."""
         super().__init__(
             error_tag if error_tag else "must-violation", error_message)

@@ -44,7 +44,7 @@ from collections import deque
 from collections.abc import MutableSet
 from datetime import datetime
 from itertools import product
-from typing import Any, Optional
+from typing import cast, Any, Optional
 import xml.etree.ElementTree as ET
 from .constraint import Must
 from .datatype import DataType, LinkType, IdentityrefType
@@ -74,7 +74,8 @@ from .xpathparser import XPathParser
 class Annotation:
     """Class for metadata annotations [RFC 7952]."""
 
-    def __init__(self, type: DataType, description: str = None):
+    def __init__(
+            self, type: DataType, description: Optional[str] = None) -> None:
         """Initialize the class instance."""
         self.type = type
         self.description = description
@@ -83,7 +84,7 @@ class Annotation:
 class SchemaNode:
     """Abstract class for all schema nodes."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         self.name: Optional[YangIdentifier] = None
         """Name of the receiver."""
@@ -150,12 +151,13 @@ class SchemaNode:
             if isinstance(parent, DataNode):
                 return parent
             parent = parent.parent
+        return None
 
     def iname(self) -> InstanceName:
         """Return the instance name corresponding to the receiver."""
         dp = self.data_parent()
-        return (self.name if dp and self.ns == dp.ns
-                else self.ns + ":" + self.name)
+        return cast(InstanceName, self.name if dp and self.ns == dp.ns
+                    else self.ns + ":" + self.name)
 
     def data_path(self) -> DataPath:
         """Return the receiver's data path."""
@@ -225,7 +227,7 @@ class SchemaNode:
 
     def _node_digest(self) -> dict[str, Any]:
         """Return dictionary of receiver's properties suitable for clients."""
-        res = {"kind": self._yang_class()}
+        res: dict[str, Any] = {"kind": self._yang_class()}
         if self.mandatory:
             res["mandatory"] = True
         if self.description:
@@ -234,8 +236,8 @@ class SchemaNode:
 
     def _tree_name(self) -> str:
         """Return the receiver's name to be displayed in ASCII tree."""
-        return (self.name if self.parent and self.ns == self.parent.ns
-                else f"{self.ns}:{self.name}")
+        return cast(str, self.name if self.parent and self.ns == self.parent.ns
+                    else f"{self.ns}:{self.name}")
 
     def _validate(self, inst: InstanceNode, scope: ValidationScope,
                   ctype: ContentType) -> None:
@@ -438,7 +440,7 @@ class InternalNode(SchemaNode):
     _mandatory_children: tuple[MutableSet[SchemaNode], MutableSet[SchemaNode]]
     """Two sets of mandatory children: item 0 = nonconfig, 1 = config."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.children: list[SchemaNode] = []
@@ -890,7 +892,7 @@ class GroupNode(InternalNode):
 class SchemaTreeNode(GroupNode):
     """Root node of a schema tree."""
 
-    def __init__(self, schemadata: SchemaData = None):
+    def __init__(self, schemadata: Optional[SchemaData] = None) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.annotations: dict[QualName, Annotation] = {}
@@ -918,7 +920,7 @@ class SchemaTreeNode(GroupNode):
 class DataNode(SchemaNode):
     """Abstract superclass for all data nodes."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.default_deny: DefaultDeny = DefaultDeny.none
@@ -1005,7 +1007,7 @@ class DataNode(SchemaNode):
 class TerminalNode(SchemaNode):
     """Abstract superclass for terminal nodes in the schema tree."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.type: DataType = None
@@ -1104,7 +1106,7 @@ class TerminalNode(SchemaNode):
 class ContainerNode(DataNode, InternalNode):
     """Container node."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.presence: bool = False
@@ -1162,7 +1164,7 @@ class ContainerNode(DataNode, InternalNode):
 class SequenceNode(DataNode):
     """Abstract class for data nodes that represent a sequence."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.min_elements: int = 0
@@ -1327,7 +1329,7 @@ class SequenceNode(DataNode):
 class ListNode(SequenceNode, InternalNode):
     """List node."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.keys: list[QualName] = []
@@ -1442,7 +1444,7 @@ class ListNode(SequenceNode, InternalNode):
 class ChoiceNode(InternalNode):
     """Choice node."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.default_case: QualName = None
@@ -1539,7 +1541,7 @@ class CaseNode(InternalNode):
 class LeafNode(DataNode, TerminalNode):
     """Leaf node."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self._mandatory: bool = False
@@ -1634,7 +1636,7 @@ class LeafListNode(SequenceNode, TerminalNode):
 class AnyContentNode(DataNode):
     """Abstract class for anydata or anyxml nodes."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self._mandatory: bool = False
@@ -1703,7 +1705,7 @@ class AnyxmlNode(AnyContentNode):
 class RpcActionNode(SchemaTreeNode):
     """RPC or action node."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.default_deny: DefaultDeny = DefaultDeny.none
@@ -1741,7 +1743,7 @@ class RpcActionNode(SchemaTreeNode):
 class InputNode(InternalNode, DataNode):
     """RPC or action input node."""
 
-    def __init__(self, ns):
+    def __init__(self, ns) -> None:
         """Initialize the class instance."""
         super().__init__()
         self._config = False
@@ -1764,7 +1766,7 @@ class InputNode(InternalNode, DataNode):
 class OutputNode(InternalNode, DataNode):
     """RPC or action output node."""
 
-    def __init__(self, ns):
+    def __init__(self, ns) -> None:
         """Initialize the class instance."""
         super().__init__()
         self._config = False
@@ -1787,7 +1789,7 @@ class OutputNode(InternalNode, DataNode):
 class NotificationNode(SchemaTreeNode):
     """Notification node."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.default_deny: DefaultDeny = DefaultDeny.none

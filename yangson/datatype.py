@@ -74,7 +74,7 @@ class DataType(ABC, Generic[S, RS]):
     dtypes: ClassVar[dict[str, Type["DataType"]]]
     _option_template = '<option value="{}"{}>{}</option>'
 
-    def __init__(self, sctx: SchemaContext, name: Optional[YangIdentifier]):
+    def __init__(self, sctx: SchemaContext, name: Optional[YangIdentifier]) -> None:
         """Initialize the class instance."""
         self.sctx = sctx
         self.default: Optional[S] = None
@@ -276,7 +276,7 @@ class EmptyType(DataType[tuple[None], list[None]]):
 class BitsType(DataType[tuple[str, ...], str]):
     """Class representing YANG "bits" type."""
 
-    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None:
         """Initialize the class instance."""
         super().__init__(sctx, name)
         self.bit: dict[str, int] = {}
@@ -423,7 +423,7 @@ class BooleanType(DataType[bool, bool]):
 class LinearType(DataType[L, str]):
     """Abstract class representing character or byte sequences."""
 
-    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None:
         """Initialize the class instance."""
         super().__init__(sctx, name)
         self.length: Optional[Intervals[int]] = None
@@ -455,7 +455,7 @@ class LinearType(DataType[L, str]):
 class StringType(LinearType[str]):
     """Class representing YANG "string" type."""
 
-    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None:
         """Initialize the class instance."""
         super().__init__(sctx, name)
         self.patterns: list[Pattern] = []
@@ -546,7 +546,7 @@ class BinaryType(LinearType[bytes]):
 class EnumerationType(DataType[str, str]):
     """Class representing YANG "enumeration" type."""
 
-    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None:
         """Initialize the class instance."""
         super().__init__(sctx, name)
         self.enum: dict[str, int] = {}
@@ -611,7 +611,7 @@ class EnumerationType(DataType[str, str]):
 class LinkType(DataType[S, RS]):
     """Abstract class for instance-referencing types."""
 
-    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None:
         """Initialize the class instance."""
         super().__init__(sctx, name)
         self.require_instance: bool = True
@@ -628,7 +628,7 @@ class LeafrefType(LinkType[ScalarValue, RawScalar]):
     path: Expr
     ref_type: DataType
 
-    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None:
         """Initialize the class instance."""
         super().__init__(sctx, name)
 
@@ -724,7 +724,7 @@ class InstanceIdentifierType(LinkType[InstanceRoute, InstanceIdentifier]):
 class IdentityrefType(DataType[QualName, YangIdentifier]):
     """Class representing YANG "identityref" type."""
 
-    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None:
         """Initialize the class instance."""
         super().__init__(sctx, name)
         self.bases: list[QualName] = []
@@ -807,7 +807,7 @@ class IdentityrefType(DataType[QualName, YangIdentifier]):
 class NumericType(DataType[N, RN]):
     """Abstract class for numeric data types."""
 
-    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None:
         """Initialize the class instance."""
         super().__init__(sctx, name)
         self.range: Optional[Intervals[N]] = None
@@ -851,7 +851,7 @@ class NumericType(DataType[N, RN]):
 class Decimal64Type(NumericType[decimal.Decimal, str]):
     """Class representing YANG "decimal64" type."""
 
-    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None:
         """Initialize the class instance."""
         super().__init__(sctx, name)
         self._epsilon = decimal.Decimal(0)
@@ -1084,7 +1084,7 @@ class Uint64Type(IntegralType[str]):
 class UnionType(DataType[ScalarValue, RawScalar]):
     """Class representing YANG "union" type."""
 
-    def __init__(self, sctx: SchemaContext, name: YangIdentifier):
+    def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None:
         """Initialize the class instance."""
         super().__init__(sctx, name)
         self.types: list[DataType] = []

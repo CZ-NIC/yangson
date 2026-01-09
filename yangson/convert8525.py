@@ -99,7 +99,7 @@ YL8525 = """
 
 class ModuleData:
 
-    def __init__(self, val: ObjectValue):
+    def __init__(self, val: ObjectValue) -> None:
         """Initialize the receiver."""
         self.name: str = val["name"]
         self.revision: str = val.get("revision", "")
@@ -123,7 +123,7 @@ class ModuleData:
 
 class MainModuleData(ModuleData):
 
-    def __init__(self, val: ObjectValue, import_only: bool):
+    def __init__(self, val: ObjectValue, import_only: bool) -> None:
         """Initialize the receiver."""
         super().__init__(val)
         self.import_only = import_only

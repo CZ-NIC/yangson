@@ -82,7 +82,7 @@ class InstanceNode:
 
     def __init__(self, key: InstanceKey, value: Value,
                  parinst: Optional["InstanceNode"],
-                 schema_node: "DataNode", timestamp: datetime):
+                 schema_node: "DataNode", timestamp: datetime) -> None:
         """Initialize the class instance."""
         self._key = key
         self._path = None
@@ -713,7 +713,7 @@ class RootNode(InstanceNode):
     """This class represents the root of the instance tree."""
 
     def __init__(self, value: Value, schema_node: "SchemaTreeNode",
-                 schema_data: "SchemaData", timestamp: datetime):
+                 schema_data: "SchemaData", timestamp: datetime) -> None:
         super().__init__("/", value, None, schema_node, timestamp)
         self.schema_data = schema_data
         if self.schema_node.schema_pattern is None:
@@ -767,7 +767,7 @@ class ObjectMember(InstanceNode):
     def __init__(self, key: InstanceName,
                  siblings: dict[InstanceName, Value],
                  value: Value, parinst: Optional[InstanceNode],
-                 schema_node: "DataNode", timestamp: datetime):
+                 schema_node: "DataNode", timestamp: datetime) -> None:
         super().__init__(key, value, parinst, schema_node, timestamp)
         self.siblings: dict[InstanceName, Value] = siblings
         """Sibling members within the parent object."""
@@ -840,7 +840,7 @@ class ArrayEntry(InstanceNode):
             self: "ArrayEntry", key: int, before: deque,
             after: deque, value: Value,
             parinst: Optional[InstanceNode],
-            schema_node: "DataNode", timestamp: datetime = None):
+            schema_node: "DataNode", timestamp: datetime = None) -> None:
         super().__init__(key, value, parinst, schema_node, timestamp)
         self.before = before
         """Preceding entries of the parent array."""
@@ -1027,7 +1027,8 @@ class MemberName:
     This class implements the InstanceRouteItem protocol.
     """
 
-    def __init__(self, name: YangIdentifier, ns: Optional[YangIdentifier]):
+    def __init__(self, name: YangIdentifier,
+                 ns: Optional[YangIdentifier]) -> None:
         """Initialize the class instance.
 
         Args:
@@ -1082,7 +1083,7 @@ class EntryIndex:
     This class implements the InstanceRouteItem protocol.
     """
 
-    def __init__(self, index: int):
+    def __init__(self, index: int) -> None:
         """Initialize the class instance.
 
         Args:
@@ -1113,7 +1114,7 @@ class EntryValue:
     This class implements the InstanceRouteItem protocol.
     """
 
-    def __init__(self, value: str):
+    def __init__(self, value: str) -> None:
         """Initialize the class instance.
 
         Args:
@@ -1158,7 +1159,8 @@ class EntryKeys:
 
     def __init__(
             self: "EntryKeys",
-            keys: dict[tuple[YangIdentifier, Optional[YangIdentifier]], str]):
+            keys: dict[tuple[YangIdentifier, Optional[YangIdentifier]],
+                       str]) -> None:
         """Initialize the class instance.
 
         Args:
@@ -1227,7 +1229,7 @@ class EntryKeys:
 class ResourceIdParser(Parser):
     """Parser for RESTCONF resource identifiers."""
 
-    def __init__(self, text: str, sn: "SchemaTreeNode"):
+    def __init__(self, text: str, sn: "SchemaTreeNode") -> None:
         """Extend the superclass method.
 
         Args:

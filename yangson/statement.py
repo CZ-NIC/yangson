@@ -38,7 +38,7 @@ class Statement:
     """Table for translating characters to their escaped form."""
 
     def __init__(self, kw: YangIdentifier, arg: Optional[str],
-                 pref: YangIdentifier = None):
+                 pref: YangIdentifier = None) -> None:
         """Initialize the class instance.
 
         Args:
@@ -129,7 +129,7 @@ class ModuleParser(Parser):
     """Dictionary for mapping escape sequences to characters."""
 
     def __init__(self, text: str, name: YangIdentifier = None,
-                 rev: str = None):
+                 rev: str = None) -> None:
         """Initialize the parser instance.
 
         Args:

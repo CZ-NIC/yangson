@@ -42,7 +42,7 @@ from .typealiases import (ModuleId, PrefName, QualName, RevisionDate,
 class IdentityAdjacency:
     """Adjacency data for an identity."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.bases: MutableSet[QualName] = set()
         self.derivs: MutableSet[QualName] = set()
 
@@ -51,7 +51,7 @@ class SchemaContext:
     """Schema data and current schema context."""
 
     def __init__(self, schema_data: "SchemaData", default_ns: YangIdentifier,
-                 text_mid: ModuleId):
+                 text_mid: ModuleId) -> None:
         """Initialize the class instance."""
         self.schema_data = schema_data
         self.default_ns = default_ns
@@ -63,7 +63,7 @@ class SchemaContext:
 class ModuleData:
     """Data related to a YANG module or submodule."""
 
-    def __init__(self, main_module: ModuleId, yang_id: ModuleId):
+    def __init__(self, main_module: ModuleId, yang_id: ModuleId) -> None:
         """Initialize the class instance."""
         self.main_module = main_module
         """Main module of the receiver."""
@@ -92,7 +92,8 @@ class SchemaData:
             mod_path: List of directories to search for YANG modules.
     """
 
-    def __init__(self, yang_lib: dict[str, Any], mod_path: Sequence[str]):
+    def __init__(self, yang_lib: dict[str, Any],
+                 mod_path: Sequence[str]) -> None:
         """Initialize the schema structures."""
         self.identity_adjs: dict[QualName, IdentityAdjacency] = {}
         """Dictionary of identity bases."""
@@ -508,7 +509,8 @@ class SchemaData:
 class FeatureExprParser(Parser):
     """Parser and evaluator for if-feature expressions."""
 
-    def __init__(self, text: str, schema_data: SchemaData, mid: ModuleId):
+    def __init__(self, text: str, schema_data: SchemaData,
+                 mid: ModuleId) -> None:
         """Initialize the parser instance.
 
         Args:

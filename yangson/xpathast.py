@@ -42,7 +42,7 @@ from .typealiases import QualName
 class XPathContext:
 
     def __init__(self, cnode: InstanceNode, origin: InstanceNode,
-                 position: int, size: int):
+                 position: int, size: int) -> None:
         self.cnode = cnode
         self.origin = origin
         self.position = position
@@ -154,7 +154,7 @@ class Expr:
 class UnaryExpr(Expr):
     """Abstract superclass for unary expressions."""
 
-    def __init__(self, expr: Optional[Expr]):
+    def __init__(self, expr: Optional[Expr]) -> None:
         self.expr = expr
 
     def __str__(self) -> str:
@@ -171,7 +171,7 @@ class UnaryExpr(Expr):
 class BinaryExpr(Expr):
     """Abstract superclass of binary expressions."""
 
-    def __init__(self, left: Expr, right: Expr):
+    def __init__(self, left: Expr, right: Expr) -> None:
         self.left = left
         self.right = right
 
@@ -231,7 +231,7 @@ class EqualityExpr(BinaryExpr):
 
     _precedence = 2
 
-    def __init__(self, left: Expr, right: Expr, negate: bool):
+    def __init__(self, left: Expr, right: Expr, negate: bool) -> None:
         super().__init__(left, right)
         self.negate = negate
 
@@ -253,7 +253,8 @@ class RelationalExpr(BinaryExpr):
 
     _precedence = 3
 
-    def __init__(self, left: Expr, right: Expr, less: bool, equal: bool):
+    def __init__(self, left: Expr, right: Expr, less: bool,
+                 equal: bool) -> None:
         super().__init__(left, right)
         self.less = less
         self.equal = equal
@@ -279,7 +280,7 @@ class AdditiveExpr(BinaryExpr):
 
     _precedence = 4
 
-    def __init__(self, left: Expr, right: Expr, plus: bool):
+    def __init__(self, left: Expr, right: Expr, plus: bool) -> None:
         super().__init__(left, right)
         self.plus = plus
 
@@ -298,7 +299,8 @@ class MultiplicativeExpr(BinaryExpr):
 
     _precedence = 5
 
-    def __init__(self, left: Expr, right: Expr, operator: MultiplicativeOp):
+    def __init__(self, left: Expr, right: Expr,
+                 operator: MultiplicativeOp) -> None:
         super().__init__(left, right)
         self.operator = operator
 
@@ -333,7 +335,7 @@ class UnaryMinusExpr(UnaryExpr):
 
     _precedence = 6
 
-    def __init__(self, expr: Expr, negate: bool):
+    def __init__(self, expr: Expr, negate: bool) -> None:
         super().__init__(expr)
         self.negate = negate
 
@@ -362,7 +364,7 @@ class UnionExpr(BinaryExpr):
 
 class Literal(Expr):
 
-    def __init__(self, value: str):
+    def __init__(self, value: str) -> None:
         self.value = value
 
     def __str__(self) -> str:
@@ -377,7 +379,7 @@ class Literal(Expr):
 
 class Number(Expr):
 
-    def __init__(self, value: float):
+    def __init__(self, value: float) -> None:
         self.value = value
 
     def __str__(self) -> str:
@@ -407,7 +409,7 @@ class PathExpr(BinaryExpr):
 
 class FilterExpr(Expr):
 
-    def __init__(self, primary: Expr, predicates: list[Expr]):
+    def __init__(self, primary: Expr, predicates: list[Expr]) -> None:
         self.primary = primary
         self.predicates = predicates
 
@@ -456,7 +458,7 @@ class Root(Expr):
 class Step(Expr):
 
     def __init__(self, axis: Axis, qname: QualName,
-                 predicates: list[Expr]):
+                 predicates: list[Expr]) -> None:
         self.axis = axis
         self.qname = qname
         self.predicates = predicates
@@ -554,7 +556,7 @@ class FuncCeiling(UnaryExpr):
 
 class FuncConcat(Expr):
 
-    def __init__(self, parts: list[Expr]):
+    def __init__(self, parts: list[Expr]) -> None:
         self.parts = parts
 
     def __str__(self) -> str:
@@ -605,7 +607,7 @@ class FuncDeref(UnaryExpr):
 class FuncDerivedFrom(BinaryExpr):
 
     def __init__(self, left: Expr, right: Expr, or_self: bool,
-                 sctx: SchemaContext):
+                 sctx: SchemaContext) -> None:
         super().__init__(left, right)
         self.or_self = or_self
         self.sctx = sctx
@@ -672,7 +674,7 @@ class FuncLast(Expr):
 
 class FuncName(UnaryExpr):
 
-    def __init__(self, expr: Optional[Expr], local: bool):
+    def __init__(self, expr: Optional[Expr], local: bool) -> None:
         super().__init__(expr)
         self.local = local
 
@@ -782,7 +784,7 @@ class FuncStringLength(UnaryExpr):
 
 class FuncSubstring(BinaryExpr):
 
-    def __init__(self, string: Expr, start: Expr, length: Optional[Expr]):
+    def __init__(self, string: Expr, start: Expr, length: Optional[Expr]) -> None:
         super().__init__(string, start)
         self.length = length
 
@@ -842,7 +844,7 @@ class FuncSum(UnaryExpr):
 
 class FuncTranslate(BinaryExpr):
 
-    def __init__(self, s1: Expr, s2: Expr, s3: Expr):
+    def __init__(self, s1: Expr, s2: Expr, s3: Expr) -> None:
         super().__init__(s1, s2)
         self.nchars = s3
 

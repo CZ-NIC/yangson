@@ -116,7 +116,7 @@ class NotAllowed(SchemaPattern, metaclass=_Singleton):
 class Conditional(SchemaPattern):
     """Class representing conditional pattern."""
 
-    def __init__(self, when: Expr):
+    def __init__(self, when: Expr) -> None:
         """Initialize the class instance."""
         self.when = when
         self._val_when: Optional[bool] = None
@@ -138,7 +138,7 @@ class Conditional(SchemaPattern):
 class Typeable(SchemaPattern):
     """Multiple content types and their combinations."""
 
-    def __init__(self, ctype: ContentType):
+    def __init__(self, ctype: ContentType) -> None:
         """Initialize the class instance."""
         self.ctype = ctype
 
@@ -152,7 +152,7 @@ class Typeable(SchemaPattern):
 class ConditionalPattern(Conditional):
     """Class representing conditional pattern."""
 
-    def __init__(self, p: SchemaPattern, when: Expr):
+    def __init__(self, p: SchemaPattern, when: Expr) -> None:
         """Initialize the class instance."""
         super().__init__(when)
         self.pattern = p
@@ -185,7 +185,7 @@ class ConditionalPattern(Conditional):
 class Member(Typeable, Conditional):
 
     def __init__(self, name: InstanceName, ctype: ContentType,
-                 when: Optional[Expr]):
+                 when: Optional[Expr]) -> None:
         Typeable.__init__(self, ctype)
         Conditional.__init__(self, when)
         self.name = name
@@ -226,7 +226,7 @@ class Alternative(SchemaPattern):
             return p
         return cls(p, q)
 
-    def __init__(self, p: SchemaPattern, q: SchemaPattern):
+    def __init__(self, p: SchemaPattern, q: SchemaPattern) -> None:
         self.left = p
         self.right = q
 
@@ -262,7 +262,7 @@ class Alternative(SchemaPattern):
 class ChoicePattern(Alternative, Typeable):
 
     def __init__(self, p: SchemaPattern, q: SchemaPattern,
-                 name: YangIdentifier):
+                 name: YangIdentifier) -> None:
         super().__init__(p, q)
         self.ctype: ContentType = ContentType.all
         self.name = name
@@ -297,7 +297,7 @@ class Pair(SchemaPattern):
             return q
         return cls(p, q)
 
-    def __init__(self, p: SchemaPattern, q: SchemaPattern):
+    def __init__(self, p: SchemaPattern, q: SchemaPattern) -> None:
         self.left = p
         self.right = q
 

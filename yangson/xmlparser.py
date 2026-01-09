@@ -26,7 +26,7 @@ class XMLParser(ET.XMLPullParser):
     Extended XML parser that add namespaces to ELements as
     xmlns/xmlns:... attributes
     '''
-    def __init__(self, source: str = None):
+    def __init__(self, source: str = None) -> None:
         '''
         Initialize the XML parser
 

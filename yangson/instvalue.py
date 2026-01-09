@@ -44,7 +44,7 @@ MetadataObject = dict[PrefName, ScalarValue]
 class StructuredValue:
     """Abstract class for array and object values."""
 
-    def __init__(self, ts: datetime):
+    def __init__(self, ts: datetime) -> None:
         """Initialize class instance.
 
         Args:
@@ -76,7 +76,8 @@ class StructuredValue:
 class ArrayValue(StructuredValue, list):
     """This class represents cooked array values."""
 
-    def __init__(self, val: list[EntryValue] = [], ts: datetime = None):
+    def __init__(self, val: list[EntryValue] = [],
+                 ts: datetime = None) -> None:
         StructuredValue.__init__(self, ts)
         list.__init__(self, val)
 
@@ -89,7 +90,7 @@ class ObjectValue(StructuredValue, dict):
     """This class represents cooked object values."""
 
     def __init__(self, val: dict[InstanceName, Value] = {},
-                 ts: datetime = None):
+                 ts: datetime = None) -> None:
         StructuredValue.__init__(self, ts)
         dict.__init__(self, val)
 
