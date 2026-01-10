@@ -91,9 +91,9 @@ RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
 # Type variables for use in generic classes
 S = TypeVar("S", bound=ScalarValue)
 RS = TypeVar("RS", bound=RawScalar)
-L = TypeVar("L", bound=Union[bytes, str])
-N = TypeVar("N", bound=Union[Decimal, int])
-RN = TypeVar("RN", bound=Union[int, str])
+L = TypeVar("L", str, bytes)
+N = TypeVar("N", int, Decimal)
+RN = TypeVar("RN", int, str)
 
 
 class _Singleton(type):
