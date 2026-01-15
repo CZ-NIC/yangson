@@ -145,7 +145,7 @@ class DataType(ABC, Generic[S, RS]):
 
     def canonical_string(self, val: S) -> Optional[str]:
         """Return canonical form of a value."""
-        return str(val) if val in self else None
+        return str(val)
 
     def from_yang(self, text: str) -> S:
         """Parse value specified as default in a YANG module.
