@@ -41,9 +41,9 @@ import xml.etree.ElementTree as ET
 from .enumerations import ContentType, ValidationScope
 from .exceptions import (BadSchemaNodeType, EndOfInput, InstanceException,
                          InstanceValueError, InvalidKeyValue,
-                         MissingModuleNamespace,
-                         NonexistentInstance, NonDataNode,
-                         NonexistentSchemaNode, UnexpectedInput)
+                         MissingModuleNamespace, NonexistentInstance,
+                         NonDataNode, NonexistentSchemaNode, UnexpectedInput,
+                         YangTypeError)
 from .instroute import InstanceRoute
 from .instvalue import (ArrayValue, InstanceKey, ObjectValue, Value,
                         ScalarValue, StructuredValue)
@@ -123,8 +123,14 @@ class InstanceNode:
     def __str__(self) -> str:
         """Return string representation of the receiver's value."""
         sn = self.schema_node
-        return (str(self.value) if isinstance(self.value, StructuredValue) else
-                sn.type.canonical_string(self.value))
+        if isinstance(self.value, StructuredValue):
+            return str(self.value)
+        else:
+            res = sn.type.canonical_string(self.value)
+            if res is None:
+                raise YangTypeError(self, sn.type.error_tag,
+                                    sn.type.error_message)
+            return res
 
     def __getitem__(self, key: InstanceKey) -> "InstanceNode":
         """Return member or entry with the given key.
@@ -963,7 +969,11 @@ class ArrayEntry(InstanceNode):
     def _instance_route_entry(self):
         sn = self.schema_node
         if isinstance(sn, LeafListNode):
-            return EntryValue(sn.type.canonical_string(self.value))
+            val = sn.type.canonical_string(self.value)
+            if val is None:
+                raise YangTypeError(self, sn.type.error_tag,
+                                    sn.type.error_message)
+            return EntryValue(val)
         if not sn.keys:
             return EntryIndex(self._key)
         kdict = {}
