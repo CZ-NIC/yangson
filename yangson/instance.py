@@ -176,7 +176,7 @@ class InstanceNode:
         return "/" + "/".join([str(c) for c in self.path])
 
     def instance_route(self) -> "InstanceRoute":
-        """Return :class:`InstanceRoute` of the receiver."""
+        """Return :class:`~.instroute.InstanceRoute` of the receiver."""
         res = []
         inst = self
         while inst.parinst:
@@ -969,11 +969,7 @@ class ArrayEntry(InstanceNode):
     def _instance_route_entry(self):
         sn = self.schema_node
         if isinstance(sn, LeafListNode):
-            val = sn.type.canonical_string(self.value)
-            if val is None:
-                raise YangTypeError(self, sn.type.error_tag,
-                                    sn.type.error_message)
-            return EntryValue(val)
+            return EntryValue(str(self.value))
         if not sn.keys:
             return EntryIndex(self._key)
         kdict = {}

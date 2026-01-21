@@ -145,7 +145,7 @@ class DataType(ABC, Generic[S, RS]):
 
     def canonical_string(self, val: S) -> Optional[str]:
         """Return canonical form of a value."""
-        return str(val) if val in self else None
+        return str(val)
 
     def from_yang(self, text: str) -> S:
         """Parse value specified as default in a YANG module.
@@ -326,7 +326,7 @@ class BitsType(DataType[tuple[str, ...], str]):
     def canonical_string(self, val: tuple[str, ...]) -> Optional[str]:
         try:
             items = [(self.bit[b], b) for b in val]
-        except KeyError:
+        except (KeyError, TypeError):
             return None
         items.sort()
         return " ".join([x[1] for x in items])
@@ -784,9 +784,12 @@ class IdentityrefType(DataType[QualName, YangIdentifier]):
         except (ModuleNotRegistered, UnknownPrefix):
             raise InvalidArgument(text)
 
-    def canonical_string(self, val: QualName) -> str:
+    def canonical_string(self, val: QualName) -> Optional[str]:
         """Return canonical form of a value."""
-        return f"{val[1]}:{val[0]}"
+        try:
+            return f"{val[1]}:{val[0]}"
+        except (TypeError, IndexError):
+            return None
 
     def _handle_properties(self, stmt: Statement,
                            sctx: SchemaContext) -> None:
@@ -901,7 +904,9 @@ class Decimal64Type(NumericType[decimal.Decimal, str]):
     def to_xml(self, val: decimal.Decimal) -> str:
         return self.canonical_string(val)
 
-    def canonical_string(self, val: decimal.Decimal) -> str:
+    def canonical_string(self, val: decimal.Decimal) -> Optional[str]:
+        if not isinstance(val, decimal.Decimal):
+            return None
         if val == 0:
             return "0.0"
         sval = str(val.quantize(self._epsilon)).rstrip("0")
@@ -924,6 +929,9 @@ class IntegralType(NumericType[int, RN]):
             self._set_error_info()
             return False
         return super().__contains__(val)
+
+    def canonical_string(self, val: int) -> Optional[str]:
+        return str(val) if isinstance(val, int) else None
 
     def parse_value(self, text: str) -> Optional[int]:
         """Override superclass method."""

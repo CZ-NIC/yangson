@@ -215,9 +215,9 @@ all :class:`~.schemanode.TerminalNode` instances.
    .. method:: canonical_string(val: ScalarValue) -> Optional[str]
 
       Return canonical string representation of *val* as defined for
-      the receiver type, or ``None`` if *val* is not a valid value of
-      the receiver type. See sec. `9.1`_ in [RFC7950]_ for more
-      information about canonical forms.
+      the receiver type, or ``None`` if *val* is not a syntactically
+      correct value of the receiver type. See sec. `9.1`_ in
+      [RFC7950]_ for more information about canonical forms.
 
       This method is a partial inverse of :meth:`parse_value`, the
       latter method is however able to parse non-canonical string
