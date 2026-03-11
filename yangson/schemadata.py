@@ -72,6 +72,8 @@ class ModuleData:
         for submodules"""
         self.features: MutableSet[YangIdentifier] = set()
         """Set of supported features."""
+        self.keep_obsolete: bool = False
+        """Should module's obsolete nodes be kept in the data model?"""
         self.xml_namespace: Optional[str] = None
         """Content of the namespace definition of the module"""
         self.prefix_map: dict[YangIdentifier, ModuleId] = {}
@@ -141,6 +143,9 @@ class SchemaData:
                     self.implement[name] = rev
                 mod = self._load_module(name, rev, mdata)
                 mdata.statement = mod
+                if "yangson-yl:keep-obsolete" in item:
+                    mdata.keep_obsolete = item[
+                        "yangson-yl:keep-obsolete"]
                 if "feature" in item:
                     mdata.features.update(item["feature"])
                 locpref = mod.find1("prefix", required=True).argument

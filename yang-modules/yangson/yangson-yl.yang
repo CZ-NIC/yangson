@@ -1,0 +1,48 @@
+module yangson-yl {
+  yang-version 1.1;
+  namespace "urn:yangson:xml:ns:yangson-yl";
+  prefix yyl;
+
+  import ietf-yang-library {
+    prefix yanglib;
+    revision-date 2016-06-21;
+  }
+
+  contact
+    "Author: Ladislav Lhotka <ladislav@lhotka.name>";
+
+  description
+    "The Yangson library uses the original format of the YANG library
+     [RFC 7895] as input specifying the complete data model to work
+     with.
+
+     This module defines non-standard extensions to the YANG library
+     schema that are used by Yangson code.";
+
+  revision 2026-03-11 {
+    description
+      "New module-specific parameter 'keep-obsolete'.";
+    reference
+      "https://yangson.labs.nic.cz/concepts-terms.html";
+  }
+
+  /*  Augments  */
+
+  augment "/yanglib:modules-state/yanglib:module" {
+    description
+      "This augment adds module-specific parameters.";
+    leaf keep-obsolete {
+      type boolean;
+      default "false";
+      description
+        "If the value is 'true', statements 'status obsolete'
+         appearing in the module won't be taken into account when
+         creating the schema tree. Obsolete nodes will thus be
+         treated as current.
+
+         In the ASCII tree, obsolete nodes appearing in such a module
+         will be denoted with the capital 'O' character instead of
+         the normal lowercase 'o'.";
+    }
+  }
+}

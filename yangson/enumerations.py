@@ -43,6 +43,8 @@ class NodeStatus(Enum):
     """The definition is obsolete but permits new/continued implementations."""
     obsolete = "o"
     """The definition is obsolete and SHOULD NOT be implemented."""
+    obsolete_ignored = "O"
+    """The obsolete status of the definition is ignored."""
 
     def __str__(self) -> str:
         """Return string representation of the definition status."""
