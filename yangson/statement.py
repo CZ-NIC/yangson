@@ -129,7 +129,7 @@ class ModuleParser(Parser):
     """Dictionary for mapping escape sequences to characters."""
 
     def __init__(self, text: str, name: YangIdentifier = None,
-                 rev: str = None) -> None:
+                 rev: str = "") -> None:
         """Initialize the parser instance.
 
         Args:
@@ -142,9 +142,6 @@ class ModuleParser(Parser):
 
     def parse(self) -> Statement:
         """Parse a complete YANG module or submodule.
-
-        Args:
-            mtext: YANG module text.
 
         Raises:
             EndOfInput: If past the end of input.
@@ -162,10 +159,10 @@ class ModuleParser(Parser):
             raise UnexpectedInput(self, "'module' or 'submodule'")
         if self.name is not None and res.argument != self.name:
             raise ModuleNameMismatch(res.argument, self.name)
-        if self.rev:
-            revst = res.find1("revision")
-            if revst is None or revst.argument != self.rev:
-                raise ModuleRevisionMismatch(revst.argument, self.rev)
+        revst = res.find1("revision")
+        modrev = revst.argument if revst else ""
+        if self.rev != modrev:
+            raise ModuleRevisionMismatch(modrev, self.rev)
         try:
             self.opt_separator()
         except EndOfInput:

@@ -180,6 +180,8 @@ class SchemaData:
                 fn = f"{d}/{name}"
                 if rev and run == 0:
                     fn += "@" + rev
+                else:
+                    run = 1
                 fn += ".yang"
                 try:
                     with open(fn, encoding='utf-8') as infile:

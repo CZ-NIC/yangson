@@ -235,7 +235,7 @@ class MissingModule(YangsonException):
     def __str__(self) -> str:
         if self.rev:
             return self.name + "@" + self.rev
-        return self.name
+        return self.name + " (no revision)"
 
 
 class MissingModuleNamespace(YangsonException):
