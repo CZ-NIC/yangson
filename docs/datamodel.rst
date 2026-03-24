@@ -177,8 +177,9 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       is ``True``, each schema node is printed with the number of times
       it has been used for validating instances.
 
-      Schema nodes are represented according to the conventions
-      described in [RFC8340]_, with three differences:
+      The schema tree and its nodes are represented according to the
+      conventions for tree diagrams described in [RFC8340]_, with
+      the following additions and changes:
 
       * Lists and leaf-lists that are ordered by user (see section
         `7.7.7`_ in [RFC7950]_) are indicated by the hash symbol ``#``
@@ -186,6 +187,10 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       * Types of leaf and leaf-list nodes are enclosed in chevrons
         ``<`` and ``>``.
+
+      * Obsolete nodes that have been un-obsoleted in YANG library
+        configuration (see :ref:`yang-library`) are labelled with
+        uppercase ``O``.
 
       * Dependence on features is not indicated.
 
@@ -256,7 +261,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
         ``children`` object is then another object containing the
         child's schema digest.
 
-      * The following members are added for terminal nodes (leaves and
+      * The following members are added for terminal nodes (leafs and
         leaf-lists):
 
         - ``type`` – specifies the base type of the terminal node such

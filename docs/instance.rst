@@ -343,7 +343,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          '/example-2:bag/foo/3'
 
       The keys are typically YANG list keys, but they can in fact be
-      any member leaves. This method can thus also be used on
+      any member leafs. This method can thus also be used on
       non-config lists that have no keys. For example:
 
       .. doctest::
@@ -355,7 +355,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       .. note::
 
-         Default values of leaves are always ignored by the look-up
+         Default values of leafs are always ignored by the look-up
          procedure. Therefore, if you need to take defaults into
          account, populate the receiver first with default values by
          using the :meth:`add_defaults` method.

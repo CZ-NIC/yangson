@@ -168,7 +168,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
          >>> with open('example-5-a.yang') as infile:
          ...     m5atxt = infile.read()
-         >>> str(ModuleParser(m5atxt).parse())
+         >>> str(ModuleParser(m5atxt, rev='2018-10-25').parse())
          'module "example-5-a" { ... }'
          >>> str(ModuleParser(m5atxt, rev='2018-04-01').parse())
          Traceback (most recent call last):

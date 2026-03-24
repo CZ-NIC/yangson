@@ -626,7 +626,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       List of lists of XPath expressions parsed from one or more
       **unique** statements ([RFC7950]_, sec. `7.8.3`_). The
-      expressions are used to select leaves in all entries of a list
+      expressions are used to select leafs in all entries of a list
       instance, and their combinations are then checked for
       uniqueness.
 
