@@ -1,12 +1,12 @@
 [project]
 name = "yangson"
 description = "Library for working with data modelled in YANG"
-license = "GNU Lesser General Public License v3 (LGPLv3)"
+license = "LGPL-3.0-or-later"
 dynamic = ["version"]
 readme = "README.md"
 authors = [{name = "Ladislav Lhotka", email = "ladislav@lhotka.name"}]
 requires-python = '>=3.9,<4.0'
-dependencies = ['elementpath (>=4.1.5,<5.0.0)', 'PyYAML (>=6.0.1,<7.0.0)', "sphinxcontrib-shtest (>=0.5.0,<0.6.0)"]
+dependencies = ['elementpath (>=4.1.5,<5.0.0)', 'PyYAML (>=6.0.1,<7.0.0)']
 
 [project.scripts]
 yangson = "yangson.__main__:main"
@@ -28,6 +28,7 @@ pytest = "^7.4.2"
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.2.6"
 sphinx-rtd-theme = "^1.3.0"
+sphinxcontrib-shtest = ">=0.5.0, <0.6.0"
 
 [build-system]
 requires = ['poetry-core (>=2.0)']
