@@ -59,6 +59,11 @@ module testb {
     leaf leafV {
       type t:typE;
     }
+    leaf leafY {
+      type boolean;
+      status obsolete;
+      mandatory true;
+    }
   }
 
   augment "/t:choiA" {

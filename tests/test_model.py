@@ -91,6 +91,7 @@ tree = """+--rw (test:choiA)?
 |  +--rw testb:leafS? <instance-identifier>
 |  +--rw testb:leafT? <identityref>
 |  +--rw testb:leafV? <typE(int16)>
+|  o--rw testb:leafY <boolean>
 |  +--rw listA* [leafE leafF]
 |     +--rw contD
 |     |  +---x acA
@@ -236,6 +237,19 @@ def rpc_raw_output(data_model):
     }
     """
     return json.loads(data)
+
+def test_yang_library():
+    dm_yl = DataModel.from_file("yang-modules/yangson/yang-library-yl.json",
+                               ["yang-modules/yangson", "yang-modules/ietf"])
+    with open("yang-modules/test/yang-library.json") as infile:
+        ryl = json.load(infile)
+    yl_7895 = dm_yl.from_raw(ryl)
+    assert yl_7895.validate(ctype=ContentType.nonconfig) is None
+    # Add keep-obsolete flag and revalidate
+    testb_en = yl_7895["ietf-yang-library:modules-state"]["module"].look_up(
+        name="testb")
+    assert testb_en.put_member("yangson-yl:keep-obsolete", True).top().validate(
+        ctype=ContentType.nonconfig) is None
 
 def test_schema_data(data_model):
     assert len(data_model.schema_data.implement) == 2
@@ -721,7 +735,7 @@ def test_validation(instance):
     assert inst3.validate(ctype=ContentType.all) is None
     assert instance.validate(ctype=ContentType.all) is None
 
-def test_status_validation(instance):
+def test_deprecated(instance):
     inst4 = instance["test:contT"].delete_item("decimal64").top()
     # deprecated subtree (if present) still has to comply with the schema
     with pytest.raises(SchemaError):
@@ -729,6 +743,19 @@ def test_status_validation(instance):
     inst5 = instance.delete_item("test:contT")
     # but the entire deprecated subtree may be missing
     assert inst5.validate(ctype=ContentType.all) is None
+
+def test_obsolete(data):
+    dm_obs = DataModel.from_file("yang-modules/test/yang-library-obs.json",
+                                 ["yang-modules/test", "yang-modules/ietf"])
+    # status char of leafY should change to capital O
+    assert dm_obs.ascii_tree().splitlines()[71][3] == "O"
+    inst = dm_obs.from_raw(data)
+    # with keep-obsolete flag leafY becomes mandatory
+    with pytest.raises(SchemaError):
+        inst.validate(ctype=ContentType.all)
+    # instance becomes valid after we add leafY
+    inst_obs = inst["test:contA"].put_member("testb:leafY", True).top()
+    assert inst_obs.validate(ctype=ContentType.all) is None
 
 def strip_pretty(s: str):
     '''
