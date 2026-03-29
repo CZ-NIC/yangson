@@ -6,10 +6,6 @@ module example-3-a {
 
   prefix ex3a;
 
-  import ietf-yang-types {
-    prefix yang;
-  }
-
   include example-3-suba {
     revision-date 2017-08-01;
   }
