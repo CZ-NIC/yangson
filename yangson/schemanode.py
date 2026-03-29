@@ -319,8 +319,9 @@ class SchemaNode:
         if stmt.argument == "deprecated":
             nst = NodeStatus.deprecated
         elif stmt.argument == "obsolete":
+            mm = sctx.schema_data.modules[sctx.text_mid].main_module
             nst = NodeStatus.obsolete_ignored if sctx.schema_data.modules[
-                sctx.text_mid].keep_obsolete else NodeStatus.obsolete
+                mm].keep_obsolete else NodeStatus.obsolete
         else:
             nst = NodeStatus.current
         if nst != self.parent.status:

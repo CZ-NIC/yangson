@@ -111,7 +111,7 @@ For every node in the schema tree YANG defines its status, see section `7.21.2`_
   distinction between the *current* and *deprecated* statuses.
 
 * *obsolete* status means that the node and all its descendants (if
-  any) has been removed from the schema. It only appears in tree
+  any) have been removed from the schema. It only appears in tree
   diagrams labelled with ``o``. However, software applications have
   the option to instruct the *Yangson* library to un-obsolete nodes
   appearing in a YANG module. Such nodes are then treated as being
@@ -170,7 +170,12 @@ data model content:
 Support for individual features and/or deviations are also indicated
 in YANG library data.
 
-*Yangson* introduces a non-standard augmentation to the ``module`` entries of the YANG library schema: the boolean parameter ``yangson-yl:keep-obsolete`` indicates that schema nodes with *obsolete* status appearing in the given module are to be kept in the schema. Such a ``module`` entry then may look like this::
+*Yangson* introduces a non-standard augmentation to the ``module``
+ entries of the YANG library schema: the boolean parameter
+ ``yangson-yl:keep-obsolete`` determines whether schema nodes with
+ *obsolete* status defined in the given module and its submodules are
+ kept in the schema. The entry for a module whose obsolete schema
+ nodes are to be retained then may look like this::
 
     {
       "name": "foo",
@@ -179,6 +184,8 @@ in YANG library data.
       "conformance-type": "implement",
       "yangson-yl:keep-obsolete": true
     }
+
+If the value of ``yangson-yl:keep-obsolete``is false (which is the default), obsolete nodes are removed from the schema.
 
 YANG module `yangson-yl`__ defining this augmentation is included in the *Yangson* distribution.
 
