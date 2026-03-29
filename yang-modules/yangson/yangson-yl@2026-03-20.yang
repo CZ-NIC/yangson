@@ -20,6 +20,16 @@ module yangson-yl {
     leaf keep-obsolete {
       type boolean;
       default "false";
+      description
+        "Setting the value of this leaf to true indicates that schema
+         nodes with obsolete status appearing in this module are kept
+         in the schema and treated essentially as being current. If
+         the value is false (default), obsolete schema nodes are
+         omitted.
+
+         In tree diagrams, schema nodes that have been un-obsoleted
+         through this flag ale labeled with the 'O' (capital oh)
+         character in the status field.";
     }
   }
 }

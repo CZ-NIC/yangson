@@ -180,6 +180,9 @@ in YANG library data.
       "yangson-yl:keep-obsolete": true
     }
 
+YANG module `yangson-yl`__ defining this augmentation is included in the *Yangson* distribution.
+
+__ https://github.com/CZ-NIC/yangson/blob/master/yang-modules/yangson/yangson-yl%402026-03-20.yang
 
 Content Types
 =============
