@@ -170,12 +170,12 @@ data model content:
 Support for individual features and/or deviations are also indicated
 in YANG library data.
 
-*Yangson* introduces a non-standard augmentation to the ``module``
- entries of the YANG library schema: the boolean parameter
- ``yangson-yl:keep-obsolete`` determines whether schema nodes with
- *obsolete* status defined in the given module and its submodules are
- kept in the schema. The entry for a module whose obsolete schema
- nodes are to be retained then may look like this::
+*Yangson* introduces a non-standard augmentation to the ``module`` entries
+of the YANG library schema: the boolean parameter
+``yangson-yl:keep-obsolete`` determines whether schema nodes with
+*obsolete* status defined in the given module and its submodules are
+kept in the schema. The entry for a module whose obsolete schema nodes
+are to be retained then may look like this::
 
     {
       "name": "foo",
