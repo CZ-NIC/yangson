@@ -185,7 +185,7 @@ in YANG library data.
       "yangson-yl:keep-obsolete": true
     }
 
-If the value of ``yangson-yl:keep-obsolete``is false (which is the default), obsolete nodes are removed from the schema.
+If the value of ``yangson-yl:keep-obsolete`` is false (which is the default), obsolete nodes are removed from the schema.
 
 YANG module `yangson-yl`__ defining this augmentation is included in the *Yangson* distribution.
 

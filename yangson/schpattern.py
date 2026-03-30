@@ -52,7 +52,8 @@ class SchemaPattern:
     def _eval_when(self, cnode: "InstanceNode") -> None:
         return
 
-    def _mandatory_members(self, ctype: ContentType) -> list[InstanceName]:
+    def _mandatory_members(
+            self, ctype: ContentType) -> Optional[list[InstanceName]]:
         return None
 
 
@@ -95,9 +96,9 @@ class EmptyConfig(SchemaPattern, metaclass=_Singleton):
     def __str__(self) -> str:
         return "EmptyConfig"
 
-    def _mandatory_members(self, ctype: ContentType) -> list[InstanceName]:
-        if ctype.value & ContentType.nonconfig.value:
-            return []
+    def _mandatory_members(
+            self, ctype: ContentType) -> Optional[list[InstanceName]]:
+        return [] if ctype.value & ContentType.nonconfig.value else None
 
 
 class NotAllowed(SchemaPattern, metaclass=_Singleton):
