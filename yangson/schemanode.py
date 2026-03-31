@@ -403,7 +403,7 @@ class SchemaNode:
     _stmt_callback = {
         "action": "_rpc_action_stmt",
         "anydata": "_anydata_stmt",
-        "anyxml": "_anydata_stmt",
+        "anyxml": "_anyxml_stmt",
         "case": "_case_stmt",
         "choice": "_choice_stmt",
         "config": "_config_stmt",
@@ -840,6 +840,10 @@ class InternalNode(SchemaNode):
     def _anydata_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle anydata statement."""
         self._handle_child(AnydataNode(), stmt, sctx)
+
+    def _anyxml_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
+        """Handle anyxml statement."""
+        self._handle_child(AnyxmlNode(), stmt, sctx)
 
     def _ascii_tree(self, indent: str, no_types: bool, val_count: bool) -> str:
         """Return the receiver's subtree as ASCII art."""
