@@ -41,8 +41,8 @@ The *schemanode* module implements the following classes:
 * :class:`LeafListNode`: YANG **leaf-list** node.
 * :class:`AnyContentNode`: Abstract superclass for YANG **anydata**
   or **anyxml** nodes.
-* :class:`AnydataNode`: YANG **anydata** or **anyxml** node.
-* :class:`AnydataNode`: YANG **anydata** or **anyxml** node.
+* :class:`AnydataNode`: YANG **anydata** node.
+* :class:`AnyxmlNode`: YANG **anyxml** node.
 
 Doctest__ snippets for this module use the data model and instance
 document from :ref:`sec-ex4`.
