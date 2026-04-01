@@ -3,6 +3,7 @@
 .eggs
 .idea
 *.pyc
+.python-version
 bin
 dist
 docs/_build
