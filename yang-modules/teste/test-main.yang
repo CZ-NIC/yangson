@@ -1,0 +1,41 @@
+module test-main {
+  yang-version 1.1;
+
+  namespace "http://example.com/teste/m";
+  prefix main;
+
+  import ietf-yang-types {
+    prefix yang;
+    // We need to fix the revision to have future-proof
+    revision-date 2025-12-22;
+  }
+  import ietf-inet-types {
+    prefix inet;
+    revision-date 2013-07-15;
+  }
+  import test-import-complex { prefix impc; }
+
+  include main-sub-a;
+  include main-sub-b;
+
+  revision 2026-04-01;
+
+  feature feature-m-a;
+  feature feature-m-b;
+
+  identity ident-base;
+  identity ident-m-a { base ident-base; }
+
+  container top {
+    leaf date { type yang:date; }
+    leaf address { type inet:ip-address; }
+
+    container triple {
+      uses impc:complex-group;
+    }
+
+    leaf external {
+      type impc:complex-type1;
+    }
+  }
+}

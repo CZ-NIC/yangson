@@ -46,6 +46,10 @@ class IdentityAdjacency:
         self.bases: MutableSet[QualName] = set()
         self.derivs: MutableSet[QualName] = set()
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, IdentityAdjacency):
+            return False
+        return self.bases == other.bases and self.derivs == other.derivs
 
 class SchemaContext:
     """Schema data and current schema context."""
@@ -72,6 +76,8 @@ class ModuleData:
         for submodules"""
         self.features: MutableSet[YangIdentifier] = set()
         """Set of supported features."""
+        self.all_features: MutableSet[YangIdentifier] = set()
+        """Set of all features of a module."""
         self.keep_obsolete: bool = False
         """Should module's obsolete nodes be kept in the data model?"""
         self.xml_namespace: Optional[str] = None
@@ -84,6 +90,30 @@ class ModuleData:
         """Path to the yang file this module was initialized from"""
         self.submodules: MutableSet[ModuleId] = set()
         """Set of submodules."""
+
+    def get_all_features(self, schemadata: "SchemaData") -> MutableSet[YangIdentifier]:
+        """Get all available not implemented features of a namespaced module including all of this submodules.
+
+        Args:
+            schemadata: Repository of modules to access submodules.
+
+        Returns:
+            Set of all available features.
+
+        Beware that the semantics of 'features' and 'all_features' is quite different. While the 'features'
+        is only populated on the module data and the submodule data has this attribute equal to empty set,
+        the 'all_features' attibute is populated based on parsed YANG module so if a feature is defined in a submodule
+        it will be stored in submodule's 'all_features' set.
+
+        To retrieve all available features all the get_all_features method on the module (not submodule) data.
+        """
+
+        result = set()
+        result |= self.all_features
+        for id in self.submodules:
+            submod = schemadata.modules[id]
+            result |= submod.all_features
+        return result
 
 
 class SchemaData:
@@ -105,7 +135,7 @@ class SchemaData:
         """List of directories where to look for YANG modules."""
         self.modules: dict[ModuleId, ModuleData] = {}
         """Dictionary of module data."""
-        self.modules_by_name: dict[str, ModuleData] = {}
+        self.modules_by_name: dict[YangIdentifier, ModuleData] = {}
         """Dictionary of module data by module name."""
         self.modules_by_ns: dict[str, ModuleData] = {}
         self._module_sequence: list[ModuleId] = []
@@ -170,6 +200,7 @@ class SchemaData:
             raise BadYangLibraryData("missing " + str(e)) from None
         self._process_imports()
         self._check_feature_dependences()
+        self._register_import_ids()
 
     def _load_module(self, name: YangIdentifier,
                      rev: RevisionDate, mdata: ModuleData) -> Statement:
@@ -187,6 +218,8 @@ class SchemaData:
                     with open(fn, encoding='utf-8') as infile:
                         res = ModuleParser(infile.read(), name, rev).parse()
                         mdata.path = fn
+                        for feature in res.find_all("feature"):
+                            mdata.all_features.add(feature.argument)
                 except (FileNotFoundError, PermissionError,
                         ModuleContentMismatch):
                     run += 1
@@ -240,6 +273,35 @@ class SchemaData:
                     continue
                 if not self.if_features(fst, mid):
                     raise FeaturePrerequisiteError(fn, fid[0])
+
+    def _register_import_ids(self) -> None:
+        """Create identity adjacencies for identities defined in import modules (import only modules)."""
+
+        impl: MutableSet[ModuleId] = set()
+        for (name, rev) in self.implement.items():
+            impl.add((name, rev))
+            mod = self.modules_by_name[name]
+            impl = impl.union(mod.submodules)
+
+        for mod in self.modules.values():
+            if mod.yang_id in impl:
+                continue
+
+            mod_stmt = mod.statement
+            for stmt in mod_stmt.find_all("identity"):
+                if not self.if_features(stmt, mod.yang_id):
+                    continue
+                id = (stmt.argument, self.namespace(mod.yang_id))
+                adj = self.identity_adjs.setdefault(
+                        id, IdentityAdjacency())
+                for bst in stmt.find_all("base"):
+                    bid = self.translate_pname(bst.argument, mod.yang_id)
+                    adj.bases.add(bid)
+                    badj = self.identity_adjs.setdefault(
+                            bid, IdentityAdjacency())
+                    badj.derivs.add(id)
+
+                self.identity_adjs[id] = adj
 
     def namespace(self, mid: ModuleId) -> YangIdentifier:
         """Return the namespace corresponding to a module or submodule.

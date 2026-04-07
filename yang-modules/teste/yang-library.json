@@ -1,0 +1,53 @@
+{
+  "ietf-yang-library:modules-state": {
+    "module-set-id": "1",
+    "module": [
+      {
+	"name": "test-main",
+	"revision": "2026-04-01",
+	"namespace": "http://example.com/teste/m",
+	"conformance-type": "implement",
+	"feature": ["feature-m-b", "feature-s-a"],
+	"submodule": [
+	  {
+	    "name": "main-sub-a",
+	    "revision": "2026-04-01"
+	  },
+	  {
+	    "name": "main-sub-b",
+	    "revision": ""
+	  }
+	]
+      },
+      {
+	"name": "test-import-complex",
+	"revision": "2026-04-01",
+	"namespace": "http://example.com/teste/i",
+	"conformance-type": "import",
+	"feature": ["sub-a", "sub-a-a", "sub-b-b"],
+	"submodule": [
+	  {
+	    "name": "impo-sub-a",
+	    "revision": "2026-04-01"
+	  },
+	  {
+	    "name": "impo-sub-b",
+	    "revision": ""
+	  }
+	]
+      },
+      {
+	"name": "ietf-yang-types",
+	"revision": "2025-12-22",
+	"namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types",
+	"conformance-type": "import"
+      },
+      {
+	"name": "ietf-inet-types",
+	"revision": "2013-07-15",
+	"namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
+	"conformance-type": "import"
+      }
+    ]
+  }
+}

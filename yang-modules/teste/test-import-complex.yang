@@ -1,0 +1,31 @@
+module test-import-complex {
+  yang-version 1.1;
+
+  namespace "http://example.com/teste/i";
+  prefix impc;
+
+  include impo-sub-a;
+  include impo-sub-b;
+
+  revision 2026-04-01;
+
+  feature sub-a;
+  feature sub-b;
+
+  identity import-id;
+  identity import-deriv-id {
+    base import-id;
+  }
+
+  typedef complex-type1 {
+    type string {
+      length "4..16";
+    }
+  }
+
+  grouping complex-group {
+    leaf major { type uint64; }
+    leaf minor { type uint32; }
+    leaf patch { type uint32; }
+  }
+}

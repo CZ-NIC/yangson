@@ -1,0 +1,20 @@
+submodule impo-sub-a {
+  yang-version 1.1;
+
+  belongs-to test-import-complex {
+    prefix impc;
+  }
+
+  revision 2026-04-01;
+
+  feature sub-a-a;
+  feature sub-a-b;
+
+  identity impo-sub-a;
+
+  typedef sub-type {
+    type string {
+      pattern "a+";
+    }
+  }
+}

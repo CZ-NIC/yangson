@@ -1,0 +1,24 @@
+submodule main-sub-a {
+  yang-version 1.1;
+
+  belongs-to test-main {
+    prefix main;
+  }
+
+  import test-import-complex {
+    prefix impc;
+  }
+
+  revision 2026-04-01;
+
+  feature feature-s-a;
+
+  identity ident-s-a;
+
+  container additional-info {
+    leaf name { type string; }
+    leaf description { type string; }
+
+    leaf custom { type impc:sub-type; }
+  }
+}

@@ -1,0 +1,23 @@
+submodule main-sub-b {
+  yang-version 1.1;
+
+  belongs-to test-main {
+    prefix main;
+  }
+
+  import test-import-complex {
+    prefix impc;
+  }
+
+  feature feature-s-b;
+
+  identity ident-sub-deriv {
+    base main:ident-base;
+  }
+
+  leaf version { type string; }
+
+  container cont {
+    uses impc:sub-group;
+  }
+}
