@@ -790,18 +790,26 @@ class InternalNode(SchemaNode):
 
     def _identity_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle identity statement."""
-        if not sctx.schema_data.if_features(stmt, sctx.text_mid):
-            return
         id = (stmt.argument, sctx.schema_data.namespace(sctx.text_mid))
-        adj = sctx.schema_data.identity_adjs.setdefault(
+        all_adj = sctx.schema_data.all_identity_adjs.setdefault(
             id, IdentityAdjacency())
         for bst in stmt.find_all("base"):
             bid = sctx.schema_data.translate_pname(bst.argument, sctx.text_mid)
-            adj.bases.add(bid)
-            badj = sctx.schema_data.identity_adjs.setdefault(
+            all_adj.bases.add(bid)
+            all_badj = sctx.schema_data.all_identity_adjs.setdefault(
                 bid, IdentityAdjacency())
-            badj.derivs.add(id)
-        sctx.schema_data.identity_adjs[id] = adj
+            all_badj.derivs.add(id)
+        sctx.schema_data.all_identity_adjs[id] = all_adj
+
+        if sctx.schema_data.if_features(stmt, sctx.text_mid):
+            adj = sctx.schema_data.identity_adjs.setdefault(
+                    id, IdentityAdjacency())
+            for bst in stmt.find_all("base"):
+                bid = sctx.schema_data.translate_pname(bst.argument, sctx.text_mid)
+                adj.bases.add(bid)
+                badj = sctx.schema_data.identity_adjs.setdefault(bid, IdentityAdjacency())
+                badj.derivs.add(id)
+            sctx.schema_data.identity_adjs[id] = adj
 
     def _list_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle list statement."""

@@ -68,19 +68,58 @@ def test_import_identities(schema_data):
     ident_sub_deriv = IdentityAdjacency()
     ident_sub_deriv.bases.add(('ident-base', 'test-main'))
 
+    cond_m_b = IdentityAdjacency()
+    cond_m_b.bases.add(('ident-base', 'test-main'))
+    ident_base.derivs.add(('cond-m-b', 'test-main'))
+
     import_id  = IdentityAdjacency()
     import_id.derivs.add(('import-deriv-id', 'test-import-complex'))
     import_deriv_id = IdentityAdjacency()
     import_deriv_id.bases.add(('import-id', 'test-import-complex'))
-    assert schema_data.identity_adjs == {
+
+    impo_cond_b = IdentityAdjacency()
+    impo_cond_b.bases.add(('import-id', 'test-import-complex'))
+    import_id.derivs.add(('impo-cond-b', 'test-import-complex'))
+
+    expected_identity_adjs = {
             ('ident-base', 'test-main'): ident_base,
             ('ident-m-a', 'test-main'): ident_m_a,
             ('ident-s-a', 'test-main'): IdentityAdjacency(),
             ('ident-sub-deriv', 'test-main'): ident_sub_deriv,
+            ('cond-m-b', 'test-main'): cond_m_b,
+            ('cond-s-a', 'test-main'): IdentityAdjacency(),
             # don't forget to import only identities
             ('import-id', 'test-import-complex'): import_id,
             ('import-deriv-id', 'test-import-complex'): import_deriv_id,
             ('impo-sub-a', 'test-import-complex'): IdentityAdjacency(),
             ('impo-sub-b', 'test-import-complex'): IdentityAdjacency(),
+            ('import-m-cond-a', 'test-import-complex'): IdentityAdjacency(),
+            ('cond-sub-a', 'test-import-complex'): IdentityAdjacency(),
+            ('impo-cond-b', 'test-import-complex'): impo_cond_b,
             }
 
+    assert schema_data.identity_adjs == expected_identity_adjs
+
+    cond_m_a = IdentityAdjacency()
+    cond_m_a.bases.add(('ident-base', 'test-main'))
+    ident_base.derivs.add(('cond-m-a', 'test-main'))
+    expected_identity_adjs[('cond-m-a', 'test-main')] = cond_m_a
+
+    cond_sub_deriv = IdentityAdjacency()
+    cond_sub_deriv.bases.add(('ident-base', 'test-main'))
+    ident_base.derivs.add(('cond-sub-deriv', 'test-main'))
+    expected_identity_adjs[('cond-sub-deriv', 'test-main')] = cond_sub_deriv
+
+    import_m_cond_b = IdentityAdjacency()
+    import_m_cond_b.bases.add(('import-deriv-id', 'test-import-complex'))
+    import_deriv_id.derivs.add(('import-m-cond-b', 'test-import-complex'))
+    expected_identity_adjs[('import-m-cond-b', 'test-import-complex')] = import_m_cond_b
+
+    expected_identity_adjs[('cond-sub-b', 'test-import-complex')] = IdentityAdjacency()
+
+    impo_cond_a = IdentityAdjacency()
+    impo_cond_a.bases.add(('import-id', 'test-import-complex'))
+    import_id.derivs.add(('impo-cond-a', 'test-import-complex'))
+    expected_identity_adjs[('impo-cond-a', 'test-import-complex')] = impo_cond_a
+
+    assert schema_data.all_identity_adjs == expected_identity_adjs

@@ -15,6 +15,11 @@ submodule main-sub-b {
     base main:ident-base;
   }
 
+  identity cond-sub-deriv {
+    if-feature feature-s-b;
+    base main:ident-base;
+  }
+
   leaf version { type string; }
 
   container cont {

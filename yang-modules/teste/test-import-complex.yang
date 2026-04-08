@@ -17,6 +17,14 @@ module test-import-complex {
     base import-id;
   }
 
+  identity import-m-cond-a {
+    if-feature sub-a;
+  }
+  identity import-m-cond-b {
+    if-feature sub-b;
+    base import-deriv-id;
+  }
+
   typedef complex-type1 {
     type string {
       length "4..16";

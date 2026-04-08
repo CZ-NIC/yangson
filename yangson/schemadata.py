@@ -129,6 +129,8 @@ class SchemaData:
         """Initialize the schema structures."""
         self.identity_adjs: dict[QualName, IdentityAdjacency] = {}
         """Dictionary of identity bases."""
+        self.all_identity_adjs: dict[QualName, IdentityAdjacency] = {}
+        """Dictionary of all defined identity relations also with unsupported if-features."""
         self.implement: dict[YangIdentifier, RevisionDate] = {}
         """Dictionary of implemented revisions."""
         self.module_search_path = mod_path
@@ -289,19 +291,29 @@ class SchemaData:
 
             mod_stmt = mod.statement
             for stmt in mod_stmt.find_all("identity"):
-                if not self.if_features(stmt, mod.yang_id):
-                    continue
                 id = (stmt.argument, self.namespace(mod.yang_id))
-                adj = self.identity_adjs.setdefault(
+                all_adj = self.all_identity_adjs.setdefault(
                         id, IdentityAdjacency())
                 for bst in stmt.find_all("base"):
                     bid = self.translate_pname(bst.argument, mod.yang_id)
-                    adj.bases.add(bid)
-                    badj = self.identity_adjs.setdefault(
+                    all_adj.bases.add(bid)
+                    all_badj = self.all_identity_adjs.setdefault(
                             bid, IdentityAdjacency())
-                    badj.derivs.add(id)
+                    all_badj.derivs.add(id)
 
-                self.identity_adjs[id] = adj
+                self.all_identity_adjs[id] = all_adj
+
+                if self.if_features(stmt, mod.yang_id):
+                    adj = self.identity_adjs.setdefault(
+                            id, IdentityAdjacency())
+                    for bst in stmt.find_all("base"):
+                        bid = self.translate_pname(bst.argument, mod.yang_id)
+                        adj.bases.add(bid)
+                        badj = self.identity_adjs.setdefault(
+                                bid, IdentityAdjacency())
+                        badj.derivs.add(id)
+
+                    self.identity_adjs[id] = adj
 
     def namespace(self, mid: ModuleId) -> YangIdentifier:
         """Return the namespace corresponding to a module or submodule.

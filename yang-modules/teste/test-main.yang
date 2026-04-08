@@ -26,6 +26,16 @@ module test-main {
   identity ident-base;
   identity ident-m-a { base ident-base; }
 
+  identity cond-m-a {
+    if-feature feature-m-a;
+    base ident-base;
+  }
+
+  identity cond-m-b {
+    if-feature feature-m-b;
+    base ident-base;
+  }
+
   container top {
     leaf date { type yang:date; }
     leaf address { type inet:ip-address; }

@@ -12,6 +12,13 @@ submodule impo-sub-a {
 
   identity impo-sub-a;
 
+  identity cond-sub-a {
+    if-feature sub-a-a;
+  }
+  identity cond-sub-b {
+    if-feature sub-a-b;
+  }
+
   typedef sub-type {
     type string {
       pattern "a+";

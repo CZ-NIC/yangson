@@ -10,6 +10,15 @@ submodule impo-sub-b {
 
   identity impo-sub-b;
 
+  identity impo-cond-a {
+    if-feature sub-b-a;
+    base import-id;
+  }
+  identity impo-cond-b {
+    if-feature sub-b-b;
+    base import-id;
+  }
+
   grouping sub-group {
     leaf a { type uint32; }
     leaf b { type uint32; }
