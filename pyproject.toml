@@ -16,14 +16,14 @@ convert8525 = "yangson.convert8525:main"
 yang-tools = ["pyang>=2.7.1,<3.0"]
 
 [tool.poetry]
-version = "1.7.3"
+version = "1.7.4"
 requires-poetry = '>=2.0'
 
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^7.4.2"
+pytest = "^9.0.3"
 
 [tool.poetry.group.docs.dependencies]
 sphinx = "^7.2.6"
