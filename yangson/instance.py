@@ -143,11 +143,20 @@ class InstanceNode:
                 `name`.
             InstanceValueError: If the receiver's value is not an object.
         """
+        if isinstance(self.value, ArrayValue) and isinstance(key, tuple):
+            return self._mapentry(key)
+        if isinstance(self.value, ArrayValue) and isinstance(key, dict):
+            return self._mapentry(self._map2tuple(key))
         if isinstance(self.value, ObjectValue):
             return self._member(key)
         if isinstance(self.value, ArrayValue):
             return self._entry(key)
         raise InstanceValueError(self, "scalar instance")
+
+    def __contains__(self, key: InstanceKey) -> bool:
+        """Checks if key does exist
+        """
+        return self.get(key) is not None
 
     def __iter__(self):
         """Return receiver's iterator.
@@ -184,6 +193,14 @@ class InstanceNode:
             inst = inst.parinst
         res.reverse()
         return InstanceRoute(res)
+
+    def get(self, key: InstanceKey, d=None):
+        """Return member or entry with given key, returns default if it does not exist
+        """
+        try:
+            return self[key]
+        except (InstanceValueError, NonexistentInstance):
+            return d
 
     def is_internal(self) -> bool:
         """Return ``True`` if the receiver is an instance of an internal node.
@@ -629,6 +646,24 @@ class InstanceNode:
                               self.schema_node, val.timestamp)
         except (IndexError, TypeError):
             raise NonexistentInstance(self, "entry " + str(index)) from None
+
+    def _map2tuple(self, key: dict) -> tuple:
+        """generate tuple for key"""
+        keylist = []
+        for keyit in self.schema_node._key_members:
+            keylist.append(key[keyit])
+
+        return tuple(keylist)
+
+    def _mapentry(self, key: tuple) -> "ArrayEntry":
+        """iterate over all childs"""
+        for child in self:
+            """generate tuple for key"""
+            childkey = tuple(child[singlekey].value for singlekey in self.schema_node._key_members)
+            if key == childkey:
+                return child
+
+        raise NonexistentInstance(self.json_pointer(), f"key '{key}'") from None
 
     def _peek_schema_route(self, sroute: SchemaRoute) -> Value:
         irt = InstanceRoute()
