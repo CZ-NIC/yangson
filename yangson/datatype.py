@@ -670,7 +670,7 @@ class LeafrefType(LinkType[ScalarValue, RawScalar]):
     def _post_process(self, tnode: "TerminalNode") -> None:
         ref = tnode._follow_leafref(self.path, tnode)
         if ref is None:
-            raise InvalidLeafrefPath(tnode.qual_name)
+            raise InvalidLeafrefPath(tnode.qual_name, str(self.path))
         self.ref_type = ref.type
 
     def _type_digest(self, config: bool) -> dict[str, Any]:

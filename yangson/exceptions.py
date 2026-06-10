@@ -385,6 +385,13 @@ class BadSchemaNodeType(SchemaNodeException):
 class InvalidLeafrefPath(SchemaNodeException):
     """A leafref path is incorrect."""
 
+    def __init__(self, qn: QualName, path: str) -> None:
+        super().__init__(qn)
+        self.path = path
+
+    def __str__(self) -> str:
+        return f"'{self.path}' defined for {super().__str__()}"
+
 
 class RawDataError(YangsonException):
     """Abstract exception class for errors in raw data."""
