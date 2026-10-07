@@ -421,7 +421,7 @@ class RawTypeError(RawDataError):
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
 
-    def __init__(self, instance: "InstanceNode", tag: str,
+    def __init__(self, instance: "InstanceNode", tag: Optional[str],
                  message: Optional[str] = None) -> None:
         self.instance = instance
         self.tag = tag

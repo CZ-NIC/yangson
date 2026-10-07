@@ -47,14 +47,14 @@ from itertools import product
 from typing import cast, Any, Optional
 import xml.etree.ElementTree as ET
 from .constraint import Must
-from .datatype import DataType, LinkType, IdentityrefType
+from .datatype import DataType, LinkType, IdentityrefType, UnionType
 from .enumerations import (Axis, ContentType, DefaultDeny,
                            NodeStatus, ValidationScope)
 from .exceptions import (
     AnnotationTypeError, InvalidArgument,
     MissingAnnotationTarget, MissingModuleNamespace, RawMemberError,
     RawTypeError, SchemaError, SemanticError, UndefinedAnnotation,
-    YangsonException, YangTypeError)
+    ValidationError, YangsonException, YangTypeError)
 from .instance import (ArrayEntry, InstanceNode, MemberName, ObjectMember)
 from .instroute import InstanceRoute
 from .instvalue import (
@@ -1075,20 +1075,41 @@ class TerminalNode(SchemaNode):
     def _validate(self, inst: InstanceNode,
                   scope: ValidationScope, ctype: ContentType) -> None:
         """Extend the superclass method."""
+        if isinstance(self.type, UnionType):
+            self._validate_union(inst, scope, self.type)
+        else:
+            self._validate_non_union(inst, scope, self.type)
+        super()._validate(inst, scope, ctype)
+
+    def _validate_non_union(self, inst: InstanceNode,
+                            scope: ValidationScope, nutype: DataType) -> None:
         if (scope.value & ValidationScope.syntax.value and
-                inst.value not in self.type):
-            raise YangTypeError(inst, self.type.error_tag,
-                                self.type.error_message)
-        if (isinstance(self.type, LinkType) and        # referential integrity
+                inst.value not in nutype):
+            raise YangTypeError(inst, nutype.error_tag, nutype.error_message)
+        # referential integrity
+        if (isinstance(nutype, LinkType) and
                 scope.value & ValidationScope.semantics.value and
-                self.type.require_instance):
+                nutype.require_instance):
             try:
-                tgt = inst._deref()
+                tgt = inst._deref(nutype)
             except YangsonException:
                 tgt = []
             if not tgt:
                 raise SemanticError(inst, "instance-required")
-        super()._validate(inst, scope, ctype)
+
+    def _validate_union(self, inst: InstanceNode,
+                        scope: ValidationScope, utype: UnionType) -> None:
+        for mtype in utype.types:
+            try:
+                if isinstance(mtype, UnionType):
+                    self._validate_union(inst, scope, mtype)
+                    return
+                self._validate_non_union(inst, scope, mtype)
+                return
+            except ValidationError:
+                continue
+        utype._set_error_info(error_message="no matching union member")
+        raise YangTypeError(inst, utype.error_tag, utype.error_message)
 
     def _default_value(self, inst: InstanceNode, ctype: ContentType,
                        lazy: bool) -> InstanceNode:

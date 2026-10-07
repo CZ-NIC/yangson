@@ -709,10 +709,13 @@ class InstanceNode:
         """XPath - return the receiver's parent as a singleton list."""
         return [self.up()]
 
-    def _deref(self) -> list["InstanceNode"]:
+    def _deref(self,
+               ltype: Optional["LinkType"] = None) -> list["InstanceNode"]:
         """XPath: return the list of nodes that the receiver refers to."""
-        return ([] if self.is_internal() else
-                self.schema_node.type._deref(self))
+        if self.is_internal():
+            return []
+        else:
+            return (ltype if ltype else self.schema_node.type)._deref(self)
 
 
 class RootNode(InstanceNode):
@@ -1363,4 +1366,4 @@ from .schemanode import (       # NOQA
             OutputNode, RpcActionNode, SequenceNode, SchemaTreeNode,
             TerminalNode)
 from .datatype import (         # NOQA
-            IdentityrefType)
+            IdentityrefType, LinkType)
