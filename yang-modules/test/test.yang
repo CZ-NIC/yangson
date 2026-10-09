@@ -8,7 +8,7 @@ module test {
 
   import ietf-yang-types {
     prefix "yang";
-    revision-date 2013-07-15;
+    revision-date 2025-12-22;
   }
 
   import defs {

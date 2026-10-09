@@ -8,7 +8,7 @@ module example-3-b {
 
   import ietf-inet-types {
     prefix oin;
-    revision-date 2010-09-24;
+    revision-date 2013-07-15;
   }
 
   import example-3-a {

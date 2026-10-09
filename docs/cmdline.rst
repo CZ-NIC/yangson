@@ -101,19 +101,19 @@ As an example, the distribution directory ``docs/examples/ex3`` also contains ne
          },
          {
            "name": "ietf-inet-types",
-           "revision": "2010-09-24",
+           "revision": "2013-07-15",
            "conformance-type": "import",
            "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types"
          },
          {
            "name": "ietf-yang-types",
-           "revision": "2013-07-15",
+           "revision": "2025-12-22",
            "conformance-type": "import",
            "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types"
          },
          {
            "name": "ietf-inet-types",
-           "revision": "2013-07-15",
+           "revision": "2025-12-22",
            "conformance-type": "import",
            "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types"
          }

@@ -192,7 +192,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> dm.schema_data.modules[('example-3-suba', '2017-08-01')].main_module
          ('example-3-a', '2017-08-01')
          >>> dm.schema_data.modules[('example-3-suba', '2017-08-01')].prefix_map['inet']
-         ('ietf-inet-types', '2013-07-15')
+         ('ietf-inet-types', '2025-12-22')
          >>> sorted(dm.schema_data.modules[('example-3-a', '2017-08-01')].features)
          ['fea1', 'fea2']
 
@@ -226,7 +226,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
          >>> dm.schema_data.last_revision('ietf-inet-types')
-         ('ietf-inet-types', '2013-07-15')
+         ('ietf-inet-types', '2025-12-22')
 
    .. method:: prefix2ns(prefix: YangIdentifier, mid: ModuleId) \
             -> YangIdentifier
@@ -263,7 +263,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
          >>> dm.schema_data.resolve_pname('oin:port-number', ('example-3-b', '2016-08-22'))
-         ('port-number', ('ietf-inet-types', '2010-09-24'))
+         ('port-number', ('ietf-inet-types', '2013-07-15'))
 
 
    .. method:: translate_pname(pname: PrefName, mid: ModuleId) \
@@ -389,7 +389,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> pn[0].argument
          'port-number'
          >>> pn[1].text_mid
-         ('ietf-inet-types', '2010-09-24')
+         ('ietf-inet-types', '2013-07-15')
 
    .. method:: is_derived_from(identity: QualName, base: \
             QualName) -> bool

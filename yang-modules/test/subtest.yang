@@ -8,12 +8,12 @@ submodule subtest {
 
   import ietf-inet-types {
     prefix "inet";
-    revision-date 2013-07-15;
+    revision-date 2025-12-22;
   }
 
   import ietf-inet-types {
     prefix "oin";
-    revision-date 2010-09-24;
+    revision-date 2013-07-15;
   }
 
   import defs {

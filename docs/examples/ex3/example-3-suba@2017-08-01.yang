@@ -8,7 +8,7 @@ submodule example-3-suba {
 
   import ietf-inet-types {
     prefix inet;
-    revision-date 2013-07-15;
+    revision-date 2025-12-22;
   }
 
   revision 2017-08-01;

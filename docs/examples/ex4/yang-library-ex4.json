@@ -29,7 +29,7 @@
       {
         "name": "ietf-yang-types",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types",
-        "revision": "2013-07-15",
+        "revision": "2025-12-22",
         "conformance-type": "import"
       },
       {

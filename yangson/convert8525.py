@@ -47,13 +47,13 @@ YL7895 = """
       },
       {
         "name": "ietf-inet-types",
-        "revision": "2013-07-15",
+        "revision": "2025-12-22",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
         "conformance-type": "import"
       },
       {
         "name": "ietf-yang-types",
-        "revision": "2013-07-15",
+        "revision": "2025-12-22",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types",
         "conformance-type": "import"
       }
@@ -75,7 +75,7 @@ YL8525 = """
       },
       {
         "name": "ietf-inet-types",
-        "revision": "2013-07-15",
+        "revision": "2025-12-22",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-inet-types",
         "conformance-type": "import"
       },
@@ -87,7 +87,7 @@ YL8525 = """
       },
       {
         "name": "ietf-yang-types",
-        "revision": "2013-07-15",
+        "revision": "2025-12-22",
         "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types",
         "conformance-type": "import"
       }

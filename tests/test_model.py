@@ -253,7 +253,7 @@ def test_yang_library():
 
 def test_schema_data(data_model):
     assert len(data_model.schema_data.implement) == 2
-    assert data_model.module_set_id() == "db63c52c6639c5596356bacee142380928ca3ac1"
+    assert data_model.module_set_id() == "8a3df03267a2477cbaa915c80c5af9f882f0a7ec"
     tid = data_model.schema_data.last_revision("test")
     stid = data_model.schema_data.last_revision("subtest")
     tbid = data_model.schema_data.last_revision("testb")
