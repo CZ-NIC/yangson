@@ -601,7 +601,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
       The argument *ctype* restricts the content type of data nodes
       whose default values will be added. For example, setting it to
-      ``ContentType.config`` means that only default values of
+      :attr:`.ContentType.config` means that only default values of
       configuration nodes will be added. If *ctype* is ``None``
       (default), the content type of added defaults will be the same
       as the content type of the receiver.

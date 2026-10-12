@@ -68,12 +68,17 @@ This example is used in the documentation of the :mod:`.instance` and
 
    $ yangson -p .:../../../yang-modules/ietf -t yang-library-ex2.json
    +--rw example-2:bag
-      +--ro bar <boolean>
-      +--rw baz? <decimal64>
-      +--rw foo# [number]
-         +--rw in-words? <string>
-         +--rw number <uint64>
-         +--rw prime? <boolean>
+   |  +--ro bar <boolean>
+   |  +--rw baz? <decimal64>
+   |  +--rw foo# [number]
+   |     +--rw in-words? <string>
+   |     +--rw number <uint64>
+   |     +--rw prime? <boolean>
+   +---x example-2:lucky-number
+      +--ro input
+      |  +--ro date <date(string)>
+      +--ro output
+         +--ro number <uint8>
 
 .. rubric:: YANG Library
 
@@ -98,7 +103,9 @@ File: ``example-2-dev.yang``
 .. literalinclude:: examples/ex2/example-2-dev.yang
    :language: none
 
-.. rubric:: Instance document
+.. rubric:: Instance documents
+
+Configuration and operational state data:
 
 File: ``example-data.json``
 
@@ -111,6 +118,13 @@ File: ``example-data.yaml``
 
 .. literalinclude:: examples/ex2/example-data.yaml
    :language: yaml
+
+RPC input and output data:
+
+File: ``rpc-in-out.json``
+
+.. literalinclude:: examples/ex2/rpc-in-out.json
+   :language: json
 
 .. _sec-ex3:
 

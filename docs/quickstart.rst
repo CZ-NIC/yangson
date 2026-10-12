@@ -45,7 +45,7 @@ by reading YANG library data [RFC7895]_ from a file:
    >>> dm = DataModel.from_file('yang-library-ex2.json',
    ... [".", "../../../yang-modules/ietf"])
    >>> dm.schema.description
-   'Data model ID: 9a9b7d2d28d4d78fa42e12348346990e3fb1c1b9'
+   'Data model ID: 1b3bab541f076f8e8268c645deb4d39915c400cb'
 
 .. note::
 
@@ -63,16 +63,25 @@ With the deviations applied, the resulting schema tree looks like this:
 
    >>> print(dm.ascii_tree(), end='')
    +--rw example-2:bag
-      +--ro bar <boolean>
-      +--rw baz? <decimal64>
-      +--rw foo# [number]
-         +--rw in-words? <string>
-         +--rw number <uint64>
-         +--rw prime? <boolean>
+   |  +--ro bar <boolean>
+   |  +--rw baz? <decimal64>
+   |  +--rw foo# [number]
+   |     +--rw in-words? <string>
+   |     +--rw number <uint64>
+   |     +--rw prime? <boolean>
+   +---x example-2:lucky-number
+      +--ro input
+      |  +--ro date <date(string)>
+      +--ro output
+         +--ro number <uint8>
 
 For the most part, Yangson uses the ASCII tree representation described in [RFC8340]_, the differences are described in the documentation for :meth:`.DataModel.ascii_tree` method.
 
-As we can see in the ASCII tree, the data model contains both configuration data nodes (``rw``) and a single leaf ``bar`` representing state data (``ro``).
+As we can see in the ASCII tree, the data model contains the types of data distinguished by the flag right before each schema node:
+
+* configuration data nodes (``rw``)
+* a single leaf ``bar`` representing state data (``ro``)
+* RPC operation ``lucky-number`` (``x``).
 
 Loading and Validating Instance Data
 ====================================
@@ -91,7 +100,7 @@ and validate it against the data model:
 
    >>> inst.validate(ctype=ContentType.all)
 
-No output means that the validation was successful. Note that we had to use validation for content type ``all`` because the instance document contains both configuration and state data. The default content type for the :meth:`.InstanceNode.validate` method is configuration (``ContentType.config``).
+No output means that the validation was successful. Note that we had to use validation for content type :attr:`~.ContentType.all` because the instance document contains both configuration and state data. The default content type for the :meth:`.InstanceNode.validate` method is configuration (attr:`.ContentType.config`).
 
 Speaking about content type, it is also worth pointing out that the empty instance is valid as configuration:
 
@@ -109,29 +118,55 @@ However, it is *not* valid as content type ``all``, i.e. combined configuration 
    ...
    yangson.exceptions.SchemaError: {/} missing-data: expected 'example-2:bag'
 
-It is also possible to validate a subtree of instance data against the corresponding schema node. For example:
+It is also possible to validate a *subtree* of instance data against the corresponding schema node. For example:
 
 .. doctest::
 
    >>> foo2 = inst['example-2:bag']['foo'][2]
    >>> foo2.validate()
 
-We can now print the ASCII tree again, this time without showing the
-types but instead displaying *validation counters* that indicate how
-many times each schema node has been used for validating instances
-during the previous two validation runs on `inst`. This is useful for assessing
-the coverage of instance data with respect to the schema.
+RPC Input and Output
+====================
+
+We can validate instances of RPC input and/or output data as well as notifications almost exactly as configuration and/or state data except that we have to specify the desired *subschema* to methods that load instance data. We achieve this by supplying the ``subschema`` parameter to such methods containing the :term:`qualified name` of the RPC operation or notification. Let's try it now on the ``lucky-number`` RPC defined in our YANG module. The file ``rpc-in-out.json`` contains both RPC input and output data:
+
+.. literalinclude:: examples/ex2/rpc-in-out.json
+   :language: json
+
+We can load and validate it in the same way as the configuration and state data above, just adding the ``subschema`` argument to the :meth:`.DataModel.from_raw` method:
+
+.. doctest::
+
+   >>> with open('rpc-in-out.json') as infile:
+   ...   ri = json.load(infile)
+   >>> rpcio = dm.from_raw(ri, subschema='example-2:lucky-number')
+   >>> rpcio.validate(ctype=ContentType.nonconfig)
+
+Note that the content type is specified as :attr:`.ContentType.nonconfig` as neither RPC input nor output is considered to be configuration.
+
+Alternatively, we could validate RPC input or output separately by including only one of the JSON object members ``example-2:input`` or ``example-2:output``, respectively.
+
+Coverage of test examples
+=========================
+
+We can now print the ASCII tree again, this time without showing the types but instead displaying *validation counters* that indicate how many times each schema node has been used for validating instances during the previous two validation runs on ``inst`` and one validation run on ``rpcio``. This is
+useful for assessing the coverage of instance data with respect to the schema.
 
 .. doctest::
 
    >>> print(dm.ascii_tree(no_types=True, val_count=True), end='')
    +--rw example-2:bag {1}
-      +--ro bar {1}
-      +--rw baz? {0}
-      +--rw foo# [number] {5}
-         +--rw in-words? {5}
-         +--rw number {5}
-         +--rw prime? {3}
+   |  +--ro bar {1}
+   |  +--rw baz? {0}
+   |  +--rw foo# [number] {5}
+   |     +--rw in-words? {5}
+   |     +--rw number {5}
+   |     +--rw prime? {3}
+   +---x example-2:lucky-number {1}
+      +--ro input {1}
+      |  +--ro date {1}
+      +--ro output {1}
+         +--ro number {1}
 
 Moving Around and Editing the Data Tree
 =======================================

@@ -6,6 +6,10 @@ module example-2 {
 
   prefix ex2;
 
+  import ietf-yang-types {
+    prefix yang;
+  }
+
   container bag {
     list foo {
       key "number";
@@ -40,6 +44,21 @@ module example-2 {
         fraction-digits 7;
       }
       default "0";
+    }
+  }
+
+  rpc lucky-number {
+    input {
+      leaf date {
+        type yang:date;
+        mandatory true;
+        }
+      }
+    output {
+      leaf number {
+        type uint8;
+        mandatory true;
+      }
     }
   }
 }

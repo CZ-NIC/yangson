@@ -372,7 +372,7 @@ all :class:`~.schemanode.TerminalNode` instances.
    string, and it must must be one of the names specified in the type's
    definition via the **enum** statement.
 
-   See documentation of :meth:`~DataType.contains` for an example.
+   See documentation of :meth:`~DataType.__contains__` for an example.
 
    .. rubric:: Instance Attributes
 

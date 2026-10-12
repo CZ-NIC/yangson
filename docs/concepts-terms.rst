@@ -214,12 +214,13 @@ the enumeration :class:`~.enumerations.ContentType`:
 
 All non-terminal schema nodes (**container**, **list**, **choice**
 and **case**) that represent configuration have the content type
-:attr:`~ContentType.all` because they may have both configuration and
+:attr:`~.ContentType.all` because they may have both configuration and
 state data nodes as descendants.
 
-Content type of terminal data nodes (**leaf**, **leaf-list**, **anydata** and
-**anyxml**) reflects their **config**, i.e. it is either
-:attr:`~ContentType.config` or :attr:`~ContentType.nonconfig`.
+Content type of terminal data nodes (**leaf**, **leaf-list**,
+**anydata** and **anyxml**) depends on whether they represent
+configuration or not, i.e. it is either :attr:`~.ContentType.config`
+or :attr:`~.ContentType.nonconfig`.
 
 Other nodes always have content type :attr:`~ContentType.nonconfig`.
 

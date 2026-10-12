@@ -1,6 +1,6 @@
 {
   "ietf-yang-library:modules-state": {
-    "module-set-id": "9a9b7d2d28d4d78fa42e12348346990e3fb1c1b9",
+    "module-set-id": "1b3bab541f076f8e8268c645deb4d39915c400cb",
     "module": [
       {
         "name": "example-2",
@@ -18,6 +18,12 @@
         "namespace": "http://example.com/example-2-dev",
         "revision": "",
         "conformance-type": "implement"
+      },
+      {
+        "name": "ietf-yang-types",
+        "revision": "2025-12-22",
+        "namespace": "urn:ietf:params:xml:ns:yang:ietf-yang-types",
+        "conformance-type": "import"
       },
       {
         "name": "ietf-yang-metadata",
