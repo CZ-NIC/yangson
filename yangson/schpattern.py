@@ -98,7 +98,7 @@ class EmptyConfig(SchemaPattern, metaclass=_Singleton):
 
     def _mandatory_members(
             self, ctype: ContentType) -> Optional[list[InstanceName]]:
-        return [] if ctype.value & ContentType.nonconfig.value else None
+        return [] if ContentType.nonconfig in ctype else None
 
 
 class NotAllowed(SchemaPattern, metaclass=_Singleton):
@@ -144,7 +144,7 @@ class Typeable(SchemaPattern):
         self.ctype = ctype
 
     def match_ctype(self, ctype) -> bool:
-        return self.ctype.value & ctype.value != 0
+        return bool(self.ctype & ctype)
 
     def _active(self, ctype: ContentType) -> bool:
         return super()._active(ctype) and self.match_ctype(ctype)

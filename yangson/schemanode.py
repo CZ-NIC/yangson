@@ -112,7 +112,7 @@ class SchemaNode:
     @property
     def config(self) -> bool:
         """Does the receiver (also) represent configuration?"""
-        return self.content_type().value & ContentType.config.value != 0
+        return ContentType.config in self.content_type()
 
     @property
     def mandatory(self) -> bool:
@@ -524,7 +524,7 @@ class InternalNode(SchemaNode):
             ctype = self.content_type()
         return [c for c in self.children if
                 not isinstance(c, (RpcActionNode, NotificationNode)) and
-                c.content_type().value & ctype.value != 0]
+                bool(c.content_type() & ctype)]
 
     def data_children(self) -> list["DataNode"]:
         """Return the set of all data nodes directly under the receiver."""
@@ -662,7 +662,7 @@ class InternalNode(SchemaNode):
             if isinstance(newp, NotAllowed):
                 raise SchemaError(
                     inst,
-                    ("" if ctype == ContentType.all else ctype.name + " ") +
+                    ("" if ContentType.all in ctype else ctype.name + " ") +
                     "member-not-allowed", m)
             p = newp
         if not p.nullable(ctype):
@@ -1011,7 +1011,7 @@ class DataNode(SchemaNode):
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + (
-            "ro" if self.content_type() == ContentType.nonconfig else "rw")
+            "ro" if self.content_type() is ContentType.nonconfig else "rw")
 
 
 class TerminalNode(SchemaNode):
@@ -1131,7 +1131,7 @@ class TerminalNode(SchemaNode):
         return ""
 
     def _state_roots(self) -> list[SchemaNode]:
-        return [] if self.content_type() == ContentType.config else [self]
+        return [] if self.content_type() is ContentType.config else [self]
 
 
 class ContainerNode(DataNode, InternalNode):
@@ -1528,7 +1528,7 @@ class ChoiceNode(InternalNode):
 
     def _tree_line_prefix(self) -> str:
         return super()._tree_line_prefix() + (
-            "ro" if self.content_type() == ContentType.nonconfig else "rw")
+            "ro" if self.content_type() is ContentType.nonconfig else "rw")
 
     def _handle_child(self, node: SchemaNode, stmt: Statement,
                       sctx: SchemaContext) -> None:
@@ -1630,7 +1630,7 @@ class LeafListNode(SequenceNode, TerminalNode):
         return "leaf-list"
 
     def _check_list_props(self, inst: InstanceNode) -> None:
-        if (self.content_type() == ContentType.config and
+        if (self.content_type() is ContentType.config and
                 len(set(inst.value)) < len(inst.value)):
             raise SemanticError(inst, "repeated-leaf-list-value")
 

@@ -16,17 +16,17 @@
 # along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """Enumeration classes."""
-from enum import Enum
+from enum import auto, Enum, Flag, unique
 
-
-class ContentType(Enum):
+@unique
+class ContentType(Flag):
     """Enumeration of instance data content types."""
 
-    config = 1
+    config = auto()
     """Configuration data."""
-    nonconfig = 2
+    nonconfig = auto()
     """Data that does not represent configuration."""
-    all = 3
+    all = config | nonconfig
     """All data."""
 
 
