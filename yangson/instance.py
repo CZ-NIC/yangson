@@ -665,7 +665,7 @@ class InstanceNode:
             iname = cn.iname()
             if iname in self.value:
                 return self._member(iname)._node_set()
-            wd = cn._default_instance(self, ContentType.all, lazy=True)
+            wd = cn._default_instance(self, None, lazy=True)
             if iname not in wd.value:
                 return []
             while True:
@@ -677,7 +677,7 @@ class InstanceNode:
                         cn.qual_name != cn.parent.default_case):
                     return []
         res = []
-        wd = sn._add_defaults(self, ContentType.all, lazy=True)
+        wd = sn._add_defaults(self, None, lazy=True)
         for mn in wd.value:
             res.extend(wd._member(mn)._node_set())
         return res
