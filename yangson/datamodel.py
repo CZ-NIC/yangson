@@ -26,7 +26,6 @@ import hashlib
 import json
 from typing import cast, Optional
 import xml.etree.ElementTree as ET
-from .enumerations import ContentType
 from .exceptions import (BadYangLibraryData, BadSchemaNodeType,
                          InvalidArgument, NonexistentSchemaNode)
 from .instance import InstanceIdParser, ResourceIdParser, RootNode
@@ -85,7 +84,6 @@ class DataModel:
             raise BadYangLibraryData(str(e)) from None
         self.schema_data = SchemaData(self.yang_library, mod_path)
         self.schema = SchemaTreeNode(self.schema_data)
-        self.schema._ctype = ContentType.all
         self._build_schema()
         self.schema.description = description if description else (
             "Data model ID: " +

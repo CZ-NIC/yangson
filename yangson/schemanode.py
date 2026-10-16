@@ -902,11 +902,12 @@ class GroupNode(InternalNode):
 class SchemaTreeNode(GroupNode):
     """Root node of a schema tree."""
 
-    def __init__(self, schemadata: Optional[SchemaData] = None) -> None:
+    def __init__(self, schemadata: SchemaData | None = None) -> None:
         """Initialize the class instance."""
         super().__init__()
         self.annotations: dict[QualName, Annotation] = {}
         self.schema_data = schemadata
+        self._ctype = ContentType.all
         self._status = NodeStatus.current
 
     def iname(self) -> InstanceName:
