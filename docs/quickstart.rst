@@ -98,18 +98,16 @@ and validate it against the data model:
 
 .. doctest::
 
-   >>> inst.validate(ctype=ContentType.all)
+   >>> inst.validate()
 
-No output means that the validation was successful. Note that we had to use validation for content type :attr:`~.ContentType.all` because the instance document contains both configuration and state data. The default content type for the :meth:`.InstanceNode.validate` method is configuration (attr:`.ContentType.config`).
-
-Speaking about content type, it is also worth pointing out that the empty instance is valid as configuration:
+No output means that the validation was successful. The instance document contains both configuration and state data, which is what the :meth:`~.InstanceNode.validate` method assumes by default. If we had another document containing just configuration or state data, we should specify the content type explicitly using the *ctype* parameter. For example, empty JSON instance is valid as configuration:
 
 .. doctest::
 
    >>> empty = dm.from_raw({})
-   >>> empty.validate()
+   >>> empty.validate(ctype=ContentType.config)
 
-However, it is *not* valid as content type ``all``, i.e. combined configuration and state data, because the state data leaf ``bar`` is mandatory, which in turn makes the top-level container ``example-2:bag`` mandatory (see sec. `3`_ in [RFC7950]_):
+However, it is *not* valid as :attr:`.ContentType.all`, i.e. combined configuration and state data, because the state data leaf ``bar`` is mandatory, which in turn makes the top-level container ``example-2:bag`` mandatory (see sec. `3`_ in [RFC7950]_):
 
 .. doctest::
 
@@ -117,6 +115,8 @@ However, it is *not* valid as content type ``all``, i.e. combined configuration 
    Traceback (most recent call last):
    ...
    yangson.exceptions.SchemaError: {/} missing-data: expected 'example-2:bag'
+
+Note that we would get the same result without using the *ctype* parameter because :attr:`.ContentType.all` is the default.
 
 It is also possible to validate a *subtree* of instance data against the corresponding schema node. For example:
 

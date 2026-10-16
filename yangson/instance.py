@@ -384,7 +384,7 @@ class InstanceNode:
         return val
 
     def validate(self, scope: ValidationScope = ValidationScope.all,
-                 ctype: ContentType = ContentType.config) -> None:
+                 ctype: ContentType | None = None) -> None:
         """Validate the receiver's value.
 
         Args:
@@ -396,7 +396,8 @@ class InstanceNode:
             SemanticError: If the value violates a semantic constraint.
             YangTypeError: If the value is a scalar of incorrect type.
         """
-        self.schema_node._validate(self, scope, ctype)
+        ct = self.schema_node.content_type() if ctype is None else ctype
+        self.schema_node._validate(self, scope, ct)
 
     def add_defaults(self, ctype: Optional[ContentType] = None,
                      tag: bool = False) -> "InstanceNode":
