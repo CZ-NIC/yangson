@@ -16,10 +16,12 @@
 # along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """This module defines classes for schema patterns."""
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
+
 from .enumerations import ContentType
-from .typealiases import InstanceName, _Singleton, YangIdentifier
+from .typealiases import InstanceName, YangIdentifier, _Singleton
 from .xpathast import Expr
+
 if TYPE_CHECKING:
     from .instance import InstanceNode
 
@@ -53,7 +55,7 @@ class SchemaPattern:
         return
 
     def _mandatory_members(
-            self, ctype: ContentType) -> Optional[list[InstanceName]]:
+            self, ctype: ContentType) -> list[InstanceName] | None:
         return None
 
 
@@ -97,7 +99,7 @@ class EmptyConfig(SchemaPattern, metaclass=_Singleton):
         return "EmptyConfig"
 
     def _mandatory_members(
-            self, ctype: ContentType) -> Optional[list[InstanceName]]:
+            self, ctype: ContentType) -> list[InstanceName] | None:
         return [] if ContentType.nonconfig in ctype else None
 
 
@@ -120,14 +122,14 @@ class Conditional(SchemaPattern):
     def __init__(self, when: Expr) -> None:
         """Initialize the class instance."""
         self.when = when
-        self._val_when: Optional[bool] = None
+        self._val_when: bool | None = None
 
     def empty(self) -> bool:
         """Override the superclass method."""
-        return self.when and not self._val_when
+        return bool(self.when and not self._val_when)
 
     def check_when(self) -> bool:
-        return not self.when or self._val_when
+        return bool(not self.when or self._val_when)
 
     def _eval_when(self, cnode: "InstanceNode") -> None:
         self._val_when = bool(self.when.evaluate(cnode))
@@ -178,15 +180,16 @@ class ConditionalPattern(Conditional):
     def __str__(self) -> str:
         return str(self.pattern)
 
-    def _mandatory_members(self, ctype: ContentType) -> list[InstanceName]:
-        if self._active(ctype):
-            return self.pattern._mandatory_members(ctype)
+    def _mandatory_members(self, ctype: ContentType
+                           ) -> list[InstanceName] | None:
+        return (self.pattern._mandatory_members(ctype) if
+                self._active(ctype) else None)
 
 
 class Member(Typeable, Conditional):
 
     def __init__(self, name: InstanceName, ctype: ContentType,
-                 when: Optional[Expr]) -> None:
+                 when: Expr | None) -> None:
         Typeable.__init__(self, ctype)
         Conditional.__init__(self, when)
         self.name = name
@@ -212,9 +215,9 @@ class Member(Typeable, Conditional):
     def __str__(self) -> str:
         return f"member '{self.name}'"
 
-    def _mandatory_members(self, ctype: ContentType) -> list[InstanceName]:
-        if self._active(ctype):
-            return [self.name]
+    def _mandatory_members(self, ctype: ContentType
+                           ) -> list[InstanceName] | None:
+        return [self.name] if self._active(ctype) else None
 
 
 class Alternative(SchemaPattern):
@@ -253,11 +256,11 @@ class Alternative(SchemaPattern):
     def __str__(self) -> str:
         return f"{self.left!s} or {self.right!s}"
 
-    def _mandatory_members(self, ctype: ContentType) -> list[InstanceName]:
-        lm = self.left._mandatory_members(ctype)
-        rm = self.right._mandatory_members(ctype)
-        if lm is not None and rm is not None:
-            return lm + rm
+    def _mandatory_members(self, ctype: ContentType
+                           ) -> list[InstanceName] | None:
+        lmm = self.left._mandatory_members(ctype)
+        rmm = self.right._mandatory_members(ctype)
+        return lmm + rmm if lmm is not None and rmm is not None else None
 
 
 class ChoicePattern(Alternative, Typeable):
@@ -325,11 +328,13 @@ class Pair(SchemaPattern):
     def __str__(self) -> str:
         return str(self.left)
 
-    def _mandatory_members(self, ctype: ContentType) -> list[InstanceName]:
-        if self.left._mandatory_members(ctype) is None:
-            return self.right._mandatory_members(ctype)
-        elif self.right._mandatory_members(ctype) is None:
-            return self.left._mandatory_members(ctype)
+    def _mandatory_members(self, ctype: ContentType
+                           ) -> list[InstanceName] | None:
+        lmm = self.left._mandatory_members(ctype)
+        rmm = self.right._mandatory_members(ctype)
+        if lmm is None:
+            return rmm
+        elif rmm is None:
+            return lmm
         else:
-            return (self.left._mandatory_members(ctype) +
-                    self.right._mandatory_members(ctype))
+            return lmm + rmm

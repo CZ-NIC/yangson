@@ -84,25 +84,27 @@ class Annotation:
 class SchemaNode:
     """Abstract class for all schema nodes."""
 
+    name: YangIdentifier | None = None
+    """Name of the receiver."""
+    ns: YangIdentifier | None = None
+    """Namespace of the receiver."""
+    parent: "InternalNode | None" = None
+    """Parent schema node."""
+    description: str | None = None
+    """Description of the receiver."""
+    when: "Expr | None" = None
+    """Optional "when" expression that makes the receiver conditional."""
+    val_count: int = 0
+    """Number of times the receiver has been validated."""
+    _ctype: ContentType | None = None
+    """Content type of the receiver."""
+    _status: NodeStatus | None = None
+    """Status of receiver's definition."""
+
     def __init__(self) -> None:
         """Initialize the class instance."""
-        self.name: Optional[YangIdentifier] = None
-        """Name of the receiver."""
-        self.ns: Optional[YangIdentifier] = None
-        """Namespace of the receiver."""
-        self.parent: Optional["InternalNode"] = None
-        """Parent schema node."""
-        self.description: Optional[str] = None
-        """Description of the receiver."""
         self.must: list[Must] = []
         """List of "must" expressions attached to the receiver."""
-        self.when: Optional["Expr"] = None
-        """Optional "when" expression that makes the receiver conditional."""
-        self.val_count = 0
-        self._ctype = None
-        """Content type of the receiver."""
-        self._status = None
-        """Status of node definition."""
 
     @property
     def qual_name(self) -> QualName:

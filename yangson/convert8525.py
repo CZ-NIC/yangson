@@ -22,15 +22,21 @@ library data to the old RFC 7895 format that is used by Yangson.
 """
 
 import argparse
-from collections.abc import MutableMapping
 import json
 import os
 import sys
-from typing import cast, Optional
+from collections.abc import MutableMapping
+from contextlib import nullcontext
+from typing import TextIO, cast
+
 from yangson import DataModel
 from yangson.enumerations import ContentType
 from yangson.exceptions import (
-    NonexistentInstance, ValidationError, RawDataError)
+    NonexistentInstance,
+    RawDataError,
+    ValidationError,
+)
+from yangson.instance import RootNode
 from yangson.instvalue import ObjectValue
 from yangson.typealiases import RawObject
 
@@ -117,7 +123,7 @@ class ModuleData:
             "revision": self.revision
         }
         if self.location:
-            res["schema"] = list(self.location)[0]
+            res["schema"] = self.location[0]
         return res
 
 
@@ -163,6 +169,10 @@ class MainModuleData(ModuleData):
                 {"name": n, "revision": r} for (n, r) in self.deviation]
         return res
 
+def write_result(inst: RootNode, f: TextIO) -> None:
+    """Serialize the resulting instance to a file object."""
+    json.dump(inst.raw_value(), f, indent=2)
+    f.write("\n")
 
 def main() -> int:
     """Entry-point for a conversion script.
@@ -192,10 +202,10 @@ def main() -> int:
         help="name of a schema")
     args = parser.parse_args()
     fn8525: str = args.ylib
-    fn7895: Optional[str] = args.output
-    path: Optional[str] = args.path
+    fn7895: str | None = args.output
+    path: str | None = args.path
     datastore: str = args.datastore
-    schema: Optional[str] = args.schema
+    schema: str | None = args.schema
     sp = path if path else os.environ.get("YANG_MODPATH", ".")
     dm8525 = DataModel(YL8525, sp.split(":"))
     try:
@@ -240,16 +250,16 @@ def main() -> int:
     res = rtop.put_member(
         "module", [modules[m].as_raw() for m in modules], raw=True).top()
     res.validate(ctype=ContentType.nonconfig)
-    try:
-        outf = open(fn7895, mode="w") if args.output else sys.stdout
-    except FileNotFoundError as e:
-        print(e, file=sys.stderr)
-        return 3
-    json.dump(res.raw_value(), outf, indent=2)
-    outf.write("\n")
-    outf.close()
+    if fn7895:
+        try:
+            with open(fn7895, mode="w") as outf:
+                write_result(res, cast(TextIO, outf))
+        except FileNotFoundError as e:
+            print(e, file=sys.stderr)
+            return 3
+    else:
+        write_result(res, sys.stdout)
     return 0
-
 
 if __name__ == "__main__":
     sys.exit(main())

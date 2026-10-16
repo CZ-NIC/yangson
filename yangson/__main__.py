@@ -18,30 +18,39 @@
 """This module defines the entry point for a validation script."""
 
 import argparse
+import importlib.metadata
 import json
 import os
 import pickle
 import sys
-import importlib.metadata
-from typing import Optional
+
 from yangson import DataModel
 from yangson.enumerations import ContentType, ValidationScope
 from yangson.exceptions import (
-    BadYangLibraryData, FeaturePrerequisiteError, InvalidArgument,
-    MultipleImplementedRevisions, ModuleNotFound, ModuleNotRegistered,
-    NonexistentSchemaNode, RawMemberError, RawTypeError,
-    SchemaError, SemanticError, YangTypeError)
+    BadYangLibraryData,
+    FeaturePrerequisiteError,
+    InvalidArgument,
+    ModuleNotFound,
+    ModuleNotRegistered,
+    MultipleImplementedRevisions,
+    NonexistentSchemaNode,
+    RawMemberError,
+    RawTypeError,
+    SchemaError,
+    SemanticError,
+    YangTypeError,
+)
 from yangson.typealiases import PrefName
 
 
-def main(infile: Optional[str] = None, pickled: bool = False,
-         path: Optional[str] = None,
+def main(infile: str | None = None, pickled: bool = False,
+         path: str | None = None,
          scope: ValidationScope = ValidationScope.all,
          ctype: ContentType = ContentType.all, set_id: bool = False,
          tree: bool = False, no_types: bool = False,
-         digest: bool = False, dump: Optional[str] = None,
-         subschema: Optional[PrefName] = None,
-         validate: Optional[str] = None) -> int:
+         digest: bool = False, dump: str | None = None,
+         subschema: PrefName | None = None,
+         validate: str | None = None) -> int:
     """Entry-point for the command-line utility.
 
     Args:
