@@ -318,7 +318,7 @@ class SchemaNode:
         pass
 
     def _config_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
-        if stmt.argument == "false":
+        if stmt.argument == "false" and self.parent.config:
             self._ctype = ContentType.nonconfig
 
     def _status_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
@@ -1032,7 +1032,7 @@ class TerminalNode(SchemaNode):
         if self._ctype:
             return self._ctype
         return (ContentType.config if self.parent.config else
-                ContentType.nonconfig)
+                self.parent.content_type())
 
     @property
     def units(self) -> Optional[str]:
