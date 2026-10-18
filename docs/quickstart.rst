@@ -70,8 +70,8 @@ With the deviations applied, the resulting schema tree looks like this:
    |     +--rw number <uint64>
    |     +--rw prime? <boolean>
    +---x example-2:lucky-number
-      +--ro input
-      |  +--ro date <date(string)>
+      +---w input
+      |  +---w date <date(string)>
       +--ro output
          +--ro number <uint8>
 
@@ -163,8 +163,8 @@ useful for assessing the coverage of instance data with respect to the schema.
    |     +--rw number {5}
    |     +--rw prime? {3}
    +---x example-2:lucky-number {1}
-      +--ro input {1}
-      |  +--ro date {1}
+      +---w input {1}
+      |  +---w date {1}
       +--ro output {1}
          +--ro number {1}
 

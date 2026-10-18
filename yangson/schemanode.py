@@ -1014,8 +1014,7 @@ class DataNode(SchemaNode):
                      NodeStatus.deprecated) else SchemaPattern.optional(m)
 
     def _tree_line_prefix(self) -> str:
-        return super()._tree_line_prefix() + (
-            "ro" if self.content_type() is ContentType.nonconfig else "rw")
+        return super()._tree_line_prefix() + self.content_type().tree_flag
 
 
 class TerminalNode(SchemaNode):
@@ -1531,8 +1530,7 @@ class ChoiceNode(InternalNode):
             self.parent._add_mandatory_child(self)
 
     def _tree_line_prefix(self) -> str:
-        return super()._tree_line_prefix() + (
-            "ro" if self.content_type() is ContentType.nonconfig else "rw")
+        return super()._tree_line_prefix() + self.content_type().tree_flag
 
     def _handle_child(self, node: SchemaNode, stmt: Statement,
                       sctx: SchemaContext) -> None:

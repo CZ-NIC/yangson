@@ -75,8 +75,8 @@ This example is used in the documentation of the :mod:`.instance` and
    |     +--rw number <uint64>
    |     +--rw prime? <boolean>
    +---x example-2:lucky-number
-      +--ro input
-      |  +--ro date <date(string)>
+      +---w input
+      |  +---w date <date(string)>
       +--ro output
          +--ro number <uint8>
 
