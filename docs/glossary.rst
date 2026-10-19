@@ -96,6 +96,13 @@ specification, see section `3`_ of [RFC7950]_.
        top of the schema. A leading slash is optional. Python type
        alias for the schema path is :const:`SchemaPath`.
 
+       .. important::
+
+          Case nodes exist in the schema tree even if they correspond
+          to omitted **case** statements (see [RFC7950]_,
+          sec. `7.9.2`_). Therefore, they have to appear in schema
+          paths and schema routes traversing them.
+
    data path
 
        A special form of :term:`schema path` containing only names of
@@ -191,5 +198,6 @@ specification, see section `3`_ of [RFC7950]_.
 .. _6.2.1: https://rfc-editor.org/rfc/rfc7950.html#section-6.2.1
 .. _6.11: https://rfc-editor.org/rfc/rfc7951.html#section-6.11
 .. _6.5: https://rfc-editor.org/rfc/rfc7950.html#section-6.5
+.. _7.9.2: https://datatracker.ietf.org/doc/html/rfc7950#section-7.9.2
 .. _9.13: https://rfc-editor.org/rfc/rfc7950.html#section-9.13
 .. _14: https://rfc-editor.org/rfc/rfc7950.html#section-14

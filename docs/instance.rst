@@ -540,40 +540,52 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          'tres'
 
    .. method:: validate(scope: ValidationScope = ValidationScope.all, \
-           ctype: ContentType = ContentType.config) -> None
+           ctype: ContentType | None = None) -> None
 
       Perform validation on the receiver's value. The *scope* argument
       determines the validation scope. The options are as follows:
 
-      * ``ValidationScope.syntax`` – verifies schema constraints
+      * :attr:`.ValidationScope.syntax` – verifies schema constraints
         (taking into account **if-feature** and **when** statements,
         if present) and data types.
 
-      * ``ValidationScope.semantics`` – verifies **must** constraints,
+      * :attr:`.ValidationScope.semantics` – verifies **must** constraints,
         uniqueness of list keys, **unique** constraints in list nodes,
         and integrity of **leafref** references.
 
-      * ``ValidationScope.all`` – performs all checks from both items
+      * :attr:`.ValidationScope.all` – performs all checks from both items
         above.
 
-      The value of the *ctype* argument belongs to the
-      :class:`~.enumerations.ContentType` enumeration and specifies
-      whether the receiver's value is to be validated as configuration
-      (``Content.config``) or as both configuration and state data
-      (``Content.all``).
+      The *ctype* argument specifies the content type of the validated
+      instance:
+
+      * :attr:`.ContentType.config` is used for configuration data
+
+      * :attr:`.ContentType.state` is used for read-only state data
+
+      * :attr:`.ContentType.all` is used for combined configuration
+        and state data.
+
+      If the value of the *ctype* parameter is ``None``, which is the
+      default, then the content type is set to the content type of the
+      schema node corresponding to the receiver instance. In
+      particular, when validating complete datastore contents the
+      ``None`` value means that the instance data will be treated as
+      :attr:`.ContentType.all`.
 
       The method returns ``None`` if the validation succeeds,
       otherwise one of the following exceptions is raised:
 
       * :exc:`~.SchemaError` – if the value doesn't conform to the schema,
       * :exc:`~.SemanticError` – if the value violates a semantic constraint.
-      * :exc:`~.YangTypeError` – if the value is a scalar of incorrect data type.
+      * :exc:`~.YangTypeError` – if the value is a scalar of incorrect
+        data type.
 
       .. doctest::
 
-         >>> inst.validate(ctype=ContentType.all) # no output means OK
+         >>> inst.validate() # no output means OK
          >>> badinst = bag.put_member('baz', 'ILLEGAL').top()
-         >>> badinst.validate(ctype=ContentType.all)
+         >>> badinst.validate()
          Traceback (most recent call last):
          ...
          yangson.exceptions.YangTypeError: {/example-2:bag/baz} invalid-type: expected decimal64
@@ -587,7 +599,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> e2foo6 = e2bag['foo'][0]
          >>> bad2 = e2foo6.update(
          ... {'number': '42', 'in-words': 'forty-two'}, raw=True).top()
-         >>> bad2.validate(ctype=ContentType.all)
+         >>> bad2.validate()
          Traceback (most recent call last):
          ...
          yangson.exceptions.SchemaError: {/example-2:bag} member-not-allowed: baz
