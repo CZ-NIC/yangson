@@ -110,7 +110,7 @@ def main(infile: str | None = None, pickled: bool = False,
             "-s", "--scope", choices=["syntax", "semantics", "all"],
             default="all", help="validation scope (default: %(default)s)")
         parser.add_argument(
-            "-c", "--ctype", choices=["config", "nonconfig", "all"],
+            "-c", "--ctype", choices=["config", "state", "nonconfig", "all"],
             default="all",
             help="content type of the data instance (default: %(default)s)")
         parser.add_argument(

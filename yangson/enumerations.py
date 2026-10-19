@@ -25,11 +25,30 @@ class ContentType(Flag):
 
     config = auto()
     """Configuration data."""
-    nonconfig = auto()
-    """Data that does not represent configuration."""
+    state = auto()
+    """State data and statistics."""
+    input = auto()
+    """Input data of an RPC operation or action."""
+    output = auto()
+    """Output data of an RPC operation or action."""
+    notification = auto()
+    """Notification data."""
+    rpc_action = input | output
+    """ Combined data of an RPC operation or action."""
+    nonconfig = state | rpc_action | notification
+    """Any data that do not represent configuration."""
     all = config | nonconfig
     """All data."""
 
+    @property
+    def tree_flag(self) -> str:
+        """Return two-letter content-type flag used in tree diagrams."""
+        table: dict[str | None, str] = {
+            "all": "rw",
+            "config": "rw",
+            "input": "-w",
+        }
+        return table.get(self.name, "ro")
 
 class NodeStatus(Enum):
     """Enumeration of node definition statuses.

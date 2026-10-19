@@ -100,7 +100,7 @@ class EmptyConfig(SchemaPattern, metaclass=_Singleton):
 
     def _mandatory_members(
             self, ctype: ContentType) -> list[InstanceName] | None:
-        return [] if ContentType.nonconfig in ctype else None
+        return [] if ContentType.state in ctype else None
 
 
 class NotAllowed(SchemaPattern, metaclass=_Singleton):

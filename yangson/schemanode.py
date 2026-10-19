@@ -273,7 +273,8 @@ class SchemaNode:
 
     def _tree_name(self) -> str:
         """Return the receiver's name to be displayed in ASCII tree."""
-        return cast(str, self.name if self.parent and self.ns == self.parent.ns
+        return cast(str, self.name if self.parent
+                    and self.ns == self.parent.ns
                     else f"{self.ns}:{self.name}")
 
     def _validate(self, inst: InstanceNode, scope: ValidationScope,
@@ -354,7 +355,7 @@ class SchemaNode:
 
     def _config_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         if stmt.argument == "false" and self.parent.config:
-            self._ctype = ContentType.nonconfig
+            self._ctype = ContentType.state
 
     def _status_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         if stmt.argument == "deprecated":
@@ -714,7 +715,7 @@ class InternalNode(SchemaNode):
         return inst
 
     def _state_roots(self) -> list[SchemaNode]:
-        if self.content_type() == ContentType.nonconfig:
+        if self.content_type() == ContentType.state:
             return [self]
         res = []
         for c in self.data_children():
@@ -1743,7 +1744,7 @@ class RpcActionNode(SchemaTreeNode):
         """Initialize the class instance."""
         super().__init__()
         self.default_deny: DefaultDeny = DefaultDeny.none
-        self._ctype = ContentType.nonconfig
+        self._ctype = ContentType.rpc_action
 
     def iname(self) -> InstanceName:
         """Override the superclass method."""
@@ -1783,6 +1784,7 @@ class InputNode(InternalNode, DataNode):
         self._config = False
         self.name = "input"
         self.ns = ns
+        self._ctype = ContentType.input
 
     @property
     def mandatory(self) -> bool:
@@ -1806,6 +1808,7 @@ class OutputNode(InternalNode, DataNode):
         self._config = False
         self.name = "output"
         self.ns = ns
+        self._ctype = ContentType.output
 
     @property
     def mandatory(self) -> bool:
@@ -1827,7 +1830,7 @@ class NotificationNode(SchemaTreeNode):
         """Initialize the class instance."""
         super().__init__()
         self.default_deny: DefaultDeny = DefaultDeny.none
-        self._ctype = ContentType.nonconfig
+        self._ctype = ContentType.notification
 
     def _flatten(self) -> list[SchemaNode]:
         return [self]

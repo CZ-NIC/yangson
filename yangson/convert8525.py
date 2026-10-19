@@ -212,7 +212,7 @@ def main() -> int:
         with open(fn8525) as infile:
             ri = json.load(infile)
         inst = dm8525.from_raw(ri)
-        inst.validate(ctype=ContentType.nonconfig)
+        inst.validate(ctype=ContentType.state)
     except (FileNotFoundError, PermissionError, json.decoder.JSONDecodeError,
             RawDataError, ValidationError) as e:
         print("Invalid input data:", str(e), file=sys.stderr)
@@ -249,7 +249,7 @@ def main() -> int:
     rtop = res["ietf-yang-library:modules-state"]
     res = rtop.put_member(
         "module", [modules[m].as_raw() for m in modules], raw=True).top()
-    res.validate(ctype=ContentType.nonconfig)
+    res.validate(ctype=ContentType.state)
     if fn7895:
         try:
             with open(fn7895, mode="w") as outf:
