@@ -44,7 +44,7 @@ from collections import deque
 from collections.abc import MutableSet
 from datetime import datetime
 from itertools import product
-from typing import cast, Any, Optional
+from typing import Any, ClassVar, Optional, cast
 import xml.etree.ElementTree as ET
 from .constraint import Must
 from .datatype import DataType, LinkType, IdentityrefType, UnionType
@@ -83,6 +83,41 @@ class Annotation:
 
 class SchemaNode:
     """Abstract class for all schema nodes."""
+
+    STMT_CALLBACK: ClassVar[dict[str, str]] = {
+        "action": "_rpc_action_stmt",
+        "anydata": "_anydata_stmt",
+        "anyxml": "_anyxml_stmt",
+        "case": "_case_stmt",
+        "choice": "_choice_stmt",
+        "config": "_config_stmt",
+        "container": "_container_stmt",
+        "default": "_default_stmt",
+        "identity": "_identity_stmt",
+        "ietf-netconf-acm:default-deny-all": "_nacm_default_deny_stmt",
+        "ietf-netconf-acm:default-deny-write": "_nacm_default_deny_stmt",
+        "ietf-yang-metadata:annotation": "_annotation_stmt",
+        "input": "_input_stmt",
+        "key": "_key_stmt",
+        "leaf": "_leaf_stmt",
+        "leaf-list": "_leaf_list_stmt",
+        "list": "_list_stmt",
+        "mandatory": "_mandatory_stmt",
+        "max-elements": "_max_elements_stmt",
+        "min-elements": "_min_elements_stmt",
+        "must": "_must_stmt",
+        "notification": "_notification_stmt",
+        "output": "_output_stmt",
+        "ordered-by": "_ordered_by_stmt",
+        "presence": "_presence_stmt",
+        "rpc": "_rpc_action_stmt",
+        "status": "_status_stmt",
+        "unique": "_unique_stmt",
+        "units": "_units_stmt",
+        "uses": "_uses_stmt",
+        "when": "_when_stmt",
+    }
+    """Map of statement keywords to callback methods."""
 
     name: YangIdentifier | None = None
     """Name of the receiver."""
@@ -279,7 +314,7 @@ class SchemaNode:
                     + ":" + s.keyword)
             else:
                 key = s.keyword
-            mname = SchemaNode._stmt_callback.get(key, "_noop")
+            mname = SchemaNode.STMT_CALLBACK.get(key, "_noop")
             method = getattr(self, mname)
             method(s, sctx)
 
@@ -405,41 +440,6 @@ class SchemaNode:
             self.default_deny = DefaultDeny.all
         elif stmt.keyword == "default-deny-write":
             self.default_deny = DefaultDeny.write
-
-    _stmt_callback = {
-        "action": "_rpc_action_stmt",
-        "anydata": "_anydata_stmt",
-        "anyxml": "_anyxml_stmt",
-        "case": "_case_stmt",
-        "choice": "_choice_stmt",
-        "config": "_config_stmt",
-        "container": "_container_stmt",
-        "default": "_default_stmt",
-        "identity": "_identity_stmt",
-        "ietf-netconf-acm:default-deny-all": "_nacm_default_deny_stmt",
-        "ietf-netconf-acm:default-deny-write": "_nacm_default_deny_stmt",
-        "ietf-yang-metadata:annotation": "_annotation_stmt",
-        "input": "_input_stmt",
-        "key": "_key_stmt",
-        "leaf": "_leaf_stmt",
-        "leaf-list": "_leaf_list_stmt",
-        "list": "_list_stmt",
-        "mandatory": "_mandatory_stmt",
-        "max-elements": "_max_elements_stmt",
-        "min-elements": "_min_elements_stmt",
-        "must": "_must_stmt",
-        "notification": "_notification_stmt",
-        "output": "_output_stmt",
-        "ordered-by": "_ordered_by_stmt",
-        "presence": "_presence_stmt",
-        "rpc": "_rpc_action_stmt",
-        "status": "_status_stmt",
-        "unique": "_unique_stmt",
-        "units": "_units_stmt",
-        "uses": "_uses_stmt",
-        "when": "_when_stmt",
-    }
-    """Map of statement keywords to callback methods."""
 
 
 class InternalNode(SchemaNode):
