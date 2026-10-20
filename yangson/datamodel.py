@@ -100,7 +100,7 @@ class DataModel:
         return hashlib.sha1("".join(fnames).encode("ascii")).hexdigest()
 
     def from_raw(self, robj: RawObject,
-                 subschema: Optional[PrefName] = None) -> RootNode:
+                 subschema: SchemaPath | None = None) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
@@ -111,12 +111,10 @@ class DataModel:
             Root instance node.
         """
         if subschema:
-            p, s, loc = subschema.partition(":")
-            if not (p and s and loc):
-                raise InvalidArgument(subschema)
-            subsn = self.schema.get_child(loc, p)
-            if subsn is None:
-                raise NonexistentSchemaNode(self.schema.qual_name, loc, p)
+            subsn = self.get_schema_node(subschema)
+            match subsn:
+                case None:
+                    raise NonexistentSchemaNode(self.schema.qual_name, loc, p)
             if isinstance(subsn, SchemaTreeNode):
                 schema = subsn
             else:

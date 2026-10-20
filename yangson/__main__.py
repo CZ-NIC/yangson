@@ -46,10 +46,10 @@ from yangson.typealiases import PrefName
 def main(infile: str | None = None, pickled: bool = False,
          path: str | None = None,
          scope: ValidationScope = ValidationScope.all,
-         ctype: ContentType = ContentType.all, set_id: bool = False,
+         ctype: ContentType | None = ContentType.all, set_id: bool = False,
          tree: bool = False, no_types: bool = False,
          digest: bool = False, dump: str | None = None,
-         subschema: PrefName | None = None,
+         subschema: SchemaPath | None = None,
          validate: str | None = None) -> int:
     """Entry-point for the command-line utility.
 
@@ -111,7 +111,6 @@ def main(infile: str | None = None, pickled: bool = False,
             default="all", help="validation scope (default: %(default)s)")
         parser.add_argument(
             "-c", "--ctype", choices=["config", "state", "nonconfig", "all"],
-            default="all",
             help="content type of the data instance (default: %(default)s)")
         parser.add_argument(
             "-S", "--subschema",
@@ -124,13 +123,15 @@ def main(infile: str | None = None, pickled: bool = False,
         path = args.path
         pickled = args.pickled
         scope = ValidationScope[args.scope]
-        ctype = ContentType[args.ctype]
+        ctype = ContentType[args.ctype] if args.ctype else None
         set_id = args.id
         tree = args.tree
         dump = args.dump
         no_types = args.no_types
         digest = args.digest
         subschema = args.subschema
+        if subschema and subschema[0] != "/":
+            subschema = "/" + subschema
         validate = args.validate
     if pickled:
         try:
