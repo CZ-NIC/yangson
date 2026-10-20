@@ -63,10 +63,22 @@ from .schemadata import IdentityAdjacency, SchemaContext, SchemaData
 from .schpattern import (ChoicePattern, ConditionalPattern, Empty, Member,
                          NotAllowed, Pair, SchemaPattern)
 from .statement import Statement
-from .typealiases import (DataPath, InstanceName, JSONPointer, QualName,
-                          RawEntry, RawList, RawObject, RawScalar, RawValue,
-                          RawMetadataObject, ScalarValue, SchemaRoute,
-                          YangIdentifier)
+from .typealiases import (
+    DataPath,
+    InstanceName,
+    JSONPointer,
+    QualName,
+    RawEntry,
+    RawList,
+    RawObject,
+    RawScalar,
+    RawValue,
+    RawMetadataObject,
+    ScalarValue,
+    SchemaPath,
+    SchemaRoute,
+    YangIdentifier
+)
 from .xpathast import Expr, LocationPath, Step, Root
 from .xpathparser import XPathParser
 
@@ -477,7 +489,7 @@ class InternalNode(SchemaNode):
                     self._mandatory_children[1])
 
     def get_child(self, name: YangIdentifier,
-                  ns: YangIdentifier = None) -> Optional[SchemaNode]:
+                  ns: YangIdentifier | None = None) -> SchemaNode | None:
         """Return receiver's schema child.
 
         Args:
@@ -495,6 +507,7 @@ class InternalNode(SchemaNode):
             grandchild = c.get_child(name, ns)
             if grandchild is not None:
                 return grandchild
+        return None
 
     def get_schema_descendant(
             self: "InternalNode", route: SchemaRoute) -> Optional[SchemaNode]:
@@ -515,10 +528,10 @@ class InternalNode(SchemaNode):
         return node
 
     def get_data_child(self, name: YangIdentifier,
-                       ns: YangIdentifier = None) -> Optional["DataNode"]:
+                       ns: YangIdentifier | None = None) -> "DataNode | None":
         """Return data node directly under the receiver."""
         ns = ns if ns else self.ns
-        todo = []
+        todo: list[SchemaNode] = []
         for child in self.children:
             if child.name == name and child.ns == ns:
                 if isinstance(child, DataNode):
@@ -530,6 +543,7 @@ class InternalNode(SchemaNode):
             res = c.get_data_child(name, ns)
             if res:
                 return res
+        return None
 
     def filter_children(self, ctype: ContentType = None) -> list[SchemaNode]:
         """Return receiver's children based on content type.
@@ -962,8 +976,8 @@ class DataNode(SchemaNode):
         val = self.from_raw(rval, jptr="/")
         return ObjectMember(self.iname(), {}, val, None, self, datetime.now())
 
-    def split_instance_route(self, route: InstanceRoute) -> Optional[
-            tuple[InstanceRoute, InstanceRoute]]:
+    def split_instance_route(self, route: InstanceRoute
+                             ) -> tuple[InstanceRoute, InstanceRoute] | None:
         """Split `route` into the part up to receiver and the rest.
 
         Args:
@@ -997,6 +1011,7 @@ class DataNode(SchemaNode):
                 return (InstanceRoute(route[:i]), InstanceRoute(route[i:]))
             if i >= len(route):
                 return None
+        return None
 
     def _validate(self, inst: InstanceNode, scope: ValidationScope,
                   ctype: ContentType) -> None:

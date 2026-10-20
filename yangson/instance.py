@@ -44,7 +44,7 @@ from .exceptions import (BadSchemaNodeType, EndOfInput, InstanceException,
                          MissingModuleNamespace, NonexistentInstance,
                          NonDataNode, NonexistentSchemaNode, UnexpectedInput,
                          YangTypeError)
-from .instroute import InstanceRoute
+from .instroute import InstanceRoute, InstanceRouteItem
 from .instvalue import (ArrayValue, InstanceKey, ObjectValue, Value,
                         ScalarValue, StructuredValue)
 from .parser import Parser
@@ -632,7 +632,7 @@ class InstanceNode:
             raise NonexistentInstance(self, "entry " + str(index)) from None
 
     def _peek_schema_route(self, sroute: SchemaRoute) -> Value:
-        irt = InstanceRoute()
+        irt: list[InstanceRouteItem] = []
         sn = self.schema_node
         for qn in sroute:
             sn = sn.get_child(*qn)
@@ -640,7 +640,7 @@ class InstanceNode:
                 raise NonexistentSchemaNode(sn.qual_name, *qn)
             if isinstance(sn, DataNode):
                 irt.append(MemberName(sn.name, sn.ns))
-        return self.peek(irt)
+        return self.peek(InstanceRoute(tuple(irt)))
 
     def _member_schema_node(self, name: InstanceName) -> "DataNode":
         qname = self.schema_node._iname2qname(name)
