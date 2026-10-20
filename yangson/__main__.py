@@ -28,8 +28,8 @@ from yangson import DataModel
 from yangson.enumerations import ContentType, ValidationScope
 from yangson.exceptions import (
     BadYangLibraryData,
+    BadSchemaNodeType,
     FeaturePrerequisiteError,
-    InvalidArgument,
     ModuleNotFound,
     ModuleNotRegistered,
     MultipleImplementedRevisions,
@@ -200,8 +200,8 @@ def main(infile: str | None = None, pickled: bool = False,
     except RawTypeError as e:
         print("Invalid type:", str(e), file=sys.stderr)
         return 3
-    except InvalidArgument:
-        print("Invalid subschema id:", subschema, "(missing prefix?)",
+    except BadSchemaNodeType:
+        print("Not an RPC/action or notification: ", subschema,
               file=sys.stderr)
         return 3
     except NonexistentSchemaNode:

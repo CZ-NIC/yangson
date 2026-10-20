@@ -637,7 +637,9 @@ class InstanceNode:
         for qn in sroute:
             sn = sn.get_child(*qn)
             if sn is None:
-                raise NonexistentSchemaNode(sn.qual_name, *qn)
+                srt = sroute[1:] if sroute[0] == "/" else sroute
+                raise NonexistentSchemaNode(
+                    self.schema_node.schema_path() + "/" + srt)
             if isinstance(sn, DataNode):
                 irt.append(MemberName(sn.name, sn.ns))
         return self.peek(InstanceRoute(tuple(irt)))
@@ -646,7 +648,8 @@ class InstanceNode:
         qname = self.schema_node._iname2qname(name)
         res = self.schema_node.get_data_child(*qname)
         if res is None:
-            raise NonexistentSchemaNode(self.schema_node.qual_name, *qname)
+            raise NonexistentSchemaNode(
+                self.schema_node.schema_path() + "/" + name)
         return res
 
     def _node_set(self) -> list["InstanceNode"]:
@@ -1198,7 +1201,8 @@ class EntryKeys:
         for k in self.keys:
             knod = sn.get_data_child(*k)
             if knod is None:
-                raise NonexistentSchemaNode(sn.qual_name, *k)
+                kname = ("" if k[1] is None else k[1] + ":") + k[0]
+                raise NonexistentSchemaNode(sn.schema_path() + "/" + kname)
             kval = knod.type.parse_value(self.keys[k])
             if kval is None:
                 raise InvalidKeyValue(self.keys[k])
@@ -1267,7 +1271,9 @@ class ResourceIdParser(Parser):
                             (ns is None or cn.ns == ns)):
                         res.append(ActionName(name, ns))
                         return InstanceRoute(res)
-                raise NonexistentSchemaNode(sn.qual_name, name, ns)
+                raise NonexistentSchemaNode(
+                    sn.schema_path() + "/" +
+                    ("" if ns is None else ns + ":") + name)
             res.append(MemberName(name, ns))
             if self.at_end():
                 return InstanceRoute(res)
@@ -1295,7 +1301,7 @@ class ResourceIdParser(Parser):
             if len(ks) != len(sn.keys):
                 raise UnexpectedInput(self, f"exactly {len(sn.keys)} keys")
         except AttributeError:
-            raise BadSchemaNodeType(sn.qual_name, "list")
+            raise BadSchemaNodeType(sn.schema_path(), "list")
         sel = {}
         for j in range(len(ks)):
             knod = sn.get_data_child(*sn.keys[j])

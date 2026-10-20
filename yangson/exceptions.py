@@ -75,9 +75,10 @@ This module defines the following exceptions:
 * :exc:`YangsonException`: Base class for all Yangson exceptions.
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
 """
-from typing import Optional, TYPE_CHECKING
-from .typealiases import (InstanceName, JSONPointer, ModuleId, PrefName,
-                          QualName, ScalarValue, YangIdentifier)
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Optional, override
+from .typealiases import (DataPath, InstanceName, JSONPointer, ModuleId,
+                          PrefName, ScalarValue, SchemaPath, YangIdentifier)
 if TYPE_CHECKING:
     from .parser import Parser
     from .instance import InstanceNode
@@ -196,7 +197,8 @@ class EndOfInput(ParserException):
 class UnexpectedInput(ParserException):
     """Unexpected input."""
 
-    def __init__(self, parser: "Parser", expected: Optional[str] = None) -> None:
+    def __init__(self, parser: "Parser",
+                 expected: Optional[str] = None) -> None:
         super().__init__(parser)
         self.expected = expected
 
@@ -251,7 +253,8 @@ class MissingModuleNamespace(YangsonException):
 class ModuleContentMismatch(YangsonException):
     """Abstract exception class – unexpected module name or revision."""
 
-    def __init__(self, found: YangIdentifier, expected: YangIdentifier) -> None:
+    def __init__(self, found: YangIdentifier,
+                 expected: YangIdentifier) -> None:
         self.found = found
         self.expected = expected
 
@@ -346,51 +349,46 @@ class CyclicImports(YangsonException):
     """YANG modules are imported in a cyclic fashion."""
 
 
-class SchemaNodeException(YangsonException):
+class SchemaNodeException(YangsonException, ABC):
     """Abstract exception class for schema node errors."""
 
-    def __init__(self, qn: QualName) -> None:
-        self.qn = qn
+    def __init__(self, path: SchemaPath) -> None:
+        self.path = path
 
+    @abstractmethod
     def __str__(self) -> str:
-        return "/" if self.qn[0] is None else f"{self.qn[1]}:{self.qn[0]}"
+        """Return error message info."""
 
 
 class NonexistentSchemaNode(SchemaNodeException):
-    """A schema node doesn't exist as a child of ``qn``."""
+    """A schema node doesn't exist."""
 
-    def __init__(self, qn: QualName, name: YangIdentifier,
-                 ns: Optional[YangIdentifier] = None) -> None:
-        super().__init__(qn)
-        self.name = name
-        self.ns = ns
-
+    @override
     def __str__(self) -> str:
-        prefix = ("" if self.ns is None or self.ns == self.qn[1]
-                  else self.ns + ":")
-        return f"{prefix}{self.name} under {super().__str__()}"
-
+        """Return error message info."""
+        return self.path
 
 class BadSchemaNodeType(SchemaNodeException):
     """A schema node is of a wrong type."""
 
-    def __init__(self, qn: QualName, expected: str) -> None:
-        super().__init__(qn)
+    def __init__(self, path: SchemaPath, expected: str) -> None:
+        super().__init__(path)
         self.expected = expected
 
+    @override
     def __str__(self) -> str:
-        return super().__str__() + " is not a " + self.expected
+        return self.path + " is not a " + self.expected
 
 
 class InvalidLeafrefPath(SchemaNodeException):
     """A leafref path is incorrect."""
 
-    def __init__(self, qn: QualName, path: str) -> None:
-        super().__init__(qn)
-        self.path = path
+    def __init__(self, path: SchemaPath, refpath: DataPath) -> None:
+        super().__init__(path)
+        self.refpath = refpath
 
     def __str__(self) -> str:
-        return f"'{self.path}' defined for {super().__str__()}"
+        return f"'{self.refpath}' defined for {self.path}"
 
 
 class RawDataError(YangsonException):

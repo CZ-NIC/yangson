@@ -105,7 +105,7 @@ class DataModel:
 
         Args:
             robj: Dictionary representing a raw data tree
-            subschema: Identifier of a subschema (RPC or notification)
+            subschema: Identifier of a subschema (RPC/action or notification)
 
         Returns:
             Root instance node.
@@ -114,12 +114,12 @@ class DataModel:
             subsn = self.get_schema_node(subschema)
             match subsn:
                 case None:
-                    raise NonexistentSchemaNode(self.schema.qual_name, loc, p)
-            if isinstance(subsn, SchemaTreeNode):
-                schema = subsn
-            else:
-                raise BadSchemaNodeType(subsn.qual_name,
-                                        "notification or rpc")
+                    raise NonexistentSchemaNode(subschema)
+                case SchemaTreeNode():
+                    schema = subsn
+                case _:
+                    raise BadSchemaNodeType(subsn.schema_path(),
+                                        "rpc/action or notification")
         else:
             schema = self.schema
         cooked = cast(ObjectValue, schema.from_raw(robj))
@@ -131,20 +131,21 @@ class DataModel:
 
         Args:
             robj: Dictionary representing a raw data tree.
-            subschema: Identifier of a subschema (RPC or notification)
+            subschema: Identifier of a subschema (RPC/action or notification)
 
         Returns:
             Root instance node.
         """
         if subschema:
-            p, s, loc = subschema.partition(":")
-            if not (p and s and loc):
-                raise InvalidArgument(subschema)
-            subsn = self.schema.get_child(loc, p)
-            if subsn is None:
-                raise NonexistentSchemaNode(self.schema.qual_name, loc, p)
-            if isinstance(subsn, SchemaTreeNode):
-                schema = subsn
+            subsn = self.get_schema_node(subschema)
+            match subsn:
+                case None:
+                    raise NonexistentSchemaNode(subschema)
+                case SchemaTreeNode():
+                    schema = subsn
+                case _:
+                    raise BadSchemaNodeType(subsn.schema_path(),
+                                        "rpc/action or notification")
         else:
             schema = self.schema
         cooked = cast(ObjectValue, schema.from_xml(root))
