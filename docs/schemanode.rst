@@ -259,6 +259,17 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> rsn.data_path()
          '/example-4-a:bag/example-4-b:fooref'
 
+   .. method:: schema_path() -> SchemaPath
+
+      Return the receiver's :term:`schema path`.
+
+      .. doctest::
+
+         >>> fsn.schema_path()
+         '/example-4-a:bag/foo'
+         >>> rsn.schema_path()
+         '/example-4-a:bag/opts/example-4-b:fooref/fooref'
+
    .. method:: state_roots() -> List[DataPath]
 
       Return a list of :term:`data path`\ s of the roots of all state
