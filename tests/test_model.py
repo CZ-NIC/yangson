@@ -95,7 +95,7 @@ tree = """+--rw (test:choiA)?
 |  +--rw listA* [leafE leafF]
 |     +--rw contD
 |     |  +---x acA
-|     |  |  +--ro input
+|     |  |  +---w input
 |     |  |  +--ro output
 |     |  |     +--ro leafL <boolean>
 |     |  +--rw contE!
@@ -125,8 +125,8 @@ x--rw test:contT
 +---n testb:noA
 |  +--ro leafO? <boolean>
 +---x testb:rpcA
-   +--ro input
-   |  +--ro leafK? <typA(int16)>
+   +---w input
+   |  +---w leafK? <typA(int16)>
    +--ro output
       +--ro llistC* <boolean>
 """
@@ -288,10 +288,14 @@ def test_schema(data_model):
     ln = chb.get_schema_descendant(data_model.schema_data.path2route(
         "/testb:leafN/leafN"))
     lc = cb.get_data_child("leafC", "testb")
-    llb = data_model.get_schema_node("/test:choiA/llistB/llistB")
+    llbr = "/test:choiA/llistB/llistB"
+    llb = data_model.get_schema_node(llbr)
+    assert llbr == llb.schema_path()
     lj = data_model.get_data_node("/test:contA/listA/contD/contE/leafJ")
     assert data_model.get_data_node("/test:contA/listA/contD/leafM") is None
-    llc = data_model.get_schema_node("/testb:rpcA/output/llistC")
+    llcr = "/testb:rpcA/output/llistC"
+    llc = data_model.get_schema_node(llcr)
+    assert llcr == llc.schema_path()
     ll = lsta.get_schema_descendant(data_model.schema_data.path2route(
         "test:contD/acA/output/leafL"))
     assert la.parent == chb.parent == ca
@@ -302,7 +306,7 @@ def test_schema(data_model):
             ld.content_type() == lc.content_type() == lj.content_type() ==
             ln.content_type() == ContentType.config)
     assert ca.content_type() == cha.content_type() == ContentType.all
-    assert ll.content_type() == ContentType.nonconfig
+    assert ll.content_type() == ContentType.output
     assert lj.config and ca.config and cha.config and not ll.config
     assert la.ns == ld.ns
     assert lc.ns == "testb"
@@ -476,7 +480,7 @@ def test_rpc(data_model, rpc_raw_output):
     cooked = sn.from_raw(rpc_raw_output)
     inst = RootNode(cooked, sn, data_model.schema_data, cooked.timestamp)
     assert inst.raw_value() == rpc_raw_output
-    assert inst.validate(ctype=ContentType.all) is None
+    assert inst.validate(ctype=ContentType.rpc_action) is None
 
 def test_xpath(data_model, instance):
     def xptest(expr, back, res=True, node=instance, module="test"):
@@ -872,7 +876,7 @@ def test_xml_rpc(data_model):
     #########
 
     input_inst = data_model.from_raw(input_obj, "testb:rpcA")
-    input_inst.validate(ctype=ContentType.all)
+    input_inst.validate(ctype=ContentType.input)
     assert(input_inst.raw_value() == input_obj)
 
     # convert Instance to an XML-encoded string and compare to known-good
@@ -885,7 +889,7 @@ def test_xml_rpc(data_model):
     parser = XMLParser(input_xml_text)
     input_xml_et_obj2 = parser.root
     input_inst2 = data_model.from_xml(input_xml_et_obj2, "testb:rpcA")
-    input_inst2.validate(ctype=ContentType.all)
+    input_inst2.validate()
     assert(input_inst2.raw_value() == input_obj)
 
     # convert Instance to raw value and ensure same
@@ -897,7 +901,7 @@ def test_xml_rpc(data_model):
     ##########
 
     output_inst = data_model.from_raw(output_obj, "testb:rpcA")
-    output_inst.validate(ctype=ContentType.all)
+    output_inst.validate()
     assert(output_inst.raw_value() == output_obj)
 
     # convert Instance to an XML-encoded string and compare to known-good
@@ -910,7 +914,7 @@ def test_xml_rpc(data_model):
     parser = XMLParser(output_xml_text)
     output_xml_et_obj2 = parser.root
     output_inst2 = data_model.from_xml(output_xml_et_obj2, "testb:rpcA")
-    output_inst2.validate(ctype=ContentType.all)
+    output_inst2.validate(ctype=ContentType.output)
     assert(output_inst2.raw_value() == output_obj)
 
     # convert Instance to raw value and ensure same
@@ -950,14 +954,10 @@ def test_xml_action(data_model):
     # OUTPUT #
     ##########
 
-    # convert raw object to an InstanceValue
-    #  - an ObjectValue, not a RootNode as per DataModel.from_raw()
-    output_inst_val = sn_action.from_raw(output_obj)
-    assert(str(output_inst_val) == str(output_obj))
-
     # convert InstanceValue to an Instance (a RootNode)
-    output_inst = RootNode(output_inst_val, sn_action, data_model.schema_data, output_inst_val.timestamp)
-    output_inst.validate(ctype=ContentType.all)
+    output_inst = data_model.from_raw(
+        output_obj, subschema="/test:contA/listA/contD/acA")
+    output_inst.validate(ctype=ContentType.output)
     assert(output_inst.raw_value() == output_obj)
 
     # convert Instance to an XML-encoded string and compare to known-good
@@ -965,16 +965,14 @@ def test_xml_action(data_model):
     output_xml_text = ET.tostring(output_xml_et_obj).decode("utf-8")
     assert(output_xml_text == output_xml_stripped)
 
-    # convert output's XML-encoded string back to an InstanceValue
-    #  - an ObjectValue, not a RootNode as per DataModel.from_xml()
+    # convert output's XML-encoded string back to a raw value
     parser = XMLParser(output_xml_text)
     output_xml_et_obj2 = parser.root
-    output_inst_val2 = sn_action.from_xml(output_xml_et_obj2)
-    assert(output_inst_val2 == output_inst_val)
 
     # convert InstanceValue back to an Instance (a RootNode)
-    output_inst2 = RootNode(output_inst_val2, sn_action, data_model.schema_data, output_inst_val2.timestamp)
-    output_inst2.validate(ctype=ContentType.all)
+    output_inst2 = data_model.from_xml(
+        output_xml_et_obj2, subschema="/test:contA/listA/contD/acA")
+    output_inst2.validate()
     assert(output_inst2.raw_value() == output_obj)
 
     # convert Instance to raw value and ensure same
@@ -1004,7 +1002,8 @@ def test_xml_notification(data_model):
 
 
     notif_inst = data_model.from_raw(notif_obj, "testb:noA")
-    notif_inst.validate(ctype=ContentType.all)
+    notif_inst.validate(ctype=ContentType.notification)
+    notif_inst.validate()
 
 #    ###################
 #    # JSON - RESTCONF #  (per RFC 8040)

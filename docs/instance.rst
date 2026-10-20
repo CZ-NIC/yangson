@@ -300,7 +300,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> bag.put_member('quux', 0)
          Traceback (most recent call last):
          ...
-         yangson.exceptions.NonexistentSchemaNode: quux under example-2:bag
+         yangson.exceptions.NonexistentSchemaNode: /example-2:bag/quux
 
    .. method:: delete_item(key: InstanceKey) -> InstanceNode
 
