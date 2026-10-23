@@ -31,7 +31,8 @@ from .exceptions import (
     InvalidSchemaPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
     FeaturePrerequisiteError, InvalidFeatureExpression, ModuleNotFound,
     ModuleNotImplemented, ModuleNotImported, ModuleNotRegistered,
-    ModuleContentMismatch, MultipleImplementedRevisions, UnknownPrefix)
+    ModuleContentMismatch, MultipleImplementedRevisions, UnexpectedInput,
+    UnknownPrefix)
 from .parser import Parser
 from .statement import ModuleParser, Statement
 from .typealiases import (ModuleId, PrefName, QualName, RevisionDate,
@@ -529,8 +530,12 @@ class FeatureExprParser(Parser):
             ModuleNotRegistered: If `mid` is not registered in the data model.
         """
         super().__init__(text)
-        self.mid = mid
         self.schema_data = schema_data
+        self.mid = mid
+        try:
+            self._mdata = schema_data.modules[mid]
+        except KeyError:
+            raise ModuleNotRegistered(*mid) from None
 
     def parse(self) -> bool:
         """Parse and evaluate a complete feature expression.
@@ -577,17 +582,16 @@ class FeatureExprParser(Parser):
             self.char(")")
             self.skip_ws()
             return res
-        n, p = self.prefixed_name()
-        self.skip_ws()
         try:
-            mdata = self.schema_data.modules[self.mid]
-        except KeyError:
-            raise ModuleNotRegistered(*self.mid) from None
+            n, p = self.prefixed_name()
+        except UnexpectedInput:
+            raise InvalidFeatureExpression(self)
+        self.skip_ws()
         if p is None:
-            fid = mdata.main_module
+            fid = self._mdata.main_module
         else:
             try:
-                fid = mdata.prefix_map[p]
+                fid = self._mdata.prefix_map[p]
             except KeyError:
                 raise UnknownPrefix(p, self.mid) from None
         return n in self.schema_data.modules[fid].features
