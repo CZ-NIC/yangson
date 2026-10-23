@@ -552,28 +552,31 @@ class FeatureExprParser(Parser):
             raise InvalidFeatureExpression(self)
         return res
 
+    def _boolean_op(self, op: str) -> bool:
+        """Parse a boolean operator followed by whitespace."""
+        ooff = self.offset
+        if not self.test_string(op):
+            return False
+        if self.at_end():
+            raise InvalidFeatureExpression(self)
+        if self.skip_ws():
+            return True
+        else:
+            self.offset = ooff
+            return False
+
     def _feature_disj(self) -> bool:
         x = self._feature_conj()
-        if self.test_string("or"):
-            if not self.skip_ws():
-                raise InvalidFeatureExpression(self)
-            return self._feature_disj() or x
-        return x
+        return self._feature_disj() or x if self._boolean_op("or") else x
 
     def _feature_conj(self) -> bool:
         x = self._feature_term()
-        if self.test_string("and"):
-            if not self.skip_ws():
-                raise InvalidFeatureExpression(self)
-            return self._feature_conj() and x
-        return x
+        res = self._feature_conj() and x if self._boolean_op("and") else x
+        return res
 
     def _feature_term(self) -> bool:
-        if self.test_string("not"):
-            if not self.skip_ws():
-                raise InvalidFeatureExpression(self)
-            return not self._feature_atom()
-        return self._feature_atom()
+        return (not self._feature_term() if self._boolean_op("not")
+                else self._feature_atom())
 
     def _feature_atom(self) -> bool:
         if self.peek() == "(":
