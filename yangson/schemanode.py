@@ -289,23 +289,27 @@ class SchemaNode:
             xpath: XPath expression compiled from a leafref path.
             init: initial context node
         """
-        if isinstance(xpath, LocationPath):
-            lft = self._follow_leafref(xpath.left, init)
-            if lft is None:
-                return None
-            return lft._follow_leafref(xpath.right, init)
-        elif isinstance(xpath, Step):
-            if xpath.axis == Axis.parent:
-                if isinstance(self, SchemaTreeNode):
-                    return None
-                return self.data_parent() or self.schema_root()
-            elif xpath.axis == Axis.child:
-                if isinstance(self, InternalNode) and xpath.qname:
-                    qname = (xpath.qname if xpath.qname[1]
-                             else (xpath.qname[0], init.ns))
-                    return self.get_data_child(*qname)
-        elif isinstance(xpath, Root):
-            return self.schema_root()
+        match xpath:
+            case LocationPath():
+                lft = self._follow_leafref(xpath.left, init)
+                return lft._follow_leafref(xpath.right, init) if lft else None
+            case Step():
+                match xpath.axis:
+                    case Axis.parent:
+                        match self.parent:
+                            case None:
+                                return None
+                            case SchemaTreeNode():
+                                return self.parent
+                            case _:
+                                return self.data_parent()
+                    case Axis.child:
+                        if isinstance(self, InternalNode) and xpath.qname:
+                            qname = (xpath.qname if xpath.qname[1]
+                                     else (xpath.qname[0], init.ns))
+                            return self.get_data_child(*qname)
+            case Root():
+                return self.schema_root()
         return None
 
     def _noop(self, stmt: Statement, sctx: SchemaContext) -> None:
