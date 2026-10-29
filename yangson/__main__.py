@@ -40,7 +40,7 @@ from yangson.exceptions import (
     SemanticError,
     YangTypeError,
 )
-from yangson.typealiases import PrefName
+from yangson.typealiases import PrefName, SchemaPath
 
 
 def main(infile: str | None = None, pickled: bool = False,
