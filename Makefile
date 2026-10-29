@@ -1,9 +1,6 @@
 PROJECT = yangson
-VERSION := $(shell grep '^version' pyproject.toml | cut -d'"' -f2)
+VERSION := $(shell uv version --short)
 .PHONY = tags deps install-deps test
-
-tags:
-	find $(PROJECT) -name "*.py" | etags -
 
 deps:
 	@uv lock
