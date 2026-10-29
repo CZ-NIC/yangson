@@ -1,4 +1,5 @@
 .cache
+.venv
 .mypy_cache
 .eggs
 .idea

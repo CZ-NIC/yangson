@@ -6,15 +6,15 @@ tags:
 	find $(PROJECT) -name "*.py" | etags -
 
 deps:
-	@pip-compile
+	@uv lock
 
 install-deps:
-	@pip-sync
+	@uv sync --all-groups
 
 test:
-	@py.test tests
+	@uv run --all-groups pytest tests
 
 release:
 	git tag -a -s -m "Yangson release $(VERSION)" $(VERSION)
 	git push --follow-tags
-	poetry build
+	uv build
