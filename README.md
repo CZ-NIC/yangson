@@ -15,11 +15,11 @@ state data modelled using the [YANG](https://tools.ietf.org/html/rfc7950) data m
 python -m pip install yangson
 ```
 
-Note that *Yangson* requires Python 3.9 or higher.
+Note that *Yangson* requires Python 3.10 or higher.
 
 ## Development
 
-See [instructions](https://github.com/CZ-NIC/yangson/wiki/devinstall) for installing the development environment.
+Install [uv](https://docs.astral.sh/uv/), then run `uv sync --all-groups` to install the development and documentation dependencies. Run the tests with `make test`.
 
 ## Links
 

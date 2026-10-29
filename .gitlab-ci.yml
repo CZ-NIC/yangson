@@ -8,22 +8,21 @@ stages:
 before_script:
   - apt update
   - apt install -yqq git make
-  - pip install poetry
-  - poetry install
-  - source $(poetry env info --path)/bin/activate
+  - pip install uv
+  - uv sync --locked --all-groups
 
 test:
   stage: test
   script:
     - make test
     - cd docs
-    - make doctest
+    - uv run --all-groups make doctest
 
 build-docs:
   stage: build-docs
   script:
     - cd docs
-    - make html
+    - uv run --all-groups make html
   artifacts:
     paths:
       - docs/_build/html
