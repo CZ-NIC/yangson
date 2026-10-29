@@ -76,7 +76,7 @@ This module defines the following exceptions:
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
 """
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional, override
+from typing import TYPE_CHECKING, Optional
 from .typealiases import (DataPath, InstanceName, JSONPointer, ModuleId,
                           PrefName, ScalarValue, SchemaPath, YangIdentifier)
 if TYPE_CHECKING:
@@ -363,7 +363,6 @@ class SchemaNodeException(YangsonException, ABC):
 class NonexistentSchemaNode(SchemaNodeException):
     """A schema node doesn't exist."""
 
-    @override
     def __str__(self) -> str:
         """Return error message info."""
         return self.path
@@ -375,7 +374,6 @@ class BadSchemaNodeType(SchemaNodeException):
         super().__init__(path)
         self.expected = expected
 
-    @override
     def __str__(self) -> str:
         return self.path + " is not a " + self.expected
 
