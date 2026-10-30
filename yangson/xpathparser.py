@@ -24,21 +24,59 @@ This module defines the following classes:
 The module also defines the following exceptions:
 
 """
-from typing import Optional, Union
-from .schemadata import SchemaContext
+
 from .enumerations import Axis, MultiplicativeOp
 from .exceptions import EndOfInput, InvalidXPath, NotSupported, UnexpectedInput
 from .parser import Parser
+from .schemadata import SchemaContext
 from .typealiases import QualName
 from .xpathast import (
-    AdditiveExpr, AndExpr, EqualityExpr, Expr, FilterExpr, FuncBitIsSet,
-    FuncBoolean, FuncCeiling, FuncConcat, FuncContains, FuncCount, FuncCurrent,
-    FuncDeref, FuncDerivedFrom, FuncEnumValue, FuncFalse, FuncFloor, FuncLast,
-    FuncName, FuncNormalizeSpace, FuncNot, FuncNumber, FuncPosition,
-    FuncReMatch, FuncRound, FuncStartsWith, FuncString, FuncStringLength,
-    FuncSubstring, FuncSubstringAfter, FuncSubstringBefore, FuncSum,
-    FuncTranslate, FuncTrue, Literal, LocationPath, MultiplicativeExpr, Number,
-    OrExpr, PathExpr, RelationalExpr, Root, Step, UnaryMinusExpr, UnionExpr)
+    AdditiveExpr,
+    AndExpr,
+    EqualityExpr,
+    Expr,
+    FilterExpr,
+    FuncBitIsSet,
+    FuncBoolean,
+    FuncCeiling,
+    FuncConcat,
+    FuncContains,
+    FuncCount,
+    FuncCurrent,
+    FuncDeref,
+    FuncDerivedFrom,
+    FuncEnumValue,
+    FuncFalse,
+    FuncFloor,
+    FuncLast,
+    FuncName,
+    FuncNormalizeSpace,
+    FuncNot,
+    FuncNumber,
+    FuncPosition,
+    FuncReMatch,
+    FuncRound,
+    FuncStartsWith,
+    FuncString,
+    FuncStringLength,
+    FuncSubstring,
+    FuncSubstringAfter,
+    FuncSubstringBefore,
+    FuncSum,
+    FuncTranslate,
+    FuncTrue,
+    Literal,
+    LocationPath,
+    MultiplicativeExpr,
+    Number,
+    OrExpr,
+    PathExpr,
+    RelationalExpr,
+    Root,
+    Step,
+    UnaryMinusExpr,
+    UnionExpr,
+)
 
 
 class XPathParser(Parser):
@@ -244,7 +282,7 @@ class XPathParser(Parser):
     def _step(self) -> Step:
         return Step(*self._axis_qname(), self._predicates())
 
-    def _axis_qname(self) -> tuple[Axis, Union[QualName, bool, None]]:
+    def _axis_qname(self) -> tuple[Axis, QualName | bool | None]:
         next = self.peek()
         if next == "*":
             self.adv_skip_ws()
@@ -294,12 +332,12 @@ class XPathParser(Parser):
             self.adv_skip_ws()
             self.char(")")
             self.skip_ws()
-            return None
+            return
         elif typ in ("comment", "processing-instruction", "text"):
             raise NotSupported(self, f"node type '{typ}()'")
         raise InvalidXPath(self)
 
-    def _qname(self) -> Optional[QualName]:
+    def _qname(self) -> QualName | None:
         """Parse XML QName."""
         if self.test_string("*"):
             self.skip_ws()
@@ -321,7 +359,7 @@ class XPathParser(Parser):
         self.skip_ws()
         return res
 
-    def _opt_arg(self) -> Optional[Expr]:
+    def _opt_arg(self) -> Expr | None:
         return None if self.peek() == ")" else self.parse()
 
     def _two_args(self) -> tuple[Expr, Expr]:

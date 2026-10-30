@@ -32,30 +32,62 @@ This module implements the following classes:
 * EntryKeys: Instance route selector for keys-based access to array entries.
 * InstanceIdParser: Parser for instance identifiers.
 """
-from collections import deque
-from datetime import datetime
 import json
-from typing import Mapping, Optional, TYPE_CHECKING, Union
-from urllib.parse import unquote
 import xml.etree.ElementTree as ET
+from collections import deque
+from collections.abc import Mapping
+from datetime import datetime
+from typing import TYPE_CHECKING, Optional
+from urllib.parse import unquote
+
 from .enumerations import ContentType, ValidationScope
-from .exceptions import (BadSchemaNodeType, EndOfInput, InstanceException,
-                         InstanceValueError, InvalidKeyValue,
-                         MissingModuleNamespace, NonexistentInstance,
-                         NonDataNode, NonexistentSchemaNode, UnexpectedInput,
-                         YangTypeError)
+from .exceptions import (
+    BadSchemaNodeType,
+    EndOfInput,
+    InstanceException,
+    InstanceValueError,
+    InvalidKeyValue,
+    MissingModuleNamespace,
+    NonDataNode,
+    NonexistentInstance,
+    NonexistentSchemaNode,
+    UnexpectedInput,
+    YangTypeError,
+)
 from .instroute import InstanceRoute, InstanceRouteItem
-from .instvalue import (ArrayValue, InstanceKey, ObjectValue, Value,
-                        ScalarValue, StructuredValue)
+from .instvalue import (
+    ArrayValue,
+    InstanceKey,
+    ObjectValue,
+    ScalarValue,
+    StructuredValue,
+    Value,
+)
 from .parser import Parser
-from .typealiases import (InstanceName, JSONPointer, QualName, RawScalar,
-                          RawValue, SchemaRoute, YangIdentifier)
+from .typealiases import (
+    InstanceName,
+    JSONPointer,
+    QualName,
+    RawScalar,
+    RawValue,
+    SchemaRoute,
+    YangIdentifier,
+)
+
 if TYPE_CHECKING:
     from .schemadata import SchemaData
 
-__all__ = ["InstanceNode", "RootNode", "ObjectMember", "ArrayEntry",
-           "InstanceIdParser", "ResourceIdParser", "InstanceException",
-           "InstanceValueError", "NonexistentInstance"]
+__all__ = [
+    "ArrayEntry",
+    "InstanceException",
+    "InstanceIdParser",
+    "InstanceNode",
+    "InstanceValueError",
+    "NonexistentInstance",
+    "ObjectMember",
+    "ResourceIdParser",
+    "RootNode",
+]
 
 
 class OutputFilter:
@@ -86,7 +118,7 @@ class InstanceNode:
         """Initialize the class instance."""
         self._key = key
         self._path = None
-        self.parinst: Optional[InstanceNode] = parinst
+        self.parinst: InstanceNode | None = parinst
         """Parent instance node, or ``None`` for the root node."""
         self.schema_node: DataNode = schema_node
         """Data node corresponding to the instance node."""
@@ -103,7 +135,7 @@ class InstanceNode:
         return self._key
 
     @property
-    def namespace(self) -> Optional[YangIdentifier]:
+    def namespace(self) -> YangIdentifier | None:
         """The receiver's namespace."""
         return self.schema_node.ns
 
@@ -169,7 +201,7 @@ class InstanceNode:
         if isinstance(self.value, ObjectValue):
             return iter(self._member_names())
         raise InstanceValueError(
-            self, "{} is a scalar instance".format(str(type(self.value))))
+            self, f"{type(self.value)!s} is a scalar instance")
 
     def json_pointer(self) -> JSONPointer:
         """Return JSON Pointer [RFC6901]_ of the receiver."""
@@ -190,7 +222,7 @@ class InstanceNode:
         """
         return isinstance(self.schema_node, InternalNode)
 
-    def put_member(self, name: InstanceName, value: Union[RawValue, Value],
+    def put_member(self, name: InstanceName, value: RawValue | Value,
                    raw: bool = False) -> "InstanceNode":
         """Return receiver's member with a new value.
 
@@ -235,7 +267,7 @@ class InstanceNode:
         return self._copy(newval)
 
     def look_up(self, raw: bool = False, /,
-                **keys: Union[RawScalar, ScalarValue]) -> "ArrayEntry":
+                **keys: RawScalar | ScalarValue) -> "ArrayEntry":
         """Return the list entry with matching keys.
 
         Args:
@@ -249,15 +281,15 @@ class InstanceNode:
         if not isinstance(self.schema_node, ListNode):
             raise InstanceValueError(self, "lookup on non-list")
         if raw:
-            for k in keys:
+            for k, val in keys.items():
                 ksn = self._member_schema_node(k)
-                keys[k] = ksn.from_raw(keys[k], self.json_pointer())
+                keys[k] = ksn.from_raw(val, self.json_pointer())
         for i in range(len(self.value)):
             en = self.value[i]
             flag = True
-            for k in keys:
+            for k, val in keys.items():
                 try:
-                    if en[k] != keys[k]:
+                    if en[k] != val:
                         flag = False
                         break
                 except KeyError:
@@ -284,7 +316,7 @@ class InstanceNode:
             inst = inst.up()
         return inst
 
-    def update(self, value: Union[RawValue, Value],
+    def update(self, value: RawValue | Value,
                raw: bool = False) -> "InstanceNode":
         """Update the receiver's value.
 
@@ -299,7 +331,7 @@ class InstanceNode:
             value, self.json_pointer()) if raw else value
         return self._copy(newval)
 
-    def merge(self, value: Union[RawValue, Value],
+    def merge(self, value: RawValue | Value,
               raw: bool = False) -> "InstanceNode":
         """Merge receiver's value with another value.
 
@@ -369,7 +401,7 @@ class InstanceNode:
             inst = sel.goto_step(inst)
         return inst
 
-    def peek(self, iroute: "InstanceRoute") -> Optional[Value]:
+    def peek(self, iroute: "InstanceRoute") -> Value | None:
         """Return a value within the receiver's subtree.
 
         Args:
@@ -399,7 +431,7 @@ class InstanceNode:
         ct = self.schema_node.content_type() if ctype is None else ctype
         self.schema_node._validate(self, scope, ct)
 
-    def add_defaults(self, ctype: Optional[ContentType] = None,
+    def add_defaults(self, ctype: ContentType | None = None,
                      tag: bool = False) -> "InstanceNode":
         """Return the receiver with defaults added recursively to its value.
 
@@ -468,8 +500,9 @@ class InstanceNode:
                 attr[m[1:]] = self.value[m]
         return attr
 
-    def raw_value(self, filter: OutputFilter = OutputFilter()) -> RawValue:
+    def raw_value(self, filter: OutputFilter | None = None) -> RawValue:
         """Return receiver's value in a raw form (ready for JSON encoding)."""
+        filter = filter if filter else OutputFilter()
         if isinstance(self.schema_node, AnyContentNode):
             return self.schema_node.to_raw(self.value)
         if isinstance(self.value, ObjectValue):
@@ -494,7 +527,7 @@ class InstanceNode:
 
             return value
         if isinstance(self.value, ArrayValue):
-            value = list()
+            value = []
             for en in self:
                 if isinstance(en, dict) and '@' in en.value:
                     e_attr = en['@']
@@ -512,11 +545,11 @@ class InstanceNode:
             return value
         return self.schema_node.type.to_raw(self.value)
 
-    def to_xml(self, filter: OutputFilter = OutputFilter(),
-               elem: ET.Element = None):
+    def to_xml(self, filter: OutputFilter | None = None,
+               elem: ET.Element | None = None):
         """put receiver's value into a XML element"""
+        filter = filter if filter else OutputFilter()
         has_default_ns = False
-
         if elem is None:
             element = ET.Element(self.schema_node.name)
 
@@ -530,7 +563,7 @@ class InstanceNode:
         if isinstance(self.value, ObjectValue):
             attr = self._get_attributes()
             for cname in self:
-                childs = list()
+                childs = []
                 if cname[0] == '@':
                     continue
 
@@ -550,10 +583,10 @@ class InstanceNode:
                             if add1:
                                 child = ET.Element(sn.name)
                                 if not dp or dp.ns != sn.ns:
-                                    module = self.schema_data.modules_by_name.get(sn.ns)  # NOQA
+                                    module = self.schema_data.modules_by_name.get(sn.ns)
                                     if not module:
                                         raise MissingModuleNamespace(sn.ns)
-                                    child.attrib['xmlns'] = module.xml_namespace  # NOQA
+                                    child.attrib['xmlns'] = module.xml_namespace
                                 en.to_xml(filter, child)
                             add2 = filter.end_element(m, en, e_attr)
                             if add1 and add2:
@@ -564,7 +597,7 @@ class InstanceNode:
                         child = ET.Element(sn.name)
                         if not dp or dp.ns != sn.ns or isinstance(
                                 m.schema_node, (InputNode, OutputNode)):
-                            module = self.schema_data.modules_by_name.get(sn.ns)  # NOQA
+                            module = self.schema_data.modules_by_name.get(sn.ns)
                             if not module:
                                 raise MissingModuleNamespace(sn.ns)
                             child.attrib['xmlns'] = module.xml_namespace
@@ -657,7 +690,7 @@ class InstanceNode:
         return list(self) if isinstance(self.value, ArrayValue) else [self]
 
     def _children(self,
-                  qname: Union[QualName, bool] = None) -> list["InstanceNode"]:
+                  qname: QualName | bool = None) -> list["InstanceNode"]:
         """XPath - return the list of receiver's children."""
         sn = self.schema_node
         if not isinstance(sn, InternalNode):
@@ -686,7 +719,7 @@ class InstanceNode:
             res.extend(wd._member(mn)._node_set())
         return res
 
-    def _descendants(self, qname: Union[QualName, bool] = None,
+    def _descendants(self, qname: QualName | bool = None,
                      with_self: bool = False) -> list["InstanceNode"]:
         """XPath - return the list of receiver's descendants."""
         res = ([] if not with_self or (qname and self.qual_name != qname)
@@ -699,13 +732,13 @@ class InstanceNode:
 
     def _preceding_siblings(
             self: "InstanceNode",
-            qname: Union[QualName, bool] = None) -> list["InstanceNode"]:
+            qname: QualName | bool = None) -> list["InstanceNode"]:
         """XPath - return the list of receiver's preceding-siblings."""
         return []
 
     def _following_siblings(
             self: "InstanceNode",
-            qname: Union[QualName, bool] = None) -> list["InstanceNode"]:
+            qname: QualName | bool = None) -> list["InstanceNode"]:
         """XPath - return the list of receiver's following-siblings."""
         return []
 
@@ -746,10 +779,11 @@ class RootNode(InstanceNode):
         raise NonexistentInstance(self, "up of top")
 
     def to_xml(
-            self, filter: OutputFilter = OutputFilter(),
+            self, filter: OutputFilter | None = None,
             tag: str = "content-data",
             urn: str = "urn:ietf:params:xml:ns:yang:ietf-yang-instance-data"):
         """put receiver's value into a XML element"""
+        filter = filter if filter else OutputFilter()
         element = ET.Element(tag)
         element.attrib['xmlns'] = urn
         et = super().to_xml(filter, element)
@@ -757,19 +791,20 @@ class RootNode(InstanceNode):
             return et[0]
         return et
 
-    def _copy(self, newval: Value, newts: datetime = None) -> InstanceNode:
+    def _copy(self, newval: Value,
+              newts: datetime | None = None) -> InstanceNode:
         return RootNode(newval, self.schema_node, self.schema_data,
                         newts if newts else newval.timestamp)
 
     def _ancestors_or_self(
             self: "RootNode",
-            qname: Union[QualName, bool] = None) -> list["RootNode"]:
+            qname: QualName | bool = None) -> list["RootNode"]:
         """XPath - return the list of receiver's ancestors including itself."""
         return [self] if qname is None else []
 
     def _ancestors(
             self: "RootNode",
-            qname: Union[QualName, bool] = None) -> list["RootNode"]:
+            qname: QualName | bool = None) -> list["RootNode"]:
         """XPath - return the list of receiver's ancestors."""
         return []
 
@@ -779,7 +814,7 @@ class ObjectMember(InstanceNode):
 
     def __init__(self, key: InstanceName,
                  siblings: dict[InstanceName, Value],
-                 value: Value, parinst: Optional[InstanceNode],
+                 value: Value, parinst: InstanceNode | None,
                  schema_node: "DataNode", timestamp: datetime) -> None:
         super().__init__(key, value, parinst, schema_node, timestamp)
         self.siblings: dict[InstanceName, Value] = siblings
@@ -818,7 +853,8 @@ class ObjectMember(InstanceNode):
         res[self.name] = self.value
         return res
 
-    def _copy(self, newval: Value, newts: datetime = None) -> "ObjectMember":
+    def _copy(self, newval: Value,
+              newts: datetime | None = None) -> "ObjectMember":
         if newts:
             ts = newts
         elif isinstance(newval, StructuredValue):
@@ -834,14 +870,14 @@ class ObjectMember(InstanceNode):
 
     def _ancestors_or_self(
             self: "ObjectMember",
-            qname: Union[QualName, bool] = None) -> list[InstanceNode]:
+            qname: QualName | bool = None) -> list[InstanceNode]:
         """XPath - return the list of receiver's ancestors including itself."""
         res = [] if qname and self.qual_name != qname else [self]
         return res + self.up()._ancestors_or_self(qname)
 
     def _ancestors(
             self: "ObjectMember",
-            qname: Union[QualName, bool] = None) -> list[InstanceNode]:
+            qname: QualName | bool = None) -> list[InstanceNode]:
         """XPath - return the list of receiver's ancestors."""
         return self.up()._ancestors_or_self(qname)
 
@@ -852,8 +888,9 @@ class ArrayEntry(InstanceNode):
     def __init__(
             self: "ArrayEntry", key: int, before: deque,
             after: deque, value: Value,
-            parinst: Optional[InstanceNode],
-            schema_node: "DataNode", timestamp: datetime = None) -> None:
+            parinst: InstanceNode | None,
+            schema_node: "DataNode",
+            timestamp: datetime | None = None) -> None:
         super().__init__(key, value, parinst, schema_node, timestamp)
         self.before = before
         """Preceding entries of the parent array."""
@@ -871,11 +908,11 @@ class ArrayEntry(InstanceNode):
         return self.parinst.name
 
     @property
-    def qual_name(self) -> Optional[QualName]:
+    def qual_name(self) -> QualName | None:
         """Return the receiver's qualified name."""
         return self.parinst.qual_name
 
-    def update(self, value: Union[RawValue, Value],
+    def update(self, value: RawValue | Value,
                raw: bool = False) -> "ArrayEntry":
         """Update the receiver's value.
 
@@ -917,7 +954,7 @@ class ArrayEntry(InstanceNode):
         return ArrayEntry(self.index + 1, nbef, naft, newval, self.parinst,
                           self.schema_node, self.timestamp)
 
-    def insert_before(self, value: Union[RawValue, Value],
+    def insert_before(self, value: RawValue | Value,
                       raw: bool = False) -> "ArrayEntry":
         """Insert a new entry before the receiver.
 
@@ -934,7 +971,7 @@ class ArrayEntry(InstanceNode):
                           self._cook_value(value, raw), self.parinst,
                           self.schema_node, datetime.now())
 
-    def insert_after(self, value: Union[RawValue, Value],
+    def insert_after(self, value: RawValue | Value,
                      raw: bool = False) -> "ArrayEntry":
         """Insert a new entry after the receiver.
 
@@ -951,7 +988,7 @@ class ArrayEntry(InstanceNode):
             self.index, nbef, self.after, self._cook_value(value, raw),
             self.parinst, self.schema_node, datetime.now())
 
-    def _cook_value(self, value: Union[RawValue, Value], raw: bool) -> Value:
+    def _cook_value(self, value: RawValue | Value, raw: bool) -> Value:
         return super(SequenceNode, self.schema_node).from_raw(
             value, self.json_pointer()) if raw else value
 
@@ -963,7 +1000,8 @@ class ArrayEntry(InstanceNode):
         res.extend(list(self.after))
         return ArrayValue(res, self.timestamp)
 
-    def _copy(self, newval: Value, newts: datetime = None) -> "ArrayEntry":
+    def _copy(self, newval: Value,
+              newts: datetime | None = None) -> "ArrayEntry":
         if newts:
             ts = newts
         elif isinstance(newval, StructuredValue):
@@ -992,20 +1030,20 @@ class ArrayEntry(InstanceNode):
 
     def _ancestors_or_self(
             self: "ArrayEntry",
-            qname: Union[QualName, bool] = None) -> list[InstanceNode]:
+            qname: QualName | bool = None) -> list[InstanceNode]:
         """XPath - return the list of receiver's ancestors including itself."""
         res = [] if qname and self.qual_name != qname else [self]
         return res + self.up()._ancestors(qname)
 
     def _ancestors(
             self: "ArrayEntry",
-            qname: Union[QualName, bool] = None) -> list[InstanceNode]:
+            qname: QualName | bool = None) -> list[InstanceNode]:
         """XPath - return the list of receiver's ancestors."""
         return self.up()._ancestors(qname)
 
     def _preceding_siblings(
             self: "ArrayEntry",
-            qname: Union[QualName, bool] = None) -> list[InstanceNode]:
+            qname: QualName | bool = None) -> list[InstanceNode]:
         """XPath - return the list of receiver's preceding siblings."""
         if qname and self.qual_name != qname:
             return []
@@ -1018,7 +1056,7 @@ class ArrayEntry(InstanceNode):
 
     def _following_siblings(
             self: "ArrayEntry",
-            qname: Union[QualName, bool] = None) -> list[InstanceNode]:
+            qname: QualName | bool = None) -> list[InstanceNode]:
         """XPath - return the list of receiver's following siblings."""
         if qname and self.qual_name != qname:
             return []
@@ -1041,7 +1079,7 @@ class MemberName:
     """
 
     def __init__(self, name: YangIdentifier,
-                 ns: Optional[YangIdentifier]) -> None:
+                 ns: YangIdentifier | None) -> None:
         """Initialize the class instance.
 
         Args:
@@ -1062,7 +1100,7 @@ class MemberName:
         return f"{self.namespace}:{self.name}" if self.namespace else self.name
 
     def peek_step(self, val: ObjectValue,
-                  sn: "DataNode") -> tuple[Optional[Value], "DataNode"]:
+                  sn: "DataNode") -> tuple[Value | None, "DataNode"]:
         cn = sn.get_data_child(self.name, self.namespace)
         try:
             return (val[cn.iname()], cn)
@@ -1111,7 +1149,7 @@ class EntryIndex:
         return f"[{self.index + 1}]"
 
     def peek_step(self, val: ObjectValue,
-                  sn: "DataNode") -> tuple[Optional[Value], "DataNode"]:
+                  sn: "DataNode") -> tuple[Value | None, "DataNode"]:
         try:
             return val[self.index], sn
         except (IndexError, KeyError, TypeError):
@@ -1172,7 +1210,7 @@ class EntryKeys:
 
     def __init__(
             self: "EntryKeys",
-            keys: dict[tuple[YangIdentifier, Optional[YangIdentifier]],
+            keys: dict[tuple[YangIdentifier, YangIdentifier | None],
                        str]) -> None:
         """Initialize the class instance.
 
@@ -1210,7 +1248,7 @@ class EntryKeys:
         return res
 
     def peek_step(self, val: ObjectValue,
-                  sn: "DataNode") -> tuple[Optional[ObjectValue], "DataNode"]:
+                  sn: "DataNode") -> tuple[ObjectValue | None, "DataNode"]:
         """Return the entry addressed by the receiver + its schema node.
 
         Args:
@@ -1286,7 +1324,7 @@ class ResourceIdParser(Parser):
                 self.char("/")
             sn = cn
 
-    def _key_values(self, sn: "SequenceNode") -> Union[EntryKeys, EntryValue]:
+    def _key_values(self, sn: "SequenceNode") -> EntryKeys | EntryValue:
         """Parse leaf-list value or list keys."""
         try:
             keys = self.up_to("/")
@@ -1355,7 +1393,7 @@ class InstanceIdParser(Parser):
         return val
 
     def _key_predicates(self) -> EntryKeys:
-        "Parse one or more key predicates."""
+        """Parse one or more key predicates."""
         sel = {}
         while True:
             kn = self.prefixed_name()
@@ -1372,5 +1410,5 @@ from .schemanode import (       # NOQA
             InternalNode, LeafNode, LeafListNode, ListNode, NotificationNode,
             OutputNode, RpcActionNode, SequenceNode, SchemaTreeNode,
             TerminalNode)
-from .datatype import (         # NOQA
+from .datatype import (
             IdentityrefType, LinkType)

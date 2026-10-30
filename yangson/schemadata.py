@@ -25,19 +25,37 @@ This module implements the following classes:
 * SchemaData: Repository of YANG schema structures and methods.
 * FeatureExprParser: Parser for if-feature expressions.
 """
-from collections.abc import MutableSet
-from typing import Any, Optional, Sequence
+from collections.abc import MutableSet, Sequence
+from typing import Any
+
 from .exceptions import (
-    InvalidSchemaPath, BadYangLibraryData, CyclicImports, DefinitionNotFound,
-    FeaturePrerequisiteError, InvalidFeatureExpression, ModuleNotFound,
-    ModuleNotImplemented, ModuleNotImported, ModuleNotRegistered,
-    ModuleContentMismatch, MultipleImplementedRevisions, UnexpectedInput,
-    UnknownPrefix)
+    BadYangLibraryData,
+    CyclicImports,
+    DefinitionNotFound,
+    FeaturePrerequisiteError,
+    InvalidFeatureExpression,
+    InvalidSchemaPath,
+    ModuleContentMismatch,
+    ModuleNotFound,
+    ModuleNotImplemented,
+    ModuleNotImported,
+    ModuleNotRegistered,
+    MultipleImplementedRevisions,
+    UnexpectedInput,
+    UnknownPrefix,
+)
 from .parser import Parser
 from .statement import ModuleParser, Statement
-from .typealiases import (ModuleId, PrefName, QualName, RevisionDate,
-                          SchemaNodeId, SchemaPath, SchemaRoute,
-                          YangIdentifier)
+from .typealiases import (
+    ModuleId,
+    PrefName,
+    QualName,
+    RevisionDate,
+    SchemaNodeId,
+    SchemaPath,
+    SchemaRoute,
+    YangIdentifier,
+)
 
 
 class IdentityAdjacency:
@@ -75,13 +93,13 @@ class ModuleData:
         """Set of supported features."""
         self.keep_obsolete: bool = False
         """Should module's obsolete nodes be kept in the data model?"""
-        self.xml_namespace: Optional[str] = None
+        self.xml_namespace: str | None = None
         """Content of the namespace definition of the module"""
         self.prefix_map: dict[YangIdentifier, ModuleId] = {}
         """Map of prefixes to module identifiers."""
-        self.statement: Optional[Statement] = None
+        self.statement: Statement | None = None
         """Corresponding (sub)module statements."""
-        self.path: Optional[str] = None
+        self.path: str | None = None
         """Path to the yang file this module was initialized from"""
         self.submodules: MutableSet[ModuleId] = set()
         """Set of submodules."""
@@ -270,7 +288,7 @@ class SchemaData:
         revs = [mn for mn in self.modules if mn[0] == mod]
         if not revs:
             raise ModuleNotRegistered(mod)
-        return sorted(revs, key=lambda x: x[1])[-1]
+        return max(revs, key=lambda x: x[1])
 
     def prefix2ns(
             self, prefix: YangIdentifier, mid: ModuleId) -> YangIdentifier:

@@ -16,8 +16,10 @@
 # along with Yangson.  If not, see <http://www.gnu.org/licenses/>.
 
 """XPath node-set"""
-from typing import Callable, Union
+from collections.abc import Callable
 from numbers import Number
+from typing import Union
+
 from .instance import InstanceNode
 
 # Type aliases
@@ -42,7 +44,7 @@ def comparison(meth):
 class NodeSet(list):
 
     def union(self, ns: "NodeSet") -> "NodeSet":
-        paths = set([n.path for n in self])
+        paths = {n.path for n in self}
         return self.__class__(self + [n for n in ns if n.path not in paths])
 
     def bind(self, trans: NodeExpr) -> "NodeSet":

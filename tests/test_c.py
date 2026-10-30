@@ -1,4 +1,5 @@
 import pytest
+
 from yangson import DataModel
 
 """

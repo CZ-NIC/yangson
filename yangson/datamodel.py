@@ -21,19 +21,22 @@ This module implements the following class:
 
 * DataModel: Basic entry point to the YANG data model.
 """
-from collections.abc import Sequence
 import hashlib
 import json
-from typing import cast, Optional
 import xml.etree.ElementTree as ET
-from .exceptions import (BadYangLibraryData, BadSchemaNodeType,
-                         InvalidArgument, NonexistentSchemaNode)
+from collections.abc import Sequence
+from typing import cast
+
+from .exceptions import (
+    BadSchemaNodeType,
+    BadYangLibraryData,
+    NonexistentSchemaNode,
+)
 from .instance import InstanceIdParser, ResourceIdParser, RootNode
 from .instroute import InstanceRoute
 from .instvalue import ObjectValue
-from .schemadata import SchemaData, SchemaContext
-from .schemanode import (DataNode, InternalNode, RawObject, SchemaNode,
-                         SchemaTreeNode)
+from .schemadata import SchemaContext, SchemaData
+from .schemanode import DataNode, InternalNode, RawObject, SchemaNode, SchemaTreeNode
 from .typealiases import DataPath, PrefName, SchemaPath
 
 
@@ -42,7 +45,7 @@ class DataModel:
 
     @classmethod
     def from_file(cls, name: str, mod_path: Sequence[str] = (".",),
-                  description: Optional[str] = None) -> "DataModel":
+                  description: str | None = None) -> "DataModel":
         """Initialize the data model from a file with YANG library data.
 
         Args:
@@ -61,7 +64,7 @@ class DataModel:
         return cls(yltxt, mod_path, description)
 
     def __init__(self, yltxt: str, mod_path: Sequence[str] = (".",),
-                 description: Optional[str] = None) -> None:
+                 description: str | None = None) -> None:
         """Initialize the class instance.
 
         Args:
@@ -126,7 +129,7 @@ class DataModel:
         return RootNode(cooked, schema, self.schema_data, cooked.timestamp)
 
     def from_xml(self, root: ET.Element,
-                 subschema: Optional[PrefName] = None) -> RootNode:
+                 subschema: PrefName | None = None) -> RootNode:
         """Create an instance node from a raw data tree.
 
         Args:
@@ -152,7 +155,7 @@ class DataModel:
         return RootNode(cooked, schema, self.schema_data,
                         cooked.timestamp)
 
-    def get_schema_node(self, path: SchemaPath) -> Optional[SchemaNode]:
+    def get_schema_node(self, path: SchemaPath) -> SchemaNode | None:
         """Return the schema node addressed by a schema path.
 
         Args:
@@ -167,7 +170,7 @@ class DataModel:
         return self.schema.get_schema_descendant(
             self.schema_data.path2route(path))
 
-    def get_data_node(self, path: DataPath) -> Optional[DataNode]:
+    def get_data_node(self, path: DataPath) -> DataNode | None:
         """Return the data node addressed by a data path.
 
         Args:

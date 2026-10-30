@@ -24,18 +24,18 @@ class is intended to be public:
 * Expr: XPath 1.0 expression with YANG 1.1 extensions.
 """
 import decimal
-from math import ceil, copysign, floor, isnan
-from elementpath import RegexError, translate_pattern
-from xml.sax.saxutils import quoteattr
 import re
-from typing import Optional
-from .schemadata import SchemaContext
+from math import ceil, copysign, floor, isnan
+from xml.sax.saxutils import quoteattr
+
+from elementpath import RegexError, translate_pattern
+
 from .enumerations import Axis, MultiplicativeOp
 from .exceptions import InvalidArgument, XPathTypeError
-from .instance import (EntryIndex, EntryKeys, EntryValue, InstanceNode,
-                       MemberName)
+from .instance import EntryIndex, EntryKeys, EntryValue, InstanceNode, MemberName
 from .instroute import InstanceRoute
 from .nodeset import NodeExpr, NodeSet, XPathValue
+from .schemadata import SchemaContext
 from .typealiases import QualName
 
 
@@ -154,7 +154,7 @@ class Expr:
 class UnaryExpr(Expr):
     """Abstract superclass for unary expressions."""
 
-    def __init__(self, expr: Optional[Expr]) -> None:
+    def __init__(self, expr: Expr | None) -> None:
         self.expr = expr
 
     def __str__(self) -> str:
@@ -674,7 +674,7 @@ class FuncLast(Expr):
 
 class FuncName(UnaryExpr):
 
-    def __init__(self, expr: Optional[Expr], local: bool) -> None:
+    def __init__(self, expr: Expr | None, local: bool) -> None:
         super().__init__(expr)
         self.local = local
 
@@ -784,7 +784,7 @@ class FuncStringLength(UnaryExpr):
 
 class FuncSubstring(BinaryExpr):
 
-    def __init__(self, string: Expr, start: Expr, length: Optional[Expr]) -> None:
+    def __init__(self, string: Expr, start: Expr, length: Expr | None) -> None:
         super().__init__(string, start)
         self.length = length
 

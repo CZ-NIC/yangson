@@ -23,7 +23,7 @@ This module implements the following classes:
 * InstanceRouteItem: Protocol class defining API for instance route items.
 * InstanceRoute: Route into an instance value.
 """
-from typing import Optional, Protocol, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Protocol
 
 if TYPE_CHECKING:
     from .instance import InstanceNode

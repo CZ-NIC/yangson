@@ -19,7 +19,7 @@
 
 from collections.abc import MutableMapping
 from decimal import Decimal
-from typing import Any, ClassVar, TypeVar, Union
+from typing import Any, ClassVar
 
 from .instroute import InstanceRoute
 
@@ -44,8 +44,8 @@ JSONPointer = str
 ResourceIdentifier = str
 """RESTCONF resource identifier, see sec. `3.5.3`_ of [RFC8040]_."""
 
-ScalarValue = Union[bool, bytes, Decimal, int, InstanceRoute, str, tuple[None],
-                    tuple[str, ...]]
+ScalarValue = (bool | bytes | Decimal | int | InstanceRoute | str |
+               tuple[None] | tuple[str, ...])
 """Cooked scalar value of an InstanceNode."""
 
 QualName = tuple[YangIdentifier, YangIdentifier]
@@ -67,7 +67,7 @@ DataPath = str  # same syntax as SchemaPath but containing only data nodes
 ModuleId = tuple[YangIdentifier, RevisionDate]
 """Module identifier: (YangIdentifier, RevisionDate)."""
 
-RawScalar = Union[bool, int, str, list[None]]
+RawScalar = bool | int | str | list[None]
 """Raw scalar value as produced by JSON parser."""
 
 RawObject = MutableMapping[InstanceName, "RawValue"]
@@ -76,7 +76,7 @@ RawObject = MutableMapping[InstanceName, "RawValue"]
 RawMetadataObject = MutableMapping[PrefName, RawScalar]
 """Raw metadata object as returned by JSON parser."""
 
-RawEntry = Union[RawScalar, RawObject]
+RawEntry = RawScalar | RawObject
 """Raw entry of a leaf-list or list."""
 
 RawList = list[RawObject]
@@ -85,15 +85,8 @@ RawList = list[RawObject]
 RawLeafList = list[RawScalar]
 """List of raw scalars."""
 
-RawValue = Union[RawScalar, RawObject, RawList, RawLeafList]
+RawValue = RawScalar | RawObject | RawList | RawLeafList
 """Raw value of any type."""
-
-# Type variables for use in generic classes
-S = TypeVar("S", bound=ScalarValue)
-RS = TypeVar("RS", bound=RawScalar)
-L = TypeVar("L", str, bytes)
-N = TypeVar("N", int, Decimal)
-RN = TypeVar("RN", int, str)
 
 
 class _Singleton(type):
@@ -101,6 +94,6 @@ class _Singleton(type):
 
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
-            cls._instances[cls] = super(_Singleton, cls).__call__(
+            cls._instances[cls] = super().__call__(
                 *args, **kwargs)
         return cls._instances[cls]

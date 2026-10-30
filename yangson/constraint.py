@@ -25,19 +25,23 @@ This module implements the following classes:
 * Must: Class representing the constraint specified by a "must" statement.
 """
 import re
-from typing import Callable, Generic, Optional
+from collections.abc import Callable
+from decimal import Decimal
+from typing import Generic, TypeVar
+
 from elementpath import RegexError, translate_pattern
 
 from .exceptions import InvalidArgument
-from .typealiases import N
 from .xpathast import Expr
+
+N = TypeVar("N", int, Decimal)
 
 
 class Constraint:
     """Abstract class representing annotated YANG constraints."""
 
-    def __init__(self, error_tag: Optional[str],
-                 error_message: Optional[str]) -> None:
+    def __init__(self, error_tag: str | None,
+                 error_message: str | None) -> None:
         """Initialize the class instance."""
         self.error_tag = error_tag
         self.error_message = error_message
@@ -47,7 +51,7 @@ class Intervals(Constraint, Generic[N]):
     """Class representing a sequence of numeric intervals."""
 
     @staticmethod
-    def default_parser(x: str) -> Optional[N]:
+    def default_parser(x: str) -> N | None:
         """The default parser for numbers."""
         try:
             return int(x)
@@ -55,9 +59,9 @@ class Intervals(Constraint, Generic[N]):
             return None
 
     def __init__(self, intervals: list[list[N]],
-                 parser: Optional[Callable[[str], Optional[N]]] = None,
-                 error_tag: Optional[str] = None,
-                 error_message: Optional[str] = None) -> None:
+                 parser: Callable[[str], N | None] | None = None,
+                 error_tag: str | None = None,
+                 error_message: str | None = None) -> None:
         """Initialize the class instance."""
         super().__init__(error_tag, error_message)
         self.intervals = intervals
@@ -78,8 +82,8 @@ class Intervals(Constraint, Generic[N]):
         return " | ".join([f"{r[0]!s}..{r[-1]!s}" if len(r) > 1 else str(r[0])
                            for r in self.intervals])
 
-    def restrict_with(self, expr: str, error_tag: Optional[str] = None,
-                      error_message: Optional[str] = None) -> None:
+    def restrict_with(self, expr: str, error_tag: str | None = None,
+                      error_message: str | None = None) -> None:
         """Combine the receiver with new intervals.
 
         Args:
@@ -127,8 +131,8 @@ class Pattern(Constraint):
     """Class representing regular expression pattern."""
 
     def __init__(self, pattern: str, invert_match: bool = False,
-                 error_tag: Optional[str] = None,
-                 error_message: Optional[str] = None) -> None:
+                 error_tag: str | None = None,
+                 error_message: str | None = None) -> None:
         """Initialize the class instance."""
         super().__init__(
             error_tag,
@@ -146,8 +150,8 @@ class Pattern(Constraint):
 class Must(Constraint):
     """Class representing the constraint specified by a "must" statement."""
 
-    def __init__(self, expression: Expr, error_tag: Optional[str] = None,
-                 error_message: Optional[str] = None) -> None:
+    def __init__(self, expression: Expr, error_tag: str | None = None,
+                 error_message: str | None = None) -> None:
         """Initialize the class instance."""
         super().__init__(
             error_tag if error_tag else "must-violation", error_message)

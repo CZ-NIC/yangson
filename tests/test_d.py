@@ -1,6 +1,7 @@
 import pytest
+
 from yangson import DataModel
-from yangson.instance import RootNode, OutputFilter
+from yangson.instance import InstanceNode, OutputFilter
 
 """
 Test description
@@ -40,10 +41,10 @@ class GetFilter(OutputFilter):
     """
     filter out the container in artist that contains the name node
     """
-    def begin_member(self, parent: "InstanceNode", node: "InstanceNode", attr: dict)->bool:
+    def begin_member(self, parent: InstanceNode, node: InstanceNode, attr: dict)->bool:
         return parent.name != "artist" or node.name != "name"
 
-    def end_member(self, parent: "InstanceNode", node: "InstanceNode", attr: dict)->bool:
+    def end_member(self, parent: InstanceNode, node: InstanceNode, attr: dict)->bool:
         return parent.name != "artist" or node.name != "name"
 
 

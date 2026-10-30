@@ -71,10 +71,10 @@ def main():
         with open(f"{ydir}/{infile}", "r", encoding="utf-8") as yf:
             module_entry(yf)
     marr = []
-    for (yam, mrev) in modmap:
+    for (yam, mrev), val in modmap.items():
         men = {"name": yam, "revision": mrev}
         sarr = []
-        mrec = modmap[(yam, mrev)]
+        mrec = val
         men["namespace"] = mrec["namespace"]
         fts = mrec["features"]
         imp_only = mrec["import-only"]

@@ -40,28 +40,43 @@ This module implements the following classes:
 * AnydataNode: YANG anydata node.
 * AnyxmlNode: YANG anyxml node.
 """
+import xml.etree.ElementTree as ET
 from collections import deque
 from collections.abc import MutableSet
 from datetime import datetime
 from itertools import product
 from typing import Any, ClassVar, Optional, cast
-import xml.etree.ElementTree as ET
+
 from .constraint import Must
-from .datatype import DataType, LinkType, IdentityrefType, UnionType
-from .enumerations import (Axis, ContentType, DefaultDeny,
-                           NodeStatus, ValidationScope)
+from .datatype import DataType, IdentityrefType, LinkType, UnionType
+from .enumerations import Axis, ContentType, DefaultDeny, NodeStatus, ValidationScope
 from .exceptions import (
-    AnnotationTypeError, InvalidArgument,
-    MissingAnnotationTarget, MissingModuleNamespace, RawMemberError,
-    RawTypeError, SchemaError, SemanticError, UndefinedAnnotation,
-    ValidationError, YangsonException, YangTypeError)
-from .instance import (ArrayEntry, InstanceNode, MemberName, ObjectMember)
+    AnnotationTypeError,
+    InvalidArgument,
+    MissingAnnotationTarget,
+    MissingModuleNamespace,
+    RawMemberError,
+    RawTypeError,
+    SchemaError,
+    SemanticError,
+    UndefinedAnnotation,
+    ValidationError,
+    YangsonException,
+    YangTypeError,
+)
+from .instance import ArrayEntry, InstanceNode, MemberName, ObjectMember
 from .instroute import InstanceRoute
-from .instvalue import (
-    ArrayValue, EntryValue, MetadataObject, ObjectValue, Value)
+from .instvalue import ArrayValue, EntryValue, MetadataObject, ObjectValue, Value
 from .schemadata import IdentityAdjacency, SchemaContext, SchemaData
-from .schpattern import (ChoicePattern, ConditionalPattern, Empty, Member,
-                         NotAllowed, Pair, SchemaPattern)
+from .schpattern import (
+    ChoicePattern,
+    ConditionalPattern,
+    Empty,
+    Member,
+    NotAllowed,
+    Pair,
+    SchemaPattern,
+)
 from .statement import Statement
 from .typealiases import (
     DataPath,
@@ -70,16 +85,16 @@ from .typealiases import (
     QualName,
     RawEntry,
     RawList,
+    RawMetadataObject,
     RawObject,
     RawScalar,
     RawValue,
-    RawMetadataObject,
     ScalarValue,
     SchemaPath,
     SchemaRoute,
-    YangIdentifier
+    YangIdentifier,
 )
-from .xpathast import Expr, LocationPath, Step, Root
+from .xpathast import Expr, LocationPath, Root, Step
 from .xpathparser import XPathParser
 
 
@@ -87,7 +102,7 @@ class Annotation:
     """Class for metadata annotations [RFC 7952]."""
 
     def __init__(
-            self, type: DataType, description: Optional[str] = None) -> None:
+            self, type: DataType, description: str | None = None) -> None:
         """Initialize the class instance."""
         self.type = type
         self.description = description
@@ -479,7 +494,7 @@ class InternalNode(SchemaNode):
         """Initialize the class instance."""
         super().__init__()
         self.children: list[SchemaNode] = []
-        self.schema_pattern: Optional[SchemaPattern] = None
+        self.schema_pattern: SchemaPattern | None = None
         self._mandatory_children = (set(), set())
 
     @property
@@ -510,7 +525,7 @@ class InternalNode(SchemaNode):
         return None
 
     def get_schema_descendant(
-            self: "InternalNode", route: SchemaRoute) -> Optional[SchemaNode]:
+            self: "InternalNode", route: SchemaRoute) -> SchemaNode | None:
         """Return descendant schema node or ``None`` if not found.
 
         Args:
@@ -733,7 +748,7 @@ class InternalNode(SchemaNode):
         else:
             self._mandatory_children[0].add(node)
 
-    def _add_defaults(self, inst: InstanceNode, ctype: Optional[ContentType],
+    def _add_defaults(self, inst: InstanceNode, ctype: ContentType | None,
                       lazy: bool = False) -> InstanceNode:
         for c in self.filter_children(ctype):
             if isinstance(c, DataNode):
@@ -947,7 +962,7 @@ class SchemaTreeNode(GroupNode):
 
     def data_parent(self) -> None:
         """Override the superclass method."""
-        return None
+        return
 
     def _annotation_stmt(self, stmt: Statement, sctx: SchemaContext) -> None:
         """Handle annotation statement."""
@@ -1053,8 +1068,8 @@ class TerminalNode(SchemaNode):
         """Initialize the class instance."""
         super().__init__()
         self.type: DataType = None
-        self._default: Optional[Value] = None
-        self._units: Optional[str] = None
+        self._default: Value | None = None
+        self._units: str | None = None
 
     def content_type(self) -> ContentType:
         """Override superclass method."""
@@ -1064,7 +1079,7 @@ class TerminalNode(SchemaNode):
                 self.parent.content_type())
 
     @property
-    def units(self) -> Optional[str]:
+    def units(self) -> str | None:
         """Units of the receiver's value, if specified."""
         return (self._units if self._units is not None
                 else self.type.units)
@@ -1202,7 +1217,7 @@ class ContainerNode(DataNode, InternalNode):
         return super()._default_instance(pnode, ctype, lazy)
 
     def _default_value(self, inst: InstanceNode, ctype: ContentType,
-                       lazy: bool) -> Optional[InstanceNode]:
+                       lazy: bool) -> InstanceNode | None:
         inst.value = ObjectValue()
         return inst if lazy else self._add_defaults(inst, ctype)
 
@@ -1231,7 +1246,7 @@ class SequenceNode(DataNode):
         """Initialize the class instance."""
         super().__init__()
         self.min_elements: int = 0
-        self.max_elements: Optional[int] = None
+        self.max_elements: int | None = None
         self.user_ordered: bool = False
 
     @property
@@ -1320,7 +1335,8 @@ class SequenceNode(DataNode):
         return res
 
     def from_xml(self, rval: ET.Element, jptr: JSONPointer = "",
-                 tagname: str = None, isroot: bool = False) -> ArrayValue:
+                 tagname: str | None = None,
+                 isroot: bool = False) -> ArrayValue:
         res = ArrayValue()
         idx = 0
         if isroot:
@@ -1519,7 +1535,7 @@ class ChoiceNode(InternalNode):
         return self._mandatory
 
     def _add_defaults(self, inst: InstanceNode,
-                      ctype: Optional[ContentType]) -> InstanceNode:
+                      ctype: ContentType | None) -> InstanceNode:
         if self.when and not self.when.evaluate(inst):
             return inst
         ac = self._active_case(inst.value)
@@ -1614,7 +1630,7 @@ class LeafNode(DataNode, TerminalNode):
         return self._mandatory
 
     @property
-    def default(self) -> Optional[ScalarValue]:
+    def default(self) -> ScalarValue | None:
         """Default value of the receiver, if any."""
         if self.mandatory:
             return None
@@ -1648,7 +1664,7 @@ class LeafListNode(SequenceNode, TerminalNode):
     """Leaf-list node."""
 
     @property
-    def default(self) -> Optional[ScalarValue]:
+    def default(self) -> ScalarValue | None:
         """Default value of the receiver, if any."""
         if self.mandatory:
             return None
@@ -1756,12 +1772,10 @@ class AnyContentNode(DataNode):
 
 class AnydataNode(AnyContentNode):
     """Anydata node."""
-    pass
 
 
 class AnyxmlNode(AnyContentNode):
     """Anyxml node."""
-    pass
 
 
 class RpcActionNode(SchemaTreeNode):

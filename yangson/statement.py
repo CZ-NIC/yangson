@@ -23,9 +23,15 @@ This module implements the following classes:
 * Statement: YANG statements.
 """
 from typing import Final, Optional
+
 from .exceptions import (
-    EndOfInput, StatementNotFound, UnexpectedInput, InvalidArgument,
-    ModuleNameMismatch, ModuleRevisionMismatch)
+    EndOfInput,
+    InvalidArgument,
+    ModuleNameMismatch,
+    ModuleRevisionMismatch,
+    StatementNotFound,
+    UnexpectedInput,
+)
 from .parser import Parser
 from .typealiases import YangIdentifier
 
@@ -37,7 +43,7 @@ class Statement:
     _escape_table = str.maketrans({'"': '\\"', '\\': '\\\\'})
     """Table for translating characters to their escaped form."""
 
-    def __init__(self, kw: YangIdentifier, arg: Optional[str],
+    def __init__(self, kw: YangIdentifier, arg: str | None,
                  pref: YangIdentifier = None) -> None:
         """Initialize the class instance.
 
@@ -64,7 +70,7 @@ class Statement:
         rest = " { ... }" if self.substatements else ";"
         return kw + arg + rest
 
-    def find1(self, kw: YangIdentifier, arg: str = None,
+    def find1(self, kw: YangIdentifier, arg: str | None = None,
               pref: YangIdentifier = None,
               required: bool = False) -> Optional["Statement"]:
         """Return first substatement with the given parameters.
@@ -113,7 +119,7 @@ class Statement:
             stmt = stmt.superstmt
         return None
 
-    def get_error_info(self) -> tuple[Optional[str], Optional[str]]:
+    def get_error_info(self) -> tuple[str | None, str | None]:
         """Return receiver's error tag and error message if present."""
         etag = self.find1("error-app-tag")
         emsg = self.find1("error-message")
@@ -239,7 +245,7 @@ class ModuleParser(Parser):
         if not present:
             raise UnexpectedInput(self, "separator")
 
-    def keyword(self) -> tuple[Optional[str], str]:
+    def keyword(self) -> tuple[str | None, str]:
         """Parse a YANG statement keyword.
 
         Raises:

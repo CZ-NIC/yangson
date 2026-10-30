@@ -76,12 +76,22 @@ This module defines the following exceptions:
 * :exc:`YangTypeError`: A scalar value is of incorrect type.
 """
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Optional
-from .typealiases import (DataPath, InstanceName, JSONPointer, ModuleId,
-                          PrefName, ScalarValue, SchemaPath, YangIdentifier)
+from typing import TYPE_CHECKING
+
+from .typealiases import (
+    DataPath,
+    InstanceName,
+    JSONPointer,
+    ModuleId,
+    PrefName,
+    ScalarValue,
+    SchemaPath,
+    YangIdentifier,
+)
+
 if TYPE_CHECKING:
-    from .parser import Parser
     from .instance import InstanceNode
+    from .parser import Parser
 
 
 class YangsonException(Exception):
@@ -198,7 +208,7 @@ class UnexpectedInput(ParserException):
     """Unexpected input."""
 
     def __init__(self, parser: "Parser",
-                 expected: Optional[str] = None) -> None:
+                 expected: str | None = None) -> None:
         super().__init__(parser)
         self.expected = expected
 
@@ -417,8 +427,8 @@ class RawTypeError(RawDataError):
 class ValidationError(YangsonException):
     """Abstract exception class for instance validation errors."""
 
-    def __init__(self, instance: "InstanceNode", tag: Optional[str],
-                 message: Optional[str] = None) -> None:
+    def __init__(self, instance: "InstanceNode", tag: str | None,
+                 message: str | None = None) -> None:
         self.instance = instance
         self.tag = tag
         self.message = message

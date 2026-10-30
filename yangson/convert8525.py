@@ -26,7 +26,6 @@ import json
 import os
 import sys
 from collections.abc import MutableMapping
-from contextlib import nullcontext
 from typing import TextIO, cast
 
 from yangson import DataModel

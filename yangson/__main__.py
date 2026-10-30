@@ -27,8 +27,8 @@ import sys
 from yangson import DataModel
 from yangson.enumerations import ContentType, ValidationScope
 from yangson.exceptions import (
-    BadYangLibraryData,
     BadSchemaNodeType,
+    BadYangLibraryData,
     FeaturePrerequisiteError,
     ModuleNotFound,
     ModuleNotRegistered,
@@ -40,7 +40,7 @@ from yangson.exceptions import (
     SemanticError,
     YangTypeError,
 )
-from yangson.typealiases import PrefName, SchemaPath
+from yangson.typealiases import SchemaPath
 
 
 def main(infile: str | None = None, pickled: bool = False,

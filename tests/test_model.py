@@ -1,24 +1,39 @@
-import json
-import pytest
-from decimal import Decimal
-from yangson import DataModel
-from yangson.exceptions import (
-    InvalidArgument, InvalidFeatureExpression, UnknownPrefix,
-    NonexistentInstance, NonexistentSchemaNode, RawTypeError,
-    SchemaError, XPathTypeError, InvalidXPath, NotSupported,
-    InstanceValueError)
-from yangson.instvalue import ArrayValue, ObjectValue
-from yangson.instance import RootNode, ObjectMember, ArrayEntry
-from yangson.schemadata import SchemaContext, FeatureExprParser
-from yangson.enumerations import ContentType
-from yangson.xpathparser import XPathParser
-import re
 import copy
+import json
+import re
 import xml.etree.ElementTree as ET
-from yangson.instance import RootNode
-from yangson.schemanode import SchemaTreeNode, RpcActionNode, NotificationNode, InputNode, OutputNode, InternalNode, TerminalNode, ListNode, LeafListNode, AnydataNode, SequenceNode
-from yangson.xmlparser import XMLParser
+from decimal import Decimal
 
+import pytest
+
+from yangson import DataModel
+from yangson.enumerations import ContentType
+from yangson.exceptions import (
+    InstanceValueError,
+    InvalidArgument,
+    InvalidFeatureExpression,
+    InvalidXPath,
+    NonexistentInstance,
+    NonexistentSchemaNode,
+    NotSupported,
+    RawTypeError,
+    SchemaError,
+    UnknownPrefix,
+    XPathTypeError,
+)
+from yangson.instance import ObjectMember, RootNode
+from yangson.instvalue import ArrayValue, ObjectValue
+from yangson.schemadata import FeatureExprParser, SchemaContext
+from yangson.schemanode import (
+    InputNode,
+    NotificationNode,
+    OutputNode,
+    RpcActionNode,
+    SchemaTreeNode,
+    SequenceNode,
+)
+from yangson.xmlparser import XMLParser
+from yangson.xpathparser import XPathParser
 
 tree = """+--rw (test:choiA)?
 |  +--:(caseA)
@@ -384,7 +399,7 @@ def test_types(data_model):
     assert pi in d64
     assert 10 not in d64
     assert d64.from_raw("3.14159265358979323846264338327950288") == pi
-    assert d64.canonical_string(Decimal("0")) == "0.0"
+    assert d64.canonical_string(Decimal(0)) == "0.0"
     st = ct.get_child("string", "test").type
     assert st.length.intervals == [[2, 4], [11], [12]]
     assert "hello world" in st
@@ -993,12 +1008,12 @@ def test_xml_notification(data_model):
     notif_obj = {
         "leafO" : True
     }
-    notif_xml_pretty = """
-        <noa xmlns="http://example.com/testb">
-            <leafO>true</leafO>
-        </noa>
-    """
-    notif_xml_stripped = strip_pretty(notif_xml_pretty)
+    # notif_xml_pretty = """
+    #     <noa xmlns="http://example.com/testb">
+    #         <leafO>true</leafO>
+    #     </noa>
+    # """
+    # notif_xml_stripped = strip_pretty(notif_xml_pretty)
 
 
     notif_inst = data_model.from_raw(notif_obj, "testb:noA")

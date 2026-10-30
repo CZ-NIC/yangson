@@ -22,7 +22,9 @@ This module implements the following class:
 * Parser: Recursive-descent parser.
 """
 import re
-from typing import Callable, Optional, Pattern
+from collections.abc import Callable
+from re import Pattern
+
 from .exceptions import EndOfInput, UnexpectedInput
 from .typealiases import YangIdentifier
 
@@ -168,7 +170,7 @@ class Parser:
         except IndexError:
             raise EndOfInput(self)
 
-    def prefixed_name(self) -> tuple[YangIdentifier, Optional[YangIdentifier]]:
+    def prefixed_name(self) -> tuple[YangIdentifier, YangIdentifier | None]:
         """Parse identifier with an optional colon-separated prefix."""
         i1 = self.yang_identifier()
         try:

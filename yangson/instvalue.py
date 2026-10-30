@@ -25,6 +25,7 @@ This module implements the following classes:
 """
 from datetime import datetime
 from typing import Union
+
 from .typealiases import InstanceName, PrefName, ScalarValue
 
 # Type aliases
@@ -34,7 +35,7 @@ Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
 EntryValue = Union[ScalarValue, "ObjectValue"]
 """Type of the value a list ot leaf-list entry."""
 
-InstanceKey = Union[InstanceName, int]
+InstanceKey = InstanceName | int
 """Index of an array entry or name of an object member."""
 
 MetadataObject = dict[PrefName, ScalarValue]
@@ -44,7 +45,7 @@ MetadataObject = dict[PrefName, ScalarValue]
 class StructuredValue:
     """Abstract class for array and object values."""
 
-    def __init__(self, ts: datetime) -> None:
+    def __init__(self, ts: datetime | None = None) -> None:
         """Initialize class instance.
 
         Args:
@@ -76,10 +77,10 @@ class StructuredValue:
 class ArrayValue(StructuredValue, list):
     """This class represents cooked array values."""
 
-    def __init__(self, val: list[EntryValue] = [],
-                 ts: datetime = None) -> None:
+    def __init__(self, val: list[EntryValue] | None = None,
+                 ts: datetime | None = None) -> None:
         StructuredValue.__init__(self, ts)
-        list.__init__(self, val)
+        list.__init__(self, [] if val is None else val)
 
     def __hash__(self) -> int:
         """Return hash value for the receiver."""
@@ -89,10 +90,10 @@ class ArrayValue(StructuredValue, list):
 class ObjectValue(StructuredValue, dict):
     """This class represents cooked object values."""
 
-    def __init__(self, val: dict[InstanceName, Value] = {},
-                 ts: datetime = None) -> None:
+    def __init__(self, val: dict[InstanceName, Value] | None = None,
+                 ts: datetime | None = None) -> None:
         StructuredValue.__init__(self, ts)
-        dict.__init__(self, val)
+        dict.__init__(self, {} if val is None else val)
 
     def __hash__(self) -> int:
         """Return hash value for the receiver."""
