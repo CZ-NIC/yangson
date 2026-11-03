@@ -27,7 +27,7 @@ This module implements the following classes:
 import re
 from collections.abc import Callable
 from decimal import Decimal
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, cast, overload
 
 from elementpath import RegexError, translate_pattern
 
@@ -51,12 +51,23 @@ class Intervals(Constraint, Generic[N]):
     """Class representing a sequence of numeric intervals."""
 
     @staticmethod
-    def default_parser(x: str) -> N | None:
+    def default_parser(x: str) -> int | None:
         """The default parser for numbers."""
         try:
             return int(x)
         except ValueError:
             return None
+
+    @overload
+    def __init__(self: "Intervals[int]", intervals: list[list[int]],
+                 parser: None = None, error_tag: str | None = None,
+                 error_message: str | None = None) -> None: ...
+
+    @overload
+    def __init__(self, intervals: list[list[N]],
+                 parser: Callable[[str], N | None],
+                 error_tag: str | None = None,
+                 error_message: str | None = None) -> None: ...
 
     def __init__(self, intervals: list[list[N]],
                  parser: Callable[[str], N | None] | None = None,
@@ -65,10 +76,13 @@ class Intervals(Constraint, Generic[N]):
         """Initialize the class instance."""
         super().__init__(error_tag, error_message)
         self.intervals = intervals
-        self.parser = parser if parser else Intervals.default_parser
+        self.parser = (parser if parser is not None else cast(
+            Callable[[str], N | None], Intervals.default_parser))
 
-    def __contains__(self, value: N):
+    def __contains__(self, value: object) -> bool:
         """Return ``True`` if the receiver contains the value."""
+        if not isinstance(value, (int, Decimal)):
+            return False
         for r in self.intervals:
             if len(r) == 1:
                 if r[0] == value:

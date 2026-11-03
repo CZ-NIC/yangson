@@ -785,10 +785,10 @@ class IdentityrefType(DataType[QualName, YangIdentifier]):
             raise MissingModuleNamespace(ns_url)
         return (i2, module.main_module[0])
 
-    def to_raw(self, val: QualName) -> YangIdentifier:
+    def to_raw(self, val: QualName) -> YangIdentifier | None:
         return self.canonical_string(val)
 
-    def to_xml(self, val: QualName) -> YangIdentifier:
+    def to_xml(self, val: QualName) -> YangIdentifier | None:
         return self.canonical_string(val)
 
     def from_yang(self, text: YangIdentifier) -> QualName:
@@ -830,14 +830,18 @@ class NumericType(DataType[N, RN]):
         super().__init__(sctx, name)
         self.range: Intervals[N] | None = None
 
-    def __contains__(self, val: N) -> bool:
+    def __contains__(self, val: object) -> bool:
+        if not isinstance(val, (int, Decimal)):
+            self._set_error_info()
+            return False
+        value = cast(N, val)
         if self.range is None:
-            if self._range[0] <= val <= self._range[1]:
+            if self._range[0] <= value <= self._range[1]:
                 return True
             else:
                 self._set_error_info()
                 return False
-        if val in self.range:
+        if value in self.range:
             return True
         self._set_error_info(self.range.error_tag, self.range.error_message)
         return False
@@ -874,7 +878,7 @@ class Decimal64Type(NumericType[Decimal, str]):
         super().__init__(sctx, name)
         self._epsilon = Decimal(0)
 
-    def __contains__(self, val: Decimal) -> bool:
+    def __contains__(self, val: object) -> bool:
         if not isinstance(val, Decimal):
             self._set_error_info()
             return False
@@ -913,15 +917,13 @@ class Decimal64Type(NumericType[Decimal, str]):
         except InvalidOperation:
             return None
 
-    def to_raw(self, val: Decimal) -> str:
+    def to_raw(self, val: Decimal) -> str | None:
         return self.canonical_string(val)
 
-    def to_xml(self, val: Decimal) -> str:
+    def to_xml(self, val: Decimal) -> str | None:
         return self.canonical_string(val)
 
     def canonical_string(self, val: Decimal) -> str | None:
-        if not isinstance(val, Decimal):
-            return None
         if val == 0:
             return "0.0"
         sval = str(val.quantize(self._epsilon)).rstrip("0")
@@ -936,10 +938,10 @@ class Decimal64Type(NumericType[Decimal, str]):
 class IntegralType(NumericType[int, RN]):
     """Abstract class for integral data types."""
 
-    octhex = re.compile("[-+]?0([x0-9])")
+    octhex: ClassVar[re.Pattern[str]] = re.compile("[-+]?0([x0-9])")
     """Regular expression for octal or hexadecimal default."""
 
-    def __contains__(self, val: int) -> bool:
+    def __contains__(self, val: object) -> bool:
         if not isinstance(val, int) or isinstance(val, bool):
             self._set_error_info()
             return False

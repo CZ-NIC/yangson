@@ -25,7 +25,6 @@ import hashlib
 import json
 import xml.etree.ElementTree as ET
 from collections.abc import Sequence
-from typing import cast
 
 from .exceptions import (
     BadSchemaNodeType,
@@ -34,7 +33,6 @@ from .exceptions import (
 )
 from .instance import InstanceIdParser, ResourceIdParser, RootNode
 from .instroute import InstanceRoute
-from .instvalue import ObjectValue
 from .schemadata import SchemaContext, SchemaData
 from .schemanode import DataNode, InternalNode, RawObject, SchemaNode, SchemaTreeNode
 from .typealiases import DataPath, PrefName, SchemaPath
@@ -125,7 +123,7 @@ class DataModel:
                                         "rpc/action or notification")
         else:
             schema = self.schema
-        cooked = cast(ObjectValue, schema.from_raw(robj))
+        cooked = schema.from_raw(robj)
         return RootNode(cooked, schema, self.schema_data, cooked.timestamp)
 
     def from_xml(self, root: ET.Element,
@@ -151,7 +149,7 @@ class DataModel:
                                         "rpc/action or notification")
         else:
             schema = self.schema
-        cooked = cast(ObjectValue, schema.from_xml(root))
+        cooked = schema.from_xml(root)
         return RootNode(cooked, schema, self.schema_data,
                         cooked.timestamp)
 
@@ -184,12 +182,14 @@ class DataModel:
         """
         addr = self.schema_data.path2route(path)
         node: InternalNode = self.schema
+        child = None
         for p in addr:
             child = node.get_data_child(*p)
-            if child is None:
-                return None
-            if isinstance(child, InternalNode):
-                node = child
+            match child:
+                case None:
+                    return None
+                case InternalNode():
+                    node = child
         return child
 
     def ascii_tree(self, no_types: bool = False,
