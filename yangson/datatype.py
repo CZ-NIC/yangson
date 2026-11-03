@@ -45,10 +45,10 @@ This module implements the following classes:
 """
 import base64
 import binascii
-import decimal
 import re
 import xml.etree.ElementTree as ET
 from abc import ABC, abstractmethod
+from decimal import Decimal, InvalidOperation
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, cast
 
 from .constraint import Intervals, Pattern
@@ -81,7 +81,7 @@ if TYPE_CHECKING:
 S = TypeVar("S", bound=ScalarValue)
 RS = TypeVar("RS", bound=RawScalar)
 L = TypeVar("L", str, bytes)
-N = TypeVar("N", int, decimal.Decimal)
+N = TypeVar("N", int, Decimal)
 RN = TypeVar("RN", int, str)
 
 
@@ -866,61 +866,61 @@ class NumericType(DataType[N, RN]):
         return res
 
 
-class Decimal64Type(NumericType[decimal.Decimal, str]):
+class Decimal64Type(NumericType[Decimal, str]):
     """Class representing YANG "decimal64" type."""
 
     def __init__(self, sctx: SchemaContext, name: YangIdentifier) -> None:
         """Initialize the class instance."""
         super().__init__(sctx, name)
-        self._epsilon = decimal.Decimal(0)
+        self._epsilon = Decimal(0)
 
-    def __contains__(self, val: decimal.Decimal) -> bool:
-        if not isinstance(val, decimal.Decimal):
+    def __contains__(self, val: Decimal) -> bool:
+        if not isinstance(val, Decimal):
             self._set_error_info()
             return False
         return super().__contains__(val)
 
     @property
-    def _range(self) -> tuple[decimal.Decimal, decimal.Decimal]:
-        quot = decimal.Decimal(10**self.fraction_digits)
-        lim = decimal.Decimal(9223372036854775808)
+    def _range(self) -> tuple[Decimal, Decimal]:
+        quot = Decimal(10**self.fraction_digits)
+        lim = Decimal(9223372036854775808)
         return (-lim / quot, (lim - 1) / quot)
 
     def _handle_properties(self, stmt: Statement, sctx: SchemaContext) -> None:
         fd = cast(Statement, stmt.find1("fraction-digits", required=True))
         self.fraction_digits = int(cast(str, fd.argument))
-        self._epsilon = decimal.Decimal(10) ** -self.fraction_digits
+        self._epsilon = Decimal(10) ** -self.fraction_digits
         super()._handle_properties(stmt, sctx)
 
-    def from_raw(self, raw: str) -> decimal.Decimal | None:
+    def from_raw(self, raw: str) -> Decimal | None:
         """Override superclass method.
 
         According to [RFC7951]_, a raw instance must be string.
         """
         try:
-            return (decimal.Decimal(raw).quantize(self._epsilon)
+            return (Decimal(raw).quantize(self._epsilon)
                     if isinstance(raw, str) else None)
-        except decimal.InvalidOperation:
+        except InvalidOperation:
             return None
 
-    def parse_value(self, text: str) -> decimal.Decimal | None:
+    def parse_value(self, text: str) -> Decimal | None:
         return self.from_raw(text)
 
-    def from_xml(self, xml: ET.Element) -> decimal.Decimal | None:
+    def from_xml(self, xml: ET.Element) -> Decimal | None:
         try:
-            return (decimal.Decimal(xml.text).quantize(self._epsilon)
+            return (Decimal(xml.text).quantize(self._epsilon)
                     if isinstance(xml.text, str) else None)
-        except decimal.InvalidOperation:
+        except InvalidOperation:
             return None
 
-    def to_raw(self, val: decimal.Decimal) -> str:
+    def to_raw(self, val: Decimal) -> str:
         return self.canonical_string(val)
 
-    def to_xml(self, val: decimal.Decimal) -> str:
+    def to_xml(self, val: Decimal) -> str:
         return self.canonical_string(val)
 
-    def canonical_string(self, val: decimal.Decimal) -> str | None:
-        if not isinstance(val, decimal.Decimal):
+    def canonical_string(self, val: Decimal) -> str | None:
+        if not isinstance(val, Decimal):
             return None
         if val == 0:
             return "0.0"
