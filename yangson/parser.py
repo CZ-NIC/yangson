@@ -24,6 +24,7 @@ This module implements the following class:
 import re
 from collections.abc import Callable
 from re import Pattern
+from typing import ClassVar
 
 from .exceptions import EndOfInput, UnexpectedInput
 from .typealiases import YangIdentifier
@@ -37,31 +38,31 @@ class Parser:
 
     """Recursive-descent parser with support for YANG syntactic elements."""
 
-    # Regular expressions
+    # Class variables
 
-    ident_re = re.compile("[a-zA-Z_][a-zA-Z0-9_.-]*")
+    _UINT: ClassVar[str] = "[0-9]+"
+    ident_re: ClassVar[re.Pattern[str]] = re.compile(
+        "[a-zA-Z_][a-zA-Z0-9_.-]*")
     """Regular expression for YANG identifier."""
-
-    ws_re = re.compile(r"[ \n\t\r]*")
+    ws_re: ClassVar[re.Pattern[str]] = re.compile(r"[ \n\t\r]*")
     """Regular expression for whitespace."""
-
-    _uint = "[0-9]+"
-    uint_re = re.compile(_uint)
+    uint_re: ClassVar[re.Pattern[str]] = re.compile(_UINT)
     """Regular expression for unsigned integer."""
-
-    ufloat_re = re.compile(fr"{_uint}(\.{_uint})?|\.{_uint}")
+    ufloat_re: ClassVar[re.Pattern[str]] = re.compile(
+        fr"{_UINT}(\.{_UINT})?|\.{_UINT}")
     """Regular expression for unsigned float."""
 
-    def __init__(self, text: str) -> None:
-        """Initialize the class instance.
+    # Instance variables
 
-        Args:
-            text: Input text.
-        """
+    text: str
+    """Input text for the parser."""
+    offset: int
+    """Current position in the input text."""
+
+    def __init__(self, text: str) -> None:
+        """Initialize the class instance."""
         self.input = text
-        """Input text for the parser."""
         self.offset = 0
-        """Current position in the input text."""
 
     def __str__(self) -> str:
         """Return string representation of the receiver's input text and state.

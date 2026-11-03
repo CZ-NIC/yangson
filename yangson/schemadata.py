@@ -61,48 +61,66 @@ from .typealiases import (
 class IdentityAdjacency:
     """Adjacency data for an identity."""
 
+    # Instance variables
+    bases: MutableSet[QualName]
+    derivs: MutableSet[QualName]
+    
     def __init__(self) -> None:
-        self.bases: MutableSet[QualName] = set()
-        self.derivs: MutableSet[QualName] = set()
+        self.bases = set()
+        self.derivs = set()
 
 
 class SchemaContext:
     """Schema data and current schema context."""
+
+    # Instance variables
+
+    schema_data: "SchemaData"
+    """Schema data repository used by the context."""
+    default_ns: YangIdentifier
+    """Name of the module that represents the current default namespace."""
+    text_mid: ModuleId
+    """Identifier of the module that is currently being read."""
 
     def __init__(self, schema_data: "SchemaData", default_ns: YangIdentifier,
                  text_mid: ModuleId) -> None:
         """Initialize the class instance."""
         self.schema_data = schema_data
         self.default_ns = default_ns
-        """Name of the module that represents the current default namespace."""
         self.text_mid = text_mid
-        """Identifier of the module that is currently being read."""
 
 
 class ModuleData:
     """Data related to a YANG module or submodule."""
 
+    # Instance variables
+
+    main_module: ModuleId
+    """Main module of the receiver."""
+    yang_id: ModuleId
+    """Identifier of the module; differs from main_module for submodules."""
+    statement: Statement | None
+    """Corresponding (sub)module statements."""
+    features: MutableSet[YangIdentifier]
+    """Set of supported features."""
+    keep_obsolete: bool = False
+    """Should module's obsolete nodes be kept in the data model?"""
+    xml_namespace: str | None = None
+    """Content of the namespace definition of the module"""
+    prefix_map: dict[YangIdentifier, ModuleId]
+    """Map of prefixes to module identifiers."""
+    path: str | None = None
+    """Path to the yang file this module was initialized from"""
+    submodules: MutableSet[ModuleId]
+    """Set of submodules."""
+
     def __init__(self, main_module: ModuleId, yang_id: ModuleId) -> None:
         """Initialize the class instance."""
         self.main_module = main_module
-        """Main module of the receiver."""
         self.yang_id = yang_id
-        """Identifier of the Module, different from main_module
-        for submodules"""
-        self.features: MutableSet[YangIdentifier] = set()
-        """Set of supported features."""
-        self.keep_obsolete: bool = False
-        """Should module's obsolete nodes be kept in the data model?"""
-        self.xml_namespace: str | None = None
-        """Content of the namespace definition of the module"""
-        self.prefix_map: dict[YangIdentifier, ModuleId] = {}
-        """Map of prefixes to module identifiers."""
-        self.statement: Statement | None = None
-        """Corresponding (sub)module statements."""
-        self.path: str | None = None
-        """Path to the yang file this module was initialized from"""
-        self.submodules: MutableSet[ModuleId] = set()
-        """Set of submodules."""
+        self.features = set()
+        self.prefix_map = {}
+        self.submodules = set()
 
 
 class SchemaData:
@@ -113,22 +131,33 @@ class SchemaData:
             mod_path: List of directories to search for YANG modules.
     """
 
+    # Instance variables
+
+    identity_adjs: dict[QualName, IdentityAdjacency]
+    """Dictionary of identity bases."""
+    implement: dict[YangIdentifier, RevisionDate]
+    """Dictionary of implemented revisions."""
+    modules: dict[ModuleId, ModuleData]
+    """Dictionary of module data."""
+    modules_by_name: dict[str, ModuleData]
+    """Dictionary of module data by module name."""
+    modules_by_ns: dict[str, ModuleData]
+    """Dictionary of module data by namespace."""
+    _module_sequence: list[ModuleId]
+    """List that defines the order of module processing."""
+    module_search_path: Sequence[str]
+    """Directories where to look for YANG modules."""
+
     def __init__(self, yang_lib: dict[str, Any],
                  mod_path: Sequence[str]) -> None:
         """Initialize the schema structures."""
-        self.identity_adjs: dict[QualName, IdentityAdjacency] = {}
-        """Dictionary of identity bases."""
-        self.implement: dict[YangIdentifier, RevisionDate] = {}
-        """Dictionary of implemented revisions."""
         self.module_search_path = mod_path
-        """List of directories where to look for YANG modules."""
-        self.modules: dict[ModuleId, ModuleData] = {}
-        """Dictionary of module data."""
-        self.modules_by_name: dict[str, ModuleData] = {}
-        """Dictionary of module data by module name."""
-        self.modules_by_ns: dict[str, ModuleData] = {}
-        self._module_sequence: list[ModuleId] = []
-        """List that defines the order of module processing."""
+        self.identity_adjs = {}
+        self.implement = {}
+        self.modules = {}
+        self.modules_by_name = {}
+        self.modules_by_ns = {}
+        self._module_sequence = []
         self._from_yang_library(yang_lib)
 
     def _from_yang_library(self, yang_lib: dict[str, Any]) -> None:
