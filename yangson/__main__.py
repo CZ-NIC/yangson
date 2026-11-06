@@ -43,43 +43,40 @@ from yangson.exceptions import (
 from yangson.typealiases import SchemaPath
 
 
-def main(infile: str | None = None, pickled: bool = False,
-         path: str | None = None,
+def main(model: str | None = None, pickled: bool = False,
+         path: str | None = None, subschema: SchemaPath | None = None,
+         command: str | None = None, no_types: bool = False,
+         dumpfile: str | None = None, ctype: ContentType | None = None,
          scope: ValidationScope = ValidationScope.all,
-         ctype: ContentType | None = ContentType.all, set_id: bool = False,
-         tree: bool = False, no_types: bool = False,
-         digest: bool = False, dump: str | None = None,
-         subschema: SchemaPath | None = None,
-         validate: str | None = None) -> int:
+         instance: str | None = None) -> int:
     """Entry-point for the command-line utility.
 
     Args:
-        infile: Name of the input file with YANG library or pickled data model
+        model: Name of the input file with YANG library or pickled data model
         pickled: Interpret the input file as a pickled data model object
         path: Colon-separated list of directories to search  for YANG modules
+        subschema: Prefixed name of an RPC or notification subschema
+        command: Operation (schema-id, digest, dump, tree, validate)
+        no_types: If `True`, don't print types in schema tree
+        dumpfile: The name of a file to which the pickled model is to be dumped
         scope: Validation scope (syntax, semantics or all)
         ctype: Content type of the data instance (config, nonconfig or all)
-        set_id: If `True`, print module set id
-        tree: If `True`, print schema tree
-        no_types: If `True`, don't print types in schema tree
-        digest: If `True`, print schema digest
-        dump: Dump pickled data model to the file given as argument
-        subschema: Prefixed name of an RPC or notification subschema
-        validate: Name of file to validate against the schema.
+        instance: Name of instance file to validate against the schema.
 
     Returns:
-        Numeric return code (0=no error, 2=YANG error, 1=other)
+        Numeric return code (0=no error, 1=JSON error, 2=YANG error)
     """
-    if infile is None:
+    if model is None:
         parser = argparse.ArgumentParser(
             prog="yangson",
-            description="Validate JSON data against a YANG data model.")
+            description="Inspect and validate YANG data models"
+            " and JSON instances")
         parser.add_argument(
             "-V", "--version", action="version",
             help="show the Yangson library version number and exit",
             version=f"%(prog)s {importlib.metadata.version('yangson')}")
         parser.add_argument(
-            "infile", metavar="INFILE",
+            "model", metavar="MODEL",
             help=("file name with JSON-encoded YANG library [RFC 7895]"
                   " or pickled data model"))
         igrp = parser.add_mutually_exclusive_group()
@@ -89,60 +86,60 @@ def main(infile: str | None = None, pickled: bool = False,
                   " for YANG modules"))
         igrp.add_argument(
             "-P", "--pickled", action="store_true",
-            help="interpret INFILE as pickled data model")
-        ogrp = parser.add_mutually_exclusive_group()
-        ogrp.add_argument(
-            "-i", "--id", action="store_true",
-            help="print module set id")
-        ogrp.add_argument(
-            "-t", "--tree", action="store_true",
-            help="print schema tree as ASCII art")
-        ogrp.add_argument(
-            "-d", "--digest", action="store_true",
-            help="print schema digest in JSON format")
-        ogrp.add_argument(
-            "-D", "--dump", metavar="FILE",
-            help="dump pickled data model to FILE")
-        ogrp.add_argument(
-            "-v", "--validate", metavar="INST",
-            help="name of file with JSON-encoded instance data")
-        parser.add_argument(
-            "-s", "--scope", choices=["syntax", "semantics", "all"],
-            default="all", help="validation scope (default: %(default)s)")
-        parser.add_argument(
-            "-c", "--ctype", choices=["config", "state", "nonconfig", "all"],
-            help="content type of the data instance (default: %(default)s)")
+            help="interpret MODEL as pickled data model")
         parser.add_argument(
             "-S", "--subschema",
             help="prefixed name of an RPC or notification subschema")
-        parser.add_argument(
+        subparsers = parser.add_subparsers(dest="command")
+        subparsers.add_parser(
+            "schema-id", help="print unique module set id")
+        subparsers.add_parser(
+            "digest", help="print schema digest in JSON format")
+        dump_parser = subparsers.add_parser(
+            "dump", help="write pickled data model to FILE")
+        dump_parser.add_argument("dumpfile", metavar="FILE")
+        tree_parser = subparsers.add_parser(
+            "tree", help="print the schema tree diagram")
+        tree_parser.add_argument(
             "-n", "--no-types", action="store_true",
-            help="suppress type info in tree output")
+            help="suppress type info")
+        validate_parser = subparsers.add_parser(
+            "validate", help="validate instance data")
+        validate_parser.add_argument(
+            "instance", metavar="INSTANCE", help="JSON instance file")
+        validate_parser.add_argument(
+            "-s", "--scope", choices=["syntax", "semantics", "all"],
+            help="validation scope (default: %(default)s")
+        validate_parser.add_argument(
+            "-c", "--ctype", choices=["config", "state", "nonconfig", "all"],
+            help="content type of the data instance")
         args = parser.parse_args()
-        infile = args.infile
-        path = args.path
-        pickled = args.pickled
-        scope = ValidationScope[args.scope]
-        ctype = ContentType[args.ctype] if args.ctype else None
-        set_id = args.id
-        tree = args.tree
-        dump = args.dump
-        no_types = args.no_types
-        digest = args.digest
-        subschema = args.subschema
+        model = args.model
+        path = args.path if args.path else path
+        pickled = args.pickled if args.pickled else pickled
+        subschema = args.subschema if args.subschema else subschema
         if subschema and subschema[0] != "/":
             subschema = "/" + subschema
-        validate = args.validate
+        command = args.command if args.command else command
+        match command:
+            case "dump":
+                dumpfile = args.dumpfile
+            case "tree":
+                no_types = args.no_types if args.no_types else no_types
+            case "validate":
+                instance = args.instance if args.instance else instance
+                scope = ValidationScope[args.scope] if args.scope else scope
+                ctype = ContentType[args.ctype] if args.ctype else None
     if pickled:
         try:
-            with open(infile, "rb") as pif:
+            with open(model, "rb") as pif:
                 dm = pickle.load(pif)
         except (FileNotFoundError, pickle.UnpicklingError) as e:
             print("Pickle file:", str(e), file=sys.stderr)
             return 1
     else:
         try:
-            with open(infile, encoding="utf-8") as ylf:
+            with open(model, encoding="utf-8") as ylf:
                 yl = ylf.read()
         except (FileNotFoundError, PermissionError, UnicodeDecodeError,
                 json.decoder.JSONDecodeError) as e:
@@ -167,26 +164,32 @@ def main(infile: str | None = None, pickled: bool = False,
         except ModuleNotRegistered as e:
             print("Module not registered:", str(e), file=sys.stderr)
             return 2
-    if set_id:
+    if command is None:
+        return 0
+    if command == "schema-id":
         print(dm.module_set_id())
         return 0
-    if tree:
+    if command == "tree":
         print(dm.ascii_tree(no_types))
         return 0
-    if digest:
+    if command == "digest":
         print(dm.schema_digest())
         return 0
-    if dump:
-        with open(dump, "wb") as pif:
+    if command == "dump":
+        if dumpfile is None:
+            dumpfile = dm.module_set_id() +".pickle"
+        with open(dumpfile, "wb") as pif:
             try:
                 pickle.dump(dm, pif, pickle.HIGHEST_PROTOCOL)
                 return 0
             except pickle.PicklingError as e:
                 print("Pickling failed:", str(e), file=sys.stderr)
-    if not validate:
-        return 0
+    # command: validate
+    if not instance:
+        print("Instance data: no file specified", file=sys.stderr)
+        return 1
     try:
-        with open(validate, encoding="utf-8") as instf:
+        with open(instance, encoding="utf-8") as instf:
             itxt = json.load(instf)
     except (FileNotFoundError, PermissionError, UnicodeDecodeError,
             json.decoder.JSONDecodeError) as e:
