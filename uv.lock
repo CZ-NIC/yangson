@@ -762,6 +762,15 @@ wheels = [
 ]
 
 [[package]]
+name = "shtab"
+version = "1.13.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ff/dd/e58588cf2d02266d504f4399979740b8b2b61fbd7719a89578afaa6558a3/shtab-1.13.0.tar.gz", hash = "sha256:0a5be9d7ab2b4549e9a38252abcd5ecf5ec6813ecd80c6b06fa851bff55a5085", size = 67655, upload-time = "2026-10-21T11:23:57.266Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6a/a6/2179498fd9d8a25ce1ae049f434442aa4d7bae2361bbac62eeb19107be8e/shtab-1.13.0-py3-none-any.whl", hash = "sha256:cdf7543fc1888dd131320917f3ba9643d8f1a77d406114a09d5a31f76274c7d9", size = 22887, upload-time = "2026-10-21T11:23:55.654Z" },
+]
+
+[[package]]
 name = "snowballstemmer"
 version = "3.1.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1018,6 +1027,7 @@ debug = [
 dev = [
     { name = "pytest" },
     { name = "ruff" },
+    { name = "shtab" },
     { name = "ty" },
 ]
 docs = [
@@ -1040,6 +1050,7 @@ debug = [{ name = "debugpy", specifier = ">=1.8.22" }]
 dev = [
     { name = "pytest", specifier = ">=9.0.3,<10.0.0" },
     { name = "ruff", specifier = ">=0.17.3" },
+    { name = "shtab", specifier = ">=1.13.0" },
     { name = "ty", specifier = ">=0.0.95" },
 ]
 docs = [
