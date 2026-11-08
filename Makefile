@@ -24,6 +24,9 @@ completions: $(COMPLETIONS)
 $(COMPLETIONS): yangson/cli.py
 	uv run --group dev tools/python/generate_completions.py
 
+documentation:
+	$(MAKE) -C docs html man
+
 release:
 	git tag -a -s -m "Yangson release $(VERSION)" $(VERSION)
 	git push --follow-tags

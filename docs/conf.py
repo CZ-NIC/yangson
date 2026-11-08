@@ -257,8 +257,12 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'yangson', 'Yangson Documentation',
-     [author], 1)
+    ('yangson-man', 'yangson',
+    'Inspect and validate YANG schemas and JSON instances',
+     [author], 1),
+    ('convert8525-man', 'convert8525',
+    'Convert NMDA-compatible YANG library to RFC 7895 format',
+    [author], 1)
 ]
 
 # If true, show URL addresses after external links.
