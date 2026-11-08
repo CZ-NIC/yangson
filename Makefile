@@ -1,6 +1,8 @@
 PROJECT = yangson
 VERSION := $(shell uv version --short)
-.PHONY = all clean deps install-deps lint test
+COMPLETIONS = completions/bash/yangson completions/zsh/_yangson \
+	completions/fish/yangson.fish
+.PHONY: all clean completions deps documentation install-deps lint test
 
 all: lint test
 
@@ -16,6 +18,11 @@ test:
 lint:
 	@echo "===== Linting ====="
 	@uv run ruff check .
+
+completions: $(COMPLETIONS)
+
+$(COMPLETIONS): yangson/cli.py
+	uv run --group dev tools/python/generate_completions.py
 
 release:
 	git tag -a -s -m "Yangson release $(VERSION)" $(VERSION)

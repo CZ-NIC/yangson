@@ -21,6 +21,11 @@ Note that *Yangson* requires Python 3.10 or higher.
 
 Install [uv](https://docs.astral.sh/uv/), then run `uv sync --all-groups` to install the development and documentation dependencies. Run the tests with `make test`.
 
+Run `make completions` (or `uv run --group dev generate_completions.py`)
+to generate `completions/bash/yangson`, `completions/zsh/_yangson`, and
+`completions/fish/yangson.fish`. The generator uses the development dependency
+`shtab`; the CLI itself does not require it.
+
 ## Links
 
 * [Git repository](https://github.com/CZ-NIC/yangson)
