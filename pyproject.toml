@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-yangson = "yangson.__main__:main"
+yangson = "yangson.cli:main"
 convert8525 = "yangson.convert8525:main"
 
 [dependency-groups]
