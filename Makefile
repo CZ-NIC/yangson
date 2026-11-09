@@ -1,8 +1,6 @@
 PROJECT = yangson
 VERSION := $(shell uv version --short)
-COMPLETIONS = completions/bash/yangson completions/zsh/_yangson \
-	completions/fish/yangson.fish
-.PHONY: all clean completions deps documentation install-deps lint test
+.PHONY: all build clean completions deps documentation install-deps lint release test
 
 all: lint test
 
@@ -19,18 +17,18 @@ lint:
 	@echo "===== Linting ====="
 	@uv run ruff check .
 
-completions: $(COMPLETIONS)
-
-$(COMPLETIONS): yangson/cli.py
+completions:
 	uv run --group dev tools/python/generate_completions.py
 
 documentation:
-	$(MAKE) -C docs html man
+	uv run --group docs $(MAKE) -C docs html man
 
-release:
+build: completions documentation
+	uv build
+
+release: build
 	git tag -a -s -m "Yangson release $(VERSION)" $(VERSION)
 	git push --follow-tags
-	uv build
 
 clean:
 	rm -rf .pytest_cache .mypy_cache .ruff_cache .ropeproject
