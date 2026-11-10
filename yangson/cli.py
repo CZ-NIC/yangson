@@ -89,7 +89,9 @@ def get_parser() -> argparse.ArgumentParser:
         "-s", "--scope", choices=["syntax", "semantics", "all"],
         help="validation scope (default: all")
     validate_parser.add_argument(
-        "-c", "--ctype", choices=["config", "state", "nonconfig", "all"],
+        "-c", "--ctype",
+        choices=["config", "state", "input", "output", "notification",
+                 "rpc_action", "nonconfig", "all"],
         help="content type of the data instance")
     return parser
 
@@ -107,14 +109,15 @@ def main(model: str | None = None, pickled: bool = False,
         path: colon-separated list of directories to search for YANG modules
         subschema: schema path to the root of a subschema
         command: requested operation (schema-id, digest, dump, tree, validate)
-        no_types: if `True`, don't print types in schema tree
+        no_types: if `True`, don't print types in the tree diagram
         dumpfile: name of a file to which the pickled model is to be dumped
-        ctype: content type of the data instance (config, nonconfig or all)
-        scope: validation scope (syntax, semantics or all)
+        ctype: content type of the data instance
+        scope: validation scope
         instance: name of instance file to validate against the schema.
 
     Returns:
-        Numeric return code (0=no error, 1=JSON error, 2=YANG error)
+        Numeric return code (0 = no error, 1 = wrong argument,
+            2 = YANG library error, 3 = instance validation failed)
     """
     if model is None:
         args = get_parser().parse_args()
