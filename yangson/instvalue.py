@@ -34,7 +34,7 @@ Value = Union[ScalarValue, "ArrayValue", "ObjectValue"]
 EntryValue = Union[ScalarValue, "ObjectValue"]
 """Type of the value a list ot leaf-list entry."""
 
-InstanceKey = Union[InstanceName, int]
+InstanceKey = Union[InstanceName, int, tuple, dict]
 """Index of an array entry or name of an object member."""
 
 MetadataObject = dict[PrefName, ScalarValue]
