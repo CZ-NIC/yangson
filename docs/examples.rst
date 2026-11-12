@@ -25,7 +25,7 @@ module.
 .. shtest::
    :cwd: examples/ex1
 
-   $ yangson -t yang-library-ex1.json
+   $ yangson yang-library-ex1.json tree
    +--rw example-1:greeting? <string>
 
 .. rubric:: YANG Library
@@ -66,7 +66,7 @@ This example is used in the documentation of the :mod:`.instance` and
 .. shtest::
    :cwd: examples/ex2
 
-   $ yangson -p .:../../../yang-modules/ietf -t yang-library-ex2.json
+   $ yangson -p .:../../../yang-modules/ietf yang-library-ex2.json tree
    +--rw example-2:bag
    |  +--ro bar <boolean>
    |  +--rw baz? <decimal64>
@@ -143,7 +143,7 @@ module.
 .. shtest::
    :cwd: examples/ex3
 
-   $ yangson -p .:../../../yang-modules/ietf -t yang-library-ex3.json
+   $ yangson -p .:../../../yang-modules/ietf yang-library-ex3.json tree
    +--rw example-3-a:top
       +--rw bar? <string>
       +--rw example-3-b:bar? <string>
@@ -197,7 +197,7 @@ the :mod:`.schemanode`, :mod:`.xpathast` and :mod:`.xpathparser` modules.
 .. shtest::
    :cwd: examples/ex4
 
-   $ yangson -p .:../../../yang-modules/ietf -t yang-library-ex4.json
+   $ yangson -p .:../../../yang-modules/ietf yang-library-ex4.json tree
    +--rw example-4-a:bag!
    |  +--ro bar <boolean>
    |  x--rw foo <uint8>
@@ -253,7 +253,7 @@ This example is used in the documentation of the :mod:`.datatype` and
 .. shtest::
    :cwd: examples/ex5
 
-   $ yangson -t yang-library-ex5.json
+   $ yangson yang-library-ex5.json tree
 
    +--rw example-5-a:binary-leaf? <binary>
    +--rw example-5-a:bits-leaf? <bits>

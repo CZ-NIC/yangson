@@ -92,8 +92,8 @@ needs to work with two fundamental types of trees:
   which are not.
 
 An ASCII art diagram of the schema tree can be generated using the
-:meth:`.DataModel.ascii_tree` method or :option:`--tree <yangson --tree>`
-option of the :ref:`yangson-tool` command-line tool.
+:meth:`.DataModel.ascii_tree` method or :ref:`tree-cmd` command of the
+:ref:`yangson-tool` command-line tool.
 
 Each node in the data tree corresponds to a *data node* in the schema
 tree. This looks confusing but in fact it is quite logical: data nodes
