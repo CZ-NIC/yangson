@@ -110,14 +110,27 @@ class Intervals(Constraint, Generic[N]):
         """
         def parse(x: str) -> N:
             res = self.parser(x)
-            if res is None:
+            if res is None or res not in self:
                 raise InvalidArgument(expr)
             return res
 
         def simpl(rng: list[N]) -> list[N]:
+            if rng[0] > rng[1]:
+                raise InvalidArgument(expr)
             return ([rng[0]] if rng[0] == rng[1] else rng)
 
-        def to_num(xs): return [parse(x) for x in xs]
+        def to_num(xs: list[str]) -> list[N]:
+            cmin: N | None = None
+            res = []
+            for x in xs:
+                val = parse(x)
+                if cmin is not None and val < cmin:
+                    raise InvalidArgument(expr)
+                else:
+                    cmin = val
+                    res.append(val)
+            return res
+
         lo = self.intervals[0][0]
         hi = self.intervals[-1][-1]
         ran = []
