@@ -10,4 +10,17 @@ module example-1 {
     type string;
     default "Hello, world!";
   }
+
+  rpc howdy {
+    input {
+      leaf address {
+        type string;
+      }
+    }
+    output {
+      leaf response {
+        type string;
+      }
+    }
+  }
 }

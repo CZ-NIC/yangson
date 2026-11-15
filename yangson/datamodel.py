@@ -106,7 +106,7 @@ class DataModel:
 
         Args:
             robj: Dictionary representing a raw data tree
-            subschema: Identifier of a subschema (RPC/action or notification)
+            subschema: Schema path of a subschema (RPC/action or notification)
 
         Returns:
             Root instance node.

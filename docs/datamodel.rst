@@ -118,7 +118,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> dm.module_set_id()
          'ae4bf1ddf85a67ab94a9ab71593cd1c78b7f231d'
 
-   .. method:: from_raw(robj: RawObject, subschema: PrefName) -> RootNode
+   .. method:: from_raw(robj: RawObject, subschema: SchemaPath) -> RootNode
 
       Create a root instance node from a raw data tree contained in
       the *robj* argument. The latter will typically be a Python
@@ -131,11 +131,6 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       number. See the documentation of :mod:`instvalue` module for
       more details, and see also :term:`raw value`.
 
-      The *subschema* argument may be used for creating instances of
-      RPC input and/or output and notifications. The value of this
-      argument is a :term:`prefixed name` (with an explicit prefix)
-      that identifies the selected subschema (RPC or notification).
-
       .. doctest::
 
          >>> with open("example-data.json") as infile:
@@ -143,6 +138,31 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
          >>> inst = dm.from_raw(ri)
          >>> inst.value
          {'example-1:greeting': 'Hi!'}
+
+      The *subschema* argument may be used for creating instances of
+      actions/RPC operations with input and/or output parameters, and
+      notifications. The value of this argument is a :term:`schema
+      path` that identifies the selected subschema (RPC or
+      notification).
+
+      Instances of actions or RPC operations are JSON objects
+      containing input or output parameters, or both combined,
+      encapsulated in objects with names ``<modulename>:input`` or
+      ``<modulename>:output``, respectively, qualified with the name
+      of the module in which the action or RPC is defined.
+
+      .. doctest::
+
+         >>> with open("example-rpc.json") as infile:
+         ...   ri = json.load(infile)
+         >>> rpc = dm.from_raw(ri)
+         >>> rpc.value["example-1:input"]
+         {'address': 'How do you do?'}
+         >>> rpc.value["example-1:output"]
+         {'response': 'How do you do?'}
+
+      Instances of notifications are JSON objects containing
+      unencapsulated notification payload.
 
    .. method:: get_schema_node(path: SchemaPath) -> Optional[SchemaNode]
 
@@ -206,8 +226,18 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
          >>> print(dm.ascii_tree(), end='')
          +--rw example-1:greeting? <string>
-         >>> print(dm.ascii_tree(True), end='')
+         +---x example-1:howdy
+            +---w input
+            |  +---w address? <string>
+            +--ro output
+               +--ro response? <string>
+         >>> print(dm.ascii_tree(no_types=True), end='')
          +--rw example-1:greeting?
+         +---x example-1:howdy
+            +---w input
+            |  +---w address?
+            +--ro output
+               +--ro response?
 
    .. method:: clear_val_counters() -> None
 
@@ -283,7 +313,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
       .. doctest::
 
          >>> len(dm.schema_digest())
-         222
+         499
 
 .. _3.5.3: https://rfc-editor.org/rfc/rfc8040.html#section-3.5.3
 .. _6.1: https://rfc-editor.org/rfc/rfc7951.html#section-6.1

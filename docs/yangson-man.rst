@@ -132,7 +132,8 @@ Print the tree diagram of the complete data model as ASCII art.
 validate
 --------
 
-Validate an instance object against the complete data model or a subschema.
+Validate a JSON instance object against the complete data model or a
+subschema.
 
 An instance object that is to be validated against the subschema of an
 action or RPC can be input and/or output payload of the action or RPC

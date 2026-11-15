@@ -27,6 +27,11 @@ module.
 
    $ yangson yang-library-ex1.json tree
    +--rw example-1:greeting? <string>
+   +---x example-1:howdy
+      +---w input
+      |  +---w address? <string>
+      +--ro output
+         +--ro response? <string>
 
 .. rubric:: YANG Library
 
