@@ -549,11 +549,19 @@ class InternalNode(SchemaNode):
         todo: list[SchemaNode] = []
         for child in self.children:
             if child.name == name and child.ns == ns:
-                if isinstance(child, DataNode):
-                    return child
-                todo.insert(0, child)
-            elif not isinstance(child, DataNode):
-                todo.append(child)
+                match child:
+                    case DataNode():
+                        return child
+                    case CaseNode():
+                        todo.insert(0, child)
+                    case _:
+                        return None
+            else:
+                match child:
+                    case DataNode() | SchemaTreeNode():
+                        continue
+                    case _:
+                        todo.append(child)
         for c in todo:
             res = c.get_data_child(name, ns)
             if res:
