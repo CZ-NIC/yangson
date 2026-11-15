@@ -155,7 +155,7 @@ __ http://www.sphinx-doc.org/en/stable/ext/doctest.html
 
          >>> with open("example-rpc.json") as infile:
          ...   ri = json.load(infile)
-         >>> rpc = dm.from_raw(ri)
+         >>> rpc = dm.from_raw(ri, subschema="/example-1:howdy")
          >>> rpc.value["example-1:input"]
          {'address': 'How do you do?'}
          >>> rpc.value["example-1:output"]
