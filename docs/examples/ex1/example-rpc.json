@@ -1,0 +1,8 @@
+{
+  "example-1:input": {
+    "address": "How do you do?"
+  },
+  "example-1:output": {
+    "response": "How do you do?"
+  }
+}
